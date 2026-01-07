@@ -13,7 +13,8 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function ComparePage() {
   const { user } = useAuth()
-  const { data: items, isLoading } = useCatalogItems()
+  const { data: itemsResponse, isLoading } = useCatalogItems()
+  const items = itemsResponse?.data || []
   const [compareItems, setCompareItems] = useState<CatalogItem[]>([])
   const [showSelector, setShowSelector] = useState(false)
 

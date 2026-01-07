@@ -8,8 +8,9 @@ import { CatalogItem } from '@/types/database'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function DriversPage() {
-  const { data: items, isLoading, error } = useCatalogItems()
-  
+  const { data: itemsResponse, isLoading, error } = useCatalogItems()
+  const items = itemsResponse?.data || []
+
   // Filter to only drivers (card_type === 1)
   const drivers = items?.filter((item: CatalogItem) => item.card_type === 1) || []
 

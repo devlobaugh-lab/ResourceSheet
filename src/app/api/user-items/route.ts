@@ -1,29 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 import { z } from 'zod'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
 import { createUserItemSchema, updateUserItemSchema } from '@/lib/validation'
 
 // GET /api/user-items - Get user's items
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+
     if (authError || !user) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
       )
     }
-    
+
     const { searchParams } = new URL(request.url)
     const page = Number(searchParams.get('page')) || 1
     const limit = Number(searchParams.get('limit')) || 20
     const start = (page - 1) * limit
-    
+
     // Get user's items with catalog item details
     const { data, error, count } = await supabaseAdmin
       .from('user_items')
@@ -44,14 +42,14 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id)
       .range(start, start + limit - 1)
       .order('updated_at', { ascending: false })
-    
+
     if (error) {
       return NextResponse.json(
         { error: { code: 'DATABASE_ERROR', message: error.message } },
         { status: 500 }
       )
     }
-    
+
     return NextResponse.json({
       data: data || [],
       pagination: {
@@ -61,7 +59,7 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil((count || 0) / limit)
       }
     })
-    
+
   } catch (error) {
     console.error('User items GET error:', error)
     return NextResponse.json(
@@ -75,7 +73,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {

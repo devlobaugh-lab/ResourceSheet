@@ -13,9 +13,13 @@ import Link from 'next/link'
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth()
-  const { data: catalogItems } = useCatalogItems()
-  const { data: userItems } = useUserItems()
-  const { data: userAssets } = useUserAssets()
+  const { data: catalogItemsResponse } = useCatalogItems()
+  const { data: userItemsResponse } = useUserItems()
+  const { data: userAssetsResponse } = useUserAssets()
+
+  const catalogItems = catalogItemsResponse?.data || []
+  const userItems = userItemsResponse?.data || []
+  const userAssets = userAssetsResponse?.data || []
   
   // Calculate stats
   const totalCatalog = catalogItems?.length || 0

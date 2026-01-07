@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 import { z } from 'zod'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
 import { userAssetsFiltersSchema } from '@/lib/validation'
 
 // GET /api/user-assets - Get all catalog items with user's ownership data merged
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
