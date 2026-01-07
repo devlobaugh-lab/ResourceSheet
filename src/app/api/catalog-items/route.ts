@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 import { z } from 'zod'
-import { createClient } from '@supabase/supabase-js'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
 import { createCatalogItemSchema, catalogItemFiltersSchema } from '@/lib/validation'
 
 // GET /api/catalog-items - List catalog items with optional filters
@@ -91,7 +88,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {

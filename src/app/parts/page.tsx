@@ -8,8 +8,9 @@ import { CatalogItem } from '@/types/database'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function PartsPage() {
-  const { data: items, isLoading, error } = useCatalogItems()
-  
+  const { data: itemsResponse, isLoading, error } = useCatalogItems()
+  const items = itemsResponse?.data || []
+
   // Filter to only car parts (card_type === 0)
   const parts = items?.filter((item: CatalogItem) => item.card_type === 0) || []
 

@@ -56,7 +56,8 @@ function BoostCard({ boost }: { boost: Boost }) {
 }
 
 export default function BoostsPage() {
-  const { data: boosts, isLoading, error } = useBoosts()
+  const { data: boostsResponse, isLoading, error } = useBoosts()
+  const boosts = boostsResponse?.data || []
 
   const gridCols = 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
 
