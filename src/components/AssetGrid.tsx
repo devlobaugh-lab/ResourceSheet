@@ -12,6 +12,7 @@ interface AssetGridProps {
   onAddToCollection?: (item: CatalogItem) => void;
   onRemoveFromCollection?: (item: CatalogItem) => void;
   onCompare?: (items: CatalogItem[]) => void;
+  onCompareSingle?: (item: CatalogItem) => void; // For single item toggle
   compareItems?: CatalogItem[];
   className?: string;
   variant?: 'default' | 'compact' | 'detailed';

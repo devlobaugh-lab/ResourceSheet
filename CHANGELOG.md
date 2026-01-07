@@ -215,6 +215,15 @@ POST   /api/admin/import         - Bulk import data (admin)
 - `src/components/AddAssetForm.tsx` - Single and bulk asset entry forms
 - `src/app/assets/add/page.tsx` - Dedicated add assets page
 
+## [Added] - Page Routes & Navigation
+- `src/app/layout.tsx` - Responsive navigation with desktop/mobile menus
+- `src/app/drivers/page.tsx` - Drivers listing with filtering and comparison
+- `src/app/parts/page.tsx` - Car parts listing with filtering and comparison
+- `src/app/boosts/page.tsx` - Boosts listing with rarity badges and stats
+- `src/app/dashboard/page.tsx` - User dashboard with stats and quick actions
+- `src/app/compare/page.tsx` - Side-by-side item comparison (up to 4 items)
+- `src/app/providers.tsx` - ToastProvider integrated in provider chain
+
 ## Project Status
 - ✅ **Phase 1**: Repository Setup - **COMPLETE**
 - ✅ **Phase 2**: Database Schema Design - **COMPLETE**
