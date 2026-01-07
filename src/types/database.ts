@@ -249,6 +249,13 @@ export interface UserAssetView {
   cc_price: number | null
   car_part_type: number | null
   stats_per_level: any | null
+  tag_name: string | null
+  collection_id: string | null
+  visual_override: string | null
+  collection_sub_name: string | null
+  ordinal: number | null
+  min_gp_tier: number | null
+  num_duplicates_after_unlock: number | null
   
   // From user_items (or defaults if not owned)
   level: number
