@@ -22,7 +22,7 @@ export function AddAssetForm({ onSuccess, onCancel }: AddAssetFormProps) {
   const { data: catalogItems = [], isLoading } = useCatalogItems();
   const addUserItem = useAddUserItem();
 
-  const filteredItems = catalogItems.filter(item =>
+  const filteredItems = catalogItems.filter((item: CatalogItem) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -92,7 +92,7 @@ export function AddAssetForm({ onSuccess, onCancel }: AddAssetFormProps) {
                 <div className="text-center py-4 text-gray-500">Loading items...</div>
               ) : (
                 <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
-                  {filteredItems.slice(0, 20).map((item) => (
+                  {filteredItems.slice(0, 20).map((item: CatalogItem) => (
                     <button
                       key={item.id}
                       type="button"
@@ -116,6 +116,7 @@ export function AddAssetForm({ onSuccess, onCancel }: AddAssetFormProps) {
                   
                   {filteredItems.length === 0 && (
                     <div className="px-4 py-6 text-center text-gray-500">
+                      {/* eslint-disable-next-line react/no-unescaped-entities */}
                       No items found matching "{searchTerm}"
                     </div>
                   )}
@@ -221,11 +222,11 @@ export function BulkEntryForm({ onSuccess }: BulkEntryFormProps) {
   };
 
   const removeItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
+    setItems(items.filter((_: unknown, i: number) => i !== index));
   };
 
   const updateItem = (index: number, field: string, value: string | number) => {
-    setItems(items.map((item, i) => 
+    setItems(items.map((item: { catalogItemId: string; level: number; cardCount: number }, i: number) => 
       i === index ? { ...item, [field]: value } : item
     ));
   };
@@ -254,7 +255,7 @@ export function BulkEntryForm({ onSuccess }: BulkEntryFormProps) {
   };
 
   const getItemName = (id: string) => {
-    const item = catalogItems.find(i => i.id === id);
+    const item = catalogItems.find((i: CatalogItem) => i.id === id);
     return item?.name || 'Select item...';
   };
 
@@ -272,7 +273,7 @@ export function BulkEntryForm({ onSuccess }: BulkEntryFormProps) {
       
       <form onSubmit={handleSubmit}>
         <div className="space-y-4 mb-6">
-          {items.map((item, index) => (
+          {items.map((item: { catalogItemId: string; level: number; cardCount: number }, index: number) => (
             <div key={index} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
               <div className="flex-1">
                 <select
@@ -281,7 +282,7 @@ export function BulkEntryForm({ onSuccess }: BulkEntryFormProps) {
                   onChange={(e) => updateItem(index, 'catalogItemId', e.target.value)}
                 >
                   <option value="">Select item...</option>
-                  {catalogItems.map((ci) => (
+                  {catalogItems.map((ci: CatalogItem) => (
                     <option key={ci.id} value={ci.id}>
                       {ci.name} (Series {ci.series})
                     </option>

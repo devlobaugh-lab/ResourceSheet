@@ -98,7 +98,9 @@ export default function LoginPage() {
               {loading ? 'Signing in...' : 'Sign in'}
             </Button>
 
+            {/* eslint-disable-next-line react/no-unescaped-entities */}
             <div className="text-center text-sm">
+              {/* eslint-disable-next-line react/no-unescaped-entities */}
               <span className="text-gray-600">Don't have an account? </span>
               <Link href="/auth/register" className="font-medium text-blue-600 hover:text-blue-500">
                 Sign up

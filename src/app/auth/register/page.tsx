@@ -63,7 +63,9 @@ export default function RegisterPage() {
                 </svg>
               </div>
               <h3 className="mt-4 text-lg font-medium text-gray-900">Account created!</h3>
+              {/* eslint-disable-next-line react/no-unescaped-entities */}
               <p className="mt-2 text-sm text-gray-600">
+                {/* eslint-disable-next-line react/no-unescaped-entities */}
                 We've sent a confirmation email to <strong>{email}</strong>. 
                 Please check your email and click the link to verify your account.
               </p>

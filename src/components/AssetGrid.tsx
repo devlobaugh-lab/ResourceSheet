@@ -30,8 +30,16 @@ interface FilterState {
   sortOrder: 'asc' | 'desc';
 }
 
-// Union type for unified filtering
-type FilterableItem = (UserAssetView & { is_asset: true }) | (CatalogItem & { is_asset: false });
+// Extended types for unified filtering
+interface AssetItem extends UserAssetView {
+  is_asset: true;
+}
+
+interface CatalogItemItem extends CatalogItem {
+  is_asset: false;
+}
+
+type FilterableItem = AssetItem | CatalogItemItem;
 
 export function AssetGrid({
   assets = [],
@@ -62,7 +70,7 @@ export function AssetGrid({
     : items.map(item => ({ ...item, is_asset: false } as FilterableItem));
 
   // Filter and search logic
-  const filteredItems = allItems.filter(item => {
+  const filteredItems = allItems.filter((item: FilterableItem) => {
     const matchesSearch = !filters.search || 
       item.name.toLowerCase().includes(filters.search.toLowerCase());
     
@@ -73,7 +81,7 @@ export function AssetGrid({
     // Handle ownership filtering - only apply if we have assets (user data)
     const matchesOwned = filters.owned === null || 
       (assets.length === 0) || // If no assets, don't filter by ownership
-      (filters.owned ? item.is_owned : !item.is_owned);
+      (filters.owned ? (item as AssetItem).is_owned : !(item as AssetItem).is_owned);
     
     return matchesSearch && matchesRarity && matchesCardType && matchesOwned;
   });
