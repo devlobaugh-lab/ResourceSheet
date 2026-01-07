@@ -1,12 +1,12 @@
-# F1 Resource Manager
+# F1 Clash Resource Manager
 
-A comprehensive web application for managing F1 racing game resources including drivers, car parts, and boost items.
+A comprehensive web application for managing F1 Clash game resources including drivers, car parts, and boosts.
 
 ## Features
 
-- **Driver Management**: Track driver levels, cards, and stats
-- **Car Parts Management**: Monitor parts across different types (Engine, Brakes, Gearbox, Suspension, Front Wing, Rear Wing)
-- **Boost Items**: Manage boost upgrades and effects
+- **Driver Management**: List and track driver levels, cards, and stats
+- **Car Parts Management**: List and track car parts across different types, levels, cards, and stats
+- **Boost Items**: List boosts and effects
 - **User Authentication**: Secure login with Supabase Auth
 - **Admin Interface**: Upload new data files and manage users
 - **Asset Comparison**: Compare multiple assets side-by-side
