@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { AssetGrid } from '@/components/AssetGrid'
+import { DataGrid } from '@/components/DataGrid'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
 import { useBoosts } from '@/hooks/useApi'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -38,10 +38,10 @@ export default function BoostsPage() {
             <p className="text-red-600">Error loading boosts: {error.message}</p>
           </div>
         ) : (
-          <AssetGrid
-            assets={boosts}
+          <DataGrid
+            boosts={boosts}
             title="All Boosts"
-            variant="default"
+            gridType="boosts"
             showFilters={true}
             showSearch={true}
             showCompareButton={true}
