@@ -31,9 +31,9 @@ export const updateCatalogItemSchema = createCatalogItemSchema.partial()
 
 export const catalogItemFiltersSchema = z.object({
   season_id: uuidSchema.optional().nullable(),
-  card_type: z.number().int().min(0).max(1).optional(),
-  rarity: z.number().int().optional(),
-  series: z.number().int().optional(),
+  card_type: z.union([z.number().int().min(0).max(1), z.string().regex(/^\d+$/).transform(val => parseInt(val, 10))]).optional(),
+  rarity: z.union([z.number().int(), z.string().regex(/^\d+$/).transform(val => parseInt(val, 10))]).optional(),
+  series: z.union([z.number().int(), z.string().regex(/^\d+$/).transform(val => parseInt(val, 10))]).optional(),
   search: z.string().optional(),
 })
 

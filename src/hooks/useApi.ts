@@ -56,21 +56,26 @@ export function useCatalogItems(filters?: {
     queryKey: ['catalog-items', filters],
     queryFn: async () => {
       const params = new URLSearchParams()
-      
+
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
           if (value !== undefined) {
-            params.append(key, value.toString())
+            // Handle numeric values properly
+            if (typeof value === 'number') {
+              params.append(key, value.toString())
+            } else {
+              params.append(key, value)
+            }
           }
         })
       }
 
       const response = await fetch(`${API_BASE}/catalog-items?${params}`)
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch catalog items')
       }
-      
+
       return response.json()
     },
     staleTime: 60 * 1000, // 1 minute
@@ -107,7 +112,7 @@ export function useBoosts(filters?: {
     queryKey: ['boosts', filters],
     queryFn: async () => {
       const params = new URLSearchParams()
-      
+
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
           if (value !== undefined) {
@@ -117,14 +122,51 @@ export function useBoosts(filters?: {
       }
 
       const response = await fetch(`${API_BASE}/boosts?${params}`)
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch boosts')
       }
-      
+
       return response.json()
     },
     staleTime: 60 * 1000,
+  })
+}
+
+// Fetch user boosts (merged boosts + user data)
+export function useUserBoosts(filters?: {
+  season_id?: string
+  rarity?: number
+  series?: number
+  search?: string
+  owned_only?: boolean
+  sort_by?: string
+  sort_order?: 'asc' | 'desc'
+  page?: number
+  limit?: number
+}) {
+  return useQuery({
+    queryKey: ['user-boosts', filters],
+    queryFn: async (): Promise<{ data: any[]; pagination: any }> => {
+      const params = new URLSearchParams()
+
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined) {
+            params.append(key, value.toString())
+          }
+        })
+      }
+
+      const response = await fetch(`${API_BASE}/user-boosts?${params}`)
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user boosts')
+      }
+
+      return response.json()
+    },
+    staleTime: 30 * 1000, // 30 seconds
   })
 }
 

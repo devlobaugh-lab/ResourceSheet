@@ -8,11 +8,15 @@ import { CatalogItem } from '@/types/database'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function PartsPage() {
-  const { data: itemsResponse, isLoading, error } = useCatalogItems()
-  const items = itemsResponse?.data || []
+  const { data: catalogResponse, isLoading, error } = useCatalogItems({
+    card_type: 0, // Filter for car parts only
+    page: 1,
+    limit: 100
+  })
+  const catalogItems = catalogResponse?.data || []
 
-  // Filter to only car parts (card_type === 0)
-  const parts = items?.filter((item: CatalogItem) => item.card_type === 0) || []
+  // Filter to only car parts (card_type === 0) - though API should already filter
+  const parts = catalogItems?.filter((item: CatalogItem) => item.card_type === 0) || []
 
   return (
     <div className="space-y-6">
@@ -40,7 +44,7 @@ export default function PartsPage() {
           </div>
         ) : (
           <AssetGrid
-            items={parts as CatalogItem[]}
+            assets={parts}
             title="All Car Parts"
             variant="default"
             showFilters={true}
