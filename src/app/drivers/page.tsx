@@ -8,11 +8,15 @@ import { CatalogItem } from '@/types/database'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function DriversPage() {
-  const { data: itemsResponse, isLoading, error } = useCatalogItems()
-  const items = itemsResponse?.data || []
+  const { data: catalogResponse, isLoading, error } = useCatalogItems({
+    card_type: 1, // Filter for drivers only
+    page: 1,
+    limit: 100
+  })
+  const catalogItems = catalogResponse?.data || []
 
-  // Filter to only drivers (card_type === 1)
-  const drivers = items?.filter((item: CatalogItem) => item.card_type === 1) || []
+  // Filter to only drivers (card_type === 1) - though API should already filter
+  const drivers = catalogItems?.filter((item: CatalogItem) => item.card_type === 1) || []
 
   return (
     <div className="space-y-6">
@@ -40,7 +44,7 @@ export default function DriversPage() {
           </div>
         ) : (
           <AssetGrid
-            items={drivers as CatalogItem[]}
+            assets={drivers}
             title="All Drivers"
             variant="default"
             showFilters={true}

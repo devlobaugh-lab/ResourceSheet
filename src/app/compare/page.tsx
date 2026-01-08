@@ -6,19 +6,19 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { AssetGrid } from '@/components/AssetGrid'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
-import { useCatalogItems } from '@/hooks/useApi'
+import { useUserAssets } from '@/hooks/useApi'
 import { useAuth } from '@/components/auth/AuthContext'
-import { CatalogItem } from '@/types/database'
+import { UserAssetView } from '@/types/database'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function ComparePage() {
   const { user } = useAuth()
-  const { data: itemsResponse, isLoading } = useCatalogItems()
-  const items = itemsResponse?.data || []
-  const [compareItems, setCompareItems] = useState<CatalogItem[]>([])
+  const { data: assetsResponse, isLoading } = useUserAssets()
+  const assets = assetsResponse?.data || []
+  const [compareItems, setCompareItems] = useState<UserAssetView[]>([])
   const [showSelector, setShowSelector] = useState(false)
 
-  const handleCompareSingle = (item: CatalogItem) => {
+  const handleCompareSingle = (item: UserAssetView) => {
     if (compareItems.some(i => i.id === item.id)) {
       setCompareItems(compareItems.filter(i => i.id !== item.id))
     } else if (compareItems.length < 4) {
@@ -173,9 +173,9 @@ export default function ComparePage() {
 
             {isLoading ? (
               <SkeletonGrid count={8} />
-            ) : items ? (
+            ) : assets.length > 0 ? (
               <AssetGrid
-                items={items as CatalogItem[]}
+                assets={assets}
                 title="All Items"
                 variant="compact"
                 showFilters={false}
