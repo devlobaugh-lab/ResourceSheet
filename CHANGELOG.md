@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Spreadsheet-Style Data Grid UI**
+  - Created new `DataGrid` component to replace card-based `AssetGrid`
+  - Implemented spreadsheet-style table layout for drivers, parts, and boosts
+  - Added sortable columns with visual indicators (↑/↓)
+  - Maintained all existing functionality: filtering, search, comparison
+  - Added responsive design with horizontal scrolling for smaller screens
+  - Preserved action buttons (Compare, Add to Collection, Remove)
+
+### Changed
+- **Driver List UI**
+  - Replaced card-based display with spreadsheet-style data grid
+  - Updated `src/app/drivers/page.tsx` to use new `DataGrid` component
+  - Maintained all filtering, sorting, and search capabilities
+  - Improved data density for better comparison of multiple items
+
+- **Car Parts List UI**
+  - Replaced card-based display with spreadsheet-style data grid
+  - Updated `src/app/parts/page.tsx` to use new `DataGrid` component
+  - Added "Part Type" column specific to car parts
+  - Preserved all existing functionality and filters
+
+- **Boosts List UI**
+  - Replaced card-based display with spreadsheet-style data grid
+  - Updated `src/app/boosts/page.tsx` to use new `DataGrid` component
+  - Added "Boost Type" column specific to boosts
+  - Maintained all filtering and comparison features
+
 ### Fixed
 - **Authentication System Overhaul**
   - Replaced deprecated `@supabase/auth-helpers-nextjs` with modern `@supabase/ssr`

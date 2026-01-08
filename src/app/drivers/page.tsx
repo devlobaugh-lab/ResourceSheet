@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { AssetGrid } from '@/components/AssetGrid'
+import { DataGrid } from '@/components/DataGrid'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
 import { useCatalogItems } from '@/hooks/useApi'
 import { CatalogItem } from '@/types/database'
@@ -43,10 +43,10 @@ export default function DriversPage() {
             <p className="text-red-600">Error loading drivers: {error.message}</p>
           </div>
         ) : (
-          <AssetGrid
-            assets={drivers}
+          <DataGrid
+            items={drivers}
             title="All Drivers"
-            variant="default"
+            gridType="drivers"
             showFilters={true}
             showSearch={true}
             showCompareButton={true}
