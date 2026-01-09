@@ -19,15 +19,15 @@ export default function DriversPage() {
   const drivers = catalogItems?.filter((item: CatalogItem) => item.card_type === 1) || []
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Drivers</h1>
+      <div className="space-y-6">
+        {/* <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Drivers</h1>
           <p className="text-gray-600 mt-1">
             {isLoading ? 'Loading...' : `${drivers.length} drivers available`}
           </p>
-        </div>
-      </div>
+          </div>
+        </div> */}
 
       <ErrorBoundary
         fallback={
@@ -45,7 +45,7 @@ export default function DriversPage() {
         ) : (
           <DataGrid
             items={drivers}
-            title="All Drivers"
+            title="Drivers"
             gridType="drivers"
             showFilters={true}
             showSearch={true}

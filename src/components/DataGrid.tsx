@@ -27,7 +27,7 @@ interface FilterState {
   rarity: number | null;
   cardType: number | null;
   owned: boolean | null;
-  sortBy: 'name' | 'rarity' | 'series' | 'level' | 'cc_price';
+  sortBy: 'name' | 'rarity' | 'series' | 'level';
   sortOrder: 'asc' | 'desc';
 }
 
@@ -110,14 +110,14 @@ export function DataGrid({
       case 'series':
         comparison = (a.series || 0) - (b.series || 0);
         break;
-      case 'cc_price':
-        // Only sort by cc_price if not boosts
-        if (gridType === 'boosts') {
-          comparison = 0;
-        } else {
-          comparison = ((a as CatalogItemItem | AssetItem).cc_price || 0) - ((b as CatalogItemItem | AssetItem).cc_price || 0);
-        }
-        break;
+      // case 'cc_price':
+      //   // Only sort by cc_price if not boosts
+      //   if (gridType === 'boosts') {
+      //     comparison = 0;
+      //   } else {
+      //     comparison = ((a as CatalogItemItem | AssetItem).cc_price || 0) - ((b as CatalogItemItem | AssetItem).cc_price || 0);
+      //   }
+      //   break;
       case 'level':
         // Only sort by level if we have assets data
         if ('is_asset' in a && 'is_asset' in b && a.is_asset && b.is_asset) {
@@ -169,6 +169,7 @@ export function DataGrid({
     return typeMap[cardType] || 'Unknown';
   };
 
+  // TODO: missing 2 part types. brakes, front wing, rear wind (unsure which matches aerorynamics)
   // Helper function to get car part type display name
   const getCarPartTypeDisplay = (carPartType: number | null): string => {
     if (carPartType === null) return 'N/A';
@@ -188,16 +189,29 @@ export function DataGrid({
            rarity === 2 ? 'default' : 'outline';
   };
 
+  // Get rarity color for driver name
+  const getRarityColor = (rarity: number): string => {
+    return rarity === 0 ? "text-gray-900" :
+           rarity === 1 ? "text-blue-600" :
+           rarity === 2 ? "text-yellow-600" :
+           rarity === 3 ? "text-purple-600" :
+           rarity === 4 ? "text-brown-600" : 
+           rarity === 5 ? "text-red-600" : "text-gray-900";
+  };
+
   // Get columns based on grid type
   const getColumns = () => {
     const baseColumns = [
       { key: 'name', label: 'Name', sortable: true },
-      { key: 'rarity', label: 'Rarity', sortable: true },
-      { key: 'series', label: 'Series', sortable: true },
+      // { key: 'rarity', label: 'Rarity', sortable: true },
+      // { key: 'series', label: 'Series', sortable: true },
     ];
 
-    if (gridType === 'drivers' || gridType === 'parts') {
-      baseColumns.push({ key: 'cc_price', label: 'Price (CC)', sortable: true });
+    // if (gridType === 'drivers' || gridType === 'parts') {
+    //   baseColumns.push({ key: 'cc_price', label: 'Price (CC)', sortable: true });
+    // }
+    if (gridType === 'parts' || gridType === 'drivers') {
+      baseColumns.push({ key: 'rarity', label: 'Rarity', sortable: true });
     }
 
     if (gridType === 'parts') {
@@ -208,15 +222,61 @@ export function DataGrid({
       baseColumns.push({ key: 'boost_type', label: 'Boost Type', sortable: false });
     }
 
-    // Add level and cards columns if we have asset data
-    if (assets.length > 0) {
+      // Add level and cards columns if we have asset data
+      if (assets.length > 0) {
+        baseColumns.push(
+          { key: 'level', label: 'Level', sortable: true },
+          { key: 'card_count', label: 'Cards', sortable: false }
+        );
+      }
+
+      // TODO: wrong - stats are different for drivers and parts
+      // Add 6 stats columns for drivers and parts
+      if (gridType === 'drivers') {
       baseColumns.push(
-        { key: 'level', label: 'Level', sortable: true },
-        { key: 'card_count', label: 'Cards', sortable: false }
+        { key: 'overtaking', label: 'Overtaking', sortable: true },
+        { key: 'blocking', label: 'Defending', sortable: true },
+        { key: 'qualifying', label: 'Qualifying', sortable: true },
+        { key: 'tyreUse', label: 'Tyre Use', sortable: true },
+        { key: 'raceStart', label: 'Race Start', sortable: true },
+        { key: 'series', label: 'Series', sortable: true }
       );
     }
 
-    baseColumns.push({ key: 'actions', label: 'Actions', sortable: false });
+    if (gridType === 'parts') {
+      baseColumns.push(
+        { key: 'overtaking', label: 'Speed', sortable: true },
+        { key: 'blocking', label: 'Cornering', sortable: true },
+        { key: 'qualifying', label: 'Power Unit', sortable: true },
+        { key: 'tyreUse', label: 'Qualifying', sortable: true },
+        { key: 'raceStart', label: 'Pit Stop', sortable: true },
+        { key: 'series', label: 'DRS', sortable: true }
+      );
+    }
+
+    if (gridType === 'boosts') {
+      // Add boost-specific columns
+      baseColumns.push(
+        { key: 'overtake_tier', label: 'Overtake', sortable: true },
+        { key: 'block_tier', label: 'Defend', sortable: true },
+        { key: 'race_start_tier', label: 'Race Start', sortable: true },
+        // { key: 'qualifying_tier', label: 'Qualifying', sortable: true },
+        { key: 'tyre_use_tier', label: 'Tyre Use', sortable: true },
+        { key: 'speed_tier', label: 'Speed', sortable: true },
+        { key: 'corners_tier', label: 'Corners', sortable: true },
+        { key: 'power_unit_tier', label: 'Power Unit', sortable: true },
+        // { key: 'reliability_tier', label: 'Reliability', sortable: true },
+        { key: 'pit_stop_time_tier', label: 'Pit Stop', sortable: true },
+        { key: 'drs_tier', label: 'DRS', sortable: true },
+      );
+    }
+
+    if (gridType === 'parts' || gridType === 'drivers') {
+      baseColumns.push({ key: 'series', label: 'Series', sortable: true });
+    }
+
+    // Todo: what is this for?
+    // baseColumns.push({ key: 'actions', label: 'Actions', sortable: false });
 
     return baseColumns;
   };
@@ -338,7 +398,7 @@ export function DataGrid({
                 <option value="rarity">Rarity</option>
                 <option value="series">Series</option>
                 {assets.length > 0 && <option value="level">Level</option>}
-                {gridType !== 'boosts' && <option value="cc_price">Price</option>}
+                {/* {gridType !== 'boosts' && <option value="cc_price">Price</option>} */}
               </select>
 
               <Button
@@ -401,6 +461,26 @@ export function DataGrid({
               const catalogItem = isAsset ? item as UserAssetView : isBoost ? item as Boost : item as CatalogItem;
               const isOwned = isAsset ? (item as UserAssetView).is_owned : false;
 
+              // Get stats for drivers/parts
+              const getStatValue = (statName: string): number => {
+                if (isAsset && (catalogItem as UserAssetView).stats_per_level && Array.isArray((catalogItem as UserAssetView).stats_per_level)) {
+                  const stats = (catalogItem as UserAssetView).stats_per_level as Array<{ [key: string]: number }>;
+                  if (stats.length > 0 && stats[0][statName] !== undefined) {
+                    return stats[0][statName];
+                  }
+                }
+                return 0;
+              };
+
+              // Get boost tier values from boost_stats
+              const getBoostTierValue = (tierName: string): number => {
+                if (isBoost && (catalogItem as BoostItem).boost_stats) {
+                  const boostStats = (catalogItem as BoostItem).boost_stats as { [key: string]: number };
+                  return boostStats[tierName] || 0;
+                }
+                return 0;
+              };
+
               return (
                 <tr
                   key={catalogItem.id}
@@ -409,55 +489,34 @@ export function DataGrid({
                     isInComparison(catalogItem as CatalogItem) && 'bg-blue-50'
                   )}
                 >
-                  {/* Name Column */}
+                  {/* Name Column with rarity color */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="text-sm font-medium text-gray-900">{catalogItem.name}</div>
+                      <div className={cn(
+                        "text-sm font-medium",
+                        catalogItem.rarity === 0 ? "text-gray-900" :
+                        catalogItem.rarity === 1 ? "text-blue-600" :
+                        catalogItem.rarity === 2 ? "text-yellow-600" :
+                        catalogItem.rarity === 3 ? "text-purple-600" :
+                        catalogItem.rarity === 4 ? "text-brown-600" : "text-red-600"
+                      )}>
+                        {catalogItem.name}
+                      </div>
                     </div>
-                    {gridType !== 'boosts' && (
-                  <div className="text-xs text-gray-500">
-                    {gridType !== 'boosts' && !(catalogItem as BoostItem).is_boost ? getCardTypeDisplay((catalogItem as CatalogItemItem | AssetItem).card_type) + ' • ' : ''}Series {catalogItem.series}
-                  </div>
-                    )}
                   </td>
-
-                  {/* Rarity Column */}
+                  {/* Rarity Column with matching bubble color */}
+                  {gridType !== 'boosts' && (
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <Badge variant={getRarityBadgeVariant(catalogItem.rarity)}>
+                    <Badge className={cn(
+                      catalogItem.rarity === 0 ? "bg-gray-100 text-gray-800" :
+                      catalogItem.rarity === 1 ? "bg-blue-100 text-blue-800" :
+                      catalogItem.rarity === 2 ? "bg-yellow-100 text-yellow-800" :
+                      catalogItem.rarity === 3 ? "bg-purple-100 text-purple-800" :
+                      catalogItem.rarity === 4 ? "bg-brown-100 text-brown-800" : "bg-red-100 text-red-800"
+                    )}>
                       {getRarityDisplay(catalogItem.rarity)}
                     </Badge>
                   </td>
-
-                  {/* Series Column */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{catalogItem.series}</div>
-                  </td>
-
-                  {/* Price Column (for drivers/parts) */}
-                  {gridType !== 'boosts' && (
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {(catalogItem as CatalogItemItem | AssetItem).cc_price ? formatNumber((catalogItem as CatalogItemItem | AssetItem).cc_price) + ' CC' : 'N/A'}
-                      </div>
-                    </td>
-                  )}
-
-                  {/* Part Type Column (for parts) */}
-                  {gridType === 'parts' && (
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {getCarPartTypeDisplay((catalogItem as CatalogItemItem | AssetItem).car_part_type)}
-                      </div>
-                    </td>
-                  )}
-
-                  {/* Boost Type Column (for boosts) */}
-                  {gridType === 'boosts' && (
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {(catalogItem as BoostItem).boost_type}
-                      </div>
-                    </td>
                   )}
 
                   {/* Level Column (if asset data available) */}
@@ -476,6 +535,69 @@ export function DataGrid({
                         {isAsset ? (item as UserAssetView).card_count : 'N/A'}
                       </div>
                     </td>
+                  )}
+
+                  {/* Stats Columns for Drivers/Parts */}
+                  {(gridType === 'drivers' || gridType === 'parts') && (
+                    <>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getStatValue('overtaking')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getStatValue('blocking')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getStatValue('qualifying')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getStatValue('tyreUse')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getStatValue('raceStart')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{catalogItem.series}</div>
+                      </td>
+                    </>
+                  )}
+
+                  {/* Boost Tier Columns */}
+                  {gridType === 'boosts' && (
+                    <>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getBoostTierValue('overtake_tier')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getBoostTierValue('block_tier')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getBoostTierValue('speed_tier')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getBoostTierValue('corners_tier')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getBoostTierValue('tyre_use_tier')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getBoostTierValue('reliability_tier')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getBoostTierValue('pit_stop_time_tier')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getBoostTierValue('power_unit_tier')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getBoostTierValue('race_start_tier')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getBoostTierValue('drs_tier')}</div>
+                      </td>
+                      {/* <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{catalogItem.series || 'N/A'}</div>
+                      </td> */}
+                    </>
                   )}
 
                   {/* Actions Column */}

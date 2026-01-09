@@ -19,15 +19,15 @@ export default function PartsPage() {
   const parts = catalogItems?.filter((item: CatalogItem) => item.card_type === 0) || []
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Car Parts</h1>
+      <div className="space-y-6">
+        {/* <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Car Parts</h1>
           <p className="text-gray-600 mt-1">
             {isLoading ? 'Loading...' : `${parts.length} car parts available`}
           </p>
-        </div>
-      </div>
+          </div>
+        </div> */}
 
       <ErrorBoundary
         fallback={
@@ -45,7 +45,7 @@ export default function PartsPage() {
         ) : (
           <DataGrid
             items={parts}
-            title="All Car Parts"
+            title="Car Parts"
             gridType="parts"
             showFilters={true}
             showSearch={true}

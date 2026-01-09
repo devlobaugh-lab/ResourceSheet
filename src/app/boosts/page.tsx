@@ -14,15 +14,15 @@ export default function BoostsPage() {
   const boosts = boostsResponse?.data || []
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Boosts</h1>
+      <div className="space-y-6">
+        {/* <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Boosts</h1>
           <p className="text-gray-600 mt-1">
             {isLoading ? 'Loading...' : `${boosts.length} boosts available`}
           </p>
-        </div>
-      </div>
+          </div>
+        </div> */}
 
       <ErrorBoundary
         fallback={
@@ -40,7 +40,7 @@ export default function BoostsPage() {
         ) : (
           <DataGrid
             boosts={boosts}
-            title="All Boosts"
+            title="Boosts"
             gridType="boosts"
             showFilters={true}
             showSearch={true}
