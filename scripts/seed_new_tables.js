@@ -1,14 +1,22 @@
 const fs = require('fs');
 const path = require('path');
-const { Pool } = require('pg');
+const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config({ path: path.join(__dirname, '../.env.local') });
 
-// Use direct PostgreSQL connection for local development
-const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'postgres',
-  password: 'postgres',
-  port: 54322,
+// Initialize Supabase admin client with service role key
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321';
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseServiceRoleKey) {
+  console.error('Error: SUPABASE_SERVICE_ROLE_KEY is not set in environment variables');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
 });
 
 async function seedDrivers() {
@@ -24,7 +32,7 @@ async function seedDrivers() {
       name: driver.name,
       rarity: driver.rarity,
       series: driver.series,
-      season_id: '00000000-0000-0000-0000-000000000001', // Default season, update as needed
+      season_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', // Season 6 ID
       icon: driver.icon,
       cc_price: driver.ccPrice,
       num_duplicates_after_unlock: driver.numDuplicatesAfterUnlock,
@@ -75,7 +83,7 @@ async function seedCarParts() {
       name: carPart.name,
       rarity: carPart.rarity,
       series: carPart.series,
-      season_id: '00000000-0000-0000-0000-000000000001', // Default season, update as needed
+      season_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', // Season 6 ID
       icon: carPart.icon,
       cc_price: carPart.ccPrice,
       num_duplicates_after_unlock: carPart.numDuplicatesAfterUnlock,
