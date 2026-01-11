@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
-import { UserAssetView, CatalogItem, Boost } from '@/types/database';
+import { UserAssetView, CatalogItem, Boost, DriverView, CarPartView } from '@/types/database';
 import { cn, formatNumber } from '@/lib/utils';
 
 interface DataGridProps {
   assets?: UserAssetView[];
   items?: CatalogItem[];
   boosts?: Boost[];
+  drivers?: DriverView[];
+  carParts?: CarPartView[];
   onAddToCollection?: (item: CatalogItem) => void;
   onRemoveFromCollection?: (item: CatalogItem) => void;
   onCompare?: (items: CatalogItem[]) => void;
@@ -19,7 +21,7 @@ interface DataGridProps {
   showFilters?: boolean;
   showSearch?: boolean;
   showCompareButton?: boolean;
-  gridType?: 'drivers' | 'parts' | 'boosts';
+  gridType?: 'drivers' | 'parts' | 'boosts' | 'car-parts';
 }
 
 interface FilterState {
@@ -50,6 +52,8 @@ export function DataGrid({
   assets = [],
   items = [],
   boosts = [],
+  drivers = [],
+  carParts = [],
   onAddToCollection,
   onRemoveFromCollection,
   onCompare,
@@ -70,12 +74,27 @@ export function DataGrid({
     sortOrder: 'asc',
   });
 
-  // Combine assets and items for unified display
-  const allItems: FilterableItem[] = assets.length > 0
-    ? assets.map(asset => ({ ...asset, is_asset: true } as FilterableItem))
-    : boosts.length > 0
-      ? boosts.map(boost => ({ ...boost, is_boost: true } as FilterableItem))
-      : items.map(item => ({ ...item, is_asset: false } as FilterableItem));
+  // Extended types for unified filtering
+  interface DriverItem extends DriverView {
+    is_driver: true;
+  }
+
+  interface CarPartItem extends CarPartView {
+    is_car_part: true;
+  }
+
+  type FilterableItem = AssetItem | CatalogItemItem | BoostItem | DriverItem | CarPartItem;
+
+  // Combine all data sources for unified display
+  const allItems: FilterableItem[] = drivers.length > 0
+    ? drivers.map(driver => ({ ...driver, is_driver: true } as FilterableItem))
+    : carParts.length > 0
+      ? carParts.map(carPart => ({ ...carPart, is_car_part: true } as FilterableItem))
+      : assets.length > 0
+        ? assets.map(asset => ({ ...asset, is_asset: true } as FilterableItem))
+        : boosts.length > 0
+          ? boosts.map(boost => ({ ...boost, is_boost: true } as FilterableItem))
+          : items.map(item => ({ ...item, is_asset: false } as FilterableItem));
 
   // Filter and search logic
   const filteredItems = allItems.filter((item: FilterableItem) => {
@@ -458,13 +477,34 @@ export function DataGrid({
             {sortedItems.map((item) => {
               const isAsset = 'is_asset' in item && item.is_asset;
               const isBoost = 'is_boost' in item && item.is_boost;
-              const catalogItem = isAsset ? item as UserAssetView : isBoost ? item as Boost : item as CatalogItem;
-              const isOwned = isAsset ? (item as UserAssetView).is_owned : false;
+              const isDriver = 'is_driver' in item && item.is_driver;
+              const isCarPart = 'is_car_part' in item && item.is_car_part;
+
+              // Get the base item based on type
+              const catalogItem = isAsset ? item as UserAssetView :
+                                 isBoost ? item as Boost :
+                                 isDriver ? item as DriverView :
+                                 isCarPart ? item as CarPartView :
+                                 item as CatalogItem;
+
+              const isOwned = isAsset ? (item as UserAssetView).is_owned :
+                               isDriver ? (item as DriverView).is_owned :
+                               isCarPart ? (item as CarPartView).is_owned : false;
 
               // Get stats for drivers/parts
               const getStatValue = (statName: string): number => {
                 if (isAsset && (catalogItem as UserAssetView).stats_per_level && Array.isArray((catalogItem as UserAssetView).stats_per_level)) {
                   const stats = (catalogItem as UserAssetView).stats_per_level as Array<{ [key: string]: number }>;
+                  if (stats.length > 0 && stats[0][statName] !== undefined) {
+                    return stats[0][statName];
+                  }
+                } else if (isDriver && (catalogItem as DriverView).stats_per_level && Array.isArray((catalogItem as DriverView).stats_per_level)) {
+                  const stats = (catalogItem as DriverView).stats_per_level as Array<{ [key: string]: number }>;
+                  if (stats.length > 0 && stats[0][statName] !== undefined) {
+                    return stats[0][statName];
+                  }
+                } else if (isCarPart && (catalogItem as CarPartView).stats_per_level && Array.isArray((catalogItem as CarPartView).stats_per_level)) {
+                  const stats = (catalogItem as CarPartView).stats_per_level as Array<{ [key: string]: number }>;
                   if (stats.length > 0 && stats[0][statName] !== undefined) {
                     return stats[0][statName];
                   }
