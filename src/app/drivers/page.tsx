@@ -3,31 +3,26 @@
 import { useState } from 'react'
 import { DataGrid } from '@/components/DataGrid'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
-import { useCatalogItems } from '@/hooks/useApi'
-import { CatalogItem } from '@/types/database'
+import { useUserDrivers } from '@/hooks/useApi'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function DriversPage() {
-  const { data: catalogResponse, isLoading, error } = useCatalogItems({
-    card_type: 1, // Filter for drivers only
+  const { data: driversResponse, isLoading, error } = useUserDrivers({
     page: 1,
     limit: 100
   })
-  const catalogItems = catalogResponse?.data || []
-
-  // Filter to only drivers (card_type === 1) - though API should already filter
-  const drivers = catalogItems?.filter((item: CatalogItem) => item.card_type === 1) || []
+  const drivers = driversResponse?.data || []
 
   return (
-      <div className="space-y-6">
-        {/* <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Drivers</h1>
-          <p className="text-gray-600 mt-1">
-            {isLoading ? 'Loading...' : `${drivers.length} drivers available`}
-          </p>
-          </div>
-        </div> */}
+    <div className="space-y-6">
+      {/* <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Drivers</h1>
+        <p className="text-gray-600 mt-1">
+          {isLoading ? 'Loading...' : `${drivers.length} drivers available`}
+        </p>
+        </div>
+      </div> */}
 
       <ErrorBoundary
         fallback={

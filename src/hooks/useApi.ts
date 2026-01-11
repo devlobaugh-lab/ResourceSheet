@@ -1,8 +1,79 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { UserAssetView, CatalogItem, UserItem, Boost, Season } from '@/types/database'
+import type { UserAssetView, CatalogItem, UserItem, Boost, Season, DriverView, CarPartView, BoostView } from '@/types/database'
 
 // API base URL
 const API_BASE = '/api'
+
+// Fetch drivers
+export function useDrivers(filters?: {
+  season_id?: string
+  rarity?: number
+  series?: number
+  search?: string
+  page?: number
+  limit?: number
+}) {
+  return useQuery({
+    queryKey: ['drivers', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams()
+
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined) {
+            params.append(key, value.toString())
+          }
+        })
+      }
+
+      const response = await fetch(`${API_BASE}/drivers?${params}`)
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch drivers')
+      }
+
+      return response.json()
+    },
+    staleTime: 60 * 1000, // 1 minute
+  })
+}
+
+// Fetch user drivers (merged drivers + user data)
+export function useUserDrivers(filters?: {
+  season_id?: string
+  rarity?: number
+  series?: number
+  search?: string
+  owned_only?: boolean
+  sort_by?: 'name' | 'rarity' | 'series' | 'level'
+  sort_order?: 'asc' | 'desc'
+  page?: number
+  limit?: number
+}) {
+  return useQuery({
+    queryKey: ['user-drivers', filters],
+    queryFn: async (): Promise<{ data: DriverView[]; pagination: any }> => {
+      const params = new URLSearchParams()
+
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined) {
+            params.append(key, value.toString())
+          }
+        })
+      }
+
+      const response = await fetch(`${API_BASE}/drivers/user?${params}`)
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user drivers')
+      }
+
+      return response.json()
+    },
+    staleTime: 30 * 1000, // 30 seconds
+  })
+}
 
 // Fetch user assets (merged catalog + user data)
 export function useUserAssets(filters?: {
@@ -21,7 +92,7 @@ export function useUserAssets(filters?: {
     queryKey: ['user-assets', filters],
     queryFn: async (): Promise<{ data: UserAssetView[]; pagination: any }> => {
       const params = new URLSearchParams()
-      
+
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
           if (value !== undefined) {
@@ -31,11 +102,11 @@ export function useUserAssets(filters?: {
       }
 
       const response = await fetch(`${API_BASE}/user-assets?${params}`)
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch user assets')
       }
-      
+
       return response.json()
     },
     staleTime: 30 * 1000, // 30 seconds
@@ -96,6 +167,79 @@ export function useUserItems() {
       return response.json()
     },
     staleTime: 30 * 1000,
+  })
+}
+
+// Fetch car parts
+export function useCarParts(filters?: {
+  season_id?: string
+  rarity?: number
+  series?: number
+  car_part_type?: number
+  search?: string
+  page?: number
+  limit?: number
+}) {
+  return useQuery({
+    queryKey: ['car-parts', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams()
+
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined) {
+            params.append(key, value.toString())
+          }
+        })
+      }
+
+      const response = await fetch(`${API_BASE}/car-parts?${params}`)
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch car parts')
+      }
+
+      return response.json()
+    },
+    staleTime: 60 * 1000, // 1 minute
+  })
+}
+
+// Fetch user car parts (merged car parts + user data)
+export function useUserCarParts(filters?: {
+  season_id?: string
+  rarity?: number
+  series?: number
+  car_part_type?: number
+  search?: string
+  owned_only?: boolean
+  sort_by?: 'name' | 'rarity' | 'series' | 'level' | 'car_part_type'
+  sort_order?: 'asc' | 'desc'
+  page?: number
+  limit?: number
+}) {
+  return useQuery({
+    queryKey: ['user-car-parts', filters],
+    queryFn: async (): Promise<{ data: CarPartView[]; pagination: any }> => {
+      const params = new URLSearchParams()
+
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined) {
+            params.append(key, value.toString())
+          }
+        })
+      }
+
+      const response = await fetch(`${API_BASE}/car-parts/user?${params}`)
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user car parts')
+      }
+
+      return response.json()
+    },
+    staleTime: 30 * 1000, // 30 seconds
   })
 }
 

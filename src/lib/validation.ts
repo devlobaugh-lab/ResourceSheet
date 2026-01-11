@@ -102,6 +102,43 @@ export const userAssetsFiltersSchema = z.object({
   ...paginationSchema.shape,
 })
 
+// Drivers schemas
+export const driversFiltersSchema = z.object({
+  season_id: uuidSchema.optional(),
+  rarity: z.number().int().optional(),
+  series: z.number().int().optional(),
+  search: z.string().optional(),
+  owned_only: z.boolean().default(false),
+  sort_by: z.enum(['name', 'rarity', 'series', 'level']).default('name'),
+  sort_order: z.enum(['asc', 'desc']).default('asc'),
+  ...paginationSchema.shape,
+})
+
+// Car Parts schemas
+export const carPartsFiltersSchema = z.object({
+  season_id: uuidSchema.optional(),
+  rarity: z.number().int().optional(),
+  series: z.number().int().optional(),
+  car_part_type: z.number().int().optional(),
+  search: z.string().optional(),
+  owned_only: z.boolean().default(false),
+  sort_by: z.enum(['name', 'rarity', 'series', 'level', 'car_part_type']).default('name'),
+  sort_order: z.enum(['asc', 'desc']).default('asc'),
+  ...paginationSchema.shape,
+})
+
+// Boosts schemas
+export const boostsFiltersSchema = z.object({
+  season_id: uuidSchema.optional(),
+  rarity: z.number().int().optional(),
+  series: z.number().int().optional(),
+  search: z.string().optional(),
+  owned_only: z.boolean().default(false),
+  sort_by: z.enum(['name', 'rarity', 'series', 'level', 'boost_type']).default('name'),
+  sort_order: z.enum(['asc', 'desc']).default('asc'),
+  ...paginationSchema.shape,
+})
+
 // Export all schemas
 export const schemas = {
   // Catalog Items
