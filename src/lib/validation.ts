@@ -105,26 +105,28 @@ export const userAssetsFiltersSchema = z.object({
 // Drivers schemas
 export const driversFiltersSchema = z.object({
   season_id: uuidSchema.optional(),
-  rarity: z.number().int().optional(),
-  series: z.number().int().optional(),
+  rarity: z.union([z.number().int(), z.string().regex(/^\d+$/).transform(val => parseInt(val, 10))]).optional(),
+  series: z.union([z.number().int(), z.string().regex(/^\d+$/).transform(val => parseInt(val, 10))]).optional(),
   search: z.string().optional(),
-  owned_only: z.boolean().default(false),
+  owned_only: z.union([z.boolean(), z.string().transform(val => val === 'true')]).default(false),
   sort_by: z.enum(['name', 'rarity', 'series', 'level']).default('name'),
   sort_order: z.enum(['asc', 'desc']).default('asc'),
-  ...paginationSchema.shape,
+  page: z.union([z.number().int().positive(), z.string().regex(/^\d+$/).transform(val => parseInt(val, 10))]).default(1),
+  limit: z.union([z.number().int().positive().max(100), z.string().regex(/^\d+$/).transform(val => parseInt(val, 10))]).default(20),
 })
 
 // Car Parts schemas
 export const carPartsFiltersSchema = z.object({
   season_id: uuidSchema.optional(),
-  rarity: z.number().int().optional(),
-  series: z.number().int().optional(),
-  car_part_type: z.number().int().optional(),
+  rarity: z.union([z.number().int(), z.string().regex(/^\d+$/).transform(val => parseInt(val, 10))]).optional(),
+  series: z.union([z.number().int(), z.string().regex(/^\d+$/).transform(val => parseInt(val, 10))]).optional(),
+  car_part_type: z.union([z.number().int(), z.string().regex(/^\d+$/).transform(val => parseInt(val, 10))]).optional(),
   search: z.string().optional(),
-  owned_only: z.boolean().default(false),
+  owned_only: z.union([z.boolean(), z.string().transform(val => val === 'true')]).default(false),
   sort_by: z.enum(['name', 'rarity', 'series', 'level', 'car_part_type']).default('name'),
   sort_order: z.enum(['asc', 'desc']).default('asc'),
-  ...paginationSchema.shape,
+  page: z.union([z.number().int().positive(), z.string().regex(/^\d+$/).transform(val => parseInt(val, 10))]).default(1),
+  limit: z.union([z.number().int().positive().max(100), z.string().regex(/^\d+$/).transform(val => parseInt(val, 10))]).default(20),
 })
 
 // Boosts schemas
