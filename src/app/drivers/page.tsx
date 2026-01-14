@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import { DataGrid } from '@/components/DataGrid'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
-import { useUserDrivers } from '@/hooks/useApi'
+import { useDrivers } from '@/hooks/useApi'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function DriversPage() {
-  const { data: driversResponse, isLoading, error } = useUserDrivers({
+  const { data: driversResponse, isLoading, error } = useDrivers({
     page: 1,
     limit: 100
   })

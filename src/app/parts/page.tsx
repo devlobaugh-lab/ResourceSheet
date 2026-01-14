@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import { DataGrid } from '@/components/DataGrid'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
-import { useUserCarParts } from '@/hooks/useApi'
+import { useCarParts } from '@/hooks/useApi'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function PartsPage() {
-  const { data: carPartsResponse, isLoading, error } = useUserCarParts({
+  const { data: carPartsResponse, isLoading, error } = useCarParts({
     page: 1,
     limit: 100
   })
