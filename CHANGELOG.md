@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Boost Custom Naming Feature**
+  - **Database Schema**: Created `boost_custom_names` table with unique constraints
+  - **API Endpoints**: `GET/PUT/DELETE /api/boosts/[id]/custom-name` with full validation
+  - **Admin Authentication**: Proper Supabase Auth integration with admin role checking
+  - **Inline Editing**: Click-to-edit boost names with real-time validation
+  - **Character Validation**: A-Z, a-z, 0-9, hyphens, periods only (64 char limit)
+  - **Duplicate Prevention**: Database-level constraints prevent duplicate custom names
+  - **Fallback Logic**: `custom_name || icon || name` display hierarchy
+  - **UI Integration**: Seamless integration with existing DataGrid component
+  - **Real-time Updates**: Immediate UI refresh after successful name changes
+  - **Admin Controls**: Only admin users (thomas.lobaugh@gmail.com) can edit names
+
 - **Spreadsheet-Style Data Grid UI**
   - Created new `DataGrid` component to replace card-based `AssetGrid`
   - Implemented spreadsheet-style table layout for drivers, parts, and boosts
@@ -51,6 +63,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Compare Page Enhancements**
   - **Authentication**: Added sign-in requirement for item comparison functionality
   - **Consistent UI**: Updated login prompt to match dashboard design
+
+- **Boosts Page Major Improvements**
+  - **Removed Boost Type Column**: Eliminated the 'boost type' column as requested
+  - **Removed DRS Tier Column**: Completely removed DRS tier values and column
+  - **Fixed Column Ordering**: Reordered boost columns to: Overtake, Defend, Corners, Tyre Use, Power Unit, Speed, Pit Stop, Race Start
+  - **Value Display**: Changed boost stat values to display `value * 5` instead of raw tier values
+  - **Color Coding**: Added tier-based color coding (1=blue, 2=green, 3=yellow, 4=orange, 5=red) for values > 0
+  - **Icon Display**: Changed name column to display boost icon string instead of name string for boosts
 
 - **UI Consistency Improvements**
   - **Login Prompts**: Standardized all sign-in required messages to use professional Card design

@@ -11,11 +11,16 @@ import { useAuth } from '@/components/auth/AuthContext'
 import Link from 'next/link'
 
 function AuthenticatedBoostsPage() {
-  const { data: boostsResponse, isLoading, error } = useBoosts({
+  const { data: boostsResponse, isLoading, error, refetch } = useBoosts({
     page: 1,
     limit: 100
   })
-  const boosts = boostsResponse?.data || []
+
+  // Transform the boosts data to flatten custom_name from boost_custom_names
+  const boosts = (boostsResponse?.data || []).map((boost: any) => ({
+    ...boost,
+    custom_name: boost.boost_custom_names?.custom_name || null
+  }))
 
   return (
     <div className="space-y-6">
@@ -40,6 +45,7 @@ function AuthenticatedBoostsPage() {
             showFilters={true}
             showSearch={true}
             showCompareButton={true}
+            onBoostNameChange={refetch}
           />
         )}
       </ErrorBoundary>
