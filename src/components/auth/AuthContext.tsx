@@ -19,19 +19,14 @@ const supabase = createClient(
       storage: {
         getItem: (key: string) => {
           if (typeof window === 'undefined') return null
-          console.log('🔍 Supabase getting from localStorage:', key)
-          const value = window.localStorage.getItem(key)
-          console.log('🔍 Retrieved value:', value ? 'present' : 'null')
-          return value
+          return window.localStorage.getItem(key)
         },
         setItem: (key: string, value: string) => {
           if (typeof window === 'undefined') return
-          console.log('💾 Supabase setting localStorage:', key, value ? 'present' : 'null')
           window.localStorage.setItem(key, value)
         },
         removeItem: (key: string) => {
           if (typeof window === 'undefined') return
-          console.log('🗑️ Supabase removing from localStorage:', key)
           window.localStorage.removeItem(key)
         }
       }
@@ -57,10 +52,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔄 AuthContext: Loading initial session...')
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('🔄 AuthContext: Initial session loaded:', { hasSession: !!session, userId: session?.user?.id })
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -70,7 +63,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('🔄 AuthContext: Auth state changed:', _event, { hasSession: !!session, userId: session?.user?.id })
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
