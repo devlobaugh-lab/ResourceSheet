@@ -3,11 +3,15 @@
 import { useState } from 'react'
 import { DataGrid } from '@/components/DataGrid'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
-import { useDrivers } from '@/hooks/useApi'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { useUserDrivers, useDrivers } from '@/hooks/useApi'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { useAuth } from '@/components/auth/AuthContext'
+import Link from 'next/link'
 
-export default function DriversPage() {
-  const { data: driversResponse, isLoading, error } = useDrivers({
+function AuthenticatedDriversPage() {
+  const { data: driversResponse, isLoading, error } = useUserDrivers({
     page: 1,
     limit: 100
   })
@@ -15,15 +19,6 @@ export default function DriversPage() {
 
   return (
     <div className="space-y-6">
-      {/* <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Drivers</h1>
-        <p className="text-gray-600 mt-1">
-          {isLoading ? 'Loading...' : `${drivers.length} drivers available`}
-        </p>
-        </div>
-      </div> */}
-
       <ErrorBoundary
         fallback={
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
@@ -39,7 +34,7 @@ export default function DriversPage() {
           </div>
         ) : (
           <DataGrid
-            items={drivers}
+            drivers={drivers}
             title="Drivers"
             gridType="drivers"
             showFilters={true}
@@ -50,4 +45,46 @@ export default function DriversPage() {
       </ErrorBoundary>
     </div>
   )
+}
+
+function LoginPrompt() {
+  return (
+    <div className="text-center py-12">
+      <Card className="p-8 max-w-md mx-auto">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Sign in Required</h2>
+        <p className="text-gray-600 mb-6">
+          Please sign in to view and manage your driver collection.
+        </p>
+        <div className="flex justify-center space-x-4">
+          <Link href="/auth/login">
+            <Button variant="primary">Sign In</Button>
+          </Link>
+          <Link href="/auth/register">
+            <Button variant="outline">Create Account</Button>
+          </Link>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+export default function DriversPage() {
+  const { user, loading: authLoading } = useAuth()
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="space-y-6">
+        <SkeletonGrid count={8} />
+      </div>
+    )
+  }
+
+  // Show login prompt if not authenticated
+  if (!user) {
+    return <LoginPrompt />
+  }
+
+  // Show authenticated drivers page if user is logged in
+  return <AuthenticatedDriversPage />
 }

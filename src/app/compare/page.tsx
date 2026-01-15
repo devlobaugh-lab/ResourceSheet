@@ -10,9 +10,9 @@ import { useUserAssets } from '@/hooks/useApi'
 import { useAuth } from '@/components/auth/AuthContext'
 import { UserAssetView } from '@/types/database'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import Link from 'next/link'
 
-export default function ComparePage() {
-  const { user } = useAuth()
+function AuthenticatedComparePage() {
   const { data: assetsResponse, isLoading } = useUserAssets()
   const assets = assetsResponse?.data || []
   const [compareItems, setCompareItems] = useState<UserAssetView[]>([])
@@ -198,4 +198,46 @@ export default function ComparePage() {
       </div>
     </ErrorBoundary>
   )
+}
+
+function LoginPrompt() {
+  return (
+    <div className="text-center py-12">
+      <Card className="p-8 max-w-md mx-auto">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Sign in Required</h2>
+        <p className="text-gray-600 mb-6">
+          Please sign in to compare and analyze your collection items.
+        </p>
+        <div className="flex justify-center space-x-4">
+          <Link href="/auth/login">
+            <Button variant="primary">Sign In</Button>
+          </Link>
+          <Link href="/auth/register">
+            <Button variant="outline">Create Account</Button>
+          </Link>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+export default function ComparePage() {
+  const { user, loading: authLoading } = useAuth()
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="space-y-6">
+        <SkeletonGrid count={8} />
+      </div>
+    )
+  }
+
+  // Show login prompt if not authenticated
+  if (!user) {
+    return <LoginPrompt />
+  }
+
+  // Show authenticated compare page if user is logged in
+  return <AuthenticatedComparePage />
 }

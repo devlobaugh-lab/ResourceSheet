@@ -7,7 +7,7 @@ import { User, Session } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
-// Client-side supabase client
+// Client-side supabase client with explicit storage configuration
 const supabase = createClient(
   supabaseUrl,
   supabaseAnonKey,
@@ -15,7 +15,26 @@ const supabase = createClient(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: true,
+      storage: {
+        getItem: (key: string) => {
+          if (typeof window === 'undefined') return null
+          console.log('🔍 Supabase getting from localStorage:', key)
+          const value = window.localStorage.getItem(key)
+          console.log('🔍 Retrieved value:', value ? 'present' : 'null')
+          return value
+        },
+        setItem: (key: string, value: string) => {
+          if (typeof window === 'undefined') return
+          console.log('💾 Supabase setting localStorage:', key, value ? 'present' : 'null')
+          window.localStorage.setItem(key, value)
+        },
+        removeItem: (key: string) => {
+          if (typeof window === 'undefined') return
+          console.log('🗑️ Supabase removing from localStorage:', key)
+          window.localStorage.removeItem(key)
+        }
+      }
     }
   }
 )
@@ -38,8 +57,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🔄 AuthContext: Loading initial session...')
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('🔄 AuthContext: Initial session loaded:', { hasSession: !!session, userId: session?.user?.id })
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -49,19 +70,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('🔄 AuthContext: Auth state changed:', _event, { hasSession: !!session, userId: session?.user?.id })
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase]);
+  }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    console.log('🔐 Attempting sign in for:', email)
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    console.log('🔐 Sign in result:', { hasUser: !!data.user, hasSession: !!data.session, error: error?.message })
+
+    if (data.session) {
+      console.log('🔐 Session created:', {
+        access_token: data.session.access_token ? 'present' : 'missing',
+        refresh_token: data.session.refresh_token ? 'present' : 'missing',
+        expires_at: data.session.expires_at
+      })
+    }
+
     return { error: error ? new Error(error.message) : null };
   };
 

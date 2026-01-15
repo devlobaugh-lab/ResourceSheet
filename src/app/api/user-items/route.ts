@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
+import { authProvider } from '@/lib/auth'
 import { createUserItemSchema, updateUserItemSchema } from '@/lib/validation'
 
 // GET /api/user-items - Get user's items
 export async function GET(request: NextRequest) {
+  console.log('📡 User items API called')
+
+  // Debug: Check authorization header
+  const authHeader = request.headers.get('authorization')
+  console.log('📡 Auth header:', authHeader ? `${authHeader.substring(0, 20)}...` : 'none')
+
   try {
-    // Verify authentication
-    const supabase = createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Verify authentication using auth provider
+    const { user, error: authError } = await authProvider.getUser(request)
+    console.log('📡 Auth provider result:', { hasUser: !!user, userId: user?.id, error: authError?.message })
 
     if (authError || !user) {
       return NextResponse.json(
@@ -71,11 +78,13 @@ export async function GET(request: NextRequest) {
 
 // POST /api/user-items - Create new user item
 export async function POST(request: NextRequest) {
+  console.log('📡 User items POST API called')
+
   try {
-    // Verify authentication
-    const supabase = createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+    // Verify authentication using auth provider
+    const { user, error: authError } = await authProvider.getUser(request)
+    console.log('📡 POST Auth provider result:', { hasUser: !!user, userId: user?.id, error: authError?.message })
+
     if (authError || !user) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },

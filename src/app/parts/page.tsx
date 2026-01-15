@@ -3,11 +3,15 @@
 import { useState } from 'react'
 import { DataGrid } from '@/components/DataGrid'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
-import { useCarParts } from '@/hooks/useApi'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { useUserCarParts } from '@/hooks/useApi'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { useAuth } from '@/components/auth/AuthContext'
+import Link from 'next/link'
 
-export default function PartsPage() {
-  const { data: carPartsResponse, isLoading, error } = useCarParts({
+function AuthenticatedPartsPage() {
+  const { data: carPartsResponse, isLoading, error } = useUserCarParts({
     page: 1,
     limit: 100
   })
@@ -15,15 +19,6 @@ export default function PartsPage() {
 
   return (
     <div className="space-y-6">
-      {/* <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Car Parts</h1>
-        <p className="text-gray-600 mt-1">
-          {isLoading ? 'Loading...' : `${carParts.length} car parts available`}
-        </p>
-        </div>
-      </div> */}
-
       <ErrorBoundary
         fallback={
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
@@ -39,9 +34,9 @@ export default function PartsPage() {
           </div>
         ) : (
           <DataGrid
-            items={carParts}
+            carParts={carParts}
             title="Car Parts"
-            gridType="car-parts"
+            gridType="parts"
             showFilters={true}
             showSearch={true}
             showCompareButton={true}
@@ -50,4 +45,46 @@ export default function PartsPage() {
       </ErrorBoundary>
     </div>
   )
+}
+
+function LoginPrompt() {
+  return (
+    <div className="text-center py-12">
+      <Card className="p-8 max-w-md mx-auto">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Sign in Required</h2>
+        <p className="text-gray-600 mb-6">
+          Please sign in to view and manage your car parts collection.
+        </p>
+        <div className="flex justify-center space-x-4">
+          <Link href="/auth/login">
+            <Button variant="primary">Sign In</Button>
+          </Link>
+          <Link href="/auth/register">
+            <Button variant="outline">Create Account</Button>
+          </Link>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+export default function PartsPage() {
+  const { user, loading: authLoading } = useAuth()
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="space-y-6">
+        <SkeletonGrid count={8} />
+      </div>
+    )
+  }
+
+  // Show login prompt if not authenticated
+  if (!user) {
+    return <LoginPrompt />
+  }
+
+  // Show authenticated parts page if user is logged in
+  return <AuthenticatedPartsPage />
 }

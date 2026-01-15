@@ -4,6 +4,72 @@ import type { UserAssetView, CatalogItem, UserItem, Boost, Season, DriverView, C
 // API base URL
 const API_BASE = '/api'
 
+// Helper function to get auth headers
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+
+  // Try to get JWT token from Supabase's session storage
+  if (typeof window !== 'undefined') {
+    try {
+      // Log all localStorage keys to see what Supabase is storing
+      const allKeys = Object.keys(localStorage)
+      console.log('🔍 All localStorage keys:', allKeys)
+
+      // Look for keys that might contain session data
+      const sessionKeys = allKeys.filter(key =>
+        key.includes('supabase') ||
+        key.includes('sb-') ||
+        key.includes('auth') ||
+        key.includes('session')
+      )
+      console.log('🔍 Potential session keys:', sessionKeys)
+
+      for (const key of sessionKeys) {
+        const data = localStorage.getItem(key)
+        if (data) {
+          try {
+            const parsed = JSON.parse(data)
+            console.log(`🔍 Key "${key}" contains:`, typeof parsed, parsed)
+
+            // Try different possible token locations in the session object
+            const possibleTokens = [
+              parsed.access_token,
+              parsed.session?.access_token,
+              parsed.user?.access_token,
+              parsed.token,
+              parsed.jwt
+            ]
+
+            for (const token of possibleTokens) {
+              if (token && typeof token === 'string') {
+                headers['Authorization'] = `Bearer ${token}`
+                console.log(`✅ Found access token in key: ${key}`)
+                return headers
+              }
+            }
+          } catch (e) {
+            // If it's not JSON, maybe it's a direct token
+            if (data && data.length > 10) {
+              console.log(`🔍 Key "${key}" contains raw string, length: ${data.length}`)
+              headers['Authorization'] = `Bearer ${data}`
+              console.log(`✅ Using raw string as token from key: ${key}`)
+              return headers
+            }
+          }
+        }
+      }
+
+      console.log('❌ No access token found in localStorage')
+    } catch (error) {
+      console.warn('Failed to get auth token from localStorage:', error)
+    }
+  }
+
+  return headers
+}
+
 // Fetch drivers
 export function useDrivers(filters?: {
   season_id?: string
@@ -63,7 +129,9 @@ export function useUserDrivers(filters?: {
         })
       }
 
-      const response = await fetch(`${API_BASE}/drivers/user?${params}`)
+      const response = await fetch(`${API_BASE}/drivers/user?${params}`, {
+        headers: getAuthHeaders()
+      })
 
       if (!response.ok) {
         throw new Error('Failed to fetch user drivers')
@@ -101,7 +169,9 @@ export function useUserAssets(filters?: {
         })
       }
 
-      const response = await fetch(`${API_BASE}/user-assets?${params}`)
+      const response = await fetch(`${API_BASE}/user-assets?${params}`, {
+        headers: getAuthHeaders()
+      })
 
       if (!response.ok) {
         throw new Error('Failed to fetch user assets')
@@ -158,12 +228,14 @@ export function useUserItems() {
   return useQuery({
     queryKey: ['user-items'],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE}/user-items`)
-      
+      const response = await fetch(`${API_BASE}/user-items`, {
+        headers: getAuthHeaders()
+      })
+
       if (!response.ok) {
         throw new Error('Failed to fetch user items')
       }
-      
+
       return response.json()
     },
     staleTime: 30 * 1000,
@@ -231,7 +303,9 @@ export function useUserCarParts(filters?: {
         })
       }
 
-      const response = await fetch(`${API_BASE}/car-parts/user?${params}`)
+      const response = await fetch(`${API_BASE}/car-parts/user?${params}`, {
+        headers: getAuthHeaders()
+      })
 
       if (!response.ok) {
         throw new Error('Failed to fetch user car parts')
@@ -353,9 +427,7 @@ export function useUpdateUserItem() {
     mutationFn: async ({ id, data }: { id: string; data: { level?: number; card_count?: number } }) => {
       const response = await fetch(`${API_BASE}/user-items/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       })
 
@@ -381,9 +453,7 @@ export function useAddUserItem() {
     mutationFn: async (data: { catalog_item_id: string; level?: number; card_count?: number }) => {
       const response = await fetch(`${API_BASE}/user-items`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       })
 
@@ -409,6 +479,7 @@ export function useDeleteUserItem() {
     mutationFn: async (id: string) => {
       const response = await fetch(`${API_BASE}/user-items/${id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders()
       })
 
       if (!response.ok) {

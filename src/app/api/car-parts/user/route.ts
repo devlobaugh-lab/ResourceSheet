@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
+import { authProvider } from '@/lib/auth'
 import { carPartsFiltersSchema } from '@/lib/validation'
 
 // GET /api/car-parts/user - Get user's car parts with ownership data
 export async function GET(request: NextRequest) {
+  console.log('🔧 Car parts user API called')
+
+  // Debug: Check authorization header
+  const authHeader = request.headers.get('authorization')
+  console.log('🔧 Auth header present:', !!authHeader)
+
   try {
-    // Verify authentication
-    const supabase = createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Verify authentication using auth provider
+    const { user, error: authError } = await authProvider.getUser(request)
+    console.log('🔧 Auth provider result:', { hasUser: !!user, userId: user?.id, error: authError?.message })
 
     if (authError || !user) {
       return NextResponse.json(
