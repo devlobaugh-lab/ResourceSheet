@@ -125,15 +125,31 @@ export function DataGrid({
 
   // Helper function to get stat value for sorting
   const getStatValueForSort = (item: FilterableItem, statName: string): number => {
+    let userLevel = 0;
+    if ('is_driver' in item && item.is_driver) {
+      userLevel = (item as DriverView).level;
+    } else if ('is_car_part' in item && item.is_car_part) {
+      userLevel = (item as CarPartView).level;
+    } else if ('is_asset' in item && item.is_asset) {
+      userLevel = (item as UserAssetView).level;
+    }
+
+    // Level 0 should show all 0 stats
+    if (userLevel === 0) {
+      return 0;
+    }
+
+    let stats: Array<{ [key: string]: number }> | null = null;
     if ('is_driver' in item && item.is_driver && (item as DriverView).stats_per_level) {
-      const stats = (item as DriverView).stats_per_level as Array<{ [key: string]: number }>;
-      return stats.length > 0 ? stats[0][statName] || 0 : 0;
+      stats = (item as DriverView).stats_per_level;
     } else if ('is_car_part' in item && item.is_car_part && (item as CarPartView).stats_per_level) {
-      const stats = (item as CarPartView).stats_per_level as Array<{ [key: string]: number }>;
-      return stats.length > 0 ? stats[0][statName] || 0 : 0;
+      stats = (item as CarPartView).stats_per_level;
     } else if ('is_asset' in item && item.is_asset && (item as UserAssetView).stats_per_level) {
-      const stats = (item as UserAssetView).stats_per_level as Array<{ [key: string]: number }>;
-      return stats.length > 0 ? stats[0][statName] || 0 : 0;
+      stats = (item as UserAssetView).stats_per_level;
+    }
+
+    if (stats && stats.length > userLevel - 1 && stats[userLevel - 1][statName] !== undefined) {
+      return stats[userLevel - 1][statName];
     }
     return 0;
   };
@@ -589,21 +605,31 @@ export function DataGrid({
 
               // Get stats for drivers/parts
               const getStatValue = (statName: string): number => {
+                let userLevel = 0;
+                if (isAsset) {
+                  userLevel = (catalogItem as UserAssetView).level;
+                } else if (isDriver) {
+                  userLevel = (catalogItem as DriverView).level;
+                } else if (isCarPart) {
+                  userLevel = (catalogItem as CarPartView).level;
+                }
+
+                // Level 0 should show all 0 stats
+                if (userLevel === 0) {
+                  return 0;
+                }
+
+                let stats: Array<{ [key: string]: number }> | null = null;
                 if (isAsset && (catalogItem as UserAssetView).stats_per_level && Array.isArray((catalogItem as UserAssetView).stats_per_level)) {
-                  const stats = (catalogItem as UserAssetView).stats_per_level as Array<{ [key: string]: number }>;
-                  if (stats.length > 0 && stats[0][statName] !== undefined) {
-                    return stats[0][statName];
-                  }
+                  stats = (catalogItem as UserAssetView).stats_per_level;
                 } else if (isDriver && (catalogItem as DriverView).stats_per_level && Array.isArray((catalogItem as DriverView).stats_per_level)) {
-                  const stats = (catalogItem as DriverView).stats_per_level as Array<{ [key: string]: number }>;
-                  if (stats.length > 0 && stats[0][statName] !== undefined) {
-                    return stats[0][statName];
-                  }
+                  stats = (catalogItem as DriverView).stats_per_level;
                 } else if (isCarPart && (catalogItem as CarPartView).stats_per_level && Array.isArray((catalogItem as CarPartView).stats_per_level)) {
-                  const stats = (catalogItem as CarPartView).stats_per_level as Array<{ [key: string]: number }>;
-                  if (stats.length > 0 && stats[0][statName] !== undefined) {
-                    return stats[0][statName];
-                  }
+                  stats = (catalogItem as CarPartView).stats_per_level;
+                }
+
+                if (stats && stats.length > userLevel - 1 && stats[userLevel - 1][statName] !== undefined) {
+                  return stats[userLevel - 1][statName];
                 }
                 return 0;
               };

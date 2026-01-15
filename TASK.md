@@ -167,6 +167,14 @@
 - [x] Test full functionality including edge cases and error handling
 - [x] Update CHANGELOG.md and TASK.md with complete implementation details
 
+#### 16. **Level 0 Stats Bug Fix** ✅
+- [x] Identified off-by-one error where drivers and car parts at level 0 showed level 1 stats
+- [x] Fixed `getStatValue` function in DataGrid component to return 0 for level 0 instead of accessing `stats[level - 1]`
+- [x] Fixed `getStatValueForSort` function to properly handle level 0 stats for sorting
+- [x] Updated logic to use `stats[level - 1]` only when level > 0, ensuring level 0 shows all zeros
+- [x] Tested fix ensures level 0 items display correct 0 stats while higher levels show proper stat progression
+- [x] Updated CHANGELOG.md with bug fix details
+
 #### 10. **Deployment Preparation** ⏳
 - [ ] Create deployment checklist
 - [ ] Set up production environment
