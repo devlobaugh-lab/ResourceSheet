@@ -1,15 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 import { z } from 'zod'
-import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 import { userAssetsFiltersSchema } from '@/lib/validation'
 
 // GET /api/user-assets - Get all catalog items with user's ownership data merged
 export async function GET(request: NextRequest) {
   try {
-    // Verify authentication
-    const supabase = createServerSupabaseClient()
+    // Verify authentication using request cookies
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet: any[]) {
+            cookiesToSet.forEach(({ name, value, options }: any) => {
+              request.cookies.set(name, value)
+            })
+          },
+        },
+      }
+    )
+
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+
     if (authError || !user) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },

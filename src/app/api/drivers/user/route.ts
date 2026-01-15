@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
+import { authProvider } from '@/lib/auth'
 import { driversFiltersSchema } from '@/lib/validation'
 
 // GET /api/drivers/user - Get user's drivers with ownership data
 export async function GET(request: NextRequest) {
   try {
-    // Verify authentication
-    const supabase = createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Verify authentication using auth provider
+    const { user, error: authError } = await authProvider.getUser(request)
 
     if (authError || !user) {
       return NextResponse.json(

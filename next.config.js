@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['@supabase/supabase-js']
-  },
+  // experimental: {
+  //   serverComponentsExternalPackages: ['@supabase/supabase-js']
+  // },
   images: {
     domains: ['via.placeholder.com'],
     remotePatterns: [

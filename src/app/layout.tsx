@@ -5,6 +5,7 @@ import './globals.css'
 import { Providers } from './providers'
 import { Button } from '@/components/ui/Button'
 
+
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
@@ -149,10 +150,11 @@ export default function RootLayout({
           <div className="min-h-screen bg-gray-50">
             <Navigation />
             <main>
-              <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto py-6 px-4 sm:px-6 lg:px-8">
                 {children}
               </div>
             </main>
+
           </div>
         </Providers>
       </body>
