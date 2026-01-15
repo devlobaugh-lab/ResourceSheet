@@ -8,10 +8,13 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     
-    // Build query
+    // Build query with custom names
     let query = supabaseAdmin
       .from('boosts')
-      .select('*', { count: 'exact' })
+      .select(`
+        *,
+        boost_custom_names!left(custom_name)
+      `, { count: 'exact' })
       .order('name', { ascending: true })
     
     // Apply filters

@@ -2,7 +2,13 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
-import { UserAssetView, CatalogItem, Boost, DriverView, CarPartView } from '@/types/database';
+import { BoostNameEditor } from '@/components/BoostNameEditor'
+import { UserAssetView, CatalogItem, Boost, BoostWithCustomName, DriverView, CarPartView } from '@/types/database';
+
+// Extended types for unified filtering
+interface BoostItem extends BoostWithCustomName {
+  is_boost: true;
+}
 import { cn, formatNumber } from '@/lib/utils';
 
 interface DataGridProps {
@@ -22,6 +28,7 @@ interface DataGridProps {
   showSearch?: boolean;
   showCompareButton?: boolean;
   gridType?: 'drivers' | 'parts' | 'boosts' | 'car-parts';
+  onBoostNameChange?: () => void;
 }
 
 interface FilterState {
@@ -42,7 +49,7 @@ interface CatalogItemItem extends CatalogItem {
   is_asset: false;
 }
 
-interface BoostItem extends Boost {
+interface BoostItem extends BoostWithCustomName {
   is_boost: true;
 }
 
@@ -64,6 +71,7 @@ export function DataGrid({
   showSearch = true,
   showCompareButton = true,
   gridType = 'drivers',
+  onBoostNameChange,
 }: DataGridProps) {
   const [filters, setFilters] = useState<FilterState>({
     search: '',
@@ -297,6 +305,15 @@ export function DataGrid({
            rarity === 5 ? "bg-red-300" : "bg-gray-300";
   };
 
+  // Get boost value background color based on tier (1=blue, 2=green, 3=yellow, 4=orange, 5=red)
+  const getBoostValueColor = (tierValue: number): string => {
+    return tierValue === 1 ? "bg-blue-200" :
+           tierValue === 2 ? "bg-green-200" :
+           tierValue === 3 ? "bg-yellow-200" :
+           tierValue === 4 ? "bg-orange-200" :
+           tierValue === 5 ? "bg-red-300" : "bg-gray-50";
+  };
+
   // Get columns based on grid type
   const getColumns = () => {
     const baseColumns = [
@@ -320,9 +337,7 @@ export function DataGrid({
       );
     }
 
-    if (gridType === 'boosts') {
-      baseColumns.push({ key: 'boost_type', label: 'Boost Type', sortable: true });
-    }
+    // Removed boost_type column as requested
 
     // Add cards column for non-drivers if we have asset data
     if (assets.length > 0 && gridType !== 'drivers') {
@@ -355,19 +370,17 @@ export function DataGrid({
     }
 
     if (gridType === 'boosts') {
-      // Add boost-specific columns
+      // Add boost-specific columns - reordered and DRS removed
       baseColumns.push(
         { key: 'overtake_tier', label: 'Overtake', sortable: true },
         { key: 'block_tier', label: 'Defend', sortable: true },
-        { key: 'race_start_tier', label: 'Race Start', sortable: true },
-        // { key: 'qualifying_tier', label: 'Qualifying', sortable: true },
-        { key: 'tyre_use_tier', label: 'Tyre Use', sortable: true },
-        { key: 'speed_tier', label: 'Speed', sortable: true },
         { key: 'corners_tier', label: 'Corners', sortable: true },
+        { key: 'tyre_use_tier', label: 'Tyre Use', sortable: true },
         { key: 'power_unit_tier', label: 'Power Unit', sortable: true },
-        // { key: 'reliability_tier', label: 'Reliability', sortable: true },
+        { key: 'speed_tier', label: 'Speed', sortable: true },
         { key: 'pit_stop_time_tier', label: 'Pit Stop', sortable: true },
-        { key: 'drs_tier', label: 'DRS', sortable: true },
+        { key: 'race_start_tier', label: 'Race Start', sortable: true },
+        // Removed DRS tier column as requested
       );
     }
 
@@ -529,7 +542,7 @@ export function DataGrid({
                   key={column.key}
                   scope="col"
                   className={cn(
-                    'px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider',
+                    'px-3 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider',
                     column.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
                   )}
                   onClick={() => {
@@ -612,17 +625,34 @@ export function DataGrid({
                     isInComparison(catalogItem as CatalogItem) && 'bg-blue-50'
                   )}
                 >
-                  {/* Name Column with rarity background */}
-                  <td className={cn("px-3 py-2 whitespace-nowrap", getRarityBackground(catalogItem.rarity))}>
-                    <div className="flex items-center">
-                      <div className="text-sm font-medium text-gray-900">
-                        {catalogItem.name}
+                  {/* Name Column with rarity background (except for boosts) */}
+                  <td className={cn("px-3 py-1 whitespace-nowrap", gridType !== 'boosts' && getRarityBackground(catalogItem.rarity))}>
+                    {gridType === 'boosts' ? (
+                      <BoostNameEditor
+                        boostId={catalogItem.id}
+                        currentName={catalogItem.name}
+                        customName={(catalogItem as BoostItem).custom_name}
+                        onNameChange={(newName) => {
+                          // Update the boost's custom_name in the local state
+                          if (isBoost) {
+                            const boostItem = item as BoostItem;
+                            boostItem.custom_name = newName;
+                            // Trigger refetch to update the UI
+                            onBoostNameChange?.();
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="flex items-center">
+                        <div className="text-sm font-medium text-gray-900">
+                          {catalogItem.name}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </td>
                   {/* Rarity Column with background color */}
                   {gridType !== 'boosts' && (
-                  <td className={cn("px-3 py-2 whitespace-nowrap", getRarityBackground(catalogItem.rarity))}>
+                  <td className={cn("px-3 py-1 whitespace-nowrap", getRarityBackground(catalogItem.rarity))}>
                     <div className="text-sm font-medium text-gray-900">
                       {getRarityDisplay(catalogItem.rarity)}
                     </div>
@@ -631,7 +661,7 @@ export function DataGrid({
 
                   {/* User Level Column for Drivers and Parts */}
                   {(gridType === 'drivers' || gridType === 'parts') && (
-                    <td className="px-3 py-2 whitespace-nowrap text-center">
+                    <td className="px-3 py-1 whitespace-nowrap text-center">
                       <div className="text-sm text-gray-900">
                         {isDriver ? (item as DriverView).level :
                          isCarPart ? (item as CarPartView).level : 0}
@@ -641,7 +671,7 @@ export function DataGrid({
 
                   {/* Bonus Column for Drivers and Parts - always show when we have user data */}
                   {(gridType === 'drivers' || gridType === 'parts') && (
-                    <td className="px-3 py-2 whitespace-nowrap text-center">
+                    <td className="px-3 py-1 whitespace-nowrap text-center">
                       <input
                         type="checkbox"
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
@@ -652,7 +682,7 @@ export function DataGrid({
 
                   {/* Part Type Column for Parts */}
                   {gridType === 'parts' && (
-                    <td className="px-3 py-2 whitespace-nowrap text-center">
+                    <td className="px-3 py-1 whitespace-nowrap text-center">
                       <div className="text-sm text-gray-900">
                         {getCarPartTypeDisplay((catalogItem as CarPartView).car_part_type)}
                       </div>
@@ -661,7 +691,7 @@ export function DataGrid({
 
                   {/* Cards Column (for non-drivers if asset data available) */}
                   {assets.length > 0 && gridType !== 'drivers' && (
-                    <td className="px-3 py-2 whitespace-nowrap text-center">
+                    <td className="px-3 py-1 whitespace-nowrap text-center">
                       <div className="text-sm text-gray-900">
                         {isAsset ? (item as UserAssetView).card_count : 'N/A'}
                       </div>
@@ -671,27 +701,27 @@ export function DataGrid({
                   {/* Stats Columns for Drivers */}
                   {gridType === 'drivers' && (
                     <>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm text-gray-900">{getStatValue('overtaking')}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm text-gray-900">{getStatValue('blocking')}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm text-gray-900">{getStatValue('qualifying')}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm text-gray-900">{getStatValue('raceStart')}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm text-gray-900">{getStatValue('tyreUse')}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm font-medium text-gray-900">
                           {getStatValue('overtaking') + getStatValue('blocking') + getStatValue('qualifying') + getStatValue('tyreUse') + getStatValue('raceStart')}
                         </div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm text-gray-900">{catalogItem.series}</div>
                       </td>
                     </>
@@ -700,30 +730,30 @@ export function DataGrid({
                   {/* Stats Columns for Parts */}
                   {gridType === 'parts' && (
                     <>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm text-gray-900">{getStatValue('speed')}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm text-gray-900">{getStatValue('cornering')}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm text-gray-900">{getStatValue('powerUnit')}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm text-gray-900">{getStatValue('qualifying')}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm text-gray-900">{getStatValue('drs')}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm text-gray-900">{getStatValue('pitStopTime')}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm font-medium text-gray-900">
                           {getStatValue('speed') + getStatValue('cornering') + getStatValue('powerUnit') + getStatValue('qualifying') + getStatValue('drs')}
                         </div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                      <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm text-gray-900">{catalogItem.series}</div>
                       </td>
                     </>
@@ -732,45 +762,52 @@ export function DataGrid({
                   {/* Boost Tier Columns */}
                   {gridType === 'boosts' && (
                     <>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">{getBoostTierValue('overtake_tier')}</div>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('overtake_tier') > 0 && getBoostValueColor(getBoostTierValue('overtake_tier')))}>
+                        <div className="text-sm font-medium">
+                          {getBoostTierValue('overtake_tier') * 5 || ''}
+                        </div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">{getBoostTierValue('block_tier')}</div>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('block_tier') > 0 && getBoostValueColor(getBoostTierValue('block_tier')))}>
+                        <div className="text-sm font-medium">
+                          {getBoostTierValue('block_tier') * 5 || ''}
+                        </div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">{getBoostTierValue('speed_tier')}</div>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('corners_tier') > 0 && getBoostValueColor(getBoostTierValue('corners_tier')))}>
+                        <div className="text-sm font-medium">
+                          {getBoostTierValue('corners_tier') * 5 || ''}
+                        </div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">{getBoostTierValue('corners_tier')}</div>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('tyre_use_tier') > 0 && getBoostValueColor(getBoostTierValue('tyre_use_tier')))}>
+                        <div className="text-sm font-medium">
+                          {getBoostTierValue('tyre_use_tier') * 5 || ''}
+                        </div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">{getBoostTierValue('tyre_use_tier')}</div>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('power_unit_tier') > 0 && getBoostValueColor(getBoostTierValue('power_unit_tier')))}>
+                        <div className="text-sm font-medium">
+                          {getBoostTierValue('power_unit_tier') * 5 || ''}
+                        </div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">{getBoostTierValue('reliability_tier')}</div>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('speed_tier') > 0 && getBoostValueColor(getBoostTierValue('speed_tier')))}>
+                        <div className="text-sm font-medium">
+                          {getBoostTierValue('speed_tier') * 5 || ''}
+                        </div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">{getBoostTierValue('pit_stop_time_tier')}</div>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('pit_stop_time_tier') > 0 && getBoostValueColor(getBoostTierValue('pit_stop_time_tier')))}>
+                        <div className="text-sm font-medium">
+                          {getBoostTierValue('pit_stop_time_tier') * 5 || ''}
+                        </div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">{getBoostTierValue('power_unit_tier')}</div>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('race_start_tier') > 0 && getBoostValueColor(getBoostTierValue('race_start_tier')))}>
+                        <div className="text-sm font-medium">
+                          {getBoostTierValue('race_start_tier') * 5 || ''}
+                        </div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">{getBoostTierValue('race_start_tier')}</div>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">{getBoostTierValue('drs_tier')}</div>
-                      </td>
-                      {/* <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">{catalogItem.series || 'N/A'}</div>
-                      </td> */}
                     </>
                   )}
 
                   {/* Actions Column - only show if there are actions available */}
                   {(onCompare || onAddToCollection || onRemoveFromCollection) && (
-                    <td className="px-3 py-2 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-3 py-1 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
                         {onCompare && (
                           <Button

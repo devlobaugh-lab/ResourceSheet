@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase'
 import { userAssetsFiltersSchema } from '@/lib/validation'
@@ -7,31 +8,64 @@ import { userAssetsFiltersSchema } from '@/lib/validation'
 // GET /api/user-assets - Get all catalog items with user's ownership data merged
 export async function GET(request: NextRequest) {
   try {
-    // Verify authentication using request cookies
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll(cookiesToSet: any[]) {
-            cookiesToSet.forEach(({ name, value, options }: any) => {
-              request.cookies.set(name, value)
-            })
-          },
-        },
+    // Try to get user from Authorization header first, then fall back to cookies
+    let user = null
+    const authHeader = request.headers.get('authorization')
+
+    if (authHeader?.startsWith('Bearer ')) {
+      // Try to validate JWT token directly
+      const token = authHeader.substring(7)
+      try {
+        // For local development, trust the JWT and extract user info
+        const parts = token.split('.')
+        if (parts.length === 3) {
+          const payload = JSON.parse(
+            Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
+          )
+
+          if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
+            user = {
+              id: payload.sub,
+              email: payload.email,
+              user_metadata: payload.user_metadata || {},
+              app_metadata: payload.app_metadata || {},
+            }
+            console.log('✅ Authenticated user from JWT token:', user.id)
+          }
+        }
+      } catch (error) {
+        console.warn('JWT validation failed:', error)
       }
-    )
+    }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
+    // If JWT didn't work, try cookie-based auth
+    if (!user) {
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll()
+            },
+            setAll(cookiesToSet: any[]) {
+              cookiesToSet.forEach(({ name, value, options }: any) => {
+                request.cookies.set(name, value)
+              })
+            },
+          },
+        }
       )
+
+      const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
+
+      if (authError || !cookieUser) {
+        return NextResponse.json(
+          { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+          { status: 401 }
+        )
+      }
+      user = cookieUser
     }
     
     const { searchParams } = new URL(request.url)

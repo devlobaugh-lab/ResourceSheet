@@ -143,6 +143,30 @@
 - [x] Update both column definition order and table cell rendering order
 - [x] Verify change improves stat flow readability
 
+#### 14. **Boosts Page Major Improvements** ✅
+- [x] Remove 'boost type' column completely as validity was questioned
+- [x] Remove DRS tier column and values entirely
+- [x] Fix column ordering: Overtake, Defend, Corners, Tyre Use, Power Unit, Speed, Pit Stop, Race Start
+- [x] Change boost stat values to display `value * 5` instead of raw tier values
+- [x] Add color coding for values > 0: 1=blue, 2=green, 3=yellow, 4=orange, 5=red
+- [x] Change name column to display boost icon string instead of name string
+- [x] Verify BOOST_NAME_1 now shows correct values (Corners, Tyre Use, Power Unit set to 1)
+
+#### 15. **Boost Custom Naming Feature** ✅
+- [x] Create database migration for boost_custom_names table with unique constraints
+- [x] Update TypeScript types (BoostCustomName, BoostView updates)
+- [x] Create API endpoints for custom name CRUD operations with validation
+- [x] Add character validation (A-Z, a-z, 0-9, -, .) and 64 char limit
+- [x] Implement duplicate name prevention with database constraints
+- [x] Update boosts API to include custom names in response with left join
+- [x] Create BoostNameEditor component with inline editing functionality
+- [x] Update DataGrid to display custom names with fallback logic (custom_name || name)
+- [x] Implement click-to-edit functionality in boosts grid with admin-only access
+- [x] Add real-time validation and save/cancel UX with toast notifications
+- [x] Fix authentication issues across all APIs (JWT header + cookie fallback)
+- [x] Test full functionality including edge cases and error handling
+- [x] Update CHANGELOG.md and TASK.md with complete implementation details
+
 #### 10. **Deployment Preparation** ⏳
 - [ ] Create deployment checklist
 - [ ] Set up production environment

@@ -372,6 +372,29 @@ export interface Database {
           updated_at?: string
         }
       }
+      boost_custom_names: {
+        Row: {
+          id: string
+          boost_id: string
+          custom_name: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          boost_id: string
+          custom_name: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          boost_id?: string
+          custom_name?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -399,6 +422,7 @@ export type Profile = Tables<'profiles'>
 export type CatalogItem = Tables<'catalog_items'>
 export type UserItem = Tables<'user_items'>
 export type Boost = Tables<'boosts'>
+export type BoostCustomName = Tables<'boost_custom_names'>
 export type UserBoost = Tables<'user_boosts'>
 export type Driver = Tables<'drivers'>
 export type CarPart = Tables<'car_parts'>
@@ -484,9 +508,17 @@ export interface BoostView {
   boost_stats: any | null
   series: number | null
 
+  // From boost_custom_names (optional custom override)
+  custom_name?: string | null
+
   // From user_boosts (or defaults if not owned)
   level: number
   is_owned: boolean // derived: level > 0
+}
+
+// Extended Boost type for API responses that include custom names from left join
+export interface BoostWithCustomName extends Tables<'boosts'> {
+  custom_name?: string | null
 }
 
 export interface StatLevel {
