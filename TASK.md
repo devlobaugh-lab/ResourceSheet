@@ -138,6 +138,11 @@
 - [x] Always show Bonus column with checkbox for authenticated users
 - [x] Show actual user level values from DriverView instead of "N/A" or 0
 
+#### 13. **Drivers Page Column Order Adjustment** ✅
+- [x] Move "Race Start" column one position left (before "Tyre Use") in drivers DataGrid
+- [x] Update both column definition order and table cell rendering order
+- [x] Verify change improves stat flow readability
+
 #### 10. **Deployment Preparation** ⏳
 - [ ] Create deployment checklist
 - [ ] Set up production environment

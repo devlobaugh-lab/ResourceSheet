@@ -251,7 +251,8 @@ export function DataGrid({
       1: 'Uncommon',
       2: 'Rare',
       3: 'Epic',
-      4: 'Legendary'
+      4: 'Legendary',
+      5: 'Special Edition'
     };
     return rarityMap[rarity] || 'Unknown';
   };
@@ -288,12 +289,12 @@ export function DataGrid({
 
   // Get rarity background color for cells
   const getRarityBackground = (rarity: number): string => {
-    return rarity === 0 ? "bg-gray-100" :
-           rarity === 1 ? "bg-blue-100" :
-           rarity === 2 ? "bg-yellow-100" :
-           rarity === 3 ? "bg-purple-100" :
-           rarity === 4 ? "bg-orange-100" :
-           rarity === 5 ? "bg-red-100" : "bg-gray-100";
+    return rarity === 0 ? "bg-gray-300" :
+           rarity === 1 ? "bg-blue-200" :
+           rarity === 2 ? "bg-orange-300" :
+           rarity === 3 ? "bg-purple-300" :
+           rarity === 4 ? "bg-yellow-300" :
+           rarity === 5 ? "bg-red-300" : "bg-gray-300";
   };
 
   // Get columns based on grid type
@@ -335,8 +336,8 @@ export function DataGrid({
         { key: 'overtaking', label: 'Overtaking', sortable: true },
         { key: 'blocking', label: 'Defending', sortable: true },
         { key: 'qualifying', label: 'Qualifying', sortable: true },
-        { key: 'tyreUse', label: 'Tyre Use', sortable: true },
         { key: 'raceStart', label: 'Race Start', sortable: true },
+        { key: 'tyreUse', label: 'Tyre Use', sortable: true },
         { key: 'total_value', label: 'Total Value', sortable: true }
       );
     }
@@ -441,6 +442,7 @@ export function DataGrid({
                 }))}
               >
                 <option value="">All Rarities</option>
+                <option value="5">Special Edition</option>
                 <option value="4">Legendary</option>
                 <option value="3">Epic</option>
                 <option value="2">Rare</option>
@@ -679,10 +681,10 @@ export function DataGrid({
                         <div className="text-sm text-gray-900">{getStatValue('qualifying')}</div>
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">{getStatValue('tyreUse')}</div>
+                        <div className="text-sm text-gray-900">{getStatValue('raceStart')}</div>
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">{getStatValue('raceStart')}</div>
+                        <div className="text-sm text-gray-900">{getStatValue('tyreUse')}</div>
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap text-center">
                         <div className="text-sm font-medium text-gray-900">

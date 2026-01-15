@@ -58,11 +58,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Navigation**: Maintained responsive navigation across all pages
 
 ### Changed
+  **Global**
+  - Updated driver and part bg colors to be more vivid
+  - Added special Edition Driver Rarity to display and filter
+  - 
 - **Driver List UI**
   - Replaced card-based display with spreadsheet-style data grid
   - Updated `src/app/drivers/page.tsx` to use new `DataGrid` component
   - Maintained all filtering, sorting, and search capabilities
   - Improved data density for better comparison of multiple items
+  - Moved "Race Start" column one position left (before "Tyre Use") for better stat flow
 
 - **Car Parts List UI**
   - Replaced card-based display with spreadsheet-style data grid
