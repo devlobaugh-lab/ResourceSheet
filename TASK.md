@@ -175,6 +175,23 @@
 - [x] Tested fix ensures level 0 items display correct 0 stats while higher levels show proper stat progression
 - [x] Updated CHANGELOG.md with bug fix details
 
+#### 17. **UI Layout Simplification & Dynamic Navigation** ✅
+- [x] Removed most filter controls from DataGrid (rarity, card type, owned, sort dropdowns)
+- [x] Restored column header click-to-sort functionality with visual indicators (↑/↓)
+- [x] Moved search field from DataGrid to page-level header below titles
+- [x] Changed search placeholder to be context-specific ("Search drivers...", "Search parts...", "Search boosts...")
+- [x] Added "Max Series" dropdown (12-1) for drivers and parts pages (defaults to 12)
+- [x] Max Series filter shows items at selected series value or lower (e.g., 6 shows series 1-6)
+- [x] Added dropdown indicator (▼) to Max Series select element
+- [x] Limited search field size to 20-30 characters (sm:w-64 class)
+- [x] Search works on visible items after Max Series filtering is applied
+- [x] Made navigation buttons dynamic based on auth state (Sign In/Sign Up when not logged in, Profile when logged in)
+- [x] Updated drivers, parts, and boosts pages to use new page-level filters
+- [x] Ensured mobile responsiveness with vertical stacking where needed
+- [x] Removed item count badge from grid headers (no longer shows "X items")
+- [x] Fixed Next.js server/client component separation (metadata export in server component)
+- [x] Updated CHANGELOG.md with comprehensive UI layout changes
+
 #### 10. **Deployment Preparation** ⏳
 - [ ] Create deployment checklist
 - [ ] Set up production environment
