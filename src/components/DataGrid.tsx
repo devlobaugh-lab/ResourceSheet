@@ -8,6 +8,7 @@ import { UserAssetView, CatalogItem, Boost, BoostWithCustomName, DriverView, Car
 // Extended types for unified filtering
 interface BoostItem extends BoostWithCustomName {
   is_boost: true;
+  card_count: number;
 }
 import { cn, formatNumber } from '@/lib/utils';
 
@@ -416,6 +417,9 @@ export function DataGrid({
     }
 
     if (gridType === 'boosts') {
+      // Add amount column right after name
+      baseColumns.push({ key: 'card_count', label: 'Amount', sortable: true });
+
       // Add boost-specific columns - reordered and DRS removed
       baseColumns.push(
         { key: 'overtake_tier', label: 'Overtake', sortable: true },
@@ -638,6 +642,16 @@ export function DataGrid({
                       </div>
                     )}
                   </td>
+
+                  {/* Amount Column for Boosts */}
+                  {gridType === 'boosts' && (
+                    <td className="px-3 py-1 whitespace-nowrap text-center">
+                      <div className="text-sm text-gray-900">
+                        {(catalogItem as BoostItem).card_count || 0}
+                      </div>
+                    </td>
+                  )}
+
                   {/* Rarity Column with background color */}
                   {gridType !== 'boosts' && (
                   <td className={cn("px-3 py-1 whitespace-nowrap", getRarityBackground(catalogItem.rarity))}>
