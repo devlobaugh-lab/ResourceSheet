@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
@@ -33,6 +32,7 @@ export const supabase = createClient(
 
 // Server-side client for API routes (with cookies)
 export function createServerSupabaseClient() {
+  const { cookies } = require('next/headers')
   const cookieStore = cookies()
 
   return createServerClient(

@@ -515,9 +515,9 @@ export function DataGrid({
       )}
 
       {/* Data Grid Table */}
-      <div className="overflow-x-auto bg-white rounded-lg border border-gray-200 w-fit">
+      <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[70vh]">
         <table className="table divide-y divide-gray-200">
-          <thead className="bg-gray-700">
+          <thead className="bg-gray-700 sticky top-0 z-10">
             <tr>
               {columns.map((column) => (
                 <th

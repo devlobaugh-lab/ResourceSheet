@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Import/Export Collection Feature**
+  - **Data Input UI Enhancement**: Removed number input incrementers (up/down arrows) from data input pages for drivers, car parts, and boosts
+  - Plain text entry boxes now used for cleaner, more responsive data entry experience
+  - Added global CSS to hide number input spin buttons across the application
+
+- **Separated Custom Boost Names Export/Import**
+  - **Separate Functionality**: Custom boost names export/import is now completely separate from collection data
+  - **Admin-Only Access**: Only users with `is_admin = true` can access custom boost names export/import
+  - **Dedicated Endpoints**: `/api/export-custom-names` and `/api/import-custom-names` for global custom names management
+  - **Separate Files**: Custom names export as `f1-custom-names-backup-YYYY-MM-DD.json`
+  - **Data Structure**: Export contains `boostCustomNames` array with `boost_id` and `custom_name` fields
+  - **Validation**: All boost IDs are validated to exist before importing custom names
+  - **Updated Character Validation**: Custom boost names now allow spaces between words but not at beginning/end
+  - **UI Integration**: Separate buttons in profile page for admin users only
+
+- **Sticky Table Headers UX Enhancement**
+  - **DataGrid Component**: Added sticky headers to all DataGrid tables (Drivers, Parts, Boosts pages)
+  - **Data Input Page**: Added sticky headers to all three tabs (Drivers, Parts, Boosts)
+  - **Implementation**: `sticky top-0 z-10` on table headers with `max-h-[70vh]` container height
+  - **Behavior**: Headers remain visible when scrolling through long tables
+  - **Consistency**: Applied across all data tables for improved navigation
+
+- **Input UX Improvements**
+  - **Number Input Styling**: Removed incrementer arrows (spinner buttons) from all number inputs globally
+  - **CSS Implementation**: Added global styles to hide `-webkit-outer-spin-button` and `-webkit-inner-spin-button`
+  - **Clean Appearance**: Plain text entry boxes for better user experience
+  - **Applied Everywhere**: Affects data input pages, forms, and any number inputs throughout the app
+
+- **Import/Export Collection Feature**
+  - **Export Functionality**: Added "Export Collection" button to profile page that downloads complete user data as JSON file
+  - **Import Functionality**: Added "Import Collection" button that allows uploading previously exported JSON files
+  - **Data Scope**: Exports all user-owned assets (user_items, user_boosts) with ownership levels and card counts
+  - **File Format**: JSON with `exportedAt` timestamp, `userItems`, and `userBoosts` arrays
+  - **Filename**: `f1-resource-backup-YYYY-MM-DD.json` with current date
+  - **Validation**: Import validates that all item/boost IDs exist in catalog before accepting data
+  - **Overwrite Behavior**: Import completely replaces existing user data for included data types
+  - **Partial Import**: Accepts JSON with only certain data types (e.g., only userItems or only userBoosts)
+  - **UI Feedback**: Loading spinners, success/error toasts, and proper error messages
+  - **API Endpoints**: `/api/export-collection` (GET) and `/api/import-collection` (POST)
+  - **Button Updates**: Changed "Import Data" to "Import Collection" for consistency
+
 ### Changed
 - **UI Layout Simplification & Column Sorting**: Streamlined the grid pages by removing most filter controls, repositioning search functionality, and restoring column header sorting
   - **Removed**: Rarity dropdown, Card Type dropdown, Owned filter, Sort By controls from DataGrid
