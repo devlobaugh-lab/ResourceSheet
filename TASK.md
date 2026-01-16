@@ -1,391 +1,319 @@
-# 🚀 F1 Resource Manager - Task Tracking
+# F1 Resource Manager - Task Tracking
 
-## 📋 Current Status: Major Refactoring Complete ✅
+## Current Status: Major Refactoring Complete
 
-### 🎯 Project Overview
-**F1 Resource Manager** is a comprehensive asset management system for Formula 1 game resources, featuring:
-- **Driver Management**: Track and manage driver assets with detailed stats
-- **Car Parts Management**: Organize and optimize car parts by type and performance
-- **Boost Management**: Handle special boost items with unique properties
-- **User Collections**: Track ownership, levels, and progression
-- **Comparison Tools**: Side-by-side analysis of up to 4 items
-- **Admin Interface**: Content management and data import tools
+### Project Overview
+F1 Resource Manager is a comprehensive asset management system for Formula 1 game resources, featuring:
+- Driver Management: Track and manage driver assets with detailed stats
+- Car Parts Management: Organize and optimize car parts by type and performance
+- Boost Management: Handle special boost items with unique properties
+- User Collections: Track ownership, levels, and progression
+- Comparison Tools: Side-by-side analysis of up to 4 items
+- Admin Interface: Content management and data import tools
 
-## 🔄 Major Refactoring: Separate Asset Types into Distinct Tables
+## PENDING TASKS
 
-### ✅ COMPLETED TASKS
-
-#### 1. **Database Schema Refactoring** ✅
-- [x] Analyzed current database structure and identified issues
-- [x] Examined how assets are currently used in components and APIs
-- [x] Identified problematic code patterns and conditional logic
-- [x] Proposed solution for separating asset types into distinct tables
-- [x] Reviewed source data structure from JSON files
-- [x] Created detailed database schema for new tables
-- [x] Designed comprehensive refactoring plan
-- [x] Created database migration scripts (`supabase/migrations/20260109164845_separate_asset_tables.sql`)
-- [x] Added new tables: `drivers`, `car_parts`, `user_drivers`, `user_car_parts`
-- [x] Created proper indexing for performance optimization
-- [x] Implemented RLS policies for data security
-- [x] Added triggers for automatic timestamp updates
-
-#### 2. **TypeScript Interface Updates** ✅
-- [x] Updated `src/types/database.ts` with new table definitions
-- [x] Added specific types: `Driver`, `CarPart`, `UserDriver`, `UserCarPart`
-- [x] Created view interfaces: `DriverView`, `CarPartView`, `BoostView`
-- [x] Maintained backward compatibility with existing interfaces
-- [x] Added all types to exports for use across the application
-
-#### 3. **API Endpoint Development** ✅
-- [x] Created `/api/drivers` endpoint with full CRUD operations
-- [x] Created `/api/drivers/user` endpoint for user-specific driver data
-- [x] Created `/api/car-parts` endpoint with full CRUD operations
-- [x] Created `/api/car-parts/user` endpoint for user-specific car part data
-- [x] Implemented comprehensive filtering (season, rarity, series, search, pagination)
-- [x] Added proper authentication and authorization
-- [x] Implemented robust error handling and validation
-- [x] Added all endpoints to API documentation
-
-#### 4. **API Hooks Implementation** ✅
-- [x] Added `useDrivers()` hook for fetching drivers catalog
-- [x] Added `useUserDrivers()` hook for user's drivers with ownership
-- [x] Added `useCarParts()` hook for fetching car parts catalog
-- [x] Added `useUserCarParts()` hook for user's car parts with ownership
-- [x] Added proper TypeScript typing for all new hooks
-- [x] Integrated hooks with React Query for caching and performance
-- [x] Added error handling and loading states
-
-#### 5. **React Component Updates** ✅
-- [x] Updated `src/app/drivers/page.tsx` to use new driver endpoints
-- [x] Updated `src/app/parts/page.tsx` to use new car parts endpoints
-- [x] Enhanced `src/components/DataGrid.tsx` to handle new types
-- [x] Removed all conditional `card_type` checks
-- [x] Added proper type-safe rendering for `DriverView` and `CarPartView`
-- [x] Maintained all existing functionality and filters
-
-#### 6. **Validation & Data Processing** ✅
-- [x] Added validation schemas: `driversFiltersSchema`, `carPartsFiltersSchema`
-- [x] Created seeding script: `scripts/seed_new_tables.js` for data migration
-- [x] Implemented batch processing for efficient data insertion
-- [x] Added proper error handling and table existence checks
-- [x] Created test scripts for API endpoint testing and TypeScript validation
-
-#### 7. **Testing & Documentation** ✅
-- [x] Created comprehensive migration guide (`MIGRATION_GUIDE.md`)
-- [x] Tested all API endpoints (they work correctly)
-- [x] Verified existing functionality still works
-- [x] Updated CHANGELOG.md with all changes
-- [x] Updated TASK.md with current status
-- [x] Created step-by-step instructions for database migration
-- [x] Added troubleshooting guide for common issues
-
-#### 11. **Car Parts Page Fixes** ✅
-- [x] Fix authentication on Car Parts page (useUserCarParts with proper auth headers)
-- [x] Update part type names (Transmission → Gearbox)
-- [x] Exclude Pit Stop from Total Value calculation for car parts
-- [x] Add missing DRS stat column with proper sorting
-- [x] Fix stat column names (speed, cornering, powerUnit, qualifying, drs, pitStopTime)
-- [x] Remove duplicate Series column from parts grid
-
-#### 12. **Authentication Requirements** ✅
-- [x] Add sign-in required to Car Parts page (matches dashboard styling)
-- [x] Add sign-in required to Boosts page (matches dashboard styling)
-- [x] Add sign-in required to Compare page (matches dashboard styling)
-- [x] Standardize all login prompts to use Card-based design
-- [x] Remove Auth Debug component from production UI
-- [x] Update drivers page login prompt to match dashboard styling
-
-### 📋 PENDING TASKS
-
-#### 8. **Database Migration Execution** ✅
-- [x] Fix Supabase CLI configuration issue
-- [x] Run database migration to create new tables
-- [x] Verify all tables are created correctly
-- [x] Check that all indexes and triggers are working
-- [x] Execute data seeding script to populate new tables (script created, authentication fixed)
-- [x] Successfully seeded 97 drivers, 53 car parts, and 62 boosts
-
-#### 9. **Final Testing & Validation** ✅
-- [x] Test all API endpoints with real data
-- [x] Verify all React components work with populated tables
-- [x] Test authentication and authorization flows
-- [x] Validate error handling and edge cases
-- [x] Fix validation schemas to handle string query parameters
-- [x] Fix API route conflicts by separating user endpoints
-- [x] Add CORS headers to all API endpoints
-- [x] Fix web pages to use correct API hooks
-- [x] Perform performance testing with large datasets
-
-#### 10. **UI Screen Real Estate Optimization** ✅
-- [x] Remove max-width constraint from main layout container (`max-w-7xl` → no constraint)
-- [x] Update DataGrid table cell padding to compact spacing (`px-6 py-4` → `px-3 py-2`)
-- [x] Ensure consistent compact density across all grid types (drivers, parts, boosts)
-- [x] Maintain horizontal padding for proper edge spacing
-- [x] Test layout renders correctly on different screen sizes
-- [x] Change table sizing from `w-full` to `table` for content-based width
-- [x] Add `w-fit` to table container for content-based grid sizing and left justification
-- [x] Update rarity coloring to use cell background colors with black text instead of text colors/badges
-- [x] Center justify all columns except Name and Rarity
-- [x] Add Level, Bonus, and Total Value columns to Drivers page
-- [x] Remove duplicate Series column from Drivers page
-- [x] Calculate Total Value as sum of 5 driver stats
-- [x] Fix Level column to show user level data from DriverView instead of assets
-- [x] Fix column alignment by conditionally showing Actions column only when actions are available
-- [x] Fix authentication issue by using useDrivers (catalog) instead of useUserDrivers (requires login)
-- [x] Make Bonus column conditional based on user data availability
-- [x] Fix column hide logic - remove Bonus column entirely for catalog data, show 0 for Level
-- [x] Require user authentication for drivers page access
-- [x] Always show Bonus column with checkbox for authenticated users
-- [x] Show actual user level values from DriverView instead of "N/A" or 0
-
-#### 13. **Drivers Page Column Order Adjustment** ✅
-- [x] Move "Race Start" column one position left (before "Tyre Use") in drivers DataGrid
-- [x] Update both column definition order and table cell rendering order
-- [x] Verify change improves stat flow readability
-
-#### 14. **Boosts Page Major Improvements** ✅
-- [x] Remove 'boost type' column completely as validity was questioned
-- [x] Remove DRS tier column and values entirely
-- [x] Fix column ordering: Overtake, Defend, Corners, Tyre Use, Power Unit, Speed, Pit Stop, Race Start
-- [x] Change boost stat values to display `value * 5` instead of raw tier values
-- [x] Add color coding for values > 0: 1=blue, 2=green, 3=yellow, 4=orange, 5=red
-- [x] Change name column to display boost icon string instead of name string
-- [x] Verify BOOST_NAME_1 now shows correct values (Corners, Tyre Use, Power Unit set to 1)
-
-#### 15. **Boost Custom Naming Feature** ✅
-- [x] Create database migration for boost_custom_names table with unique constraints
-- [x] Update TypeScript types (BoostCustomName, BoostView updates)
-- [x] Create API endpoints for custom name CRUD operations with validation
-- [x] Add character validation (A-Z, a-z, 0-9, -, .) and 64 char limit
-- [x] Implement duplicate name prevention with database constraints
-- [x] Update boosts API to include custom names in response with left join
-- [x] Create BoostNameEditor component with inline editing functionality
-- [x] Update DataGrid to display custom names with fallback logic (custom_name || name)
-- [x] Implement click-to-edit functionality in boosts grid with admin-only access
-- [x] Add real-time validation and save/cancel UX with toast notifications
-- [x] Fix authentication issues across all APIs (JWT header + cookie fallback)
-- [x] Test full functionality including edge cases and error handling
-- [x] Update CHANGELOG.md and TASK.md with complete implementation details
-
-#### 16. **Level 0 Stats Bug Fix** ✅
-- [x] Identified off-by-one error where drivers and car parts at level 0 showed level 1 stats
-- [x] Fixed `getStatValue` function in DataGrid component to return 0 for level 0 instead of accessing `stats[level - 1]`
-- [x] Fixed `getStatValueForSort` function to properly handle level 0 stats for sorting
-- [x] Updated logic to use `stats[level - 1]` only when level > 0, ensuring level 0 shows all zeros
-- [x] Tested fix ensures level 0 items display correct 0 stats while higher levels show proper stat progression
-- [x] Updated CHANGELOG.md with bug fix details
-
-#### 17. **UI Layout Simplification & Dynamic Navigation** ✅
-- [x] Removed most filter controls from DataGrid (rarity, card type, owned, sort dropdowns)
-- [x] Restored column header click-to-sort functionality with visual indicators (↑/↓)
-- [x] Moved search field from DataGrid to page-level header below titles
-- [x] Changed search placeholder to be context-specific ("Search drivers...", "Search parts...", "Search boosts...")
-- [x] Added "Max Series" dropdown (12-1) for drivers and parts pages (defaults to 12)
-- [x] Max Series filter shows items at selected series value or lower (e.g., 6 shows series 1-6)
-- [x] Added dropdown indicator (▼) to Max Series select element
-- [x] Limited search field size to 20-30 characters (sm:w-64 class)
-- [x] Search works on visible items after Max Series filtering is applied
-- [x] Made navigation buttons dynamic based on auth state (Sign In/Sign Up when not logged in, Profile when logged in)
-- [x] Updated drivers, parts, and boosts pages to use new page-level filters
-- [x] Ensured mobile responsiveness with vertical stacking where needed
-- [x] Removed item count badge from grid headers (no longer shows "X items")
-- [x] Fixed Next.js server/client component separation (metadata export in server component)
-- [x] Updated CHANGELOG.md with comprehensive UI layout changes
-
-#### 10. **Deployment Preparation** ⏳
-- [ ] Create deployment checklist
-- [ ] Set up production environment
-- [ ] Configure CI/CD pipeline
-- [ ] Implement monitoring and logging
-- [ ] Prepare rollback plan
-### 📋 PENDING TASKS
-
-#### 8. **Database Migration Execution** ✅
-- [x] Fix Supabase CLI configuration issue
-- [x] Run database migration to create new tables
-- [x] Verify all tables are created correctly
-- [x] Check that all indexes and triggers are working
-- [x] Execute data seeding script to populate new tables (script created, authentication fixed)
-- [x] Successfully seeded 97 drivers, 53 car parts, and 62 boosts
-
-#### 9. **Final Testing & Validation** ✅
-- [x] Test all API endpoints with real data
-- [x] Verify all React components work with populated tables
-- [x] Test authentication and authorization flows
-- [x] Validate error handling and edge cases
-- [x] Fix validation schemas to handle string query parameters
-- [x] Fix API route conflicts by separating user endpoints
-- [x] Add CORS headers to all API endpoints
-- [x] Fix web pages to use correct API hooks
-- [x] Perform performance testing with large datasets
-
-#### 10. **Deployment Preparation** ⏳
+### Deployment Preparation
 - [ ] Create deployment checklist
 - [ ] Set up production environment
 - [ ] Configure CI/CD pipeline
 - [ ] Implement monitoring and logging
 - [ ] Prepare rollback plan
 
-## 🎯 Key Benefits Achieved
+### Admin Interface Development
+- [ ] Create content management tools
+- [ ] Implement data import/export functionality
+- [ ] Add analytics dashboard
+- [ ] Build user management interface
+- [ ] Add bulk editing capabilities
 
-### **Clean Architecture**
-```typescript
-// Before: Mixed asset approach with conditional logic
-if (asset.card_type === 0) {
-  // Handle car part
-} else if (asset.card_type === 1) {
-  // Handle driver
-} else {
-  // Handle boost
-}
+### User Data Input Interface
+- [ ] Build interface for users to input card amounts and levels
+- [ ] Implement quick editing capabilities for multiple items
+- [ ] Add bulk update functionality
+- [ ] Create intuitive UI for rapid data entry
+- [ ] Include validation for data ranges and formats
+- [ ] Add save/cancel workflow with confirmation dialogs
 
-// After: Clean separation with dedicated types
-function handleDriver(driver: Driver) { /* ... */ }
-function handleCarPart(carPart: CarPart) { /* ... */ }
-function handleBoost(boost: Boost) { /* ... */ }
-```
+### Compare Page Development
+- [ ] Expand compare page from current stub implementation
+- [ ] Add side-by-side comparison for up to 4 items
+- [ ] Implement comparison metrics and visualizations
+- [ ] Add filtering and sorting for compared items
+- [ ] Create export functionality for comparison results
+- [ ] Optimize UI for different screen sizes
 
-### **Type Safety**
-- ✅ No more runtime `card_type` checks
-- ✅ TypeScript properly validates each asset type
-- ✅ Better IDE autocompletion and type checking
-- ✅ Compile-time error detection
+### Code Review
+- [ ] Establish code review checklist and standards
+- [ ] Set up automated code quality checks
+- [ ] Create review process documentation
+- [ ] Implement pre-commit hooks for basic validation
+- [ ] Add performance review guidelines
+- [ ] Establish security review requirements
 
-### **Performance**
-- ✅ Queries optimized for specific asset types
-- ✅ Proper indexing for faster lookups
-- ✅ Reduced data transfer with targeted queries
-- ✅ Efficient batch processing for data seeding
+## ARCHIVED TASKS
 
-### **Maintainability**
-- ✅ Future updates to one asset type won't affect others
-- ✅ Clear separation of concerns
-- ✅ Easier to understand and extend
-- ✅ Consistent patterns across all asset types
+### Major Refactoring: Separate Asset Types into Distinct Tables
 
-### **Scalability**
-- ✅ Easy to add new asset types in the future
-- ✅ Consistent pattern for all asset types
-- ✅ Better foundation for growth
-- ✅ Modular architecture for easy extension
+#### Database Schema Refactoring
+- Analyzed current database structure and identified issues
+- Examined how assets are currently used in components and APIs
+- Identified problematic code patterns and conditional logic
+- Proposed solution for separating asset types into distinct tables
+- Reviewed source data structure from JSON files
+- Created detailed database schema for new tables
+- Designed comprehensive refactoring plan
+- Created database migration scripts (supabase/migrations/20260109164845_separate_asset_tables.sql)
+- Added new tables: drivers, car_parts, user_drivers, user_car_parts
+- Created proper indexing for performance optimization
+- Implemented RLS policies for data security
+- Added triggers for automatic timestamp updates
 
-## 📊 Files Created/Modified
+#### TypeScript Interface Updates
+- Updated src/types/database.ts with new table definitions
+- Added specific types: Driver, CarPart, UserDriver, UserCarPart
+- Created view interfaces: DriverView, CarPartView, BoostView
+- Maintained backward compatibility with existing interfaces
+- Added all types to exports for use across the application
 
-### **New Files Created:**
-- `supabase/migrations/20260109164845_separate_asset_tables.sql`
-- `src/app/api/drivers/route.ts`
-- `src/app/api/car-parts/route.ts`
-- `scripts/seed_new_tables.js`
-- `scripts/test_api_endpoints.js`
-- `scripts/test_types.ts`
-- `MIGRATION_GUIDE.md`
+#### API Endpoint Development
+- Created /api/drivers endpoint with full CRUD operations
+- Created /api/drivers/user endpoint for user-specific driver data
+- Created /api/car-parts endpoint with full CRUD operations
+- Created /api/car-parts/user endpoint for user-specific car part data
+- Implemented comprehensive filtering (season, rarity, series, search, pagination)
+- Added proper authentication and authorization
+- Implemented robust error handling and validation
+- Added all endpoints to API documentation
 
-### **Files Updated:**
-- `src/types/database.ts` - Added new table types and interfaces
-- `src/lib/validation.ts` - Added validation schemas
-- `src/hooks/useApi.ts` - Added new API hooks
-- `src/app/drivers/page.tsx` - Updated to use new structure
-- `src/app/parts/page.tsx` - Updated to use new structure
-- `src/components/DataGrid.tsx` - Enhanced to handle new types
-- `CHANGELOG.md` - Updated with all changes
-- `TASK.md` - Updated with current status
+#### API Hooks Implementation
+- Added useDrivers() hook for fetching drivers catalog
+- Added useUserDrivers() hook for user's drivers with ownership
+- Added useCarParts() hook for fetching car parts catalog
+- Added useUserCarParts() hook for user's car parts with ownership
+- Added proper TypeScript typing for all new hooks
+- Integrated hooks with React Query for caching and performance
+- Added error handling and loading states
 
-## 🚀 Next Steps
+#### React Component Updates
+- Updated src/app/drivers/page.tsx to use new driver endpoints
+- Updated src/app/parts/page.tsx to use new car parts endpoints
+- Enhanced src/components/DataGrid.tsx to handle new types
+- Removed all conditional card_type checks
+- Added proper type-safe rendering for DriverView and CarPartView
+- Maintained all existing functionality and filters
 
-### **Immediate (Database Migration)**
-1. **Fix Supabase CLI Configuration**
-   ```bash
-   npm update -g supabase
-   # Edit supabase/config.toml and change db.major_version from 17 to 16
-   npx supabase migration up --local
-   ```
+#### Validation & Data Processing
+- Added validation schemas: driversFiltersSchema, carPartsFiltersSchema
+- Created seeding script: scripts/seed_new_tables.js for data migration
+- Implemented batch processing for efficient data insertion
+- Added proper error handling and table existence checks
+- Created test scripts for API endpoint testing and TypeScript validation
 
-2. **Run Data Seeding**
-   ```bash
-   node scripts/seed_new_tables.js
-   ```
+#### Testing & Documentation
+- Created comprehensive migration guide (MIGRATION_GUIDE.md)
+- Tested all API endpoints (they work correctly)
+- Verified existing functionality still works
+- Updated CHANGELOG.md with all changes
+- Updated TASK.md with current status
+- Created step-by-step instructions for database migration
+- Added troubleshooting guide for common issues
 
-3. **Verify Migration**
-   ```sql
-   -- Check tables exist
-   SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
+#### Car Parts Page Fixes
+- Fix authentication on Car Parts page (useUserCarParts with proper auth headers)
+- Update part type names (Transmission → Gearbox)
+- Exclude Pit Stop from Total Value calculation for car parts
+- Add missing DRS stat column with proper sorting
+- Fix stat column names (speed, cornering, powerUnit, qualifying, drs, pitStopTime)
+- Remove duplicate Series column from parts grid
 
-   -- Check data insertion
-   SELECT COUNT(*) FROM public.drivers;
-   SELECT COUNT(*) FROM public.car_parts;
-   ```
+#### Authentication Requirements
+- Add sign-in required to Car Parts page (matches dashboard styling)
+- Add sign-in required to Boosts page (matches dashboard styling)
+- Add sign-in required to Compare page (matches dashboard styling)
+- Standardize all login prompts to use Card-based design
+- Remove Auth Debug component from production UI
+- Update drivers page login prompt to match dashboard styling
 
-### **Short-term (Testing & Validation)**
-1. **Test API Endpoints**
-   ```bash
-   curl -X GET http://localhost:3000/api/drivers
-   curl -X GET http://localhost:3000/api/car-parts
-   ```
+#### Database Migration Execution
+- Fix Supabase CLI configuration issue
+- Run database migration to create new tables
+- Verify all tables are created correctly
+- Check that all indexes and triggers are working
+- Execute data seeding script to populate new tables (script created, authentication fixed)
+- Successfully seeded 97 drivers, 53 car parts, and 62 boosts
 
-2. **Test React Components**
-   - Verify drivers page works with real data
-   - Verify parts page works with real data
-   - Test DataGrid component with populated tables
+#### Final Testing & Validation
+- Test all API endpoints with real data
+- Verify all React components work with populated tables
+- Test authentication and authorization flows
+- Validate error handling and edge cases
+- Fix validation schemas to handle string query parameters
+- Fix API route conflicts by separating user endpoints
+- Add CORS headers to all API endpoints
+- Fix web pages to use correct API hooks
+- Perform performance testing with large datasets
 
-3. **Validate Authentication**
-   - Test user-specific endpoints
-   - Verify RLS policies work correctly
-   - Check admin functionality
+#### UI Screen Real Estate Optimization
+- Remove max-width constraint from main layout container (max-w-7xl → no constraint)
+- Update DataGrid table cell padding to compact spacing (px-6 py-4 → px-3 py-2)
+- Ensure consistent compact density across all grid types (drivers, parts, boosts)
+- Maintain horizontal padding for proper edge spacing
+- Test layout renders correctly on different screen sizes
+- Change table sizing from w-full to table for content-based width
+- Add w-fit to table container for content-based grid sizing and left justification
+- Update rarity coloring to use cell background colors with black text instead of text colors/badges
+- Center justify all columns except Name and Rarity
+- Add Level, Bonus, and Total Value columns to Drivers page
+- Remove duplicate Series column from Drivers page
+- Calculate Total Value as sum of 5 driver stats
+- Fix Level column to show user level data from DriverView instead of assets
+- Fix column alignment by conditionally showing Actions column only when actions are available
+- Fix authentication issue by using useDrivers (catalog) instead of useUserDrivers (requires login)
+- Make Bonus column conditional based on user data availability
+- Fix column hide logic - remove Bonus column entirely for catalog data, show 0 for Level
+- Require user authentication for drivers page access
+- Always show Bonus column with checkbox for authenticated users
+- Show actual user level values from DriverView instead of "N/A" or 0
 
-### **Long-term (Deployment & Maintenance)**
-1. **Complete Frontend Components**
-   - Finish tablet/desktop optimization
-   - Complete component testing
-   - Add remaining UI elements
+#### Drivers Page Column Order Adjustment
+- Move "Race Start" column one position left (before "Tyre Use") in drivers DataGrid
+- Update both column definition order and table cell rendering order
+- Verify change improves stat flow readability
 
-2. **Build Admin Interface**
-   - Create content management tools
-   - Implement data import/export
-   - Add analytics dashboard
+#### Boosts Page Major Improvements
+- Remove 'boost type' column completely as validity was questioned
+- Remove DRS tier column and values entirely
+- Fix column ordering: Overtake, Defend, Corners, Tyre Use, Power Unit, Speed, Pit Stop, Race Start
+- Change boost stat values to display value * 5 instead of raw tier values
+- Add color coding for values > 0: 1=blue, 2=green, 3=yellow, 4=orange, 5=red
+- Change name column to display boost icon string instead of name string
+- Verify BOOST_NAME_1 now shows correct values (Corners, Tyre Use, Power Unit set to 1)
 
-3. **Implement Testing Suite**
-   - Add unit tests for components
-   - Create integration tests for API
-   - Set up end-to-end testing
+#### Boost Custom Naming Feature
+- Create database migration for boost_custom_names table with unique constraints
+- Update TypeScript types (BoostCustomName, BoostView updates)
+- Create API endpoints for custom name CRUD operations with validation
+- Add character validation (A-Z, a-z, 0-9, -, .) and 64 char limit
+- Implement duplicate name prevention with database constraints
+- Update boosts API to include custom names in response with left join
+- Create BoostNameEditor component with inline editing functionality
+- Update DataGrid to display custom names with fallback logic (custom_name || name)
+- Implement click-to-edit functionality in boosts grid with admin-only access
+- Add real-time validation and save/cancel UX with toast notifications
+- Fix authentication issues across all APIs (JWT header + cookie fallback)
+- Test full functionality including edge cases and error handling
+- Update CHANGELOG.md and TASK.md with complete implementation details
 
-4. **Deploy to Production**
-   - Set up production environment
-   - Configure CI/CD pipeline
-   - Implement monitoring and logging
+#### Level 0 Stats Bug Fix
+- Identified off-by-one error where drivers and car parts at level 0 showed level 1 stats
+- Fixed getStatValue function in DataGrid component to return 0 for level 0 instead of accessing stats[level - 1]
+- Fixed getStatValueForSort function to properly handle level 0 stats for sorting
+- Updated logic to use stats[level - 1] only when level > 0, ensuring level 0 shows all zeros
+- Tested fix ensures level 0 items display correct 0 stats while higher levels show proper stat progression
+- Updated CHANGELOG.md with bug fix details
 
-## 📅 Timeline
+#### UI Layout Simplification & Dynamic Navigation
+- Removed most filter controls from DataGrid (rarity, card type, owned, sort dropdowns)
+- Restored column header click-to-sort functionality with visual indicators (↑/↓)
+- Moved search field from DataGrid to page-level header below titles
+- Changed search placeholder to be context-specific ("Search drivers...", "Search parts...", "Search boosts...")
+- Added "Max Series" dropdown (12-1) for drivers and parts pages (defaults to 12)
+- Max Series filter shows items at selected series value or lower (e.g., 6 shows series 1-6)
+- Added dropdown indicator (▼) to Max Series select element
+- Limited search field size to 20-30 characters (sm:w-64 class)
+- Search works on visible items after Max Series filtering is applied
+- Made navigation buttons dynamic based on auth state (Sign In/Sign Up when not logged in, Profile when logged in)
+- Updated drivers, parts, and boosts pages to use new page-level filters
+- Ensured mobile responsiveness with vertical stacking where needed
+- Removed item count badge from grid headers (no longer shows "X items")
+- Fixed Next.js server/client component separation (metadata export in server component)
+- Updated CHANGELOG.md with comprehensive UI layout changes
 
-### **Phase 1: Refactoring (COMPLETE) ✅**
-- **Duration**: 2026-01-09
-- **Status**: 100% Complete
-- **Deliverables**: All code changes, TypeScript types, API endpoints, React components
+## Key Benefits Achieved
 
-### **Phase 2: Migration & Testing (IN PROGRESS) 🔄**
-- **Duration**: 2026-01-09 - 2026-01-10
-- **Status**: 90% Complete (pending database migration)
-- **Deliverables**: Database migration, data seeding, comprehensive testing
+### Clean Architecture
+- No more runtime card_type checks
+- TypeScript properly validates each asset type
+- Better IDE autocompletion and type checking
+- Compile-time error detection
 
-### **Phase 3: Deployment (PENDING) ⏳**
-- **Duration**: 2026-01-11 - 2026-01-12
-- **Status**: 0% Complete
-- **Deliverables**: Production deployment, monitoring setup, user documentation
+### Type Safety
+- Queries optimized for specific asset types
+- Proper indexing for faster lookups
+- Reduced data transfer with targeted queries
+- Efficient batch processing for data seeding
 
-## 🎉 Summary
+### Performance
+- Future updates to one asset type won't affect others
+- Clear separation of concerns
+- Easier to understand and extend
+- Consistent patterns across all asset types
 
-**🎉 MAJOR REFACTORING COMPLETE!**
+### Maintainability
+- Easy to add new asset types in the future
+- Consistent pattern for all asset types
+- Better foundation for growth
+- Modular architecture for easy extension
 
-The core refactoring to separate drivers, parts, and boosts into distinct tables is **100% complete**. All code changes have been implemented, tested, and documented.
+### Scalability
+- Easy to add new asset types in the future
+- Consistent pattern for all asset types
+- Better foundation for growth
+- Modular architecture for easy extension
 
-**What's Working:**
-- ✅ All API endpoints created and tested
-- ✅ All TypeScript types validated and working
-- ✅ All React components updated and functional
-- ✅ Comprehensive documentation and guides created
+## Files Created/Modified
 
-**What's Next:**
-- ⏳ Run database migration (Supabase CLI configuration issue)
-- ⏳ Execute data seeding
-- ⏳ Final testing and validation
-- ⏳ Deployment to production
+### New Files Created:
+- supabase/migrations/20260109164845_separate_asset_tables.sql
+- src/app/api/drivers/route.ts
+- src/app/api/car-parts/route.ts
+- scripts/seed_new_tables.js
+- scripts/test_api_endpoints.js
+- scripts/test_types.ts
+- MIGRATION_GUIDE.md
+
+### Files Updated:
+- src/types/database.ts - Added new table types and interfaces
+- src/lib/validation.ts - Added validation schemas
+- src/hooks/useApi.ts - Added new API hooks
+- src/app/drivers/page.tsx - Updated to use new structure
+- src/app/parts/page.tsx - Updated to use new structure
+- src/components/DataGrid.tsx - Enhanced to handle new types
+- CHANGELOG.md - Updated with all changes
+- TASK.md - Updated with current status
+
+## Timeline
+
+### Phase 1: Refactoring (COMPLETE)
+- Duration: 2026-01-09
+- Status: 100% Complete
+- Deliverables: All code changes, TypeScript types, API endpoints, React components
+
+### Phase 2: Migration & Testing (IN PROGRESS)
+- Duration: 2026-01-09 - 2026-01-10
+- Status: 90% Complete (pending database migration)
+- Deliverables: Database migration, data seeding, comprehensive testing
+
+### Phase 3: Deployment (PENDING)
+- Duration: 2026-01-11 - 2026-01-12
+- Status: 0% Complete
+- Deliverables: Production deployment, monitoring setup, user documentation
+
+## Summary
+
+The core refactoring to separate drivers, parts, and boosts into distinct tables is 100% complete. All code changes have been implemented, tested, and documented.
+
+What's Working:
+- All API endpoints created and tested
+- All TypeScript types validated and working
+- All React components updated and functional
+- Comprehensive documentation and guides created
+
+What's Next:
+- Run database migration (Supabase CLI configuration issue)
+- Execute data seeding
+- Final testing and validation
+- Deployment to production
 
 The refactoring successfully eliminates the problematic mixed asset approach and provides a clean, maintainable, and scalable architecture for the F1 Resource Manager application.
