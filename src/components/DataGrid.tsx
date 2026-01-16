@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
@@ -10,6 +10,46 @@ interface BoostItem extends BoostWithCustomName {
   is_boost: true;
 }
 import { cn, formatNumber } from '@/lib/utils';
+
+// localStorage utilities for sort persistence
+const SORT_PREFERENCES_KEY = 'f1-sort-preferences';
+
+const getDefaultSortForGridType = (gridType: string) => {
+  switch (gridType) {
+    case 'drivers':
+      return { sortBy: 'series', sortOrder: 'asc' as const };
+    case 'parts':
+      return { sortBy: 'car_part_type', sortOrder: 'asc' as const };
+    case 'boosts':
+      return { sortBy: 'name', sortOrder: 'asc' as const };
+    default:
+      return { sortBy: 'name', sortOrder: 'desc' as const };
+  }
+};
+
+const loadSortPreferences = (gridType: string) => {
+  try {
+    const stored = localStorage.getItem(SORT_PREFERENCES_KEY);
+    if (stored) {
+      const preferences = JSON.parse(stored);
+      return preferences[gridType] || getDefaultSortForGridType(gridType);
+    }
+  } catch (error) {
+    console.warn('Failed to load sort preferences:', error);
+  }
+  return getDefaultSortForGridType(gridType);
+};
+
+const saveSortPreferences = (gridType: string, sortBy: string, sortOrder: 'asc' | 'desc') => {
+  try {
+    const stored = localStorage.getItem(SORT_PREFERENCES_KEY);
+    const preferences = stored ? JSON.parse(stored) : {};
+    preferences[gridType] = { sortBy, sortOrder };
+    localStorage.setItem(SORT_PREFERENCES_KEY, JSON.stringify(preferences));
+  } catch (error) {
+    console.warn('Failed to save sort preferences:', error);
+  }
+};
 
 interface DataGridProps {
   assets?: UserAssetView[];
@@ -71,12 +111,20 @@ export function DataGrid({
   gridType = 'drivers',
   onBoostNameChange,
 }: DataGridProps) {
-  const [filters, setFilters] = useState<FilterState>({
-    search: '',
-    maxSeries: 12, // Default to show all series
-    sortBy: 'name',
-    sortOrder: 'desc',
+  const [filters, setFilters] = useState<FilterState>(() => {
+    // Load saved sort preferences on component initialization
+    const savedPrefs = loadSortPreferences(gridType);
+    return {
+      search: '',
+      maxSeries: 12, // Default to show all series
+      ...savedPrefs,
+    };
   });
+
+  // Save sort preferences whenever they change
+  useEffect(() => {
+    saveSortPreferences(gridType, filters.sortBy, filters.sortOrder);
+  }, [gridType, filters.sortBy, filters.sortOrder]);
 
   // Extended types for unified filtering
   interface DriverItem extends DriverView {
