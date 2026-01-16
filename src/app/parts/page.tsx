@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { DataGrid } from '@/components/DataGrid'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { useUserCarParts } from '@/hooks/useApi'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useAuth } from '@/components/auth/AuthContext'
@@ -15,10 +16,60 @@ function AuthenticatedPartsPage() {
     page: 1,
     limit: 100
   })
-  const carParts = carPartsResponse?.data || []
+
+  const [searchTerm, setSearchTerm] = useState('')
+  const [maxSeries, setMaxSeries] = useState(12)
+
+  // Apply filters to the data
+  const filteredCarParts = useMemo(() => {
+    if (!carPartsResponse?.data) return []
+
+    return carPartsResponse.data.filter(carPart => {
+      const matchesSearch = !searchTerm ||
+        carPart.name.toLowerCase().includes(searchTerm.toLowerCase())
+
+      const matchesMaxSeries = carPart.series <= maxSeries
+
+      return matchesSearch && matchesMaxSeries
+    })
+  }, [carPartsResponse?.data, searchTerm, maxSeries])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Page Title and Filters */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-gray-900">Car Parts</h1>
+
+        {/* Search and Max Series Filters */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="w-full sm:w-64">
+            <Input
+              placeholder="Search parts..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center space-x-2">
+            <label htmlFor="maxSeries" className="text-sm font-medium text-gray-700">
+              Max Series:
+            </label>
+            <select
+              id="maxSeries"
+              className="rounded-lg border-gray-300 text-sm px-3 py-2 pr-8 bg-white bg-no-repeat bg-right appearance-none"
+              style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\' class=\'w-4 h-4\'%3e%3cpolyline points=\'6,9 12,15 18,9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundPosition: 'right 0.5rem center', backgroundSize: '1rem' }}
+              value={maxSeries}
+              onChange={(e) => setMaxSeries(Number(e.target.value))}
+            >
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={12 - i} value={12 - i}>
+                {12 - i}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
       <ErrorBoundary
         fallback={
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
@@ -34,11 +85,11 @@ function AuthenticatedPartsPage() {
           </div>
         ) : (
           <DataGrid
-            carParts={carParts}
-            title="Car Parts"
+            carParts={filteredCarParts}
+            title=""
             gridType="parts"
-            showFilters={true}
-            showSearch={true}
+            showFilters={false}
+            showSearch={false}
             showCompareButton={true}
           />
         )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
@@ -33,9 +33,7 @@ interface DataGridProps {
 
 interface FilterState {
   search: string;
-  rarity: number | null;
-  cardType: number | null;
-  owned: boolean | null;
+  maxSeries: number;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
 }
@@ -75,9 +73,7 @@ export function DataGrid({
 }: DataGridProps) {
   const [filters, setFilters] = useState<FilterState>({
     search: '',
-    rarity: null,
-    cardType: null,
-    owned: null,
+    maxSeries: 12, // Default to show all series
     sortBy: 'name',
     sortOrder: 'asc',
   });
@@ -109,18 +105,12 @@ export function DataGrid({
     const matchesSearch = !filters.search ||
       item.name.toLowerCase().includes(filters.search.toLowerCase());
 
-    const matchesRarity = filters.rarity === null || item.rarity === filters.rarity;
+    // Max Series filter (only for drivers and parts)
+    const matchesMaxSeries = gridType === 'boosts' ||
+      !('is_driver' in item || 'is_car_part' in item) ||
+      (item as DriverView | CarPartView).series <= filters.maxSeries;
 
-            // Only filter by card type if not boosts
-            const matchesCardType = filters.cardType === null ||
-              (gridType === 'boosts' ? true : (item as CatalogItemItem | AssetItem).card_type === filters.cardType);
-
-    // Handle ownership filtering - only apply if we have assets (user data)
-    const matchesOwned = filters.owned === null ||
-      (assets.length === 0) || // If no assets, don't filter by ownership
-      (filters.owned ? (item as AssetItem).is_owned : !(item as AssetItem).is_owned);
-
-    return matchesSearch && matchesRarity && matchesCardType && matchesOwned;
+    return matchesSearch && matchesMaxSeries;
   });
 
   // Helper function to get stat value for sorting
@@ -163,95 +153,87 @@ export function DataGrid({
     return 0;
   };
 
-  // Sorting logic
-  const sortedItems = [...filteredItems].sort((a, b) => {
-    let comparison = 0;
+  // Apply sorting if enabled
+  const sortedItems = useMemo(() => {
+    if (!filters.sortBy) return [...filteredItems];
 
-    switch (filters.sortBy) {
-      case 'name':
-        comparison = a.name.localeCompare(b.name);
-        break;
-      case 'rarity':
-        comparison = a.rarity - b.rarity;
-        break;
-      case 'series':
-        comparison = (a.series || 0) - (b.series || 0);
-        break;
-      case 'boost_type':
-        // Sort by boost type for boosts
-        if ('is_boost' in a && 'is_boost' in b && a.is_boost && b.is_boost) {
-          const aType = (a as BoostItem).boost_type || '';
-          const bType = (b as BoostItem).boost_type || '';
-          comparison = aType.localeCompare(bType);
-        } else {
-          comparison = 0;
-        }
-        break;
-      case 'level':
-        // Only sort by level if we have driver data
-        if ('is_driver' in a && 'is_driver' in b && a.is_driver && b.is_driver) {
-          comparison = (a as DriverView).level - (b as DriverView).level;
-        } else {
-          comparison = 0;
-        }
-        break;
-      // Driver stat columns
-      case 'overtaking':
-      case 'blocking':
-      case 'qualifying':
-      case 'tyreUse':
-      case 'raceStart':
-        comparison = getStatValueForSort(a, filters.sortBy) - getStatValueForSort(b, filters.sortBy);
-        break;
-      // Car part stat columns
-      case 'speed':
-      case 'cornering':
-      case 'powerUnit':
-      case 'drs':
-      case 'pitStopTime':
-        comparison = getStatValueForSort(a, filters.sortBy) - getStatValueForSort(b, filters.sortBy);
-        break;
-      case 'total_value':
-        // Calculate total value for drivers and parts
-        if ('is_driver' in a && 'is_driver' in b && a.is_driver && b.is_driver) {
-          // Driver total
-          const aTotal = getStatValueForSort(a, 'overtaking') + getStatValueForSort(a, 'blocking') +
-                        getStatValueForSort(a, 'qualifying') + getStatValueForSort(a, 'tyreUse') +
-                        getStatValueForSort(a, 'raceStart');
-          const bTotal = getStatValueForSort(b, 'overtaking') + getStatValueForSort(b, 'blocking') +
-                        getStatValueForSort(b, 'qualifying') + getStatValueForSort(b, 'tyreUse') +
-                        getStatValueForSort(b, 'raceStart');
-          comparison = aTotal - bTotal;
-        } else if ('is_car_part' in a && 'is_car_part' in b && a.is_car_part && b.is_car_part) {
-          // Car part total (exclude pitStopTime)
-          const aTotal = getStatValueForSort(a, 'speed') + getStatValueForSort(a, 'cornering') +
-                        getStatValueForSort(a, 'powerUnit') + getStatValueForSort(a, 'qualifying') +
-                        getStatValueForSort(a, 'drs');
-          const bTotal = getStatValueForSort(b, 'speed') + getStatValueForSort(b, 'cornering') +
-                        getStatValueForSort(b, 'powerUnit') + getStatValueForSort(b, 'qualifying') +
-                        getStatValueForSort(b, 'drs');
-          comparison = aTotal - bTotal;
-        }
-        break;
-      // Boost tier columns
-      case 'overtake_tier':
-      case 'block_tier':
-      case 'speed_tier':
-      case 'corners_tier':
-      case 'tyre_use_tier':
-      case 'reliability_tier':
-      case 'pit_stop_time_tier':
-      case 'power_unit_tier':
-      case 'race_start_tier':
-      case 'drs_tier':
-        comparison = getBoostTierValueForSort(a, filters.sortBy) - getBoostTierValueForSort(b, filters.sortBy);
-        break;
-      default:
-        comparison = 0;
-    }
+    return [...filteredItems].sort((a, b) => {
+      let comparison = 0;
 
-    return filters.sortOrder === 'asc' ? comparison : -comparison;
-  });
+      switch (filters.sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'rarity':
+          comparison = a.rarity - b.rarity;
+          break;
+        case 'series':
+          comparison = (a.series || 0) - (b.series || 0);
+          break;
+        case 'user_level':
+          // For drivers and parts, sort by level
+          if ('is_driver' in a && 'is_driver' in b && a.is_driver && b.is_driver) {
+            comparison = (a as DriverView).level - (b as DriverView).level;
+          } else if ('is_car_part' in a && 'is_car_part' in b && a.is_car_part && b.is_car_part) {
+            comparison = (a as CarPartView).level - (b as CarPartView).level;
+          }
+          break;
+        // Driver stat columns
+        case 'overtaking':
+        case 'blocking':
+        case 'qualifying':
+        case 'raceStart':
+        case 'tyreUse':
+          comparison = getStatValueForSort(a, filters.sortBy) - getStatValueForSort(b, filters.sortBy);
+          break;
+        // Car part stat columns
+        case 'speed':
+        case 'cornering':
+        case 'powerUnit':
+        case 'drs':
+        case 'pitStopTime':
+          comparison = getStatValueForSort(a, filters.sortBy) - getStatValueForSort(b, filters.sortBy);
+          break;
+        case 'total_value':
+          // Calculate total value for drivers and parts
+          if ('is_driver' in a && 'is_driver' in b && a.is_driver && b.is_driver) {
+            // Driver total
+            const aTotal = getStatValueForSort(a, 'overtaking') + getStatValueForSort(a, 'blocking') +
+                          getStatValueForSort(a, 'qualifying') + getStatValueForSort(a, 'tyreUse') +
+                          getStatValueForSort(a, 'raceStart');
+            const bTotal = getStatValueForSort(b, 'overtaking') + getStatValueForSort(b, 'blocking') +
+                          getStatValueForSort(b, 'qualifying') + getStatValueForSort(b, 'tyreUse') +
+                          getStatValueForSort(b, 'raceStart');
+            comparison = aTotal - bTotal;
+          } else if ('is_car_part' in a && 'is_car_part' in b && a.is_car_part && b.is_car_part) {
+            // Car part total (exclude pitStopTime)
+            const aTotal = getStatValueForSort(a, 'speed') + getStatValueForSort(a, 'cornering') +
+                          getStatValueForSort(a, 'powerUnit') + getStatValueForSort(a, 'qualifying') +
+                          getStatValueForSort(a, 'drs');
+            const bTotal = getStatValueForSort(b, 'speed') + getStatValueForSort(b, 'cornering') +
+                          getStatValueForSort(b, 'powerUnit') + getStatValueForSort(b, 'qualifying') +
+                          getStatValueForSort(b, 'drs');
+            comparison = aTotal - bTotal;
+          }
+          break;
+        // Boost tier columns
+        case 'overtake_tier':
+        case 'block_tier':
+        case 'corners_tier':
+        case 'tyre_use_tier':
+        case 'power_unit_tier':
+        case 'speed_tier':
+        case 'pit_stop_time_tier':
+        case 'race_start_tier':
+          comparison = getBoostTierValueForSort(a, filters.sortBy) - getBoostTierValueForSort(b, filters.sortBy);
+          break;
+        default:
+          comparison = 0;
+      }
+
+      return filters.sortOrder === 'asc' ? comparison : -comparison;
+    });
+  }, [filteredItems, filters.sortBy, filters.sortOrder]);
 
   const handleCompare = (item: CatalogItem) => {
     if (onCompare) {
@@ -315,7 +297,7 @@ export function DataGrid({
   const getRarityBackground = (rarity: number): string => {
     return rarity === 0 ? "bg-gray-300" :
            rarity === 1 ? "bg-blue-200" :
-           rarity === 2 ? "bg-orange-300" :
+           rarity === 2 ? "bg-orange-200" :
            rarity === 3 ? "bg-purple-300" :
            rarity === 4 ? "bg-yellow-300" :
            rarity === 5 ? "bg-red-300" : "bg-gray-300";
@@ -418,9 +400,6 @@ export function DataGrid({
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
           <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-          <Badge variant="outline">
-            {sortedItems.length} item{sortedItems.length !== 1 ? 's' : ''}
-          </Badge>
         </div>
 
         {showCompareButton && compareItems.length > 0 && (
@@ -449,117 +428,52 @@ export function DataGrid({
 
       {/* Filters and Search */}
       {showFilters && (
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {showSearch && (
-              <div className="lg:col-span-2">
-                <Input
-                  placeholder="Search assets..."
-                  value={filters.search}
-                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                />
-              </div>
-            )}
+        <div className="flex items-center space-x-4 mb-6">
+          {showSearch && (
+            <div className="flex-1 max-w-md">
+              <Input
+                placeholder="Search..."
+                value={filters.search}
+                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              />
+            </div>
+          )}
 
-            <div>
+          {/* Max Series filter - only for drivers and parts */}
+          {(gridType === 'drivers' || gridType === 'parts') && (
+            <div className="flex items-center space-x-2">
+              <label htmlFor="maxSeries" className="text-sm font-medium text-gray-700">
+                Max Series:
+              </label>
               <select
-                className="w-full rounded-lg border-gray-300 text-sm"
-                value={filters.rarity ?? ''}
-                onChange={(e) => setFilters(prev => ({
-                  ...prev,
-                  rarity: e.target.value ? Number(e.target.value) : null
-                }))}
+                id="maxSeries"
+                className="rounded-lg border-gray-300 text-sm px-3 py-2"
+                value={filters.maxSeries}
+                onChange={(e) => setFilters(prev => ({ ...prev, maxSeries: Number(e.target.value) }))}
               >
-                <option value="">All Rarities</option>
-                <option value="5">Special Edition</option>
-                <option value="4">Legendary</option>
-                <option value="3">Epic</option>
-                <option value="2">Rare</option>
-                <option value="1">Uncommon</option>
-                <option value="0">Common</option>
+                {Array.from({ length: 12 }, (_, i) => (
+                  <option key={12 - i} value={12 - i}>
+                    {12 - i}
+                  </option>
+                ))}
               </select>
             </div>
-
-            {gridType !== 'boosts' && (
-              <div>
-                <select
-                  className="w-full rounded-lg border-gray-300 text-sm"
-                  value={filters.cardType ?? ''}
-                  onChange={(e) => setFilters(prev => ({
-                    ...prev,
-                    cardType: e.target.value ? Number(e.target.value) : null
-                  }))}
-                >
-                  <option value="">All Types</option>
-                  <option value="0">Car Parts</option>
-                  <option value="1">Drivers</option>
-                </select>
-              </div>
-            )}
-
-            {/* Only show ownership filter if we have assets data */}
-            {assets.length > 0 && (
-              <div>
-                <select
-                  className="w-full rounded-lg border-gray-300 text-sm"
-                  value={filters.owned === null ? '' : filters.owned.toString()}
-                  onChange={(e) => setFilters(prev => ({
-                    ...prev,
-                    owned: e.target.value === '' ? null : e.target.value === 'true'
-                  }))}
-                >
-                  <option value="">All Items</option>
-                  <option value="true">Owned</option>
-                  <option value="false">Not Owned</option>
-                </select>
-              </div>
-            )}
-
-            <div className="flex space-x-2">
-              <select
-                className="flex-1 rounded-lg border-gray-300 text-sm"
-                value={filters.sortBy}
-                onChange={(e) => setFilters(prev => ({
-                  ...prev,
-                  sortBy: e.target.value as FilterState['sortBy']
-                }))}
-              >
-                <option value="name">Name</option>
-                {gridType !== 'boosts' && <option value="rarity">Rarity</option>}
-                {gridType === 'boosts' && <option value="boost_type">Boost Type</option>}
-                {gridType !== 'boosts' && <option value="series">Series</option>}
-                {assets.length > 0 && gridType !== 'boosts' && <option value="level">Level</option>}
-                {/* {gridType !== 'boosts' && <option value="cc_price">Price</option>} */}
-              </select>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="px-3"
-                onClick={() => setFilters(prev => ({
-                  ...prev,
-                  sortOrder: prev.sortOrder === 'asc' ? 'desc' : 'asc'
-                }))}
-              >
-                {filters.sortOrder === 'asc' ? '↑' : '↓'}
-              </Button>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
       {/* Data Grid Table */}
       <div className="overflow-x-auto bg-white rounded-lg border border-gray-200 w-fit">
         <table className="table divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-700">
             <tr>
               {columns.map((column) => (
                 <th
                   key={column.key}
                   scope="col"
                   className={cn(
-                    'px-3 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider',
-                    column.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
+                    'px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider',
+                    column.sortable ? 'cursor-pointer hover:bg-gray-600' : ''
                   )}
                   onClick={() => {
                     if (column.sortable && column.key !== 'actions') {

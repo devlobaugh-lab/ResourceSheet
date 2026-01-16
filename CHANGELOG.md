@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **UI Layout Simplification & Column Sorting**: Streamlined the grid pages by removing most filter controls, repositioning search functionality, and restoring column header sorting
+  - **Removed**: Rarity dropdown, Card Type dropdown, Owned filter, Sort By controls from DataGrid
+  - **Restored**: Column header click-to-sort functionality with visual indicators (↑/↓)
+  - **Repositioned**: Search field from DataGrid filter bar to page-level header area below page titles
+  - **Updated**: Search placeholder to be context-specific ("Search drivers...", "Search parts...", "Search boosts...")
+  - **Added**: "Max Series" filter for drivers and parts pages (dropdown 12-1, defaults to 12)
+  - **Enhanced**: Max Series filter shows only items at selected series value or lower (e.g., select 6 shows series 1-6)
+  - **Improved**: Search works on visible items after Max Series filtering is applied
+  - **Refined**: Search field size limited to 20-30 characters (sm:w-64 class)
+  - **Visual**: Added dropdown indicator (▼) to Max Series select element
+  - **Cleaned**: Removed item count badge from grid headers (no longer shows "X items")
+
+- **Dynamic User Navigation**: Made authentication buttons in header responsive to user login state
+  - **Not logged in**: Shows "Sign In" and "Sign Up" buttons
+  - **Logged in**: Shows only "Profile" button
+  - **Architecture**: Split layout into server component (metadata) and client component (navigation)
+  - **Responsive**: Consistent behavior across desktop and mobile navigation
+
+- **Layout Architecture**: Properly separated Next.js server and client components
+  - **Server Component**: `layout.tsx` with metadata export and static content
+  - **Client Component**: `client-navigation.tsx` with authentication-dependent UI
+  - **Compliance**: Fixed "use client" directive placement to resolve React Server Components errors
+
 ### Fixed
 - **Level 0 Stats Bug**: Fixed off-by-one error where drivers and car parts at level 0 were incorrectly showing level 1 stats instead of all 0 stats. Updated `getStatValue` and `getStatValueForSort` functions in DataGrid component to properly handle level 0 by returning 0 instead of accessing `stats[level - 1]`.
 

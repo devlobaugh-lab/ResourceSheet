@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { DataGrid } from '@/components/DataGrid'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { useBoosts } from '@/hooks/useApi'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useAuth } from '@/components/auth/AuthContext'
@@ -16,14 +17,42 @@ function AuthenticatedBoostsPage() {
     limit: 100
   })
 
+  const [searchTerm, setSearchTerm] = useState('')
+
   // Transform the boosts data to flatten custom_name from boost_custom_names
-  const boosts = (boostsResponse?.data || []).map((boost: any) => ({
+  const rawBoosts = (boostsResponse?.data || []).map((boost: any) => ({
     ...boost,
     custom_name: boost.boost_custom_names?.custom_name || null
   }))
 
+  // Apply search filter
+  const filteredBoosts = useMemo(() => {
+    if (!searchTerm) return rawBoosts
+
+    return rawBoosts.filter(boost => {
+      const displayName = boost.custom_name || boost.name
+      return displayName.toLowerCase().includes(searchTerm.toLowerCase())
+    })
+  }, [rawBoosts, searchTerm])
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Page Title and Filters */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-gray-900">Boosts</h1>
+
+        {/* Search Filter */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="w-full sm:w-64">
+            <Input
+              placeholder="Search boosts..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+
       <ErrorBoundary
         fallback={
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
@@ -39,11 +68,11 @@ function AuthenticatedBoostsPage() {
           </div>
         ) : (
           <DataGrid
-            boosts={boosts}
-            title="Boosts"
+            boosts={filteredBoosts}
+            title=""
             gridType="boosts"
-            showFilters={true}
-            showSearch={true}
+            showFilters={false}
+            showSearch={false}
             showCompareButton={true}
             onBoostNameChange={refetch}
           />
