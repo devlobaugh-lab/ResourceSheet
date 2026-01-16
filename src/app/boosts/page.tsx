@@ -38,8 +38,8 @@ function AuthenticatedBoostsPage() {
   return (
     <div className="space-y-4">
       {/* Page Title and Filters */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Boosts</h1>
+      <div className="flex items-center gap-6">
+        <h1 className="text-3xl font-bold text-gray-900 mr-4">Boosts</h1>
 
         {/* Search Filter */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
