@@ -75,7 +75,7 @@ export function DataGrid({
     search: '',
     maxSeries: 12, // Default to show all series
     sortBy: 'name',
-    sortOrder: 'asc',
+    sortOrder: 'desc',
   });
 
   // Extended types for unified filtering
@@ -481,8 +481,8 @@ export function DataGrid({
                         ...prev,
                         sortBy: column.key as FilterState['sortBy'],
                         sortOrder: prev.sortBy === column.key
-                          ? prev.sortOrder === 'asc' ? 'desc' : 'asc'
-                          : 'asc'
+                          ? prev.sortOrder === 'desc' ? 'asc' : 'desc'
+                          : 'desc'
                       }));
                     }
                   }}
