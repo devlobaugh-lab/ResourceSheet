@@ -395,7 +395,7 @@ export function DataGrid({
   const columns = getColumns();
 
   return (
-    <div className={cn('w-full', className)}>
+    <div className={cn('w-full', className)} style={{ marginTop: 0 }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
