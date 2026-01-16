@@ -188,6 +188,7 @@ export interface Database {
           user_id: string
           boost_id: string
           level: number
+          card_count: number
           created_at: string
           updated_at: string
         }
@@ -196,6 +197,7 @@ export interface Database {
           user_id: string
           boost_id: string
           level?: number
+          card_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -204,6 +206,7 @@ export interface Database {
           user_id?: string
           boost_id?: string
           level?: number
+          card_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -326,6 +329,7 @@ export interface Database {
           user_id: string
           driver_id: string
           level: number
+          card_count: number
           created_at: string
           updated_at: string
         }
@@ -334,6 +338,7 @@ export interface Database {
           user_id: string
           driver_id: string
           level?: number
+          card_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -342,6 +347,7 @@ export interface Database {
           user_id?: string
           driver_id?: string
           level?: number
+          card_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -352,6 +358,7 @@ export interface Database {
           user_id: string
           car_part_id: string
           level: number
+          card_count: number
           created_at: string
           updated_at: string
         }
@@ -360,6 +367,7 @@ export interface Database {
           user_id: string
           car_part_id: string
           level?: number
+          card_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -368,6 +376,7 @@ export interface Database {
           user_id?: string
           car_part_id?: string
           level?: number
+          card_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -475,7 +484,8 @@ export interface DriverView {
 
   // From user_drivers (or defaults if not owned)
   level: number
-  is_owned: boolean // derived: level > 0
+  card_count: number
+  is_owned: boolean // derived: level > 0 || card_count > 0
 }
 
 export interface CarPartView {
@@ -495,7 +505,8 @@ export interface CarPartView {
 
   // From user_car_parts (or defaults if not owned)
   level: number
-  is_owned: boolean // derived: level > 0
+  card_count: number
+  is_owned: boolean // derived: level > 0 || card_count > 0
 }
 
 export interface BoostView {

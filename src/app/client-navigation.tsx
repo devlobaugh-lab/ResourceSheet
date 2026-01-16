@@ -101,10 +101,10 @@ export function ClientNavigation() {
               Boosts
             </Link>
             <Link
-              href="/dashboard"
+              href="/data-input"
               className="px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
             >
-              Dashboard
+              Data Input
             </Link>
             <Link
               href="/compare"
@@ -148,10 +148,10 @@ export function ClientNavigation() {
             Boosts
           </Link>
           <Link
-            href="/dashboard"
+            href="/data-input"
             className="block px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50"
           >
-            Dashboard
+            Data Input
           </Link>
           <Link
             href="/compare"

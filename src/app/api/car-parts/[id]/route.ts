@@ -3,16 +3,17 @@ import { z } from 'zod'
 import { createClient } from '@supabase/supabase-js'
 import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
 
-const updateUserBoostSchema = z.object({
-  card_count: z.number().min(0),
+const updateUserCarPartSchema = z.object({
+  level: z.number().min(0).optional(),
+  card_count: z.number().min(0).optional(),
 })
 
-// PUT /api/boosts/[id] - Update user's boost amount
+// PUT /api/car-parts/[id] - Update user's car part data
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  console.log('🚀 Boost PUT API called for ID:', params.id)
+  console.log('🔧 Car part PUT API called for ID:', params.id)
 
   try {
     // Try to get user from Authorization header first, then fall back to cookies
@@ -60,14 +61,14 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const validatedData = updateUserBoostSchema.parse(body)
+    const validatedData = updateUserCarPartSchema.parse(body)
 
-    // Check if user already has this boost record
+    // Check if user already has this car part record
     const { data: existingRecord, error: checkError } = await supabaseAdmin
-      .from('user_boosts')
+      .from('user_car_parts')
       .select('id')
       .eq('user_id', user.id)
-      .eq('boost_id', params.id)
+      .eq('car_part_id', params.id)
       .single()
 
     if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
@@ -81,13 +82,13 @@ export async function PUT(
     if (existingRecord) {
       // Update existing record
       const { data, error } = await supabaseAdmin
-        .from('user_boosts')
+        .from('user_car_parts')
         .update({
-          card_count: validatedData.card_count,
+          ...validatedData,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
-        .eq('boost_id', params.id)
+        .eq('car_part_id', params.id)
         .select()
         .single()
 
@@ -101,11 +102,11 @@ export async function PUT(
     } else {
       // Create new record
       const { data, error } = await supabaseAdmin
-        .from('user_boosts')
+        .from('user_car_parts')
         .insert({
           user_id: user.id,
-          boost_id: params.id,
-          card_count: validatedData.card_count
+          car_part_id: params.id,
+          ...validatedData
         })
         .select()
         .single()
@@ -129,7 +130,7 @@ export async function PUT(
       )
     }
 
-    console.error('Boost PUT error:', error)
+    console.error('Car part PUT error:', error)
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
       { status: 500 }

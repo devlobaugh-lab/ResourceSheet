@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
     // Get user's drivers
     const { data: userDrivers, error: userDriversError } = await supabaseAdmin
       .from('user_drivers')
-      .select('driver_id, level')
+      .select('driver_id, level, card_count')
       .eq('user_id', user.id)
 
     if (userDriversError) {
@@ -111,18 +111,20 @@ export async function GET(request: NextRequest) {
     const userDriversMap = new Map()
     userDrivers?.forEach(driver => {
       userDriversMap.set(driver.driver_id, {
-        level: driver.level
+        level: driver.level,
+        card_count: driver.card_count
       })
     })
 
     // Merge drivers with user ownership data
     const mergedData = (drivers || []).map(driver => {
-      const userData = userDriversMap.get(driver.id) || { level: 0 }
+      const userData = userDriversMap.get(driver.id) || { level: 0, card_count: 0 }
 
       return {
         ...driver,
         level: userData.level,
-        is_owned: userData.level > 0
+        card_count: userData.card_count,
+        is_owned: userData.level > 0 || userData.card_count > 0
       }
     })
 
