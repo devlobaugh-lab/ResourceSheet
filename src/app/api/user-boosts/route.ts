@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     // Get user's boosts
     const { data: userBoosts, error: userBoostsError } = await supabaseAdmin
       .from('user_boosts')
-      .select('boost_id, level')
+      .select('boost_id, level, card_count')
       .eq('user_id', user.id)
 
     if (userBoostsError) {
@@ -72,18 +72,20 @@ export async function GET(request: NextRequest) {
     const userBoostsMap = new Map()
     userBoosts?.forEach(item => {
       userBoostsMap.set(item.boost_id, {
-        level: item.level
+        level: item.level,
+        card_count: item.card_count
       })
     })
 
     // Merge boosts with user ownership data
     const mergedData = (boosts || []).map(boost => {
-      const userData = userBoostsMap.get(boost.id) || { level: 0 }
+      const userData = userBoostsMap.get(boost.id) || { level: 0, card_count: 0 }
 
       return {
         ...boost,
         level: userData.level,
-        is_owned: userData.level > 0
+        card_count: userData.card_count,
+        is_owned: userData.card_count > 0
       }
     })
 

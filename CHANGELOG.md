@@ -35,6 +35,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Level 0 Stats Bug**: Fixed off-by-one error where drivers and car parts at level 0 were incorrectly showing level 1 stats instead of all 0 stats. Updated `getStatValue` and `getStatValueForSort` functions in DataGrid component to properly handle level 0 by returning 0 instead of accessing `stats[level - 1]`.
 
 ### Added
+- **User Data Input Interface** - Complete spreadsheet-style data entry system
+  - **Data Input Page**: `/data-input` with tabbed interface for Drivers, Car Parts, and Boosts
+  - **Auto-save Functionality**: Immediate saving on input change/blur with proper validation
+  - **Level Validation**: Rarity-based level restrictions (Common: 1-11, Rare: 1-9, Epic: 1-8, Legendary/Special: 1-7)
+  - **Tab-through Workflow**: Efficient keyboard navigation (level → card count → next item)
+  - **Smart Filtering**: Excludes starter components (series 0) from parts, includes special drivers
+  - **Custom Sorting**: 
+    - Drivers: Series → Rarity → Ordinal ascending
+    - Parts: Brakes → Gearbox → Rear Wing → Front Wing → Suspension → Engine (by part type)
+    - Boosts: Numerical sorting by extracted numbers from boost names
+  - **Database Schema**: Added `card_count` fields to `user_drivers`, `user_car_parts`, and `user_boosts` tables
+  - **API Endpoints**: Created update endpoints for all asset types with proper authentication
+  - **Navigation**: Added "Data Input" link to main navigation menu
+  - **UI Consistency**: Matches drivers page styling with dark headers, compact padding, rarity backgrounds
+  - **Column Layout**: Optimized columns for each asset type (Name, Rarity, [Type], Series, Level, Amount)
+
 - **Boost Custom Naming Feature**
   - **Database Schema**: Created `boost_custom_names` table with unique constraints
   - **API Endpoints**: `GET/PUT/DELETE /api/boosts/[id]/custom-name` with full validation

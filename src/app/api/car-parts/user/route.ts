@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
     // Get user's car parts
     const { data: userCarParts, error: userCarPartsError } = await supabaseAdmin
       .from('user_car_parts')
-      .select('car_part_id, level')
+      .select('car_part_id, level, card_count')
       .eq('user_id', user.id)
 
     if (userCarPartsError) {
@@ -121,18 +121,20 @@ export async function GET(request: NextRequest) {
     const userCarPartsMap = new Map()
     userCarParts?.forEach(carPart => {
       userCarPartsMap.set(carPart.car_part_id, {
-        level: carPart.level
+        level: carPart.level,
+        card_count: carPart.card_count
       })
     })
 
     // Merge car parts with user ownership data
     const mergedData = (carParts || []).map(carPart => {
-      const userData = userCarPartsMap.get(carPart.id) || { level: 0 }
+      const userData = userCarPartsMap.get(carPart.id) || { level: 0, card_count: 0 }
 
       return {
         ...carPart,
         level: userData.level,
-        is_owned: userData.level > 0
+        card_count: userData.card_count,
+        is_owned: userData.level > 0 || userData.card_count > 0
       }
     })
 
