@@ -10,6 +10,7 @@ import { useBoosts } from '@/hooks/useApi'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useAuth } from '@/components/auth/AuthContext'
 import Link from 'next/link'
+import { BoostWithCustomName } from '@/types/database'
 
 function AuthenticatedBoostsPage() {
   const { data: boostsResponse, isLoading, error, refetch } = useBoosts({
@@ -78,6 +79,9 @@ function AuthenticatedBoostsPage() {
           />
         )}
       </ErrorBoundary>
+
+      {/* Additional bottom spacing */}
+      <div className="h-12"></div>
     </div>
   )
 }

@@ -35,13 +35,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Level 0 Stats Bug**: Fixed off-by-one error where drivers and car parts at level 0 were incorrectly showing level 1 stats instead of all 0 stats. Updated `getStatValue` and `getStatValueForSort` functions in DataGrid component to properly handle level 0 by returning 0 instead of accessing `stats[level - 1]`.
 
 ### Added
+- **Car Parts Page Grouped Sections** - Complete redesign with part type organization
+  - **Grouped Display**: Parts organized into sections by type (Brakes, Gearbox, Rear Wing, Front Wing, Suspension, Engine)
+  - **Section Headers**: Each part type shows count (e.g., "Brakes (8 parts)")
+  - **Complete Statistics**: All columns included - Name, Rarity, Level, Bonus, Speed, Cornering, Power Unit, Qualifying, DRS, Pit Stop, Total Value, Series
+  - **Smart Filtering**: Excludes starter components (series 0) from display
+  - **Within-group Sorting**: Series → Rarity ascending within each part type
+  - **Interactive Elements**: Bonus checkboxes and stat calculations
+  - **Responsive Design**: Proper table overflow and mobile compatibility
+
+- **Sort State Persistence** - Cross-session sort preferences for all grids
+  - **localStorage Integration**: Automatic saving/loading of sort preferences
+  - **Per-page Independence**: Separate preferences for Drivers, Parts, and Boosts pages
+  - **Smart Defaults**: Main pages default to Data Input sorting logic (series/rarity/part type)
+  - **Graceful Fallbacks**: Works in incognito mode, recovers from invalid data
+  - **Real-time Saving**: Preferences saved immediately when sort changes
+  - **Cross-session Continuity**: Sort choices persist between browser sessions
+
+- **Boosts Page Enhancements** - Amount column and custom names
+  - **Amount Column**: Added "Amount" column showing card count for each boost
+  - **Custom Name Display**: Fixed custom boost names display for authenticated users
+  - **API Integration**: Boosts API now includes custom names without requiring authentication
+  - **Column Layout**: Name | Amount | Overtake | Defend | Corners | Tyre Use | Power Unit | Speed | Pit Stop | Race Start
+
 - **User Data Input Interface** - Complete spreadsheet-style data entry system
   - **Data Input Page**: `/data-input` with tabbed interface for Drivers, Car Parts, and Boosts
   - **Auto-save Functionality**: Immediate saving on input change/blur with proper validation
   - **Level Validation**: Rarity-based level restrictions (Common: 1-11, Rare: 1-9, Epic: 1-8, Legendary/Special: 1-7)
   - **Tab-through Workflow**: Efficient keyboard navigation (level → card count → next item)
   - **Smart Filtering**: Excludes starter components (series 0) from parts, includes special drivers
-  - **Custom Sorting**: 
+  - **Custom Sorting**:
     - Drivers: Series → Rarity → Ordinal ascending
     - Parts: Brakes → Gearbox → Rear Wing → Front Wing → Suspension → Engine (by part type)
     - Boosts: Numerical sorting by extracted numbers from boost names

@@ -23,16 +23,23 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
     'Content-Type': 'application/json',
   }
 
-  // For client-side requests, get the access token from Supabase session
+  // For client-side requests, try to get the access token from Supabase session
   if (typeof window !== 'undefined') {
     try {
-      const { data: { session } } = await supabaseClient.auth.getSession()
+      const { data: { session }, error } = await supabaseClient.auth.getSession()
 
       if (session?.access_token) {
         headers['Authorization'] = `Bearer ${session.access_token}`
-        console.log('✅ Found access token for API request')
       } else {
-        console.log('❌ No access token in session')
+        // If no session, try to refresh or get user
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+        if (user && !userError) {
+          // User exists but no session, try to refresh
+          const { data: { session: refreshedSession }, error: refreshError } = await supabaseClient.auth.refreshSession()
+          if (refreshedSession?.access_token && !refreshError) {
+            headers['Authorization'] = `Bearer ${refreshedSession.access_token}`
+          }
+        }
       }
     } catch (error) {
       console.warn('Failed to get auth token:', error)

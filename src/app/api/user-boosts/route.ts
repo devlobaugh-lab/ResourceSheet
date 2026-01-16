@@ -7,13 +7,20 @@ export async function GET(request: NextRequest) {
   try {
     // Verify authentication
     const supabase = createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      )
+    let user = session?.user
+
+    if (!user) {
+      const { data: { user: userFromGetUser }, error: authError } = await supabase.auth.getUser()
+
+      if (authError || !userFromGetUser) {
+        return NextResponse.json(
+          { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+          { status: 401 }
+        )
+      }
+      user = userFromGetUser
     }
 
     const { searchParams } = new URL(request.url)

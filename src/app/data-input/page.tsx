@@ -548,6 +548,9 @@ export default function DataInputPage() {
             {activeTab === 'drivers' ? <DriversTab /> :
              activeTab === 'parts' ? <PartsTab /> :
              <BoostsTab />}
+
+            {/* Additional bottom spacing */}
+            <div className="h-12"></div>
           </div>
         </div>
       </div>

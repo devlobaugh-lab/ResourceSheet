@@ -3,19 +3,39 @@ import { z } from 'zod'
 import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
 import { createBoostSchema } from '@/lib/validation'
 
-// GET /api/boosts - List boosts with optional filters
+// GET /api/boosts - List boosts with optional filters (no auth required)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    
-    // Build query with custom names
+
+    // Try to get user for custom names, but don't require authentication
+    let userId = null
+    try {
+      const supabase = createServerSupabaseClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      userId = session?.user?.id
+
+      if (!userId) {
+        const { data: { user } } = await supabase.auth.getUser()
+        userId = user?.id
+      }
+    } catch (error) {
+      // Ignore auth errors - custom names are optional
+    }
+
+    // Build query with custom names (filtered by user if authenticated)
     let query = supabaseAdmin
       .from('boosts')
       .select(`
         *,
-        boost_custom_names!left(custom_name)
+        boost_custom_names!left(custom_name${userId ? `, user_id` : ''})
       `, { count: 'exact' })
       .order('name', { ascending: true })
+
+    // Filter custom names by current user if authenticated
+    if (userId) {
+      query = query.eq('boost_custom_names.user_id', userId)
+    }
     
     // Apply filters
     const seasonId = searchParams.get('season_id')
