@@ -1,21 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import type { UserAssetView, CatalogItem, UserItem, Boost, Season, DriverView, CarPartView, BoostView } from '@/types/database'
 
 // API base URL
 const API_BASE = '/api'
-
-// Client-side Supabase client for getting auth tokens
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-
-const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
-  }
-})
 
 // Helper function to get auth headers
 export async function getAuthHeaders(): Promise<Record<string, string>> {
@@ -26,16 +14,16 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
   // For client-side requests, try to get the access token from Supabase session
   if (typeof window !== 'undefined') {
     try {
-      const { data: { session }, error } = await supabaseClient.auth.getSession()
+      const { data: { session }, error } = await supabase.auth.getSession()
 
       if (session?.access_token) {
         headers['Authorization'] = `Bearer ${session.access_token}`
       } else {
         // If no session, try to refresh or get user
-        const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
         if (user && !userError) {
           // User exists but no session, try to refresh
-          const { data: { session: refreshedSession }, error: refreshError } = await supabaseClient.auth.refreshSession()
+          const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession()
           if (refreshedSession?.access_token && !refreshError) {
             headers['Authorization'] = `Bearer ${refreshedSession.access_token}`
           }

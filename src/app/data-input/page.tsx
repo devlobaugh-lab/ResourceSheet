@@ -156,9 +156,9 @@ function DriversTab() {
   };
 
   return (
-    <div className="overflow-x-auto bg-white rounded-lg border border-gray-200 w-fit">
+    <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[70vh]">
       <table className="table divide-y divide-gray-200">
-        <thead className="bg-gray-700">
+        <thead className="bg-gray-700 sticky top-0 z-10">
           <tr>
             <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
               Name
@@ -308,9 +308,9 @@ function PartsTab() {
   };
 
   return (
-    <div className="overflow-x-auto bg-white rounded-lg border border-gray-200 w-fit">
+    <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[70vh]">
       <table className="table divide-y divide-gray-200">
-        <thead className="bg-gray-700">
+        <thead className="bg-gray-700 sticky top-0 z-10">
           <tr>
             <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
               Name
@@ -437,9 +437,9 @@ function BoostsTab() {
   }
 
   return (
-    <div className="overflow-x-auto bg-white rounded-lg border border-gray-200 w-fit">
+    <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[70vh]">
       <table className="table divide-y divide-gray-200">
-        <thead className="bg-gray-700">
+        <thead className="bg-gray-700 sticky top-0 z-10">
           <tr>
             <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
               Boost Display Name

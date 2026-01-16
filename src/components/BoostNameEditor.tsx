@@ -61,9 +61,14 @@ export function BoostNameEditor({
     // Empty/whitespace-only treated as deletion
     if (trimmed.length === 0) return { valid: true }
 
-    // Character validation: A-Z, a-z, 0-9, -, .
-    if (!/^[A-Za-z0-9\.\-]+$/.test(trimmed)) {
-      return { valid: false, error: 'Only letters, numbers, hyphens, and periods allowed' }
+    // Check for leading/trailing spaces
+    if (name !== name.trim()) {
+      return { valid: false, error: 'Name cannot start or end with spaces' }
+    }
+
+    // Character validation: A-Z, a-z, 0-9, -, ., spaces
+    if (!/^[A-Za-z0-9\.\-\s]+$/.test(trimmed)) {
+      return { valid: false, error: 'Only letters, numbers, hyphens, periods, and spaces allowed' }
     }
 
     // Length validation

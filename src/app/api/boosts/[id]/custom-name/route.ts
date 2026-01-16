@@ -10,8 +10,9 @@ const customNameSchema = z.object({
     .string()
     .min(1, 'Custom name cannot be empty')
     .max(64, 'Custom name cannot exceed 64 characters')
-    .regex(/^[A-Za-z0-9\.\-]+$/, 'Only letters, numbers, hyphens, and periods allowed')
+    .regex(/^[A-Za-z0-9\.\-\s]+$/, 'Only letters, numbers, hyphens, periods, and spaces allowed')
     .refine(name => name.trim().length > 0, 'Custom name cannot be only whitespace')
+    .refine(name => name === name.trim(), 'Custom name cannot start or end with spaces')
 })
 
 // GET /api/boosts/[id]/custom-name - Get custom name for a boost
@@ -133,9 +134,13 @@ export async function PUT(
 
     // Parse and validate request body
     const body = await request.json()
+    console.log('Custom name input received:', JSON.stringify(body))
+
     const validation = customNameSchema.safeParse(body)
+    console.log('Validation result:', validation.success, validation.error?.errors)
 
     if (!validation.success) {
+      console.log('Validation failed with error:', validation.error.errors[0].message)
       return NextResponse.json(
         { error: validation.error.errors[0].message },
         { status: 400 }
