@@ -23,6 +23,11 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [x] Include validation for data ranges and formats
 - [x] Add save/cancel workflow with confirmation dialogs
 
+### Import/Export of User Data
+- [x] Connect import and export buttons to functionality
+- [x] Export/import all user data to a JSON file
+- [x] For Admin users, allow export of Custom Boost names to JSON file
+
 ### Admin Interface Development
 - [x] Implement data import/export functionality
 - [ ] Create content management tools
@@ -36,6 +41,13 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [ ] Add filtering and sorting for compared items
 - [ ] Create export functionality for comparison results
 - [ ] Optimize UI for different screen sizes
+
+### Add User Notes and Guidance 
+- [ ] User can create and save Car setups for different scenarios with name and notes
+- [ ] User can create and save Full setups including parts, drivers and boosts with name and notes
+- [ ] List tracks and allow for recommended setups for each track at different GP Levels
+- [ ] List GPs and allow user to build recommended setup for each track at different GP Levels
+  - [ ] User can create a GP with name, tracks/races and special considerations
 
 ### Deployment Preparation
 - [ ] Create deployment checklist
