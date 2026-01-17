@@ -86,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Data Input Performance**: Simplified data input interface to use save-on-blur approach. Removed complex debouncing and local state management. All input fields now save data immediately when the user leaves the field (onBlur event), providing predictable and reliable behavior without input lag or capture issues. Level inputs include automatic validation and clamping to maximum allowed values.
 
-- **Max Level Validation Issue**: Fixed incorrect max level validation on data input page. Updated LEVEL_RANGES constant in `src/app/data-input/page.tsx` to set correct max levels: Common (11), Uncommon (11), Rare (9), Epic (8), Legendary (7), Special Edition (7).
+- **Max Level Validation Issue**: Fixed incorrect max level validation on data input page. Updated LEVEL_RANGES constant in `src/app/data-input/page.tsx` to set correct max levels: Basic (11), Common (11), Rare (9), Epic (8), Legendary (7), Special Edition (7).
 
 - **Level 0 Stats Bug**: Fixed off-by-one error where drivers and car parts at level 0 were incorrectly showing level 1 stats instead of all 0 stats. Updated `getStatValue` and `getStatValueForSort` functions in DataGrid component to properly handle level 0 by returning 0 instead of accessing `stats[level - 1]`.
 

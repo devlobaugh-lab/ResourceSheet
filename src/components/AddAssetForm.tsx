@@ -55,12 +55,12 @@ export function AddAssetForm({ onSuccess, onCancel }: AddAssetFormProps) {
       4: 'destructive', // Legendary
       3: 'secondary',   // Epic
       2: 'default',     // Rare
-      1: 'outline',     // Uncommon
-      0: 'outline',     // Common
+      1: 'outline',     // Common
+      0: 'outline',     // Basic
     };
-    
-    const labels = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
-    
+
+    const labels = ['Basic', 'Common', 'Rare', 'Epic', 'Legendary'];
+
     return (
       <Badge variant={variants[rarity] || 'outline'} size="sm">
         {labels[rarity] || 'Unknown'}

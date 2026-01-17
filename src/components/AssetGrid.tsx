@@ -200,8 +200,8 @@ export function AssetGrid({
                 <option value="4">Legendary</option>
                 <option value="3">Epic</option>
                 <option value="2">Rare</option>
-                <option value="1">Uncommon</option>
-                <option value="0">Common</option>
+                <option value="1">Common</option>
+                <option value="0">Basic</option>
               </select>
             </div>
             
