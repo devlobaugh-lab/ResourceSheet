@@ -1,82 +1,77 @@
-# Phase 4: Complete API Development Layer
+# F1 Resource Manager - Bonus Percentage Feature Implementation
 
 ## Summary
-Built comprehensive REST API layer with 12 endpoints across all data types, supporting the core F1 Resource Manager functionality for user inventory tracking, catalog management, and admin operations.
+Complete implementation of bonus percentage functionality for drivers and parts pages, allowing users to apply percentage bonuses to selected items with proper rounding and persistence.
 
-## Key Features Implemented
+## Key Features Added
 
-### Core API Endpoints
-- **User Assets**: Complete inventory view showing ALL catalog items for seasons with user ownership merged (shows 0 for unowned items)
-- **Catalog Items**: Full CRUD with filtering, pagination, and admin controls
-- **User Items**: Collection management with level/count tracking
-- **Boosts & Seasons**: Complete management endpoints
-- **Admin Import**: Bulk data import functionality for efficient content loading
+### 💰 Bonus Percentage System
+- **Bonus Input Field**: Added compact text input field (width `w-12`) to the right of "Max Series" dropdown on both drivers and parts pages
+- **Bonus Checkboxes**: Each driver/part row has a checkbox in the "Bonus" column that determines if the bonus percentage applies to that item
+- **Stat Calculation**: When bonus checkbox is checked and percentage entered, all stats are increased by the specified percentage
+- **Smart Rounding**: Always rounds up using `Math.ceil()` for performance stats, decreases pit stop time (better performance) and rounds to hundredths
+- **Real-time Updates**: Stats recalculate immediately when bonus settings change for instant visual feedback
 
-### User Experience Features
-- **Complete Inventory Display**: Users see all catalog items for seasons, even if unowned
-- **Ownership Tracking**: Level/count display for owned items, zeros for unowned
-- **Rich Filtering**: By season, rarity, card type, ownership status
-- **Advanced Sorting**: By name, rarity, series, level, card count
+### 💾 Persistence & State Management
+- **localStorage Integration**: Bonus percentage and checked items automatically saved to localStorage and restored when returning to pages
+- **Independent Settings**: Separate localStorage keys for drivers vs parts pages (`drivers-bonus-percentage`, `parts-bonus-percentage`)
+- **State Initialization Fix**: Fixed timing issue by initializing bonusCheckedItems state directly from localStorage in useState initializer instead of using useEffect
+- **Graceful Fallbacks**: Works in incognito mode, recovers from invalid data without breaking the UI
+- **Cross-session Continuity**: Bonus settings persist between browser sessions and page navigations
 
-### Security & Quality
-- **Multi-layer Security**: Supabase Auth + Row-Level Security + Admin role checking
-- **TypeScript Coverage**: Complete type safety with proper error handling
-- **Input Validation**: Zod schemas for all endpoints
-- **Performance**: Database indexes and efficient queries
+### 🎯 Technical Implementation Details
 
-## Files Added
-- `supabase/migrations/20260107192543_initial_schema.sql` - Complete database schema
-- `src/lib/supabase.ts` - Supabase client configuration
-- `src/types/database.ts` - TypeScript database types
-- `src/lib/validation.ts` - Zod validation schemas
-- `src/app/api/catalog-items/` - Catalog management endpoints
-- `src/app/api/user-assets/` - Merged catalog + user data view
-- `src/app/api/user-items/` - User collection management
-- `src/app/api/boosts/` - Boost management endpoints
-- `src/app/api/seasons/` - Season management endpoints
-- `src/app/api/admin/import/` - Bulk data import (admin only)
-- `.eslintrc.json` - ESLint configuration
+#### Rounding Logic
+- **Performance Stats**: `Math.ceil(baseValue * (1 + bonusPercentage / 100))` - always rounds up
+- **Pit Stop Time**: `Math.round((baseValue * (1 - bonusPercentage / 100)) * 100) / 100` - decreases and rounds to hundredths
+- **Example**: 71 with 10% bonus becomes 79 (71 + 7.1 → 78.1 → 79 rounded up)
+
+#### State Architecture
+- **React Hooks**: `useState` for local state, `useEffect` for localStorage synchronization
+- **Error Handling**: Try/catch blocks prevent localStorage issues from breaking functionality
+- **Type Safety**: Full TypeScript support with proper Set<string> handling for checked items
 
 ## Files Modified
-- `TASK.md` - Updated progress to show Phase 4 complete
-- `CHANGELOG.md` - Added comprehensive changelog entry
 
-## API Endpoints Created
-```
-GET    /api/catalog-items         - List catalog items with filters
-POST   /api/catalog-items         - Create item (admin)
-GET    /api/catalog-items/[id]    - Get single item
-PUT    /api/catalog-items/[id]    - Update item (admin)
-DELETE /api/catalog-items/[id]    - Delete item (admin)
+### Page Components
+- `src/app/drivers/page.tsx` - Added bonus percentage input, state management, localStorage persistence
+- `src/app/parts/page.tsx` - Added bonus percentage input, state management, localStorage persistence
 
-GET    /api/user-assets           - Merged catalog + user ownership view
-GET    /api/user-items            - User's owned items
-POST   /api/user-items            - Add item to collection
-PUT    /api/user-items/[id]       - Update level/count
-DELETE /api/user-items/[id]       - Remove from collection
+### DataGrid Component
+- `src/components/DataGrid.tsx` - Enhanced with bonus percentage prop, updated stat calculation logic
+- Added `bonusPercentage?: number` and `onBonusToggle?: (itemId: string) => void` props
+- Modified `getStatValue` function to apply bonus when items are checked
 
-GET    /api/boosts              - List boosts
-POST   /api/boosts               - Create boost (admin)
-GET    /api/boosts/[id]         - Get single boost
-PUT    /api/boosts/[id]         - Update boost (admin)
-DELETE /api/boosts/[id]         - Delete boost (admin)
+### Documentation
+- `CHANGELOG.md` - Added comprehensive entry documenting the bonus percentage feature implementation
 
-GET    /api/seasons              - List seasons
-POST   /api/seasons              - Create season (admin)
-GET    /api/seasons/[id]        - Get single season
-PUT    /api/seasons/[id]        - Update season (admin)
-DELETE /api/seasons/[id]        - Delete season (admin)
+## Validation & Testing
+- ✅ Bonus input field properly sized and positioned
+- ✅ Checkboxes functional with state management
+- ✅ Stat calculations apply bonus correctly with proper rounding
+- ✅ Pit stop time decreases with bonus (performance improvement)
+- ✅ localStorage persistence working correctly from first render
+- ✅ Independent settings for drivers vs parts pages
+- ✅ Real-time stat updates when settings change
+- ✅ TypeScript compilation successful
+- ✅ No breaking changes to existing functionality
 
-POST   /api/admin/import         - Bulk import data (admin)
-```
+## UI/UX Enhancements
+- **Compact Design**: Bonus input field sized appropriately (`w-12`) for 2-character input
+- **Visual Feedback**: Stats update immediately when bonus settings change
+- **Intuitive Controls**: Clear labeling and positioning next to Max Series filter
+- **Responsive Layout**: Works on both desktop and mobile layouts
 
-## Quality Assurance
-- ✅ TypeScript compilation passes
-- ✅ ESLint passes with no warnings/errors
-- ✅ Database schema applied successfully
-- ✅ All endpoints follow REST conventions
-- ✅ Comprehensive error handling implemented
-- ✅ Input validation on all endpoints
+## Performance Considerations
+- **Minimal Overhead**: localStorage operations wrapped in try/catch for reliability
+- **Efficient Updates**: React's reconciliation handles stat recalculation efficiently
+- **Memory Management**: Proper cleanup of event listeners and state
 
-## Next Phase Ready
-The API foundation is complete and production-ready. Ready for Phase 5: Frontend Components development.
+## Edge Cases Handled
+- **Invalid Input**: Non-numeric bonus percentages default to 0
+- **Level 0 Items**: Stats correctly show 0 regardless of bonus settings
+- **Empty State**: Graceful handling when no items are present
+- **Browser Compatibility**: localStorage fallbacks for older browsers
+
+---
+**Bonus percentage feature fully implemented and tested** ✅
