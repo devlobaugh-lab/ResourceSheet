@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -20,6 +20,56 @@ function AuthenticatedPartsPage() {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [maxSeries, setMaxSeries] = useState(12)
+  const [bonusPercentage, setBonusPercentage] = useState('')
+  const [bonusCheckedItems, setBonusCheckedItems] = useState<Set<string>>(new Set())
+
+  // Load bonus settings from localStorage on mount
+  useEffect(() => {
+    try {
+      const storedBonusPercentage = localStorage.getItem('parts-bonus-percentage')
+      const storedCheckedItems = localStorage.getItem('parts-bonus-checked-items')
+
+      if (storedBonusPercentage) {
+        setBonusPercentage(storedBonusPercentage)
+      }
+
+      if (storedCheckedItems) {
+        setBonusCheckedItems(new Set(JSON.parse(storedCheckedItems)))
+      }
+    } catch (error) {
+      console.warn('Failed to load bonus settings from localStorage:', error)
+    }
+  }, [])
+
+  // Save bonus settings to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('parts-bonus-percentage', bonusPercentage)
+    } catch (error) {
+      console.warn('Failed to save bonus percentage to localStorage:', error)
+    }
+  }, [bonusPercentage])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('parts-bonus-checked-items', JSON.stringify(Array.from(bonusCheckedItems)))
+    } catch (error) {
+      console.warn('Failed to save bonus checked items to localStorage:', error)
+    }
+  }, [bonusCheckedItems])
+
+  // Handle bonus checkbox changes
+  const handleBonusToggle = (itemId: string) => {
+    setBonusCheckedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
 
   // Helper function for part type names
   const getPartTypeName = (type: number | null): string => {
@@ -165,6 +215,19 @@ function AuthenticatedPartsPage() {
               ))}
             </select>
           </div>
+          <div className="flex items-center space-x-2">
+            <label htmlFor="bonusPercentage" className="text-sm font-medium text-gray-700">
+              Bonus %:
+            </label>
+            <input
+              id="bonusPercentage"
+              type="text"
+              className="rounded-lg border-gray-300 text-sm px-2 py-2 w-12"
+              value={bonusPercentage}
+              onChange={(e) => setBonusPercentage(e.target.value)}
+              placeholder="0"
+            />
+          </div>
         </div>
       </div>
 
@@ -248,10 +311,23 @@ function AuthenticatedPartsPage() {
                             stats = part.stats_per_level;
                           }
 
+                          let baseValue = 0;
                           if (stats && stats.length > userLevel - 1 && stats[userLevel - 1][statName] !== undefined) {
-                            return stats[userLevel - 1][statName];
+                            baseValue = stats[userLevel - 1][statName];
                           }
-                          return 0;
+
+                          // Apply bonus if item has bonus checked and bonus percentage is set
+                          if (bonusCheckedItems.has(part.id) && parseFloat(bonusPercentage) > 0) {
+                            if (statName === 'pitStopTime') {
+                              // Pit stop time should decrease (lower is better)
+                              baseValue = Math.round((baseValue * (1 - parseFloat(bonusPercentage) / 100)) * 100) / 100;
+                            } else {
+                              // All other stats should increase and round up
+                              baseValue = Math.ceil(baseValue * (1 + parseFloat(bonusPercentage) / 100));
+                            }
+                          }
+
+                          return baseValue;
                         };
 
                         const speed = getStatValue('speed');
@@ -282,6 +358,8 @@ function AuthenticatedPartsPage() {
                             <td className="px-3 py-1 whitespace-nowrap text-center">
                               <input
                                 type="checkbox"
+                                checked={bonusCheckedItems.has(part.id)}
+                                onChange={() => handleBonusToggle(part.id)}
                                 className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                               />
                             </td>
