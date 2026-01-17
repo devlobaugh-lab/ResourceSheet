@@ -156,7 +156,7 @@ function DriversTab() {
   };
 
   return (
-    <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[70vh]">
+    <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[73vh]">
       <table className="table divide-y divide-gray-200">
         <thead className="bg-gray-700 sticky top-0 z-10">
           <tr>
@@ -308,7 +308,7 @@ function PartsTab() {
   };
 
   return (
-    <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[70vh]">
+    <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit">
       <table className="table divide-y divide-gray-200">
         <thead className="bg-gray-700 sticky top-0 z-10">
           <tr>
@@ -437,7 +437,7 @@ function BoostsTab() {
   }
 
   return (
-    <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[70vh]">
+    <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit">
       <table className="table divide-y divide-gray-200">
         <thead className="bg-gray-700 sticky top-0 z-10">
           <tr>
@@ -549,8 +549,6 @@ export default function DataInputPage() {
              activeTab === 'parts' ? <PartsTab /> :
              <BoostsTab />}
 
-            {/* Additional bottom spacing */}
-            <div className="h-12"></div>
           </div>
         </div>
       </div>

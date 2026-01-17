@@ -322,7 +322,7 @@ function AuthenticatedPartsPage() {
       </ErrorBoundary>
 
       {/* Additional bottom spacing */}
-      <div className="h-12"></div>
+      <div className="h-4"></div>
     </div>
   )
 }
