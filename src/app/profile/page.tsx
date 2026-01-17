@@ -47,8 +47,8 @@ export default function ProfilePage() {
     legendaryOwned: 12,
     epicOwned: 34,
     rareOwned: 28,
-    uncommonOwned: 15,
-    commonOwned: 0,
+    commonOwned: 15,
+    basicOwned: 0,
   };
 
   const handleExport = async () => {
@@ -341,35 +341,35 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* Uncommon */}
-                  <div className="flex items-center">
-                    <div className="w-24 text-sm font-medium text-gray-700">Uncommon</div>
-                    <div className="flex-1 mx-4">
-                      <div className="w-full bg-gray-200 rounded-full h-4">
-                        <div 
-                          className="bg-green-500 h-4 rounded-full"
-                          style={{ width: `${(stats.uncommonOwned / 30) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="w-16 text-right text-sm text-gray-600">
-                      {stats.uncommonOwned}/30
-                    </div>
-                  </div>
-
                   {/* Common */}
                   <div className="flex items-center">
                     <div className="w-24 text-sm font-medium text-gray-700">Common</div>
                     <div className="flex-1 mx-4">
                       <div className="w-full bg-gray-200 rounded-full h-4">
                         <div 
-                          className="bg-gray-400 h-4 rounded-full"
-                          style={{ width: `${(stats.commonOwned / 16) * 100}%` }}
+                          className="bg-green-500 h-4 rounded-full"
+                          style={{ width: `${(stats.commonOwned / 30) * 100}%` }}
                         />
                       </div>
                     </div>
                     <div className="w-16 text-right text-sm text-gray-600">
-                      {stats.commonOwned}/16
+                      {stats.commonOwned}/30
+                    </div>
+                  </div>
+
+                  {/* Basic */}
+                  <div className="flex items-center">
+                    <div className="w-24 text-sm font-medium text-gray-700">Basic</div>
+                    <div className="flex-1 mx-4">
+                      <div className="w-full bg-gray-200 rounded-full h-4">
+                        <div 
+                          className="bg-gray-400 h-4 rounded-full"
+                          style={{ width: `${(stats.basicOwned / 16) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="w-16 text-right text-sm text-gray-600">
+                      {stats.basicOwned}/16
                     </div>
                   </div>
                 </div>

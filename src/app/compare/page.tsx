@@ -33,7 +33,7 @@ function AuthenticatedComparePage() {
 
   // Group by rarity for the comparison view
   const getRarityLabel = (rarity: number): string => {
-    const labels = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary']
+    const labels = ['Basic', 'Common', 'Rare', 'Epic', 'Legendary']
     return labels[rarity] || 'Unknown'
   }
 

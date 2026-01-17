@@ -11,8 +11,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 // Level range validation by rarity
 const LEVEL_RANGES = {
-  0: { min: 1, max: 11 }, // Common
-  1: { min: 1, max: 11 }, // Uncommon
+  0: { min: 1, max: 11 }, // Basic
+  1: { min: 1, max: 11 }, // Common
   2: { min: 1, max: 9 },  // Rare
   3: { min: 1, max: 8 },  // Epic
   4: { min: 1, max: 7 },  // Legendary
@@ -191,8 +191,8 @@ function DriversTab() {
               </td>
               <td className={`px-3 py-1 whitespace-nowrap ${getRarityBackground(driver.rarity)}`}>
                 <div className="text-sm font-medium text-gray-900">
-                  {driver.rarity === 0 ? 'Common' :
-                   driver.rarity === 1 ? 'Uncommon' :
+                  {driver.rarity === 0 ? 'Basic' :
+                   driver.rarity === 1 ? 'Common' :
                    driver.rarity === 2 ? 'Rare' :
                    driver.rarity === 3 ? 'Epic' :
                    driver.rarity === 4 ? 'Legendary' : 'Special'}
@@ -348,8 +348,8 @@ function PartsTab() {
               </td>
               <td className={`px-3 py-1 whitespace-nowrap ${getRarityBackground(part.rarity)}`}>
                 <div className="text-sm font-medium text-gray-900">
-                  {part.rarity === 0 ? 'Common' :
-                   part.rarity === 1 ? 'Uncommon' :
+                  {part.rarity === 0 ? 'Basic' :
+                   part.rarity === 1 ? 'Common' :
                    part.rarity === 2 ? 'Rare' :
                    part.rarity === 3 ? 'Epic' :
                    part.rarity === 4 ? 'Legendary' : 'Special'}

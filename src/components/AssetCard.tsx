@@ -39,8 +39,8 @@ export function AssetCard({
   // Helper function to get rarity display name
   const getRarityDisplay = (rarity: number): string => {
     const rarityMap: Record<number, string> = {
-      0: 'Common',
-      1: 'Uncommon', 
+      0: 'Basic',
+      1: 'Common', 
       2: 'Rare',
       3: 'Epic',
       4: 'Legendary'
