@@ -28,6 +28,13 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [x] Export/import all user data to a JSON file
 - [x] For Admin users, allow export of Custom Boost names to JSON file
 
+
+### Misc QOL Changes
+- [x] max level validation is wrong on data input (seems to be off by 1 level (common maxed at 9, rare at 8, etc.)  Common lvl max is 11, rare is 9, epic is 8, legendary and special are 7
+- [ ] Add Highest Level Toggle to Drivers and Parts pages
+- [ ] Add Highest Level Column to Data Input
+- [x] Tune Debounce - seems a little agressive now (I can feel some lag when doing data entry) - Fixed with simple save-on-blur approach
+
 ### Admin Interface Development
 - [x] Implement data import/export functionality
 - [ ] Create content management tools
