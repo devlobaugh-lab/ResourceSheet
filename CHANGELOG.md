@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Bonus Percentage Feature for Drivers and Parts Pages**
+  - **Bonus Input Field**: Added compact text input field (width `w-12`) to the right of "Max Series" dropdown on both drivers and parts pages
+  - **Bonus Checkboxes**: Each driver/part row has a checkbox in the "Bonus" column that determines if the bonus percentage applies to that item
+  - **Stat Calculation**: When bonus checkbox is checked and percentage entered, all stats are increased by the specified percentage
+  - **Rounding Logic**: Always rounds up using `Math.ceil()` for performance stats, decreases pit stop time (better performance) and rounds to hundredths
+  - **Persistence**: Bonus percentage and checked items automatically saved to localStorage and restored when returning to pages
+  - **State Initialization**: Fixed timing issue by initializing bonusCheckedItems state directly from localStorage in useState initializer
+  - **Real-time Updates**: Stats recalculate immediately when bonus settings change
+  - **Independent Settings**: Separate localStorage keys for drivers vs parts pages to keep settings independent
+
 - **Import/Export Collection Feature**
   - **Data Input UI Enhancement**: Removed number input incrementers (up/down arrows) from data input pages for drivers, car parts, and boosts
   - Plain text entry boxes now used for cleaner, more responsive data entry experience
