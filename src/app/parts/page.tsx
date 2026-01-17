@@ -21,7 +21,19 @@ function AuthenticatedPartsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [maxSeries, setMaxSeries] = useState(12)
   const [bonusPercentage, setBonusPercentage] = useState('')
-  const [bonusCheckedItems, setBonusCheckedItems] = useState<Set<string>>(new Set())
+  const [bonusCheckedItems, setBonusCheckedItems] = useState<Set<string>>(() => {
+    // Initialize from localStorage
+    try {
+      const storedCheckedItems = localStorage.getItem('parts-bonus-checked-items')
+      if (storedCheckedItems) {
+        const parsedItems = JSON.parse(storedCheckedItems)
+        return new Set(parsedItems)
+      }
+    } catch (error) {
+      console.warn('Failed to load bonus checked items from localStorage:', error)
+    }
+    return new Set()
+  })
 
   // Load bonus settings from localStorage on mount
   useEffect(() => {
