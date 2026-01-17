@@ -124,6 +124,22 @@ export function DataGrid({
     };
   });
 
+  // State to track which items have bonus checked
+  const [bonusCheckedItems, setBonusCheckedItems] = useState<Set<string>>(new Set());
+
+  // Handle bonus checkbox changes
+  const handleBonusToggle = (itemId: string) => {
+    setBonusCheckedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
   // Save sort preferences whenever they change
   useEffect(() => {
     saveSortPreferences(gridType, filters.sortBy, filters.sortOrder);
@@ -596,10 +612,23 @@ export function DataGrid({
                   stats = (catalogItem as CarPartView).stats_per_level;
                 }
 
+                let baseValue = 0;
                 if (stats && stats.length > userLevel - 1 && stats[userLevel - 1][statName] !== undefined) {
-                  return stats[userLevel - 1][statName];
+                  baseValue = stats[userLevel - 1][statName];
                 }
-                return 0;
+
+                // Apply bonus if item has bonus checked and bonus percentage is set
+                if (bonusCheckedItems.has(catalogItem.id) && bonusPercentage > 0) {
+                  if (statName === 'pitStopTime') {
+                    // Pit stop time should decrease (lower is better)
+                    baseValue = Math.round((baseValue * (1 - bonusPercentage / 100)) * 100) / 100;
+                  } else {
+                    // All other stats should increase and round up
+                    baseValue = Math.ceil(baseValue * (1 + bonusPercentage / 100));
+                  }
+                }
+
+                return baseValue;
               };
 
               // Get boost tier values from boost_stats
@@ -678,8 +707,9 @@ export function DataGrid({
                     <td className="px-3 py-1 whitespace-nowrap text-center">
                       <input
                         type="checkbox"
+                        checked={bonusCheckedItems.has(catalogItem.id)}
+                        onChange={() => handleBonusToggle(catalogItem.id)}
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                        // TODO: Add state management and functionality for bonus checkbox
                       />
                     </td>
                   )}
