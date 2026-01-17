@@ -80,8 +80,6 @@ function AuthenticatedBoostsPage() {
         )}
       </ErrorBoundary>
 
-      {/* Additional bottom spacing */}
-      <div className="h-12"></div>
     </div>
   )
 }
