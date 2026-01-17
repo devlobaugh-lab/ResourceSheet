@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { DataGrid } from '@/components/DataGrid'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
 import { Card } from '@/components/ui/Card'
@@ -19,6 +19,43 @@ function AuthenticatedDriversPage() {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [maxSeries, setMaxSeries] = useState(12)
+  const [bonusPercentage, setBonusPercentage] = useState('')
+  const [bonusCheckedItems, setBonusCheckedItems] = useState<Set<string>>(new Set())
+
+  // Load bonus settings from localStorage on mount
+  useEffect(() => {
+    try {
+      const storedBonusPercentage = localStorage.getItem('drivers-bonus-percentage')
+      const storedCheckedItems = localStorage.getItem('drivers-bonus-checked-items')
+
+      if (storedBonusPercentage) {
+        setBonusPercentage(storedBonusPercentage)
+      }
+
+      if (storedCheckedItems) {
+        setBonusCheckedItems(new Set(JSON.parse(storedCheckedItems)))
+      }
+    } catch (error) {
+      console.warn('Failed to load bonus settings from localStorage:', error)
+    }
+  }, [])
+
+  // Save bonus settings to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('drivers-bonus-percentage', bonusPercentage)
+    } catch (error) {
+      console.warn('Failed to save bonus percentage to localStorage:', error)
+    }
+  }, [bonusPercentage])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('drivers-bonus-checked-items', JSON.stringify(Array.from(bonusCheckedItems)))
+    } catch (error) {
+      console.warn('Failed to save bonus checked items to localStorage:', error)
+    }
+  }, [bonusCheckedItems])
 
   // Apply filters to the data
   const filteredDrivers = useMemo(() => {
@@ -67,6 +104,19 @@ function AuthenticatedDriversPage() {
               ))}
             </select>
           </div>
+          <div className="flex items-center space-x-2">
+            <label htmlFor="bonusPercentage" className="text-sm font-medium text-gray-700">
+              Bonus %:
+            </label>
+            <input
+              id="bonusPercentage"
+              type="text"
+              className="rounded-lg border-gray-300 text-sm px-2 py-2 w-12"
+              value={bonusPercentage}
+              onChange={(e) => setBonusPercentage(e.target.value)}
+              placeholder="0"
+            />
+          </div>
         </div>
       </div>
 
@@ -91,6 +141,7 @@ function AuthenticatedDriversPage() {
             showFilters={false}
             showSearch={false}
             showCompareButton={true}
+            bonusPercentage={parseFloat(bonusPercentage) || 0}
           />
         )}
       </ErrorBoundary>

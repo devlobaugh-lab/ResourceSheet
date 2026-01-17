@@ -70,6 +70,7 @@ interface DataGridProps {
   showCompareButton?: boolean;
   gridType?: 'drivers' | 'parts' | 'boosts' | 'car-parts';
   onBoostNameChange?: () => void;
+  bonusPercentage?: number;
 }
 
 interface FilterState {
@@ -111,6 +112,7 @@ export function DataGrid({
   showCompareButton = true,
   gridType = 'drivers',
   onBoostNameChange,
+  bonusPercentage = 0,
 }: DataGridProps) {
   const [filters, setFilters] = useState<FilterState>(() => {
     // Load saved sort preferences on component initialization
