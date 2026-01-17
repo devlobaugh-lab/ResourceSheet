@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useUserDrivers, useUserCarParts, useBoosts, getAuthHeaders } from '@/hooks/useApi';
@@ -12,12 +12,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 // Level range validation by rarity
 const LEVEL_RANGES = {
   0: { min: 1, max: 11 }, // Common
-  1: { min: 1, max: 9 },  // Uncommon
-  2: { min: 1, max: 8 },  // Rare
+  1: { min: 1, max: 11 }, // Uncommon
+  2: { min: 1, max: 9 },  // Rare
   3: { min: 1, max: 8 },  // Epic
   4: { min: 1, max: 7 },  // Legendary
   5: { min: 1, max: 7 },  // Special Edition
 };
+
+
 
 // Custom mutation for updating driver data
 const useUpdateDriverData = () => {
@@ -132,14 +134,14 @@ function DriversTab() {
     return (a.ordinal || 0) - (b.ordinal || 0);
   });
 
-  const handleSave = async (driverId: string, field: 'level' | 'card_count', value: number) => {
+  const handleSave = useCallback(async (driverId: string, field: 'level' | 'card_count', value: number) => {
     try {
       const data = { [field]: value };
       await updateDriverData.mutateAsync({ driverId, data });
     } catch (error) {
       console.error('Failed to save driver data:', error);
     }
-  };
+  }, [updateDriverData]);
 
   if (isLoading) {
     return <div className="text-center py-8">Loading drivers...</div>;
@@ -204,18 +206,16 @@ function DriversTab() {
                   type="number"
                   min={0}
                   max={LEVEL_RANGES[driver.rarity as keyof typeof LEVEL_RANGES]?.max || 11}
-                  value={driver.level || 0}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value) || 0;
-                    handleSave(driver.id, 'level', value);
-                  }}
+                  defaultValue={driver.level || 0}
                   onBlur={(e) => {
                     const value = parseInt(e.target.value) || 0;
                     const maxLevel = LEVEL_RANGES[driver.rarity as keyof typeof LEVEL_RANGES]?.max || 11;
-                    if (value > maxLevel) {
-                      e.target.value = maxLevel.toString();
-                      handleSave(driver.id, 'level', maxLevel);
+                    const finalValue = Math.min(value, maxLevel);
+                    if (finalValue !== (driver.level || 0)) {
+                      handleSave(driver.id, 'level', finalValue);
                     }
+                    // Reset input to the saved value (or clamped value)
+                    e.target.value = finalValue.toString();
                   }}
                   className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                 />
@@ -224,10 +224,14 @@ function DriversTab() {
                 <input
                   type="number"
                   min={0}
-                  value={driver.card_count || 0}
-                  onChange={(e) => {
+                  defaultValue={driver.card_count || 0}
+                  onBlur={(e) => {
                     const value = parseInt(e.target.value) || 0;
-                    handleSave(driver.id, 'card_count', value);
+                    if (value !== (driver.card_count || 0)) {
+                      handleSave(driver.id, 'card_count', value);
+                    }
+                    // Reset input to the saved value
+                    e.target.value = value.toString();
                   }}
                   className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                 />
@@ -278,14 +282,14 @@ function PartsTab() {
     return a.rarity - b.rarity;
   });
 
-  const handleSave = async (partId: string, field: 'level' | 'card_count', value: number) => {
+  const handleSave = useCallback(async (partId: string, field: 'level' | 'card_count', value: number) => {
     try {
       const data = { [field]: value };
       await updateCarPartData.mutateAsync({ carPartId: partId, data });
     } catch (error) {
       console.error('Failed to save part data:', error);
     }
-  };
+  }, [updateCarPartData]);
 
   const getPartTypeName = (type: number | null) => {
     if (type === null) return 'N/A';
@@ -362,18 +366,16 @@ function PartsTab() {
                   type="number"
                   min={0}
                   max={LEVEL_RANGES[part.rarity as keyof typeof LEVEL_RANGES]?.max || 11}
-                  value={part.level || 0}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value) || 0;
-                    handleSave(part.id, 'level', value);
-                  }}
+                  defaultValue={part.level || 0}
                   onBlur={(e) => {
                     const value = parseInt(e.target.value) || 0;
                     const maxLevel = LEVEL_RANGES[part.rarity as keyof typeof LEVEL_RANGES]?.max || 11;
-                    if (value > maxLevel) {
-                      e.target.value = maxLevel.toString();
-                      handleSave(part.id, 'level', maxLevel);
+                    const finalValue = Math.min(value, maxLevel);
+                    if (finalValue !== (part.level || 0)) {
+                      handleSave(part.id, 'level', finalValue);
                     }
+                    // Reset input to the saved value (or clamped value)
+                    e.target.value = finalValue.toString();
                   }}
                   className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                 />
@@ -382,10 +384,14 @@ function PartsTab() {
                 <input
                   type="number"
                   min={0}
-                  value={part.card_count || 0}
-                  onChange={(e) => {
+                  defaultValue={part.card_count || 0}
+                  onBlur={(e) => {
                     const value = parseInt(e.target.value) || 0;
-                    handleSave(part.id, 'card_count', value);
+                    if (value !== (part.card_count || 0)) {
+                      handleSave(part.id, 'card_count', value);
+                    }
+                    // Reset input to the saved value
+                    e.target.value = value.toString();
                   }}
                   className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                 />
@@ -424,13 +430,13 @@ function BoostsTab() {
     return numA - numB;
   });
 
-  const handleSave = async (boostId: string, value: number) => {
+  const handleSave = useCallback(async (boostId: string, value: number) => {
     try {
       await updateBoostData.mutateAsync({ boostId, data: { card_count: value } });
     } catch (error) {
       console.error('Failed to save boost data:', error);
     }
-  };
+  }, [updateBoostData]);
 
   if (isLoading) {
     return <div className="text-center py-8">Loading boosts...</div>;
@@ -463,10 +469,14 @@ function BoostsTab() {
                 <input
                   type="number"
                   min={0}
-                  value={boost.card_count || 0}
-                  onChange={(e) => {
+                  defaultValue={boost.card_count || 0}
+                  onBlur={(e) => {
                     const value = parseInt(e.target.value) || 0;
-                    handleSave(boost.id, value);
+                    if (value !== (boost.card_count || 0)) {
+                      handleSave(boost.id, value);
+                    }
+                    // Reset input to the saved value
+                    e.target.value = value.toString();
                   }}
                   className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                 />
