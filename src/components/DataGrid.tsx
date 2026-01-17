@@ -71,6 +71,8 @@ interface DataGridProps {
   gridType?: 'drivers' | 'parts' | 'boosts' | 'car-parts';
   onBoostNameChange?: () => void;
   bonusPercentage?: number;
+  bonusCheckedItems?: Set<string>;
+  onBonusToggle?: (itemId: string) => void;
 }
 
 interface FilterState {
@@ -113,6 +115,8 @@ export function DataGrid({
   gridType = 'drivers',
   onBoostNameChange,
   bonusPercentage = 0,
+  bonusCheckedItems = new Set(),
+  onBonusToggle,
 }: DataGridProps) {
   const [filters, setFilters] = useState<FilterState>(() => {
     // Load saved sort preferences on component initialization
@@ -123,22 +127,6 @@ export function DataGrid({
       ...savedPrefs,
     };
   });
-
-  // State to track which items have bonus checked
-  const [bonusCheckedItems, setBonusCheckedItems] = useState<Set<string>>(new Set());
-
-  // Handle bonus checkbox changes
-  const handleBonusToggle = (itemId: string) => {
-    setBonusCheckedItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        newSet.add(itemId);
-      }
-      return newSet;
-    });
-  };
 
   // Save sort preferences whenever they change
   useEffect(() => {
@@ -708,7 +696,7 @@ export function DataGrid({
                       <input
                         type="checkbox"
                         checked={bonusCheckedItems.has(catalogItem.id)}
-                        onChange={() => handleBonusToggle(catalogItem.id)}
+                        onChange={() => onBonusToggle?.(catalogItem.id)}
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                       />
                     </td>

@@ -57,6 +57,19 @@ function AuthenticatedDriversPage() {
     }
   }, [bonusCheckedItems])
 
+  // Handle bonus checkbox changes
+  const handleBonusToggle = (itemId: string) => {
+    setBonusCheckedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
   // Apply filters to the data
   const filteredDrivers = useMemo(() => {
     if (!driversResponse?.data) return []
@@ -142,6 +155,8 @@ function AuthenticatedDriversPage() {
             showSearch={false}
             showCompareButton={true}
             bonusPercentage={parseFloat(bonusPercentage) || 0}
+            bonusCheckedItems={bonusCheckedItems}
+            onBonusToggle={handleBonusToggle}
           />
         )}
       </ErrorBoundary>
