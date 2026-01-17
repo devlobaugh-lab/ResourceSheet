@@ -33,7 +33,8 @@ function AuthenticatedDriversPage() {
       }
 
       if (storedCheckedItems) {
-        setBonusCheckedItems(new Set(JSON.parse(storedCheckedItems)))
+        const parsedItems = JSON.parse(storedCheckedItems)
+        setBonusCheckedItems(new Set(parsedItems))
       }
     } catch (error) {
       console.warn('Failed to load bonus settings from localStorage:', error)
@@ -51,7 +52,8 @@ function AuthenticatedDriversPage() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('drivers-bonus-checked-items', JSON.stringify(Array.from(bonusCheckedItems)))
+      const itemsArray = Array.from(bonusCheckedItems)
+      localStorage.setItem('drivers-bonus-checked-items', JSON.stringify(itemsArray))
     } catch (error) {
       console.warn('Failed to save bonus checked items to localStorage:', error)
     }
