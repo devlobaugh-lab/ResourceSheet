@@ -12,6 +12,29 @@ interface BoostItem extends BoostWithCustomName {
 }
 import { cn, formatNumber } from '@/lib/utils';
 
+// Helper function to get stat background color based on value position in range
+const getStatBackgroundColor = (value: number, min: number, max: number, median: number): string => {
+  if (value === max) return 'bg-green-400';
+  if (value === median) return 'bg-white';
+  if (value === min) return 'bg-red-400';
+
+  if (value < median) {
+    // Gradient from red-400 to white for values below median
+    const ratio = (value - min) / (median - min);
+    if (ratio < 0.25) return 'bg-red-400';
+    if (ratio < 0.5) return 'bg-red-300';
+    if (ratio < 0.75) return 'bg-red-200';
+    return 'bg-red-100';
+  } else {
+    // Gradient from white to green-400 for values above median
+    const ratio = (value - median) / (max - median);
+    if (ratio < 0.25) return 'bg-green-100';
+    if (ratio < 0.5) return 'bg-green-200';
+    if (ratio < 0.75) return 'bg-green-300';
+    return 'bg-green-400';
+  }
+};
+
 // localStorage utilities for sort persistence
 const SORT_PREFERENCES_KEY = 'f1-sort-preferences';
 
@@ -291,6 +314,136 @@ export function DataGrid({
       return filters.sortOrder === 'asc' ? comparison : -comparison;
     });
   }, [filteredItems, filters.sortBy, filters.sortOrder]);
+
+  // Calculate column statistics for drivers and parts
+  const columnStats = useMemo(() => {
+    if ((gridType !== 'drivers' && gridType !== 'parts') || sortedItems.length === 0) return {};
+
+    const stats: { [key: string]: { min: number; max: number; median: number } } = {};
+
+    if (gridType === 'drivers') {
+      // Drivers: calculate stats across all drivers
+      const statColumns = ['overtaking', 'blocking', 'qualifying', 'raceStart', 'tyreUse', 'total_value'];
+
+      statColumns.forEach(statName => {
+        const values: number[] = [];
+
+        sortedItems.forEach(item => {
+          if ('is_driver' in item && item.is_driver) {
+            const driver = item as DriverView;
+            let userLevel = driver.level;
+
+            if (userLevel === 0) {
+              // Skip level 0 items (they have 0 values and shouldn't affect color coding)
+              return;
+            }
+
+            let baseValue = 0;
+            if (driver.stats_per_level && driver.stats_per_level.length > userLevel - 1) {
+              const levelStats = driver.stats_per_level[userLevel - 1];
+              if (statName === 'total_value') {
+                baseValue = (levelStats.overtaking || 0) + (levelStats.blocking || 0) +
+                           (levelStats.qualifying || 0) + (levelStats.tyreUse || 0) +
+                           (levelStats.raceStart || 0);
+              } else {
+                baseValue = levelStats[statName] || 0;
+              }
+            }
+
+            // Apply bonus if item has bonus checked and bonus percentage is set
+            if (bonusCheckedItems.has(driver.id) && bonusPercentage > 0) {
+              baseValue = Math.ceil(baseValue * (1 + bonusPercentage / 100));
+            }
+
+            values.push(baseValue);
+          }
+        });
+
+        if (values.length > 0) {
+          // Filter out any remaining 0 values before calculating statistics
+          const nonZeroValues = values.filter(val => val > 0);
+
+          if (nonZeroValues.length > 0) {
+            const sortedValues = [...nonZeroValues].sort((a, b) => a - b);
+            const min = sortedValues[0];
+            const max = sortedValues[sortedValues.length - 1];
+            const mid = Math.floor(sortedValues.length / 2);
+            const median = sortedValues.length % 2 === 0
+              ? (sortedValues[mid - 1] + sortedValues[mid]) / 2
+              : sortedValues[mid];
+            stats[statName] = { min, max, median };
+          }
+        }
+      });
+    } else if (gridType === 'parts') {
+      // Parts: calculate stats separately for each part type
+      const partTypes = [0, 1, 2, 3, 4, 5]; // Brakes, Gearbox, Engine, Suspension, Front Wing, Rear Wing
+      const statColumns = ['speed', 'cornering', 'powerUnit', 'qualifying', 'drs', 'pitStopTime', 'total_value'];
+
+      partTypes.forEach(partType => {
+        statColumns.forEach(statName => {
+          const statKey = `${partType}_${statName}`;
+          const values: number[] = [];
+
+          sortedItems.forEach(item => {
+            if ('is_car_part' in item && item.is_car_part && (item as CarPartView).car_part_type === partType) {
+              const carPart = item as CarPartView;
+              let userLevel = carPart.level;
+
+              if (userLevel === 0) {
+                // Skip level 0 items (they have 0 values and shouldn't affect color coding)
+                return;
+              }
+
+              let baseValue = 0;
+              if (carPart.stats_per_level && carPart.stats_per_level.length > userLevel - 1) {
+                const levelStats = carPart.stats_per_level[userLevel - 1];
+                if (statName === 'total_value') {
+                  // Exclude pitStopTime from total value for parts
+                  baseValue = (levelStats.speed || 0) + (levelStats.cornering || 0) +
+                             (levelStats.powerUnit || 0) + (levelStats.qualifying || 0) +
+                             (levelStats.drs || 0);
+                } else {
+                  baseValue = levelStats[statName] || 0;
+                }
+              }
+
+              // Apply bonus if item has bonus checked and bonus percentage is set
+              if (bonusCheckedItems.has(carPart.id) && bonusPercentage > 0) {
+                if (statName === 'pitStopTime') {
+                  // Pit stop time should decrease (lower is better)
+                  baseValue = Math.round((baseValue * (1 - bonusPercentage / 100)) * 100) / 100;
+                } else {
+                  // All other stats should increase and round up
+                  baseValue = Math.ceil(baseValue * (1 + bonusPercentage / 100));
+                }
+              }
+
+              values.push(baseValue);
+            }
+          });
+
+          if (values.length > 0) {
+            // Filter out any remaining 0 values before calculating statistics
+            const nonZeroValues = values.filter(val => val > 0);
+
+            if (nonZeroValues.length > 0) {
+              const sortedValues = [...nonZeroValues].sort((a, b) => a - b);
+              const min = sortedValues[0];
+              const max = sortedValues[sortedValues.length - 1];
+              const mid = Math.floor(sortedValues.length / 2);
+              const median = sortedValues.length % 2 === 0
+                ? (sortedValues[mid - 1] + sortedValues[mid]) / 2
+                : sortedValues[mid];
+              stats[statKey] = { min, max, median };
+            }
+          }
+        });
+      });
+    }
+
+    return stats;
+  }, [sortedItems, gridType, bonusCheckedItems, bonusPercentage]);
 
   const handleCompare = (item: CatalogItem) => {
     if (onCompare) {
@@ -725,22 +878,22 @@ export function DataGrid({
                   {/* Stats Columns for Drivers */}
                   {gridType === 'drivers' && (
                     <>
-                      <td className="px-3 py-1 whitespace-nowrap text-center">
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats['overtaking'] && getStatBackgroundColor(getStatValue('overtaking'), columnStats['overtaking'].min, columnStats['overtaking'].max, columnStats['overtaking'].median))}>
                         <div className="text-sm text-gray-900">{getStatValue('overtaking')}</div>
                       </td>
-                      <td className="px-3 py-1 whitespace-nowrap text-center">
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats['blocking'] && getStatBackgroundColor(getStatValue('blocking'), columnStats['blocking'].min, columnStats['blocking'].max, columnStats['blocking'].median))}>
                         <div className="text-sm text-gray-900">{getStatValue('blocking')}</div>
                       </td>
-                      <td className="px-3 py-1 whitespace-nowrap text-center">
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats['qualifying'] && getStatBackgroundColor(getStatValue('qualifying'), columnStats['qualifying'].min, columnStats['qualifying'].max, columnStats['qualifying'].median))}>
                         <div className="text-sm text-gray-900">{getStatValue('qualifying')}</div>
                       </td>
-                      <td className="px-3 py-1 whitespace-nowrap text-center">
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats['raceStart'] && getStatBackgroundColor(getStatValue('raceStart'), columnStats['raceStart'].min, columnStats['raceStart'].max, columnStats['raceStart'].median))}>
                         <div className="text-sm text-gray-900">{getStatValue('raceStart')}</div>
                       </td>
-                      <td className="px-3 py-1 whitespace-nowrap text-center">
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats['tyreUse'] && getStatBackgroundColor(getStatValue('tyreUse'), columnStats['tyreUse'].min, columnStats['tyreUse'].max, columnStats['tyreUse'].median))}>
                         <div className="text-sm text-gray-900">{getStatValue('tyreUse')}</div>
                       </td>
-                      <td className="px-3 py-1 whitespace-nowrap text-center">
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats['total_value'] && getStatBackgroundColor(getStatValue('overtaking') + getStatValue('blocking') + getStatValue('qualifying') + getStatValue('tyreUse') + getStatValue('raceStart'), columnStats['total_value'].min, columnStats['total_value'].max, columnStats['total_value'].median))}>
                         <div className="text-sm font-medium text-gray-900">
                           {getStatValue('overtaking') + getStatValue('blocking') + getStatValue('qualifying') + getStatValue('tyreUse') + getStatValue('raceStart')}
                         </div>
@@ -754,25 +907,25 @@ export function DataGrid({
                   {/* Stats Columns for Parts */}
                   {gridType === 'parts' && (
                     <>
-                      <td className="px-3 py-1 whitespace-nowrap text-center">
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${(catalogItem as CarPartView).car_part_type}_speed`] && getStatBackgroundColor(getStatValue('speed'), columnStats[`${(catalogItem as CarPartView).car_part_type}_speed`].min, columnStats[`${(catalogItem as CarPartView).car_part_type}_speed`].max, columnStats[`${(catalogItem as CarPartView).car_part_type}_speed`].median))}>
                         <div className="text-sm text-gray-900">{getStatValue('speed')}</div>
                       </td>
-                      <td className="px-3 py-1 whitespace-nowrap text-center">
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${(catalogItem as CarPartView).car_part_type}_cornering`] && getStatBackgroundColor(getStatValue('cornering'), columnStats[`${(catalogItem as CarPartView).car_part_type}_cornering`].min, columnStats[`${(catalogItem as CarPartView).car_part_type}_cornering`].max, columnStats[`${(catalogItem as CarPartView).car_part_type}_cornering`].median))}>
                         <div className="text-sm text-gray-900">{getStatValue('cornering')}</div>
                       </td>
-                      <td className="px-3 py-1 whitespace-nowrap text-center">
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${(catalogItem as CarPartView).car_part_type}_powerUnit`] && getStatBackgroundColor(getStatValue('powerUnit'), columnStats[`${(catalogItem as CarPartView).car_part_type}_powerUnit`].min, columnStats[`${(catalogItem as CarPartView).car_part_type}_powerUnit`].max, columnStats[`${(catalogItem as CarPartView).car_part_type}_powerUnit`].median))}>
                         <div className="text-sm text-gray-900">{getStatValue('powerUnit')}</div>
                       </td>
-                      <td className="px-3 py-1 whitespace-nowrap text-center">
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${(catalogItem as CarPartView).car_part_type}_qualifying`] && getStatBackgroundColor(getStatValue('qualifying'), columnStats[`${(catalogItem as CarPartView).car_part_type}_qualifying`].min, columnStats[`${(catalogItem as CarPartView).car_part_type}_qualifying`].max, columnStats[`${(catalogItem as CarPartView).car_part_type}_qualifying`].median))}>
                         <div className="text-sm text-gray-900">{getStatValue('qualifying')}</div>
                       </td>
-                      <td className="px-3 py-1 whitespace-nowrap text-center">
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${(catalogItem as CarPartView).car_part_type}_drs`] && getStatBackgroundColor(getStatValue('drs'), columnStats[`${(catalogItem as CarPartView).car_part_type}_drs`].min, columnStats[`${(catalogItem as CarPartView).car_part_type}_drs`].max, columnStats[`${(catalogItem as CarPartView).car_part_type}_drs`].median))}>
                         <div className="text-sm text-gray-900">{getStatValue('drs')}</div>
                       </td>
-                      <td className="px-3 py-1 whitespace-nowrap text-center">
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${(catalogItem as CarPartView).car_part_type}_pitStopTime`] && getStatBackgroundColor(getStatValue('pitStopTime'), columnStats[`${(catalogItem as CarPartView).car_part_type}_pitStopTime`].min, columnStats[`${(catalogItem as CarPartView).car_part_type}_pitStopTime`].max, columnStats[`${(catalogItem as CarPartView).car_part_type}_pitStopTime`].median))}>
                         <div className="text-sm text-gray-900">{getStatValue('pitStopTime')}</div>
                       </td>
-                      <td className="px-3 py-1 whitespace-nowrap text-center">
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${(catalogItem as CarPartView).car_part_type}_total_value`] && getStatBackgroundColor(getStatValue('speed') + getStatValue('cornering') + getStatValue('powerUnit') + getStatValue('qualifying') + getStatValue('drs'), columnStats[`${(catalogItem as CarPartView).car_part_type}_total_value`].min, columnStats[`${(catalogItem as CarPartView).car_part_type}_total_value`].max, columnStats[`${(catalogItem as CarPartView).car_part_type}_total_value`].median))}>
                         <div className="text-sm font-medium text-gray-900">
                           {getStatValue('speed') + getStatValue('cornering') + getStatValue('powerUnit') + getStatValue('qualifying') + getStatValue('drs')}
                         </div>

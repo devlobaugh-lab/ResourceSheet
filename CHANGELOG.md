@@ -59,6 +59,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **API Endpoints**: `/api/export-collection` (GET) and `/api/import-collection` (POST)
   - **Button Updates**: Changed "Import Data" to "Import Collection" for consistency
 
+- **Colored Backgrounds for Driver Stat Strength**
+  - **Color Coding Implementation**: Added colored backgrounds to all driver stat columns (Overtaking, Defending, Qualifying, Race Start, Tyre Use, Total Value) to indicate relative strength
+  - **Color Mapping**: Max value gets `green-400`, median value gets `white`, min value gets `red-400`
+  - **Gradient System**: Values below median use gradient from `red-400 → red-300 → red-200 → red-100 → white`
+  - **Green Gradient**: Values above median use gradient from `white → green-100 → green-200 → green-300 → green-400`
+  - **Column Statistics**: Calculates min, max, and median for each stat column using visible (filtered) drivers
+  - **Dynamic Updates**: Colors recalculate automatically when filtering/sorting changes the visible drivers
+  - **Bonus Integration**: Properly accounts for bonus percentages and checked items in stat calculations
+  - **Symmetric Design**: Maintains visual balance with gradients centered around the white median
+
+- **Colored Backgrounds for Car Part Stat Strength**
+  - **Part-Type-Specific Color Coding**: Added colored backgrounds to all car part stat columns, but calculated separately for each part type (Brakes, Gearbox, Engine, Suspension, Front Wing, Rear Wing)
+  - **Isolated Comparisons**: Brakes are only compared to other brakes, gearboxes to other gearboxes, etc., preventing cross-type stat mixing
+  - **Same Color System**: Uses identical color mapping as drivers (max=green-400, median=white, min=red-400) with same gradient system
+  - **Stat Columns**: Speed, Cornering, Power Unit, Qualifying, DRS, Pit Stop Time, Total Value (excluding Pit Stop Time)
+  - **Reversed Logic for Pit Stop Time**: Lower pit stop times are better (green), higher times are worse (red), 0 values stay red and are excluded from calculations
+  - **Level 0 Exclusion**: Ignores parts that users haven't owned/levelled up (0 values) from color calculations
+  - **Bonus Integration**: Properly accounts for bonus percentages and checked items in stat calculations
+  - **Dynamic Updates**: Colors recalculate automatically when filtering changes the visible parts per type
+  - **Custom Parts Page Implementation**: Applied directly to the parts page's grouped table structure since it doesn't use the DataGrid component
+
 ### Changed
 - **UI Layout Simplification & Column Sorting**: Streamlined the grid pages by removing most filter controls, repositioning search functionality, and restoring column header sorting
   - **Removed**: Rarity dropdown, Card Type dropdown, Owned filter, Sort By controls from DataGrid
