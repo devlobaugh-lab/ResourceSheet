@@ -413,9 +413,9 @@ function AuthenticatedPartsPage() {
                 </div>
 
                 {/* Parts Table */}
-                <div className="overflow-x-auto bg-white rounded-lg border border-gray-200 w-full">
-                  <table className="table divide-y divide-gray-200 min-w-full">
-                    <thead className="bg-gray-700">
+                <div className="overflow-x-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[73vh]">
+                  <table className="table divide-y divide-gray-200">
+                    <thead className="bg-gray-700 sticky top-0 z-10">
                       <tr>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                           Name
