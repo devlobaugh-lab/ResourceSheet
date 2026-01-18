@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Data Input Page Layout Optimization**
+  - Reduced excessive whitespace above headings by changing outer container padding from `py-8` to `py-4`
+  - Adjusted table container heights from `max-h-[73vh]` to `max-h-[50vh]` for better visual balance
+  - Eliminated unnecessary vertical scrollbars when content fits within viewport
+  - Applied consistent layout across all data-input tabs (Drivers, Parts, Boosts)
+
 ### Added
 - **Highest Level Calculations for Data Input and Asset Pages**
   - **Utility Function**: Added `calculateHighestLevel()` in `src/lib/utils.ts` to determine maximum upgradeable level based on current level, card count, and rarity restrictions
