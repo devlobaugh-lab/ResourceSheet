@@ -12,6 +12,55 @@ import Link from 'next/link'
 import { CarPartView } from '@/types/database'
 import { cn } from '@/lib/utils'
 
+// Helper function to get stat background color based on value position in range
+const getStatBackgroundColor = (value: number, min: number, max: number, median: number, isPitStopTime: boolean = false): string => {
+  // Special handling for Pit Stop Time: lower values are better
+  if (isPitStopTime) {
+    // For Pit Stop Time: 0 is always red (invalid), lower non-zero values are green (better)
+    if (value === 0) return 'bg-red-400';
+    if (value === min) return 'bg-green-400';
+    if (value === median) return 'bg-white';
+    if (value === max) return 'bg-red-400';
+
+    if (value < median) {
+      // For Pit Stop Time: values below median are better (green gradient)
+      const ratio = (value - min) / (median - min);
+      if (ratio < 0.25) return 'bg-green-400';
+      if (ratio < 0.5) return 'bg-green-300';
+      if (ratio < 0.75) return 'bg-green-200';
+      return 'bg-green-100';
+    } else {
+      // For Pit Stop Time: values above median are worse (red gradient)
+      const ratio = (value - median) / (max - median);
+      if (ratio < 0.25) return 'bg-red-100';
+      if (ratio < 0.5) return 'bg-red-200';
+      if (ratio < 0.75) return 'bg-red-300';
+      return 'bg-red-400';
+    }
+  }
+
+  // Normal logic for all other stats: higher values are better
+  if (value === max) return 'bg-green-400';
+  if (value === median) return 'bg-white';
+  if (value === min) return 'bg-red-400';
+
+  if (value < median) {
+    // Gradient from red-400 to white for values below median
+    const ratio = (value - min) / (median - min);
+    if (ratio < 0.25) return 'bg-red-400';
+    if (ratio < 0.5) return 'bg-red-300';
+    if (ratio < 0.75) return 'bg-red-200';
+    return 'bg-red-100';
+  } else {
+    // Gradient from white to green-400 for values above median
+    const ratio = (value - median) / (max - median);
+    if (ratio < 0.25) return 'bg-green-100';
+    if (ratio < 0.5) return 'bg-green-200';
+    if (ratio < 0.75) return 'bg-green-300';
+    return 'bg-green-400';
+  }
+};
+
 function AuthenticatedPartsPage() {
   const { data: carPartsResponse, isLoading, error } = useUserCarParts({
     page: 1,
@@ -171,6 +220,70 @@ function AuthenticatedPartsPage() {
 
     return orderedGroups;
   }, [filteredCarParts]);
+
+  // Calculate column statistics for each part type
+  const columnStats = useMemo(() => {
+    const stats: { [key: string]: { min: number; max: number; median: number } } = {};
+    const partTypes = [0, 1, 2, 3, 4, 5]; // Brakes, Gearbox, Engine, Suspension, Front Wing, Rear Wing
+    const statColumns = ['speed', 'cornering', 'powerUnit', 'qualifying', 'drs', 'pitStopTime', 'total_value'];
+
+    partTypes.forEach(partType => {
+      statColumns.forEach(statName => {
+        const statKey = `${partType}_${statName}`;
+        const values: number[] = [];
+
+        filteredCarParts.forEach(part => {
+          if (part.car_part_type === partType) {
+            const userLevel = part.level || 0;
+
+            if (userLevel === 0) {
+              // Skip level 0 items (they have 0 values and shouldn't affect color coding)
+              return;
+            }
+
+            let baseValue = 0;
+            if (part.stats_per_level && Array.isArray(part.stats_per_level)) {
+              const stats = part.stats_per_level;
+              if (stats && stats.length > userLevel - 1 && stats[userLevel - 1][statName] !== undefined) {
+                baseValue = stats[userLevel - 1][statName];
+              }
+            }
+
+            // Apply bonus if item has bonus checked and bonus percentage is set
+            if (bonusCheckedItems.has(part.id) && parseFloat(bonusPercentage) > 0) {
+              if (statName === 'pitStopTime') {
+                // Pit stop time should decrease (lower is better)
+                baseValue = Math.round((baseValue * (1 - parseFloat(bonusPercentage) / 100)) * 100) / 100;
+              } else {
+                // All other stats should increase and round up
+                baseValue = Math.ceil(baseValue * (1 + parseFloat(bonusPercentage) / 100));
+              }
+            }
+
+            values.push(baseValue);
+          }
+        });
+
+        if (values.length > 0) {
+          // Filter out any remaining 0 values before calculating statistics
+          const nonZeroValues = values.filter(val => val > 0);
+
+          if (nonZeroValues.length > 0) {
+            const sortedValues = [...nonZeroValues].sort((a, b) => a - b);
+            const min = sortedValues[0];
+            const max = sortedValues[sortedValues.length - 1];
+            const mid = Math.floor(sortedValues.length / 2);
+            const median = sortedValues.length % 2 === 0
+              ? (sortedValues[mid - 1] + sortedValues[mid]) / 2
+              : sortedValues[mid];
+            stats[statKey] = { min, max, median };
+          }
+        }
+      });
+    });
+
+    return stats;
+  }, [filteredCarParts, bonusCheckedItems, bonusPercentage]);
 
   // Helper functions
   const getRarityDisplay = (rarity: number): string => {
@@ -375,25 +488,25 @@ function AuthenticatedPartsPage() {
                                 className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                               />
                             </td>
-                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_speed`] && getStatBackgroundColor(speed, columnStats[`${part.car_part_type}_speed`].min, columnStats[`${part.car_part_type}_speed`].max, columnStats[`${part.car_part_type}_speed`].median))}>
                               <div className="text-sm text-gray-900">{speed}</div>
                             </td>
-                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_cornering`] && getStatBackgroundColor(cornering, columnStats[`${part.car_part_type}_cornering`].min, columnStats[`${part.car_part_type}_cornering`].max, columnStats[`${part.car_part_type}_cornering`].median))}>
                               <div className="text-sm text-gray-900">{cornering}</div>
                             </td>
-                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_powerUnit`] && getStatBackgroundColor(powerUnit, columnStats[`${part.car_part_type}_powerUnit`].min, columnStats[`${part.car_part_type}_powerUnit`].max, columnStats[`${part.car_part_type}_powerUnit`].median))}>
                               <div className="text-sm text-gray-900">{powerUnit}</div>
                             </td>
-                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_qualifying`] && getStatBackgroundColor(qualifying, columnStats[`${part.car_part_type}_qualifying`].min, columnStats[`${part.car_part_type}_qualifying`].max, columnStats[`${part.car_part_type}_qualifying`].median))}>
                               <div className="text-sm text-gray-900">{qualifying}</div>
                             </td>
-                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_drs`] && getStatBackgroundColor(drs, columnStats[`${part.car_part_type}_drs`].min, columnStats[`${part.car_part_type}_drs`].max, columnStats[`${part.car_part_type}_drs`].median))}>
                               <div className="text-sm text-gray-900">{drs}</div>
                             </td>
-                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_pitStopTime`] && getStatBackgroundColor(pitStopTime, columnStats[`${part.car_part_type}_pitStopTime`].min, columnStats[`${part.car_part_type}_pitStopTime`].max, columnStats[`${part.car_part_type}_pitStopTime`].median, true))}>
                               <div className="text-sm text-gray-900">{pitStopTime}</div>
                             </td>
-                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_total_value`] && getStatBackgroundColor(totalValue, columnStats[`${part.car_part_type}_total_value`].min, columnStats[`${part.car_part_type}_total_value`].max, columnStats[`${part.car_part_type}_total_value`].median))}>
                               <div className="text-sm font-medium text-gray-900">{totalValue}</div>
                             </td>
                             <td className="px-3 py-1 whitespace-nowrap text-center">
