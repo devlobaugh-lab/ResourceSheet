@@ -111,6 +111,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Level 0 Stats Bug**: Fixed off-by-one error where drivers and car parts at level 0 were incorrectly showing level 1 stats instead of all 0 stats. Updated `getStatValue` and `getStatValueForSort` functions in DataGrid component to properly handle level 0 by returning 0 instead of accessing `stats[level - 1]`.
 
+- **Driver Sorting Bug**: Fixed sorting on drivers page to include bonus calculations. Previously, sorting by stat columns only considered base values, but now includes bonus percentage increases from checked items. Updated `getStatValueForSort` function in DataGrid component to apply bonus calculations identical to display values.
+
 ### Added
 - **Car Parts Page Grouped Sections** - Complete redesign with part type organization
   - **Grouped Display**: Parts organized into sections by type (Brakes, Gearbox, Rear Wing, Front Wing, Suspension, Engine)

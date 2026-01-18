@@ -35,6 +35,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [ ] Add Highest Level Toggle to Drivers and Parts pages
 - [ ] Add Highest Level Column to Data Input
 - [x] Tune Debounce - seems a little agressive now (I can feel some lag when doing data entry) - Fixed with simple save-on-blur approach
+- [x] Driver Sorting Bug - sorting by stat columns only considered base values, not bonus calculations. Fixed to include bonus percentage increases.
 
 ### Admin Interface Development
 - [x] Implement data import/export functionality

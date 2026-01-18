@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
@@ -193,8 +193,8 @@ export function DataGrid({
     return matchesSearch && matchesMaxSeries;
   });
 
-  // Helper function to get stat value for sorting
-  const getStatValueForSort = (item: FilterableItem, statName: string): number => {
+  // Helper function to get stat value for sorting (including bonuses)
+  const getStatValueForSort = useCallback((item: FilterableItem, statName: string): number => {
     let userLevel = 0;
     if ('is_driver' in item && item.is_driver) {
       userLevel = (item as DriverView).level;
@@ -218,20 +218,43 @@ export function DataGrid({
       stats = (item as UserAssetView).stats_per_level;
     }
 
+    let baseValue = 0;
     if (stats && stats.length > userLevel - 1 && stats[userLevel - 1][statName] !== undefined) {
-      return stats[userLevel - 1][statName];
+      baseValue = stats[userLevel - 1][statName];
     }
-    return 0;
-  };
+
+    // Get the item ID for bonus checking
+    let itemId = '';
+    if ('is_driver' in item && item.is_driver) {
+      itemId = (item as DriverView).id;
+    } else if ('is_car_part' in item && item.is_car_part) {
+      itemId = (item as CarPartView).id;
+    } else if ('is_asset' in item && item.is_asset) {
+      itemId = (item as UserAssetView).id;
+    }
+
+    // Apply bonus if item has bonus checked and bonus percentage is set
+    if (bonusCheckedItems.has(itemId) && bonusPercentage > 0) {
+      if (statName === 'pitStopTime') {
+        // Pit stop time should decrease (lower is better)
+        baseValue = Math.round((baseValue * (1 - bonusPercentage / 100)) * 100) / 100;
+      } else {
+        // All other stats should increase and round up
+        baseValue = Math.ceil(baseValue * (1 + bonusPercentage / 100));
+      }
+    }
+
+    return baseValue;
+  }, [bonusCheckedItems, bonusPercentage]);
 
   // Helper function to get boost tier value for sorting
-  const getBoostTierValueForSort = (item: FilterableItem, tierName: string): number => {
+  const getBoostTierValueForSort = useCallback((item: FilterableItem, tierName: string): number => {
     if ('is_boost' in item && item.is_boost && (item as BoostItem).boost_stats) {
       const boostStats = (item as BoostItem).boost_stats as { [key: string]: number };
       return boostStats[tierName] || 0;
     }
     return 0;
-  };
+  }, []);
 
   // Apply sorting if enabled
   const sortedItems = useMemo(() => {
@@ -313,7 +336,7 @@ export function DataGrid({
 
       return filters.sortOrder === 'asc' ? comparison : -comparison;
     });
-  }, [filteredItems, filters.sortBy, filters.sortOrder]);
+  }, [filteredItems, filters.sortBy, filters.sortOrder, getStatValueForSort, getBoostTierValueForSort]);
 
   // Calculate column statistics for drivers and parts
   const columnStats = useMemo(() => {

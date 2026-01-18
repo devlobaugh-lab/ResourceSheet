@@ -30,7 +30,7 @@ function AuthenticatedBoostsPage() {
   const filteredBoosts = useMemo(() => {
     if (!searchTerm) return rawBoosts
 
-    return rawBoosts.filter(boost => {
+    return rawBoosts.filter((boost: BoostWithCustomName) => {
       const displayName = boost.custom_name || boost.name
       return displayName.toLowerCase().includes(searchTerm.toLowerCase())
     })

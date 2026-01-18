@@ -181,8 +181,8 @@ function AuthenticatedComparePage() {
                 showFilters={false}
                 showSearch={true}
                 showCompareButton={true}
-                compareItems={compareItems}
-                onCompareSingle={handleCompareSingle}
+                compareItems={compareItems as any}
+                onCompareSingle={handleCompareSingle as any}
               />
             ) : null}
           </div>

@@ -79,6 +79,7 @@ function testTypes() {
   const testDriverView: DriverView = {
     ...testDriver,
     level: 5,
+    card_count: 3,
     is_owned: true
   };
 
@@ -88,6 +89,7 @@ function testTypes() {
   const testCarPartView: CarPartView = {
     ...testCarPart,
     level: 3,
+    card_count: 2,
     is_owned: true
   };
 
