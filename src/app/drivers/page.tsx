@@ -34,6 +34,17 @@ function AuthenticatedDriversPage() {
     return new Set()
   })
 
+  const [showHighestLevel, setShowHighestLevel] = useState(() => {
+    // Initialize from localStorage
+    try {
+      const stored = localStorage.getItem('drivers-show-highest-level')
+      return stored ? JSON.parse(stored) : false
+    } catch (error) {
+      console.warn('Failed to load show highest level from localStorage:', error)
+      return false
+    }
+  })
+
   // Load bonus settings from localStorage on mount
   useEffect(() => {
     try {
@@ -70,6 +81,14 @@ function AuthenticatedDriversPage() {
       console.warn('Failed to save bonus checked items to localStorage:', error)
     }
   }, [bonusCheckedItems])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('drivers-show-highest-level', JSON.stringify(showHighestLevel))
+    } catch (error) {
+      console.warn('Failed to save show highest level to localStorage:', error)
+    }
+  }, [showHighestLevel])
 
   // Handle bonus checkbox changes
   const handleBonusToggle = (itemId: string) => {
@@ -144,6 +163,18 @@ function AuthenticatedDriversPage() {
               placeholder="0"
             />
           </div>
+          <div className="flex items-center space-x-2">
+            <label htmlFor="highestLevelToggle" className="text-sm font-medium text-gray-700">
+              Highest Level:
+            </label>
+            <input
+              id="highestLevelToggle"
+              type="checkbox"
+              checked={showHighestLevel}
+              onChange={(e) => setShowHighestLevel(e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            />
+          </div>
         </div>
       </div>
 
@@ -171,6 +202,7 @@ function AuthenticatedDriversPage() {
             bonusPercentage={parseFloat(bonusPercentage) || 0}
             bonusCheckedItems={bonusCheckedItems}
             onBonusToggle={handleBonusToggle}
+            showHighestLevel={showHighestLevel}
           />
         )}
       </ErrorBoundary>

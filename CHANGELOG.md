@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Highest Level Calculations for Data Input and Asset Pages**
+  - **Utility Function**: Added `calculateHighestLevel()` in `src/lib/utils.ts` to determine maximum upgradeable level based on current level, card count, and rarity restrictions
+  - **Data Input Page Enhancements**: Added "Highest Level" column to both Drivers and Parts tabs showing red-highlighted levels when higher than current level
+  - **Drivers Page Toggle**: Added "Highest Level" checkbox to drivers page header that switches stat display to show potential max levels instead of current levels
+  - **Parts Page Toggle**: Added "Highest Level" checkbox to parts page header that switches stat display to show potential max levels instead of current levels
+  - **Persistent Settings**: Toggle states saved to localStorage (drivers-show-highest-level, parts-show-highest-level) and restored on page load
+  - **Upgrade Cost Logic**: Implements correct upgrade costs (lvl1-2:4, lvl2-3:10, lvl3-4:20, lvl4-5:50, lvl5-6:100, lvl6-7:200, lvl7-8:400, lvl8-9:1000, lvl9-10:2000, lvl10-11:4000)
+  - **Rarity Restrictions**: Respects max levels by rarity (Basic/Common:11, Rare:9, Epic:8, Legendary/Special:7)
+  - **Visual Indicators**: Red text highlighting for levels higher than current level to draw user attention
+  - **Real-time Updates**: Stats recalculate immediately when toggle is changed, showing potential maximum stats for current card count
+
+### Added
 - **Bonus Percentage Feature for Drivers and Parts Pages**
   - **Bonus Input Field**: Added compact text input field (width `w-12`) to the right of "Max Series" dropdown on both drivers and parts pages
   - **Bonus Checkboxes**: Each driver/part row has a checkbox in the "Bonus" column that determines if the bonus percentage applies to that item

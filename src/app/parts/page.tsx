@@ -10,7 +10,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useAuth } from '@/components/auth/AuthContext'
 import Link from 'next/link'
 import { CarPartView } from '@/types/database'
-import { cn } from '@/lib/utils'
+import { cn, calculateHighestLevel } from '@/lib/utils'
 
 // Helper function to get stat background color based on value position in range
 const getStatBackgroundColor = (value: number, min: number, max: number, median: number, isPitStopTime: boolean = false): string => {
@@ -84,6 +84,17 @@ function AuthenticatedPartsPage() {
     return new Set()
   })
 
+  const [showHighestLevel, setShowHighestLevel] = useState(() => {
+    // Initialize from localStorage
+    try {
+      const stored = localStorage.getItem('parts-show-highest-level')
+      return stored ? JSON.parse(stored) : false
+    } catch (error) {
+      console.warn('Failed to load show highest level from localStorage:', error)
+      return false
+    }
+  })
+
   // Load bonus settings from localStorage on mount
   useEffect(() => {
     try {
@@ -118,6 +129,14 @@ function AuthenticatedPartsPage() {
       console.warn('Failed to save bonus checked items to localStorage:', error)
     }
   }, [bonusCheckedItems])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('parts-show-highest-level', JSON.stringify(showHighestLevel))
+    } catch (error) {
+      console.warn('Failed to save show highest level to localStorage:', error)
+    }
+  }, [showHighestLevel])
 
   // Handle bonus checkbox changes
   const handleBonusToggle = (itemId: string) => {
@@ -353,6 +372,18 @@ function AuthenticatedPartsPage() {
               placeholder="0"
             />
           </div>
+          <div className="flex items-center space-x-2">
+            <label htmlFor="highestLevelToggle" className="text-sm font-medium text-gray-700">
+              Highest Level:
+            </label>
+            <input
+              id="highestLevelToggle"
+              type="checkbox"
+              checked={showHighestLevel}
+              onChange={(e) => setShowHighestLevel(e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            />
+          </div>
         </div>
       </div>
 
@@ -428,8 +459,14 @@ function AuthenticatedPartsPage() {
                       {parts.map((part) => {
                         // Get stats for the current level
                         const getStatValue = (statName: string): number => {
-                          const userLevel = part.level || 0;
+                          let userLevel = part.level || 0;
                           if (userLevel === 0) return 0;
+
+                          // If showHighestLevel is enabled, use the highest possible level instead of current level
+                          if (showHighestLevel) {
+                            const cardCount = part.card_count || 0;
+                            userLevel = calculateHighestLevel(userLevel, cardCount, part.rarity);
+                          }
 
                           let stats: Array<{ [key: string]: number }> | null = null;
                           if (part.stats_per_level && Array.isArray(part.stats_per_level)) {
@@ -478,7 +515,11 @@ function AuthenticatedPartsPage() {
                               </div>
                             </td>
                             <td className="px-3 py-1 whitespace-nowrap text-center">
-                              <div className="text-sm text-gray-900">{part.level || 0}</div>
+                              <div className={`text-sm text-gray-900 ${showHighestLevel && calculateHighestLevel(part.level || 0, part.card_count || 0, part.rarity) > (part.level || 0) ? 'text-red-600' : ''}`}>
+                                {showHighestLevel ?
+                                  calculateHighestLevel(part.level || 0, part.card_count || 0, part.rarity) :
+                                  (part.level || 0)}
+                              </div>
                             </td>
                             <td className="px-3 py-1 whitespace-nowrap text-center">
                               <input

@@ -10,7 +10,7 @@ interface BoostItem extends BoostWithCustomName {
   is_boost: true;
   card_count: number;
 }
-import { cn, formatNumber } from '@/lib/utils';
+import { cn, formatNumber, calculateHighestLevel } from '@/lib/utils';
 
 // Helper function to get stat background color based on value position in range
 const getStatBackgroundColor = (value: number, min: number, max: number, median: number): string => {
@@ -96,6 +96,7 @@ interface DataGridProps {
   bonusPercentage?: number;
   bonusCheckedItems?: Set<string>;
   onBonusToggle?: (itemId: string) => void;
+  showHighestLevel?: boolean;
 }
 
 interface FilterState {
@@ -140,6 +141,7 @@ export function DataGrid({
   bonusPercentage = 0,
   bonusCheckedItems = new Set(),
   onBonusToggle,
+  showHighestLevel = false,
 }: DataGridProps) {
   const [filters, setFilters] = useState<FilterState>(() => {
     // Load saved sort preferences on component initialization
@@ -769,6 +771,13 @@ export function DataGrid({
                   return 0;
                 }
 
+                // If showHighestLevel is enabled, use the highest possible level instead of current level
+                if (showHighestLevel && (isDriver || isCarPart)) {
+                  const cardCount = isDriver ? (catalogItem as DriverView).card_count : (catalogItem as CarPartView).card_count;
+                  const highestLevel = calculateHighestLevel(userLevel, cardCount || 0, catalogItem.rarity);
+                  userLevel = highestLevel;
+                }
+
                 let stats: Array<{ [key: string]: number }> | null = null;
                 if (isAsset && (catalogItem as UserAssetView).stats_per_level && Array.isArray((catalogItem as UserAssetView).stats_per_level)) {
                   stats = (catalogItem as UserAssetView).stats_per_level;
@@ -861,9 +870,15 @@ export function DataGrid({
                   {/* User Level Column for Drivers and Parts */}
                   {(gridType === 'drivers' || gridType === 'parts') && (
                     <td className="px-3 py-1 whitespace-nowrap text-center">
-                      <div className="text-sm text-gray-900">
-                        {isDriver ? (item as DriverView).level :
-                         isCarPart ? (item as CarPartView).level : 0}
+                      <div className={`text-sm text-gray-900 ${showHighestLevel && (isDriver || isCarPart) && calculateHighestLevel(isDriver ? (item as DriverView).level : (item as CarPartView).level, isDriver ? (item as DriverView).card_count || 0 : (item as CarPartView).card_count || 0, catalogItem.rarity) > (isDriver ? (item as DriverView).level : (item as CarPartView).level) ? 'text-red-600' : ''}`}>
+                        {showHighestLevel && (isDriver || isCarPart) ?
+                          calculateHighestLevel(
+                            isDriver ? (item as DriverView).level : (item as CarPartView).level,
+                            isDriver ? (item as DriverView).card_count || 0 : (item as CarPartView).card_count || 0,
+                            catalogItem.rarity
+                          ) :
+                          (isDriver ? (item as DriverView).level :
+                           isCarPart ? (item as CarPartView).level : 0)}
                       </div>
                     </td>
                   )}

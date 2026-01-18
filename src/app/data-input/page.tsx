@@ -8,6 +8,7 @@ import { useAuth } from '@/components/auth/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { DriverView, CarPartView, BoostWithCustomName } from '@/types/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { calculateHighestLevel } from '@/lib/utils';
 
 // Level range validation by rarity
 const LEVEL_RANGES = {
@@ -177,6 +178,9 @@ function DriversTab() {
             <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
               Amount
             </th>
+            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+              Highest Level
+            </th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
@@ -235,6 +239,11 @@ function DriversTab() {
                   }}
                   className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                 />
+              </td>
+              <td className="px-3 py-1 whitespace-nowrap text-center">
+                <div className={`text-sm text-gray-900 ${calculateHighestLevel(driver.level || 0, driver.card_count || 0, driver.rarity) > (driver.level || 0) ? 'text-red-600' : ''}`}>
+                  {calculateHighestLevel(driver.level || 0, driver.card_count || 0, driver.rarity)}
+                </div>
               </td>
             </tr>
           ))}
@@ -334,6 +343,9 @@ function PartsTab() {
             <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
               Amount
             </th>
+            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+              Highest Level
+            </th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
@@ -395,6 +407,11 @@ function PartsTab() {
                   }}
                   className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                 />
+              </td>
+              <td className="px-3 py-1 whitespace-nowrap text-center">
+                <div className={`text-sm text-gray-900 ${calculateHighestLevel(part.level || 0, part.card_count || 0, part.rarity) > (part.level || 0) ? 'text-red-600' : ''}`}>
+                  {calculateHighestLevel(part.level || 0, part.card_count || 0, part.rarity)}
+                </div>
               </td>
             </tr>
           ))}
