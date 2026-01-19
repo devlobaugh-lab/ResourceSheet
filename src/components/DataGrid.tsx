@@ -211,6 +211,14 @@ export function DataGrid({
       return 0;
     }
 
+    // If showHighestLevel is enabled, use the highest possible level instead of current level
+    if (showHighestLevel && ('is_driver' in item && item.is_driver || 'is_car_part' in item && item.is_car_part)) {
+      const cardCount = 'is_driver' in item && item.is_driver ? (item as DriverView).card_count : (item as CarPartView).card_count;
+      const rarity = 'is_driver' in item && item.is_driver ? (item as DriverView).rarity : (item as CarPartView).rarity;
+      const highestLevel = calculateHighestLevel(userLevel, cardCount || 0, rarity);
+      userLevel = highestLevel;
+    }
+
     let stats: Array<{ [key: string]: number }> | null = null;
     if ('is_driver' in item && item.is_driver && (item as DriverView).stats_per_level) {
       stats = (item as DriverView).stats_per_level;
@@ -247,7 +255,7 @@ export function DataGrid({
     }
 
     return baseValue;
-  }, [bonusCheckedItems, bonusPercentage]);
+  }, [bonusCheckedItems, bonusPercentage, showHighestLevel]);
 
   // Helper function to get boost tier value for sorting
   const getBoostTierValueForSort = useCallback((item: FilterableItem, tierName: string): number => {
@@ -363,6 +371,12 @@ export function DataGrid({
               return;
             }
 
+            // If showHighestLevel is enabled, use the highest possible level instead of current level
+            if (showHighestLevel) {
+              const highestLevel = calculateHighestLevel(userLevel, driver.card_count || 0, driver.rarity);
+              userLevel = highestLevel;
+            }
+
             let baseValue = 0;
             if (driver.stats_per_level && driver.stats_per_level.length > userLevel - 1) {
               const levelStats = driver.stats_per_level[userLevel - 1];
@@ -420,6 +434,12 @@ export function DataGrid({
                 return;
               }
 
+              // If showHighestLevel is enabled, use the highest possible level instead of current level
+              if (showHighestLevel) {
+                const highestLevel = calculateHighestLevel(userLevel, carPart.card_count || 0, carPart.rarity);
+                userLevel = highestLevel;
+              }
+
               let baseValue = 0;
               if (carPart.stats_per_level && carPart.stats_per_level.length > userLevel - 1) {
                 const levelStats = carPart.stats_per_level[userLevel - 1];
@@ -468,7 +488,7 @@ export function DataGrid({
     }
 
     return stats;
-  }, [sortedItems, gridType, bonusCheckedItems, bonusPercentage]);
+  }, [sortedItems, gridType, bonusCheckedItems, bonusPercentage, showHighestLevel]);
 
   const handleCompare = (item: CatalogItem) => {
     if (onCompare) {

@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Drivers Page Sorting with Highest Level Toggle**
+  - Fixed sorting logic to use displayed values instead of original level values when "Highest Level" toggle is enabled
+  - Updated `getStatValueForSort` function to include `calculateHighestLevel` logic when `showHighestLevel` is true
+  - Fixed column statistics calculation (`columnStats`) to also use highest level values for proper color coding
+  - Added `showHighestLevel` to dependency arrays for proper reactivity when toggle changes
+  - Now sorting by stat columns correctly reflects the displayed values when highest level toggle is active
+
 - **Data Input Page Layout Optimization**
   - Reduced excessive whitespace above headings by changing outer container padding from `py-8` to `py-4`
   - Adjusted table container heights from `max-h-[73vh]` to `max-h-[50vh]` for better visual balance

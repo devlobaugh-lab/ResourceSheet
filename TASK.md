@@ -37,6 +37,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [x] Tune Debounce - seems a little agressive now (I can feel some lag when doing data entry) - Fixed with simple save-on-blur approach
 - [x] Driver Sorting Bug - sorting by stat columns only considered base values, not bonus calculations. Fixed to include bonus percentage increases.
 - [x] Fixed data-input page layout issues - reduced excessive whitespace above headings and optimized table container heights
+- [x] Drivers Page Sorting with Highest Level Toggle - Fixed sorting logic to use displayed values instead of original level values when "Highest Level" toggle is enabled. Updated getStatValueForSort function to include calculateHighestLevel logic when showHighestLevel is true, and fixed column statistics calculation to also use highest level values for proper color coding.
 
 ### Admin Interface Development
 - [x] Implement data import/export functionality
