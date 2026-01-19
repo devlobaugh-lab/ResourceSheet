@@ -71,14 +71,22 @@ function AuthSectionMobile() {
 export function ClientNavigation() {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
+      {/* Logo - Left aligned, outside container */}
+      <div className="px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center h-16">
           <div className="flex items-center">
-            <Link href="/" className="text-xl font-bold text-gray-900">
+            <Link href="/drivers" className="text-xl font-bold text-gray-900">
               F1 Resource Manager
             </Link>
           </div>
+        </div>
+      </div>
+
+      {/* Navigation and Auth - Centered container */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 -mt-16">
+          {/* Spacer for logo */}
+          <div className="w-48"></div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
@@ -107,7 +115,7 @@ export function ClientNavigation() {
               Data Input
             </Link>
             <Link
-              href="/compare"
+              href="/compare/drivers"
               className="px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
             >
               Compare
@@ -154,7 +162,7 @@ export function ClientNavigation() {
             Data Input
           </Link>
           <Link
-            href="/compare"
+            href="/compare/drivers"
             className="block px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50"
           >
             Compare

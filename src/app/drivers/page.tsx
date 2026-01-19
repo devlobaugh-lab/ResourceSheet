@@ -103,6 +103,38 @@ function AuthenticatedDriversPage() {
     });
   };
 
+  // Handle adding driver to compare
+  const handleAddToCompare = (driver: { id: string; name: string; level: number; rarity: number }) => {
+    try {
+      // Get existing compare drivers from localStorage
+      const stored = localStorage.getItem('compare-drivers-settings')
+      const existingDrivers: any[] = stored ? JSON.parse(stored) : []
+
+      // Check if driver is already in the compare list
+      const isAlreadyAdded = existingDrivers.some(d => d.id === driver.id)
+
+      if (!isAlreadyAdded) {
+        // Add the driver with default settings
+        const newDriver = {
+          id: driver.id,
+          rarity: driver.rarity,
+          level: driver.level,
+          hasBonus: false
+        }
+
+        const updatedDrivers = [...existingDrivers, newDriver]
+        localStorage.setItem('compare-drivers-settings', JSON.stringify(updatedDrivers))
+
+        // Show some feedback (could be a toast in the future)
+        console.log('Driver added to compare:', driver.name)
+      } else {
+        console.log('Driver already in compare list:', driver.name)
+      }
+    } catch (error) {
+      console.warn('Failed to add driver to compare:', error)
+    }
+  };
+
   // Apply filters to the data
   const filteredDrivers = useMemo(() => {
     if (!driversResponse?.data) return []
@@ -199,6 +231,7 @@ function AuthenticatedDriversPage() {
             showFilters={false}
             showSearch={false}
             showCompareButton={true}
+            onAddToCompare={handleAddToCompare}
             bonusPercentage={parseFloat(bonusPercentage) || 0}
             bonusCheckedItems={bonusCheckedItems}
             onBonusToggle={handleBonusToggle}
