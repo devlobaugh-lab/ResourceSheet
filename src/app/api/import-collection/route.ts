@@ -140,15 +140,19 @@ export async function POST(request: NextRequest) {
         .eq('user_id', user.id)
 
       if (deleteError) {
-        console.error('Delete error:', deleteError)
+        console.error('Delete drivers error:', deleteError)
+        console.error('Delete drivers error details:', JSON.stringify(deleteError, null, 2))
         return NextResponse.json(
-          { error: { code: 'DATABASE_ERROR', message: 'Failed to delete existing user drivers' } },
+          { error: { code: 'DATABASE_ERROR', message: 'Failed to delete existing user drivers: ' + deleteError.message } },
           { status: 500 }
         )
       }
 
-      if (validatedData.userDrivers.length > 0) {
-        const driversToInsert = validatedData.userDrivers.map(item => ({
+      // Only insert drivers that the user actually owns (level > 0 or card_count > 0)
+      const ownedDrivers = validatedData.userDrivers.filter(item => item.level > 0 || item.card_count > 0)
+
+      if (ownedDrivers.length > 0) {
+        const driversToInsert = ownedDrivers.map(item => ({
           user_id: user.id,
           driver_id: item.driver_id,
           level: item.level,
@@ -161,9 +165,10 @@ export async function POST(request: NextRequest) {
           .insert(driversToInsert)
 
         if (insertError) {
-          console.error('Insert error:', insertError)
+          console.error('Insert drivers error:', insertError)
+          console.error('Insert drivers error details:', JSON.stringify(insertError, null, 2))
           return NextResponse.json(
-            { error: { code: 'DATABASE_ERROR', message: 'Failed to import user drivers' } },
+            { error: { code: 'DATABASE_ERROR', message: 'Failed to import user drivers: ' + insertError.message } },
             { status: 500 }
           )
         }
@@ -211,8 +216,11 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      if (validatedData.userCarParts.length > 0) {
-        const carPartsToInsert = validatedData.userCarParts.map(item => ({
+      // Only insert car parts that the user actually owns (level > 0 or card_count > 0)
+      const ownedCarParts = validatedData.userCarParts.filter(item => item.level > 0 || item.card_count > 0)
+
+      if (ownedCarParts.length > 0) {
+        const carPartsToInsert = ownedCarParts.map(item => ({
           user_id: user.id,
           car_part_id: item.car_part_id,
           level: item.level,
@@ -225,9 +233,10 @@ export async function POST(request: NextRequest) {
           .insert(carPartsToInsert)
 
         if (insertError) {
-          console.error('Insert error:', insertError)
+          console.error('Insert car parts error:', insertError)
+          console.error('Insert car parts error details:', JSON.stringify(insertError, null, 2))
           return NextResponse.json(
-            { error: { code: 'DATABASE_ERROR', message: 'Failed to import user car parts' } },
+            { error: { code: 'DATABASE_ERROR', message: 'Failed to import user car parts: ' + insertError.message } },
             { status: 500 }
           )
         }
@@ -266,24 +275,31 @@ export async function POST(request: NextRequest) {
         .delete()
         .eq('user_id', user.id)
 
-      if (validatedData.userBoosts.length > 0) {
-        const boostsToInsert = validatedData.userBoosts.map(boost => ({
+      // Only insert boosts that the user actually owns (level > 0 or card_count > 0)
+      const ownedBoosts = validatedData.userBoosts.filter(item => item.level > 0 || item.card_count > 0)
+
+      if (ownedBoosts.length > 0) {
+        const boostsToInsert = ownedBoosts.map(boost => ({
           user_id: user.id,
           boost_id: boost.boost_id,
           level: boost.level,
           card_count: boost.card_count
         }))
 
+        console.log('Inserting user boosts:', boostsToInsert.length)
         const { error: insertError } = await supabaseAdmin
           .from('user_boosts')
           .insert(boostsToInsert)
 
         if (insertError) {
+          console.error('Insert boosts error:', insertError)
+          console.error('Insert boosts error details:', JSON.stringify(insertError, null, 2))
           return NextResponse.json(
-            { error: { code: 'DATABASE_ERROR', message: 'Failed to import user boosts' } },
+            { error: { code: 'DATABASE_ERROR', message: 'Failed to import user boosts: ' + insertError.message } },
             { status: 500 }
           )
         }
+        console.log('Successfully inserted user boosts')
       }
     }
 

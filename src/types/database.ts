@@ -532,6 +532,33 @@ export interface BoostWithCustomName extends Tables<'boosts'> {
   custom_name?: string | null
 }
 
+// User Car Setup types
+export interface UserCarSetup {
+  id: string
+  user_id: string
+  name: string
+  notes?: string | null
+  brake_id: string | null
+  gearbox_id: string | null
+  rear_wing_id: string | null
+  front_wing_id: string | null
+  suspension_id: string | null
+  engine_id: string | null
+  series_filter: number
+  bonus_percentage: number
+  created_at: string
+  updated_at: string
+}
+
+export interface UserCarSetupWithParts extends UserCarSetup {
+  brake?: CarPartView
+  gearbox?: CarPartView
+  rear_wing?: CarPartView
+  front_wing?: CarPartView
+  suspension?: CarPartView
+  engine?: CarPartView
+}
+
 export interface StatLevel {
   speed: number
   cornering: number

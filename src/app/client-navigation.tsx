@@ -103,6 +103,12 @@ export function ClientNavigation() {
               Car Parts
             </Link>
             <Link
+              href="/setups"
+              className="px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              Setups
+            </Link>
+            <Link
               href="/boosts"
               className="px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
             >
@@ -148,6 +154,12 @@ export function ClientNavigation() {
             className="block px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50"
           >
             Car Parts
+          </Link>
+          <Link
+            href="/setups"
+            className="block px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+          >
+            Setups
           </Link>
           <Link
             href="/boosts"
