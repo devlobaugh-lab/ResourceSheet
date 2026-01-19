@@ -189,7 +189,15 @@ function DriversTab() {
               <td className={`px-3 py-1 whitespace-nowrap ${getRarityBackground(driver.rarity)}`}>
                 <div className="flex items-center">
                   <div className="text-sm font-medium text-gray-900">
-                    {driver.name}
+                    {(() => {
+                      const nameParts = driver.name.split(' ')
+                      if (nameParts.length >= 2) {
+                        const lastName = nameParts[nameParts.length - 1]
+                        const firstName = nameParts.slice(0, -1).join(' ')
+                        return `${lastName}, ${firstName}`
+                      }
+                      return driver.name
+                    })()}
                   </div>
                 </div>
               </td>
@@ -530,53 +538,51 @@ export default function DataInputPage() {
   return (
     <ProtectedRoute>
       <div className="bg-gray-50 py-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="space-y-4">
-            {/* Page Title and Tabs */}
-            <div className="flex items-center gap-6">
-              <h1 className="text-3xl font-bold text-gray-900 mr-4">Data Input</h1>
+        <div className="space-y-4">
+          {/* Page Title and Tabs */}
+          <div className="flex items-center gap-6">
+            <h1 className="text-3xl font-bold text-gray-900 mr-4">Data Input</h1>
 
-              {/* Tabs */}
-              <nav className="-mb-px flex space-x-8">
-                <button
-                  onClick={() => setActiveTab('drivers')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'drivers'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Drivers
-                </button>
-                <button
-                  onClick={() => setActiveTab('parts')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'parts'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Car Parts
-                </button>
-                <button
-                  onClick={() => setActiveTab('boosts')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'boosts'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Boosts
-                </button>
-              </nav>
-            </div>
-
-            {/* Tab Content */}
-            {activeTab === 'drivers' ? <DriversTab /> :
-             activeTab === 'parts' ? <PartsTab /> :
-             <BoostsTab />}
-
+            {/* Tabs */}
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('drivers')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'drivers'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Drivers
+              </button>
+              <button
+                onClick={() => setActiveTab('parts')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'parts'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Car Parts
+              </button>
+              <button
+                onClick={() => setActiveTab('boosts')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'boosts'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Boosts
+              </button>
+            </nav>
           </div>
+
+          {/* Tab Content */}
+          {activeTab === 'drivers' ? <DriversTab /> :
+           activeTab === 'parts' ? <PartsTab /> :
+           <BoostsTab />}
+
         </div>
       </div>
     </ProtectedRoute>

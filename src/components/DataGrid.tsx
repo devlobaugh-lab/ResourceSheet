@@ -91,6 +91,7 @@ interface DataGridProps {
   showFilters?: boolean;
   showSearch?: boolean;
   showCompareButton?: boolean;
+  onAddToCompare?: (driver: DriverView) => void;
   gridType?: 'drivers' | 'parts' | 'boosts' | 'car-parts';
   onBoostNameChange?: () => void;
   bonusPercentage?: number;
@@ -136,6 +137,7 @@ export function DataGrid({
   showFilters = true,
   showSearch = true,
   showCompareButton = true,
+  onAddToCompare,
   gridType = 'drivers',
   onBoostNameChange,
   bonusPercentage = 0,
@@ -157,8 +159,6 @@ export function DataGrid({
   useEffect(() => {
     saveSortPreferences(gridType, filters.sortBy, filters.sortOrder);
   }, [gridType, filters.sortBy, filters.sortOrder]);
-
-
 
   // Extended types for unified filtering
   interface DriverItem extends DriverView {
@@ -194,6 +194,17 @@ export function DataGrid({
 
     return matchesSearch && matchesMaxSeries;
   });
+
+  // Format driver name for display (Last, First)
+  const formatDriverNameForDisplay = (name: string): string => {
+    const nameParts = name.split(' ')
+    if (nameParts.length >= 2) {
+      const lastName = nameParts[nameParts.length - 1]
+      const firstName = nameParts.slice(0, -1).join(' ')
+      return `${lastName}, ${firstName}`
+    }
+    return name
+  };
 
   // Helper function to get stat value for sorting (including bonuses)
   const getStatValueForSort = useCallback((item: FilterableItem, statName: string): number => {
@@ -270,12 +281,19 @@ export function DataGrid({
   const sortedItems = useMemo(() => {
     if (!filters.sortBy) return [...filteredItems];
 
-    return [...filteredItems].sort((a, b) => {
+    return [...filteredItems].sort((a: FilterableItem, b: FilterableItem) => {
       let comparison = 0;
 
       switch (filters.sortBy) {
         case 'name':
-          comparison = a.name.localeCompare(b.name);
+          // For drivers, sort by formatted "Last, First" name, otherwise use regular name
+          const aName = (gridType === 'drivers' && 'is_driver' in a && a.is_driver)
+            ? formatDriverNameForDisplay((a as any).name)
+            : (a as any).name;
+          const bName = (gridType === 'drivers' && 'is_driver' in b && b.is_driver)
+            ? formatDriverNameForDisplay((b as any).name)
+            : (b as any).name;
+          comparison = aName.localeCompare(bName);
           break;
         case 'rarity':
           comparison = a.rarity - b.rarity;
@@ -347,6 +365,112 @@ export function DataGrid({
       return filters.sortOrder === 'asc' ? comparison : -comparison;
     });
   }, [filteredItems, filters.sortBy, filters.sortOrder, getStatValueForSort, getBoostTierValueForSort]);
+
+  // Get rarity background color for cells
+  const getRarityBackground = (rarity: number): string => {
+    return rarity === 0 ? "bg-gray-300" :
+           rarity === 1 ? "bg-blue-200" :
+           rarity === 2 ? "bg-orange-200" :
+           rarity === 3 ? "bg-purple-300" :
+           rarity === 4 ? "bg-yellow-300" :
+           rarity === 5 ? "bg-red-300" : "bg-gray-300";
+  };
+
+  // Get boost value background color based on tier (1=blue, 2=green, 3=yellow, 4=orange, 5=red)
+  const getBoostValueColor = (tierValue: number): string => {
+    return tierValue === 1 ? "bg-blue-200" :
+           tierValue === 2 ? "bg-green-200" :
+           tierValue === 3 ? "bg-yellow-200" :
+           tierValue === 4 ? "bg-orange-200" :
+           tierValue === 5 ? "bg-red-300" : "bg-gray-50";
+  };
+
+  // Get columns based on grid type
+  const getColumns = () => {
+    const baseColumns = [
+      { key: 'name', label: 'Name', sortable: true },
+      // { key: 'rarity', label: 'Rarity', sortable: true },
+      // { key: 'series', label: 'Series', sortable: true },
+    ];
+
+    if (gridType === 'drivers') {
+      baseColumns.push(
+        { key: 'rarity', label: 'Rarity', sortable: true },
+        { key: 'user_level', label: 'Level', sortable: true },
+        { key: 'bonus', label: 'Bonus', sortable: false }
+      );
+    } else if (gridType === 'parts') {
+      baseColumns.push(
+        { key: 'rarity', label: 'Rarity', sortable: true },
+        { key: 'user_level', label: 'Level', sortable: true },
+        { key: 'bonus', label: 'Bonus', sortable: false },
+        { key: 'car_part_type', label: 'Part Type', sortable: false }
+      );
+    }
+
+    // Removed boost_type column as requested
+
+    // Add cards column for non-drivers if we have asset data
+    if (assets.length > 0 && gridType !== 'drivers') {
+      baseColumns.push({ key: 'card_count', label: 'Cards', sortable: false });
+    }
+
+      // TODO: wrong - stats are different for drivers and parts
+      // Add 6 stats columns for drivers and parts
+      if (gridType === 'drivers') {
+      baseColumns.push(
+        { key: 'overtaking', label: 'Overtaking', sortable: true },
+        { key: 'blocking', label: 'Defending', sortable: true },
+        { key: 'qualifying', label: 'Qualifying', sortable: true },
+        { key: 'raceStart', label: 'Race Start', sortable: true },
+        { key: 'tyreUse', label: 'Tyre Use', sortable: true },
+        { key: 'total_value', label: 'Total Value', sortable: true }
+      );
+    }
+
+    if (gridType === 'parts') {
+      baseColumns.push(
+        { key: 'speed', label: 'Speed', sortable: true },
+        { key: 'cornering', label: 'Cornering', sortable: true },
+        { key: 'powerUnit', label: 'Power Unit', sortable: true },
+        { key: 'qualifying', label: 'Qualifying', sortable: true },
+        { key: 'drs', label: 'DRS', sortable: true },
+        { key: 'pitStopTime', label: 'Pit Stop', sortable: true },
+        { key: 'total_value', label: 'Total Value', sortable: true }
+      );
+    }
+
+    if (gridType === 'boosts') {
+      // Add amount column right after name
+      baseColumns.push({ key: 'card_count', label: 'Amount', sortable: true });
+
+      // Add boost-specific columns - reordered and DRS removed
+      baseColumns.push(
+        { key: 'overtake_tier', label: 'Overtake', sortable: true },
+        { key: 'block_tier', label: 'Defend', sortable: true },
+        { key: 'corners_tier', label: 'Corners', sortable: true },
+        { key: 'tyre_use_tier', label: 'Tyre Use', sortable: true },
+        { key: 'power_unit_tier', label: 'Power Unit', sortable: true },
+        { key: 'speed_tier', label: 'Speed', sortable: true },
+        { key: 'pit_stop_time_tier', label: 'Pit Stop', sortable: true },
+        { key: 'race_start_tier', label: 'Race Start', sortable: true },
+        // Removed DRS tier column as requested
+      );
+    }
+
+    if (gridType === 'parts' || gridType === 'drivers') {
+      baseColumns.push({ key: 'series', label: 'Series', sortable: true });
+    }
+
+    // Add actions column header for drivers (for the + button)
+    if (gridType === 'drivers' && onAddToCompare) {
+      baseColumns.push({ key: 'actions', label: 'Add to Compare', sortable: false });
+    }
+
+    return baseColumns;
+  };
+
+  const columns = getColumns();
 
   // Calculate column statistics for drivers and parts
   const columnStats = useMemo(() => {
@@ -547,110 +671,6 @@ export function DataGrid({
            rarity === 3 ? 'secondary' :
            rarity === 2 ? 'default' : 'outline';
   };
-
-  // Get rarity background color for cells
-  const getRarityBackground = (rarity: number): string => {
-    return rarity === 0 ? "bg-gray-300" :
-           rarity === 1 ? "bg-blue-200" :
-           rarity === 2 ? "bg-orange-200" :
-           rarity === 3 ? "bg-purple-300" :
-           rarity === 4 ? "bg-yellow-300" :
-           rarity === 5 ? "bg-red-300" : "bg-gray-300";
-  };
-
-  // Get boost value background color based on tier (1=blue, 2=green, 3=yellow, 4=orange, 5=red)
-  const getBoostValueColor = (tierValue: number): string => {
-    return tierValue === 1 ? "bg-blue-200" :
-           tierValue === 2 ? "bg-green-200" :
-           tierValue === 3 ? "bg-yellow-200" :
-           tierValue === 4 ? "bg-orange-200" :
-           tierValue === 5 ? "bg-red-300" : "bg-gray-50";
-  };
-
-  // Get columns based on grid type
-  const getColumns = () => {
-    const baseColumns = [
-      { key: 'name', label: 'Name', sortable: true },
-      // { key: 'rarity', label: 'Rarity', sortable: true },
-      // { key: 'series', label: 'Series', sortable: true },
-    ];
-
-    if (gridType === 'drivers') {
-      baseColumns.push(
-        { key: 'rarity', label: 'Rarity', sortable: true },
-        { key: 'user_level', label: 'Level', sortable: true },
-        { key: 'bonus', label: 'Bonus', sortable: false }
-      );
-    } else if (gridType === 'parts') {
-      baseColumns.push(
-        { key: 'rarity', label: 'Rarity', sortable: true },
-        { key: 'user_level', label: 'Level', sortable: true },
-        { key: 'bonus', label: 'Bonus', sortable: false },
-        { key: 'car_part_type', label: 'Part Type', sortable: false }
-      );
-    }
-
-    // Removed boost_type column as requested
-
-    // Add cards column for non-drivers if we have asset data
-    if (assets.length > 0 && gridType !== 'drivers') {
-      baseColumns.push({ key: 'card_count', label: 'Cards', sortable: false });
-    }
-
-      // TODO: wrong - stats are different for drivers and parts
-      // Add 6 stats columns for drivers and parts
-      if (gridType === 'drivers') {
-      baseColumns.push(
-        { key: 'overtaking', label: 'Overtaking', sortable: true },
-        { key: 'blocking', label: 'Defending', sortable: true },
-        { key: 'qualifying', label: 'Qualifying', sortable: true },
-        { key: 'raceStart', label: 'Race Start', sortable: true },
-        { key: 'tyreUse', label: 'Tyre Use', sortable: true },
-        { key: 'total_value', label: 'Total Value', sortable: true }
-      );
-    }
-
-    if (gridType === 'parts') {
-      baseColumns.push(
-        { key: 'speed', label: 'Speed', sortable: true },
-        { key: 'cornering', label: 'Cornering', sortable: true },
-        { key: 'powerUnit', label: 'Power Unit', sortable: true },
-        { key: 'qualifying', label: 'Qualifying', sortable: true },
-        { key: 'drs', label: 'DRS', sortable: true },
-        { key: 'pitStopTime', label: 'Pit Stop', sortable: true },
-        { key: 'total_value', label: 'Total Value', sortable: true }
-      );
-    }
-
-    if (gridType === 'boosts') {
-      // Add amount column right after name
-      baseColumns.push({ key: 'card_count', label: 'Amount', sortable: true });
-
-      // Add boost-specific columns - reordered and DRS removed
-      baseColumns.push(
-        { key: 'overtake_tier', label: 'Overtake', sortable: true },
-        { key: 'block_tier', label: 'Defend', sortable: true },
-        { key: 'corners_tier', label: 'Corners', sortable: true },
-        { key: 'tyre_use_tier', label: 'Tyre Use', sortable: true },
-        { key: 'power_unit_tier', label: 'Power Unit', sortable: true },
-        { key: 'speed_tier', label: 'Speed', sortable: true },
-        { key: 'pit_stop_time_tier', label: 'Pit Stop', sortable: true },
-        { key: 'race_start_tier', label: 'Race Start', sortable: true },
-        // Removed DRS tier column as requested
-      );
-    }
-
-    if (gridType === 'parts' || gridType === 'drivers') {
-      baseColumns.push({ key: 'series', label: 'Series', sortable: true });
-    }
-
-    // Todo: what is this for?
-    // baseColumns.push({ key: 'actions', label: 'Actions', sortable: false });
-
-    return baseColumns;
-  };
-
-  const columns = getColumns();
 
   return (
     <div className={cn('w-full', className)} style={{ marginTop: 0 }}>
@@ -863,7 +883,7 @@ export function DataGrid({
                     ) : (
                       <div className="flex items-center">
                         <div className="text-sm font-medium text-gray-900">
-                          {catalogItem.name}
+                          {gridType === 'drivers' ? formatDriverNameForDisplay(catalogItem.name) : catalogItem.name}
                         </div>
                       </div>
                     )}
@@ -1041,9 +1061,9 @@ export function DataGrid({
                   )}
 
                   {/* Actions Column - only show if there are actions available */}
-                  {(onCompare || onAddToCollection || onRemoveFromCollection) && (
-                    <td className="px-3 py-1 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
+                  {(onCompare || onAddToCollection || onRemoveFromCollection || (gridType === 'drivers' && onAddToCompare)) && (
+                    <td className="px-3 py-1 whitespace-nowrap text-center text-sm font-medium">
+                      <div className="flex items-center justify-center space-x-2">
                         {onCompare && (
                           <Button
                             variant={isInComparison(catalogItem as CatalogItem) ? 'primary' : 'outline'}
@@ -1054,6 +1074,21 @@ export function DataGrid({
                             }}
                           >
                             {isInComparison(catalogItem as CatalogItem) ? 'Remove' : 'Compare'}
+                          </Button>
+                        )}
+
+                        {/* Add to Compare button for drivers */}
+                        {gridType === 'drivers' && onAddToCompare && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAddToCompare(catalogItem as DriverView);
+                            }}
+                            title="Add to Driver Compare"
+                          >
+                            +
                           </Button>
                         )}
 

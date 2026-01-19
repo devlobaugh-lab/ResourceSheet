@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Driver Compare Page - Complete Feature Implementation**
+  - **New Route**: `/compare/drivers` dedicated page for side-by-side driver comparison
+  - **Unlimited Columns**: Add as many driver columns as needed with horizontal scrolling
+  - **Column Management**: "Add Driver" button and individual "Remove" buttons per column
+  - **Driver Selection**: Dropdown populated from drivers catalog, sorted by last name first
+  - **Unique Driver Display**: No duplicate entries, formatted as "Last, First Initial"
+  - **Rarity Auto-Adjustment**: Dropdown automatically adjusts max level based on rarity selection
+  - **Level Validation**: Enforced rarity-based level restrictions (Common: 1-11, Rare: 1-9, Epic: 1-8, Legendary/Special: 1-7)
+  - **Bonus System**: Individual checkboxes per driver column for bonus percentage application
+  - **Global Bonus Input**: Single percentage input field affecting all checked drivers
+  - **Comprehensive Statistics**: All 5 driver stats (Overtaking, Defending, Qualifying, Race Start, Tyre Use)
+  - **Total Value Calculation**: Sum of all 5 driver stats displayed prominently
+  - **Visual Performance Indicators**: Red-to-green color gradients based on relative stat strength
+  - **Stat Calculations**: Full integration with existing `getStatValue` logic including bonuses
+  - **Session Persistence**: Complete localStorage save/load for all settings and selections
+  - **Responsive Design**: Proper horizontal scrolling and mobile compatibility
+  - **Loading States**: Proper loading indicators and empty states
+  - **TypeScript Safety**: Full type coverage with proper error handling
+
+- **Driver Compare Page UI Enhancements**
+  - **Name Row Addition**: New row above Bonus showing driver names with rarity background colors
+  - **Compact Design**: Reduced bonus row height and improved checkbox centering
+  - **Fixed Column Widths**: Static column widths instead of expanding to fill space
+  - **Left Justification**: Table justified to left edge instead of centering
+  - **Dark Label Styling**: All row labels use dark gray background with white text for visual hierarchy
+  - **Professional Layout**: Clean separation between control rows and data sections
+
+- **Driver Compare Page Technical Improvements**
+  - **Component Architecture**: New `DriverCompareGrid.tsx` component with clean separation of concerns
+  - **State Management**: React hooks for driver selections, settings, and localStorage integration
+  - **Performance Optimization**: Efficient re-renders and calculations for large comparison grids
+  - **Data Integration**: Seamless connection with existing drivers API and hooks
+  - **Error Handling**: Robust error recovery and validation throughout the component
+
 ### Fixed
 - **Drivers Page Sorting with Highest Level Toggle**
   - Fixed sorting logic to use displayed values instead of original level values when "Highest Level" toggle is enabled
@@ -20,6 +55,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Adjusted table container heights from `max-h-[73vh]` to `max-h-[50vh]` for better visual balance
   - Eliminated unnecessary vertical scrollbars when content fits within viewport
   - Applied consistent layout across all data-input tabs (Drivers, Parts, Boosts)
+
+- **UI Consistency and Layout Improvements**
+  - **Compare Drivers Page**: Fixed heading font size from `text-2xl` to `text-3xl` to match other pages
+  - **Compare Drivers Page**: Adjusted spacing from `space-y-6` to `space-y-4` for consistent heading whitespace
+  - **Data Input Page**: Removed centering container to left-align content like other pages
+  - **Navigation Logo**: Restructured navigation to keep F1 Resource Manager logo left-aligned regardless of screen width
+  - **Logo Link**: Changed logo link from Dashboard (/) to Drivers page (/drivers)
+  - **Navigation Architecture**: Logo positioned outside centered container while preserving nav item and profile area behavior
 
 ### Added
 - **Highest Level Calculations for Data Input and Asset Pages**
