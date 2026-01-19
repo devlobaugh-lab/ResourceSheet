@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { UserAssetView, CatalogItem, UserItem, Boost, Season, DriverView, CarPartView, BoostView } from '@/types/database'
+import type { UserAssetView, CatalogItem, UserItem, Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup } from '@/types/database'
 
 // API base URL
 const API_BASE = '/api'
@@ -11,27 +11,15 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
     'Content-Type': 'application/json',
   }
 
-  // For client-side requests, try to get the access token from Supabase session
-  if (typeof window !== 'undefined') {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession()
+  try {
+    // Get the current session
+    const { data: { session }, error } = await supabase.auth.getSession()
 
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`
-      } else {
-        // If no session, try to refresh or get user
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        if (user && !userError) {
-          // User exists but no session, try to refresh
-          const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession()
-          if (refreshedSession?.access_token && !refreshError) {
-            headers['Authorization'] = `Bearer ${refreshedSession.access_token}`
-          }
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to get auth token:', error)
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`
     }
+  } catch (error) {
+    console.warn('Failed to get auth token:', error)
   }
 
   return headers
@@ -469,6 +457,141 @@ export function useDeleteUserItem() {
       // Invalidate and refetch user items and user assets
       queryClient.invalidateQueries({ queryKey: ['user-items'] })
       queryClient.invalidateQueries({ queryKey: ['user-assets'] })
+    },
+  })
+}
+
+// Fetch user car setups
+export function useUserCarSetups() {
+  return useQuery({
+    queryKey: ['user-car-setups'],
+    queryFn: async (): Promise<{ data: UserCarSetup[]; pagination: any }> => {
+      // Wait a bit for auth to initialize
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const headers = await getAuthHeaders()
+
+      // If no auth header, the user might not be logged in yet
+      if (!headers.Authorization) {
+        console.log('No auth header found for setups - user may not be logged in')
+        return { data: [], pagination: { total: 0 } }
+      }
+
+      const response = await fetch(`${API_BASE}/setups`, {
+        headers,
+        credentials: 'same-origin'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user car setups')
+      }
+
+      return response.json()
+    },
+    staleTime: 30 * 1000, // 30 seconds
+  })
+}
+
+// Create setup mutation
+export function useCreateSetup() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (data: {
+      name: string
+      notes?: string | null
+      brake_id?: string | null
+      gearbox_id?: string | null
+      rear_wing_id?: string | null
+      front_wing_id?: string | null
+      suspension_id?: string | null
+      engine_id?: string | null
+      series_filter?: number
+      bonus_percentage?: number
+    }) => {
+      const response = await fetch(`${API_BASE}/setups`, {
+        method: 'POST',
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create setup')
+      }
+
+      return response.json()
+    },
+    onSuccess: () => {
+      // Invalidate and refetch setups
+      queryClient.invalidateQueries({ queryKey: ['user-car-setups'] })
+    },
+  })
+}
+
+// Update setup mutation
+export function useUpdateSetup() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data
+    }: {
+      id: string
+      data: Partial<{
+        name: string
+        brake_id: string | null
+        gearbox_id: string | null
+        rear_wing_id: string | null
+        front_wing_id: string | null
+        suspension_id: string | null
+        engine_id: string | null
+        series_filter: number
+        bonus_percentage: number
+      }>
+    }) => {
+      const response = await fetch(`${API_BASE}/setups/${id}`, {
+        method: 'PUT',
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update setup')
+      }
+
+      return response.json()
+    },
+    onSuccess: () => {
+      // Invalidate and refetch setups
+      queryClient.invalidateQueries({ queryKey: ['user-car-setups'] })
+    },
+  })
+}
+
+// Delete setup mutation
+export function useDeleteSetup() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`${API_BASE}/setups/${id}`, {
+        method: 'DELETE',
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete setup')
+      }
+
+      return response.json()
+    },
+    onSuccess: () => {
+      // Invalidate and refetch setups
+      queryClient.invalidateQueries({ queryKey: ['user-car-setups'] })
     },
   })
 }

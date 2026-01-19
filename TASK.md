@@ -39,6 +39,30 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [x] Fixed data-input page layout issues - reduced excessive whitespace above headings and optimized table container heights
 - [x] Drivers Page Sorting with Highest Level Toggle - Fixed sorting logic to use displayed values instead of original level values when "Highest Level" toggle is enabled. Updated getStatValueForSort function to include calculateHighestLevel logic when showHighestLevel is true, and fixed column statistics calculation to also use highest level values for proper color coding.
 
+### Add User Notes and Guidance
+- [x] User can create and save Car setups for different scenarios with name and notes
+- [x] **Car Setups Feature - COMPLETE IMPLEMENTATION**
+  - [x] Created dedicated `/setups` page with 2-column layout (creator left, display right)
+  - [x] Implemented 6-part setup creator with brake, gearbox, rear wing, front wing, suspension, engine
+  - [x] Added real-time stat calculation with live updates as parts are selected
+  - [x] Integrated series filtering (1-12 max series) restricting available parts
+  - [x] Added individual bonus checkboxes and global bonus percentage input
+  - [x] Implemented bonus logic: pit stop time decreases (better), other stats increase with Math.ceil rounding
+  - [x] Created save/load/delete functionality with custom setup names and validation
+  - [x] Added setup management interface showing saved setups with notes truncated to 128 characters
+  - [x] Built comprehensive database schema with user_car_setups table and RLS policies
+  - [x] Created complete REST API (/api/setups, /api/setups/[id]) with authentication and validation
+  - [x] Added "Setups" link to main navigation menu (desktop and mobile)
+  - [x] Implemented responsive design with proper mobile stacking
+  - [x] Added professional UI with rarity-colored part cards and compact 3x4 stats grid
+  - [x] Included authentication requirements with Card-based login prompts
+  - [x] Added TypeScript safety throughout with proper interfaces and validation
+  - [x] Implemented duplicate name prevention and comprehensive error handling
+- [ ] User can create and save Full setups including parts, drivers and boosts with name and notes
+- [ ] List tracks and allow for recommended setups for each track at different GP Levels
+- [ ] List GPs and allow user to build recommended setup for each track at different GP Levels
+  - [ ] User can create a GP with name, tracks/races and special considerations
+
 ### Admin Interface Development
 - [x] Implement data import/export functionality
 - [ ] Create content management tools
@@ -86,13 +110,6 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
   - [x] Updated label column styling with dark gray backgrounds
   - [x] Made Name text bold in driver name row
   - [x] Updated CHANGELOG.md with comprehensive driver compare page documentation
-
-### Add User Notes and Guidance 
-- [ ] User can create and save Car setups for different scenarios with name and notes
-- [ ] User can create and save Full setups including parts, drivers and boosts with name and notes
-- [ ] List tracks and allow for recommended setups for each track at different GP Levels
-- [ ] List GPs and allow user to build recommended setup for each track at different GP Levels
-  - [ ] User can create a GP with name, tracks/races and special considerations
 
 ### Deployment Preparation
 - [ ] Create deployment checklist

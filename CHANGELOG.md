@@ -8,6 +8,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Car Setups Feature - Complete Implementation**
+  - **New Page**: `/setups` dedicated page for creating and managing car setups
+  - **Setup Creator**: 2x3 grid interface with dropdowns for all 6 car part types (Brake, Gearbox, Rear Wing, Front Wing, Suspension, Engine)
+  - **Real-time Stat Calculation**: Automatically calculates and displays total stats (Speed, Cornering, Power Unit, Qualifying, DRS, Pit Stop Time) from all selected parts
+  - **Series Filtering**: Global "Max Series" filter (1-12) that restricts available parts in all dropdowns
+  - **Bonus System**: Individual bonus checkboxes for each part with global bonus percentage input
+  - **Bonus Logic**: Pit stop time decreases (better performance), all other stats increase with proper rounding (Math.ceil for increases, 2 decimal places for decreases)
+  - **Save/Load Functionality**: Custom setup names with full CRUD operations (Create, Read, Update, Delete)
+  - **Setup Management**: List view of all saved setups with load/delete actions and metadata display (notes truncated to 128 characters)
+  - **Database Integration**: New `user_car_setups` table with proper RLS policies and user isolation
+  - **API Endpoints**: Complete REST API (`/api/setups`, `/api/setups/[id]`) with authentication and validation
+  - **Navigation Integration**: Added "Setups" link to both desktop and mobile navigation menus
+  - **Responsive Design**: Two-column layout (creator left, display right) with mobile stacking
+  - **Validation**: Requires all 6 parts to be selected before saving, proper name validation (1-100 characters), duplicate name prevention
+  - **Local State Management**: Efficient React state with useMemo for filtered parts and calculated stats
+  - **Error Handling**: Comprehensive error handling with user-friendly messages and loading states
+  - **Authentication Required**: Setup creation and management requires user login with professional Card-based login prompt
+  - **TypeScript Safety**: Full type coverage with proper interfaces and validation schemas
+  - **UI Polish**: Rarity-colored part cards with level display, compact 3x4 stats grid with optimized spacing and colors, dynamic setup names, notes display after stats
+- **Car Setups Feature - Complete Implementation**
+  - **New Page**: `/setups` dedicated page for creating and managing car setups
+  - **Setup Creator**: 2x3 grid interface with dropdowns for all 6 car part types (Brake, Gearbox, Rear Wing, Front Wing, Suspension, Engine)
+  - **Real-time Stat Calculation**: Automatically calculates and displays total stats (Speed, Cornering, Power Unit, Qualifying, DRS, Pit Stop Time) from all selected parts
+  - **Series Filtering**: Global "Max Series" filter (1-12) that restricts available parts in all dropdowns
+  - **Bonus System**: Individual bonus checkboxes for each part with global bonus percentage input
+  - **Bonus Logic**: Pit stop time decreases (better performance), all other stats increase with proper rounding (Math.ceil for increases, 2 decimal places for decreases)
+  - **Save/Load Functionality**: Custom setup names with full CRUD operations (Create, Read, Update, Delete)
+  - **Setup Management**: List view of all saved setups with load/delete actions and metadata display (Series filter, Bonus %)
+  - **Database Integration**: New `user_car_setups` table with proper RLS policies and user isolation
+  - **API Endpoints**: Complete REST API (`/api/setups`, `/api/setups/[id]`) with authentication and validation
+  - **Navigation Integration**: Added "Setups" link to both desktop and mobile navigation menus
+  - **Responsive Design**: Two-column layout (creator left, saved setups right) with mobile stacking
+  - **Validation**: Requires all 6 parts to be selected before saving, proper name validation (1-100 characters)
+  - **Local State Management**: Efficient React state with useMemo for filtered parts and calculated stats
+  - **Error Handling**: Comprehensive error handling with user-friendly messages and loading states
+  - **Authentication Required**: Setup creation and management requires user login with professional Card-based login prompt
+  - **TypeScript Safety**: Full type coverage with proper interfaces and validation schemas
+
 - **Driver Compare Page - Complete Feature Implementation**
   - **New Route**: `/compare/drivers` dedicated page for side-by-side driver comparison
   - **Unlimited Columns**: Add as many driver columns as needed with horizontal scrolling
