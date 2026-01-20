@@ -32,7 +32,7 @@ const getStatBackgroundColor = (value: number, min: number, max: number, median:
 
 // Data structure for a driver in the compare grid
 interface CompareDriver {
-  id: string
+  driverName: string
   rarity: number
   level: number
   hasBonus: boolean
@@ -95,14 +95,26 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
     }
   }, [bonusPercentage])
 
-  // Helper function to get driver by ID
-  const getDriverById = useCallback((id: string): DriverView | undefined => {
-    return allDrivers.find(driver => driver.id === id)
+  // Helper function to get driver by name and rarity
+  const getDriverByNameAndRarity = useCallback((driverName: string, rarity: number): DriverView | undefined => {
+    return allDrivers.find(driver => driver.name === driverName && driver.rarity === rarity)
   }, [allDrivers])
 
-  // Sort all drivers by last name
+  // Filter to unique drivers by name (highest rarity), then sort by last name
   const sortedDrivers = useMemo(() => {
-    return [...allDrivers].sort((a, b) => {
+    // Create a map of driver names to the driver with highest rarity
+    const driverMap = new Map<string, DriverView>()
+
+    allDrivers.forEach((driver: DriverView) => {
+      const name = driver.name
+      const existing = driverMap.get(name)
+      if (!existing || driver.rarity > existing.rarity) {
+        driverMap.set(name, driver)
+      }
+    })
+
+    // Convert map to array and sort by last name
+    return Array.from(driverMap.values()).sort((a, b) => {
       const aParts = a.name.split(' ')
       const bParts = b.name.split(' ')
       const aLast = aParts[aParts.length - 1]
@@ -182,7 +194,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
       const values: number[] = []
 
       compareDrivers.forEach(compareDriver => {
-        const driver = getDriverById(compareDriver.id)
+        const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity)
         if (driver) {
           const value = getStatValue(
             driver,
@@ -221,12 +233,12 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
     })
 
     return stats
-  }, [compareDrivers, allDrivers, getStatValue, bonusPercentage, getDriverById])
+  }, [compareDrivers, allDrivers, getStatValue, bonusPercentage, getDriverByNameAndRarity])
 
   // Add a new driver column
   const addDriver = () => {
     const newDriver: CompareDriver = {
-      id: '', // Empty initially, user will select
+      driverName: '', // Empty initially, user will select
       rarity: 1, // Default to Common
       level: 1, // Default level
       hasBonus: false
@@ -247,18 +259,9 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
   }
 
   // Handle driver selection change
-  const handleDriverChange = (index: number, driverId: string) => {
-    const driver = getDriverById(driverId)
-    if (driver) {
-      // Auto-set rarity to driver's actual rarity
-      updateDriver(index, {
-        id: driverId,
-        rarity: driver.rarity,
-        level: Math.min(compareDrivers[index].level, getMaxLevelForRarity(driver.rarity))
-      })
-    } else {
-      updateDriver(index, { id: driverId })
-    }
+  const handleDriverChange = (index: number, driverName: string) => {
+    // Just set the driver name, keep the current rarity
+    updateDriver(index, { driverName })
   }
 
   // Handle rarity change with level adjustment
@@ -316,35 +319,32 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                 <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-white sticky left-0 bg-gray-700">
                   Driver
                 </td>
-                {compareDrivers.map((compareDriver, index) => {
-                  const driver = getDriverById(compareDriver.id)
-                  return (
-                    <td key={index} className="px-3 py-2 text-center min-w-[150px]">
-                      {/* Driver selection */}
-                      <select
-                        className="w-full rounded border-gray-300 text-xs px-2 py-1 bg-white text-gray-900"
-                        value={compareDriver.id}
-                        onChange={(e) => handleDriverChange(index, e.target.value)}
-                      >
-                        {!compareDriver.id && (
-                          <option value="" className="text-gray-900">Select Driver</option>
-                        )}
-                        {sortedDrivers.map(driver => {
-                          // Format name as "Last, First Initial"
-                          const nameParts = driver.name.split(' ')
-                          const lastName = nameParts[nameParts.length - 1]
-                          const firstInitial = nameParts[0]?.charAt(0) || ''
-                          const displayName = `${lastName}, ${firstInitial}.`
-                          return (
-                            <option key={driver.id} value={driver.id} className="text-gray-900">
-                              {displayName}
-                            </option>
-                          )
-                        })}
-                      </select>
-                    </td>
-                  )
-                })}
+                {compareDrivers.map((compareDriver, index) => (
+                  <td key={index} className="px-3 py-2 text-center min-w-[150px]">
+                    {/* Driver selection */}
+                    <select
+                      className="w-full rounded border-gray-300 text-xs px-2 py-1 bg-white text-gray-900"
+                      value={compareDriver.driverName}
+                      onChange={(e) => handleDriverChange(index, e.target.value)}
+                    >
+                      {!compareDriver.driverName && (
+                        <option value="" className="text-gray-900">Select Driver</option>
+                      )}
+                      {sortedDrivers.map(driver => {
+                        // Format name as "Last, First Initial"
+                        const nameParts = driver.name.split(' ')
+                        const lastName = nameParts[nameParts.length - 1]
+                        const firstInitial = nameParts[0]?.charAt(0) || ''
+                        const displayName = `${lastName}, ${firstInitial}.`
+                        return (
+                          <option key={driver.name} value={driver.name} className="text-gray-900">
+                            {displayName}
+                          </option>
+                        )
+                      })}
+                    </select>
+                  </td>
+                ))}
               </tr>
 
               {/* Rarity Row */}
@@ -399,7 +399,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   Name
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
-                  const driver = getDriverById(compareDriver.id)
+                  const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity)
                   const getRarityBackground = (rarity: number): string => {
                     return rarity === 0 ? "bg-gray-300" :
                            rarity === 1 ? "bg-blue-200" :
@@ -450,7 +450,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   Overtaking
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
-                  const driver = getDriverById(compareDriver.id)
+                  const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity)
                   const value = driver ? getStatValue(driver, 'overtaking', compareDriver.level, compareDriver.hasBonus, bonusPercentage) : 0
                   return (
                     <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['overtaking'] && getStatBackgroundColor(value, columnStats['overtaking'].min, columnStats['overtaking'].max, columnStats['overtaking'].median))}>
@@ -466,7 +466,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   Defending
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
-                  const driver = getDriverById(compareDriver.id)
+                  const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity)
                   const value = driver ? getStatValue(driver, 'blocking', compareDriver.level, compareDriver.hasBonus, bonusPercentage) : 0
                   return (
                     <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['blocking'] && getStatBackgroundColor(value, columnStats['blocking'].min, columnStats['blocking'].max, columnStats['blocking'].median))}>
@@ -482,7 +482,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   Qualifying
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
-                  const driver = getDriverById(compareDriver.id)
+                  const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity)
                   const value = driver ? getStatValue(driver, 'qualifying', compareDriver.level, compareDriver.hasBonus, bonusPercentage) : 0
                   return (
                     <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['qualifying'] && getStatBackgroundColor(value, columnStats['qualifying'].min, columnStats['qualifying'].max, columnStats['qualifying'].median))}>
@@ -498,7 +498,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   Race Start
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
-                  const driver = getDriverById(compareDriver.id)
+                  const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity)
                   const value = driver ? getStatValue(driver, 'raceStart', compareDriver.level, compareDriver.hasBonus, bonusPercentage) : 0
                   return (
                     <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['raceStart'] && getStatBackgroundColor(value, columnStats['raceStart'].min, columnStats['raceStart'].max, columnStats['raceStart'].median))}>
@@ -514,7 +514,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   Tyre Mgt
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
-                  const driver = getDriverById(compareDriver.id)
+                  const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity)
                   const value = driver ? getStatValue(driver, 'tyreUse', compareDriver.level, compareDriver.hasBonus, bonusPercentage) : 0
                   return (
                     <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['tyreUse'] && getStatBackgroundColor(value, columnStats['tyreUse'].min, columnStats['tyreUse'].max, columnStats['tyreUse'].median))}>
@@ -530,7 +530,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   Total Value
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
-                  const driver = getDriverById(compareDriver.id)
+                  const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity)
                   const totalValue = driver ? ['overtaking', 'blocking', 'qualifying', 'raceStart', 'tyreUse']
                     .reduce((sum, stat) => sum + getStatValue(driver, stat, compareDriver.level, compareDriver.hasBonus, bonusPercentage), 0) : 0
                   return (
@@ -547,7 +547,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   Series
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
-                  const driver = getDriverById(compareDriver.id)
+                  const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity)
                   return (
                     <td key={index} className="px-3 py-2 whitespace-nowrap text-center">
                       <div className="text-sm text-gray-900">{driver?.series || '-'}</div>
@@ -585,7 +585,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No Drivers Selected</h3>
           <p className="text-gray-600 mb-6">
-            Click "Add Driver" to start comparing drivers side by side
+            Click &ldquo;Add Driver&rdquo; to start comparing drivers side by side
           </p>
         </div>
       )}

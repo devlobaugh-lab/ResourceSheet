@@ -39,6 +39,30 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [x] Fixed data-input page layout issues - reduced excessive whitespace above headings and optimized table container heights
 - [x] Drivers Page Sorting with Highest Level Toggle - Fixed sorting logic to use displayed values instead of original level values when "Highest Level" toggle is enabled. Updated getStatValueForSort function to include calculateHighestLevel logic when showHighestLevel is true, and fixed column statistics calculation to also use highest level values for proper color coding.
 
+### Bugs and issues
+- [x] Move Setups nav item to after Data Input
+- [x] Compare page. Driver drop down list should only show 1 of each driver. Rarity of the driver is determined by the rarity field.
+- [x] Driver Compare Integration Fix - Fixed regression where clicking + button on Drivers page to add driver to compare didn't work. Updated handleAddToCompare function to use new data structure with driverName instead of id.
+- [x] Added toast notifications for + button - When clicking + button to add driver to compare, show success/warning/error toast messages for user feedback.
+
+### Setups page
+- [ ] Would like to re-work Car setup interface. Maybe have the user click a part card and have it bring up a modal with available options instead of a separate form for data entry. Main card would be on left then, and could have an edit icon or an add new icon and then saved setups would be on right side. Another idea is that we may be able to load 2 setups side by side for compare. 
+- [ ] Would like to add a feature to suggest a setup for a user. They input max series and style of setup (Speed, Speed + Quali, Corner + Quali, PU, PU + Quali, Balanced, other )  App would look at parts and suggest a setup that meets criteria
+- [ ] Would like to have a suggested driver location too, for different GPs
+
+### Track guides
+- [ ] We will have a list of tracks with basic attributes (Track stats, # laps)
+- [ ] User can create basic setups, suggested drivers, and boosts for the track at different GP Levels
+- [ ] Can have a track rotation area to adjust strategy for current rotation
+
+### GP Guide
+- [ ] User can setup a GP with data and by choosing tracks that will be involved. 
+- [ ] will show Bonus, and boosted drivers and parts
+- [ ] User can then take the basic setups for the tracks and adjust accordingly (app will highlight boosted #s and will show if RP bonus is not achieved)
+- [ ] User can create a "one sheet" guide for a GP once they have tweaked each track's strategy
+- [ ] User can input notes about performance (Quali position, PvP or bot, PVP boosts used, final result, other notes like safety car, etc.)
+- [ ] Have way for user to update their main track guides based on what they learned from a GP
+
 ### Add User Notes and Guidance
 - [x] User can create and save Car setups for different scenarios with name and notes
 - [x] **Car Setups Feature - COMPLETE IMPLEMENTATION**
