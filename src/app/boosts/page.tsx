@@ -6,25 +6,45 @@ import { SkeletonGrid } from '@/components/ui/Skeleton'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { useBoosts } from '@/hooks/useApi'
+import { useUserBoosts, useBoosts } from '@/hooks/useApi'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useAuth } from '@/components/auth/AuthContext'
+import { useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { BoostWithCustomName } from '@/types/database'
 
 function AuthenticatedBoostsPage() {
-  const { data: boostsResponse, isLoading, error, refetch } = useBoosts({
+  const queryClient = useQueryClient()
+  const { data: boostsResponse, isLoading: boostsLoading, error: boostsError, refetch: refetchBoosts } = useBoosts({
+    page: 1,
+    limit: 100
+  })
+  const { data: userBoostsResponse, isLoading: userBoostsLoading, error: userBoostsError, refetch: refetchUserBoosts } = useUserBoosts({
     page: 1,
     limit: 100
   })
 
   const [searchTerm, setSearchTerm] = useState('')
 
-  // Transform the boosts data to flatten custom_name from boost_custom_names
-  const rawBoosts = (boostsResponse?.data || []).map((boost: any) => ({
-    ...boost,
-    custom_name: boost.boost_custom_names?.custom_name || null
-  }))
+  // Merge catalog boosts with user ownership data (like data input page)
+  const rawBoosts = (boostsResponse?.data || []).map((boost: any) => {
+    // Find user's ownership data for this boost
+    const userData = (userBoostsResponse?.data || []).find((userBoost: any) => userBoost.id === boost.id);
+    const cardCount = userData?.card_count || 0;
+
+    return {
+      ...boost,
+      custom_name: boost.boost_custom_names?.custom_name || null,
+      card_count: cardCount
+    };
+  })
+
+  const isLoading = boostsLoading || userBoostsLoading
+  const error = boostsError || userBoostsError
+  const refetch = () => {
+    refetchBoosts()
+    refetchUserBoosts()
+  }
 
   // Apply search filter
   const filteredBoosts = useMemo(() => {
@@ -75,7 +95,11 @@ function AuthenticatedBoostsPage() {
             showFilters={false}
             showSearch={false}
             showCompareButton={true}
-            onBoostNameChange={refetch}
+            onBoostNameChange={() => {
+              // Invalidate all boost-related queries when custom name changes
+              queryClient.invalidateQueries({ queryKey: ['boosts'] })
+              queryClient.invalidateQueries({ queryKey: ['user-boosts'] })
+            }}
           />
         )}
       </ErrorBoundary>

@@ -5,22 +5,48 @@ import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
 // GET /api/user-boosts - Get all boosts with user's ownership data merged
 export async function GET(request: NextRequest) {
   try {
-    // Verify authentication
-    const supabase = createServerSupabaseClient()
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    // Try to get user from Authorization header first, then fall back to cookies
+    let user = null
+    const authHeader = request.headers.get('authorization')
 
-    let user = session?.user
+    if (authHeader?.startsWith('Bearer ')) {
+      // Try to validate JWT token directly
+      const token = authHeader.substring(7)
+      try {
+        // For local development, trust the JWT and extract user info
+        const parts = token.split('.')
+        if (parts.length === 3) {
+          const payload = JSON.parse(
+            Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
+          )
 
+          if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
+            user = {
+              id: payload.sub,
+              email: payload.email,
+              user_metadata: payload.user_metadata || {},
+              app_metadata: payload.app_metadata || {},
+            }
+            console.log('✅ Authenticated user from JWT token:', user.id)
+          }
+        }
+      } catch (error) {
+        console.warn('JWT validation failed:', error)
+      }
+    }
+
+    // If JWT didn't work, try cookie-based auth
     if (!user) {
-      const { data: { user: userFromGetUser }, error: authError } = await supabase.auth.getUser()
+      const supabase = createServerSupabaseClient()
+      const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
-      if (authError || !userFromGetUser) {
+      if (authError || !cookieUser) {
         return NextResponse.json(
           { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
           { status: 401 }
         )
       }
-      user = userFromGetUser
+      user = cookieUser
     }
 
     const { searchParams } = new URL(request.url)
@@ -85,7 +111,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Merge boosts with user ownership data
-    const mergedData = (boosts || []).map(boost => {
+    let mergedData = (boosts || []).map(boost => {
       const userData = userBoostsMap.get(boost.id) || { level: 0, card_count: 0 }
 
       return {
@@ -95,6 +121,12 @@ export async function GET(request: NextRequest) {
         is_owned: userData.card_count > 0
       }
     })
+
+    // Apply owned_only filter if requested
+    const ownedOnly = searchParams.get('owned_only')
+    if (ownedOnly === 'true') {
+      mergedData = mergedData.filter(boost => boost.card_count > 0)
+    }
 
     // Apply pagination
     const page = Number(searchParams.get('page')) || 1

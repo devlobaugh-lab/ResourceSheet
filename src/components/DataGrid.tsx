@@ -285,15 +285,48 @@ export function DataGrid({
       let comparison = 0;
 
       switch (filters.sortBy) {
+        case 'card_count':
+          // Special case for boost card_count - direct comparison
+          if (gridType === 'boosts' && 'is_boost' in a && 'is_boost' in b && a.is_boost && b.is_boost) {
+            comparison = ((a as BoostItem).card_count || 0) - ((b as BoostItem).card_count || 0);
+          }
+          break;
         case 'name':
-          // For drivers, sort by formatted "Last, First" name, otherwise use regular name
-          const aName = (gridType === 'drivers' && 'is_driver' in a && a.is_driver)
-            ? formatDriverNameForDisplay((a as any).name)
-            : (a as any).name;
-          const bName = (gridType === 'drivers' && 'is_driver' in b && b.is_driver)
-            ? formatDriverNameForDisplay((b as any).name)
-            : (b as any).name;
-          comparison = aName.localeCompare(bName);
+          // Special case for boost name sorting - use custom_name or numeric sort
+          if (gridType === 'boosts' && 'is_boost' in a && 'is_boost' in b && a.is_boost && b.is_boost) {
+            const aBoost = a as BoostItem;
+            const bBoost = b as BoostItem;
+
+            // Use custom_name if available, otherwise the regular name
+            const aName = aBoost.custom_name || aBoost.name;
+            const bName = bBoost.custom_name || bBoost.name;
+
+            // Extract number from boost name for numerical sorting
+            const extractBoostNumber = (name: string): number => {
+              const match = name.match(/(\d+)$/); // Get the last number in the string
+              return match ? parseInt(match[1], 10) : 0;
+            };
+
+            const numA = extractBoostNumber(aName);
+            const numB = extractBoostNumber(bName);
+
+            // If both have numbers, sort numerically
+            if (numA > 0 || numB > 0) {
+              comparison = numA - numB;
+            } else {
+              // Fall back to alphabetical sorting
+              comparison = aName.localeCompare(bName);
+            }
+          } else {
+            // Default name sorting for other grid types
+            const aName = (gridType === 'drivers' && 'is_driver' in a && a.is_driver)
+              ? formatDriverNameForDisplay((a as any).name)
+              : (a as any).name;
+            const bName = (gridType === 'drivers' && 'is_driver' in b && b.is_driver)
+              ? formatDriverNameForDisplay((b as any).name)
+              : (b as any).name;
+            comparison = aName.localeCompare(bName);
+          }
           break;
         case 'rarity':
           comparison = a.rarity - b.rarity;

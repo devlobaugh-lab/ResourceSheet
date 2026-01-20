@@ -404,6 +404,41 @@ export interface Database {
           updated_at?: string
         }
       }
+      tracks: {
+        Row: {
+          id: string
+          name: string
+          alt_name: string | null
+          laps: number
+          driver_track_stat: string
+          car_track_stat: string
+          season_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          alt_name?: string | null
+          laps: number
+          driver_track_stat: string
+          car_track_stat: string
+          season_id: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          alt_name?: string | null
+          laps?: number
+          driver_track_stat?: string
+          car_track_stat?: string
+          season_id?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -437,6 +472,7 @@ export type Driver = Tables<'drivers'>
 export type CarPart = Tables<'car_parts'>
 export type UserDriver = Tables<'user_drivers'>
 export type UserCarPart = Tables<'user_car_parts'>
+export type Track = Tables<'tracks'>
 
 // Business logic types
 export interface UserAssetView {

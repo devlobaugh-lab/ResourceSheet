@@ -3,7 +3,9 @@
 ## Current Status: Feature Complete - Ready for Production
 
 ### Project Overview
+
 F1 Resource Manager is a comprehensive asset management system for Formula 1 game resources, featuring:
+
 - Driver Management: Track and manage driver assets with detailed stats
 - Car Parts Management: Organize and optimize car parts by type and performance
 - Boost Management: Handle special boost items with unique properties
@@ -16,6 +18,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 ## COMPLETED TASKS
 
 ### User Data Input Interface
+
 - [x] Build interface for users to input card amounts and levels
 - [x] Implement quick editing capabilities for multiple items
 - [x] Add bulk update functionality
@@ -24,12 +27,14 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [x] Add save/cancel workflow with confirmation dialogs
 
 ### Import/Export of User Data
+
 - [x] Connect import and export buttons to functionality
 - [x] Export/import all user data to a JSON file
 - [x] For Admin users, allow export of Custom Boost names to JSON file
 
 
 ### Misc QOL Changes
+
 - [x] max level validation is wrong on data input (seems to be off by 1 level (common maxed at 9, rare at 8, etc.)  Common lvl max is 11, rare is 9, epic is 8, legendary and special are 7
 - [x] Add colored background to stats to indicate strength. (see spreadsheet. )
 - [x] Add Highest Level Toggle to Drivers and Parts pages
@@ -40,22 +45,39 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [x] Drivers Page Sorting with Highest Level Toggle - Fixed sorting logic to use displayed values instead of original level values when "Highest Level" toggle is enabled. Updated getStatValueForSort function to include calculateHighestLevel logic when showHighestLevel is true, and fixed column statistics calculation to also use highest level values for proper color coding.
 
 ### Bugs and issues
+
 - [x] Move Setups nav item to after Data Input
 - [x] Compare page. Driver drop down list should only show 1 of each driver. Rarity of the driver is determined by the rarity field.
 - [x] Driver Compare Integration Fix - Fixed regression where clicking + button on Drivers page to add driver to compare didn't work. Updated handleAddToCompare function to use new data structure with driverName instead of id.
-- [x] Added toast notifications for + button - When clicking + button to add driver to compare, show success/warning/error toast messages for user feedback.
+- [x] Added toast notifications for + button - When clicking + button to add driver to add driver to compare, show success/warning/error toast messages for user feedback.
+- [x] **Boost Data Input Issues - COMPLETE FIXES**
+  - [x] Fixed page reload issues when tabbing between boost input fields
+  - [x] Resolved authentication issues in `/api/user-boosts` endpoint
+  - [x] Fixed data clearing when leaving fields and not saving properly
+  - [x] Fixed inconsistent display behavior between navigation
+  - [x] Added proper cache invalidation for cross-page data consistency
+  - [x] Implemented controlled inputs with proper state management
+  - [x] Fixed boost amount column sorting (direct numeric comparison)
+  - [x] Fixed boost name sorting (numeric extraction for proper ordering)
+  - [x] Fixed custom name synchronization across boosts page and data input page
+  - [x] **Boosts page now shows all boosts with correct ownership counts**
+  - [x] **Data input boosts tab works seamlessly with proper saving and display**
 
 ### Setups page
+
 - [ ] Would like to re-work Car setup interface. Maybe have the user click a part card and have it bring up a modal with available options instead of a separate form for data entry. Main card would be on left then, and could have an edit icon or an add new icon and then saved setups would be on right side. Another idea is that we may be able to load 2 setups side by side for compare. 
 - [ ] Would like to add a feature to suggest a setup for a user. They input max series and style of setup (Speed, Speed + Quali, Corner + Quali, PU, PU + Quali, Balanced, other )  App would look at parts and suggest a setup that meets criteria
 - [ ] Would like to have a suggested driver location too, for different GPs
 
 ### Track guides
+
 - [ ] We will have a list of tracks with basic attributes (Track stats, # laps)
 - [ ] User can create basic setups, suggested drivers, and boosts for the track at different GP Levels
 - [ ] Can have a track rotation area to adjust strategy for current rotation
+- [ ] **TODO: Clean up boost schema** - Boosts currently have rarity/series/level fields in schema but may only need name/icon for identification
 
 ### GP Guide
+
 - [ ] User can setup a GP with data and by choosing tracks that will be involved. 
 - [ ] will show Bonus, and boosted drivers and parts
 - [ ] User can then take the basic setups for the tracks and adjust accordingly (app will highlight boosted #s and will show if RP bonus is not achieved)
@@ -64,6 +86,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [ ] Have way for user to update their main track guides based on what they learned from a GP
 
 ### Add User Notes and Guidance
+
 - [x] User can create and save Car setups for different scenarios with name and notes
 - [x] **Car Setups Feature - COMPLETE IMPLEMENTATION**
   - [x] Created dedicated `/setups` page with 2-column layout (creator left, display right)
@@ -88,12 +111,14 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
   - [ ] User can create a GP with name, tracks/races and special considerations
 
 ### Admin Interface Development
+
 - [x] Implement data import/export functionality
 - [ ] Create content management tools
 - [ ] Build user management interface
 - [ ] Add bulk editing capabilities
 
 ### Compare Page Development
+
 - [x] **Driver Compare Page - Complete Implementation**
   - [x] Created `/src/app/compare/drivers/` directory and `page.tsx`
   - [x] Updated navigation to link to `/compare/drivers` instead of `/compare` (or add separate link)
@@ -136,6 +161,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
   - [x] Updated CHANGELOG.md with comprehensive driver compare page documentation
 
 ### Deployment Preparation
+
 - [ ] Create deployment checklist
 - [ ] Set up production environment
 - [ ] Configure CI/CD pipeline
@@ -143,6 +169,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [ ] Prepare rollback plan
 
 ### Code Review
+
 - [ ] Establish code review checklist and standards
 - [ ] Set up automated code quality checks
 - [ ] Create review process documentation
@@ -155,6 +182,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 ### Major Refactoring: Separate Asset Types into Distinct Tables
 
 #### Database Schema Refactoring
+
 - Analyzed current database structure and identified issues
 - Examined how assets are currently used in components and APIs
 - Identified problematic code patterns and conditional logic
@@ -169,6 +197,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Added triggers for automatic timestamp updates
 
 #### TypeScript Interface Updates
+
 - Updated src/types/database.ts with new table definitions
 - Added specific types: Driver, CarPart, UserDriver, UserCarPart
 - Created view interfaces: DriverView, CarPartView, BoostView
@@ -176,6 +205,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Added all types to exports for use across the application
 
 #### API Endpoint Development
+
 - Created /api/drivers endpoint with full CRUD operations
 - Created /api/drivers/user endpoint for user-specific driver data
 - Created /api/car-parts endpoint with full CRUD operations
@@ -186,6 +216,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Added all endpoints to API documentation
 
 #### API Hooks Implementation
+
 - Added useDrivers() hook for fetching drivers catalog
 - Added useUserDrivers() hook for user's drivers with ownership
 - Added useCarParts() hook for fetching car parts catalog
@@ -195,6 +226,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Added error handling and loading states
 
 #### React Component Updates
+
 - Updated src/app/drivers/page.tsx to use new driver endpoints
 - Updated src/app/parts/page.tsx to use new car parts endpoints
 - Enhanced src/components/DataGrid.tsx to handle new types
@@ -203,6 +235,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Maintained all existing functionality and filters
 
 #### Validation & Data Processing
+
 - Added validation schemas: driversFiltersSchema, carPartsFiltersSchema
 - Created seeding script: scripts/seed_new_tables.js for data migration
 - Implemented batch processing for efficient data insertion
@@ -210,6 +243,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Created test scripts for API endpoint testing and TypeScript validation
 
 #### Testing & Documentation
+
 - Created comprehensive migration guide (MIGRATION_GUIDE.md)
 - Tested all API endpoints (they work correctly)
 - Verified existing functionality still works
@@ -219,6 +253,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Added troubleshooting guide for common issues
 
 #### Car Parts Page Fixes
+
 - Fix authentication on Car Parts page (useUserCarParts with proper auth headers)
 - Update part type names (Transmission → Gearbox)
 - Exclude Pit Stop from Total Value calculation for car parts
@@ -227,6 +262,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Remove duplicate Series column from parts grid
 
 #### Authentication Requirements
+
 - Add sign-in required to Car Parts page (matches dashboard styling)
 - Add sign-in required to Boosts page (matches dashboard styling)
 - Add sign-in required to Compare page (matches dashboard styling)
@@ -235,6 +271,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Update drivers page login prompt to match dashboard styling
 
 #### Database Migration Execution
+
 - Fix Supabase CLI configuration issue
 - Run database migration to create new tables
 - Verify all tables are created correctly
@@ -243,6 +280,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Successfully seeded 97 drivers, 53 car parts, and 62 boosts
 
 #### Final Testing & Validation
+
 - Test all API endpoints with real data
 - Verify all React components work with populated tables
 - Test authentication and authorization flows
@@ -254,6 +292,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Perform performance testing with large datasets
 
 #### UI Screen Real Estate Optimization
+
 - Remove max-width constraint from main layout container (max-w-7xl → no constraint)
 - Update DataGrid table cell padding to compact spacing (px-6 py-4 → px-3 py-2)
 - Ensure consistent compact density across all grid types (drivers, parts, boosts)
@@ -276,11 +315,13 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Show actual user level values from DriverView instead of "N/A" or 0
 
 #### Drivers Page Column Order Adjustment
+
 - Move "Race Start" column one position left (before "Tyre Use") in drivers DataGrid
 - Update both column definition order and table cell rendering order
 - Verify change improves stat flow readability
 
 #### Boosts Page Major Improvements
+
 - Remove 'boost type' column completely as validity was questioned
 - Remove DRS tier column and values entirely
 - Fix column ordering: Overtake, Defend, Corners, Tyre Use, Power Unit, Speed, Pit Stop, Race Start
@@ -290,6 +331,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Verify BOOST_NAME_1 now shows correct values (Corners, Tyre Use, Power Unit set to 1)
 
 #### Boost Custom Naming Feature
+
 - Create database migration for boost_custom_names table with unique constraints
 - Update TypeScript types (BoostCustomName, BoostView updates)
 - Create API endpoints for custom name CRUD operations with validation
@@ -305,6 +347,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Update CHANGELOG.md and TASK.md with complete implementation details
 
 #### Level 0 Stats Bug Fix
+
 - Identified off-by-one error where drivers and car parts at level 0 showed level 1 stats
 - Fixed getStatValue function in DataGrid component to return 0 for level 0 instead of accessing stats[level - 1]
 - Fixed getStatValueForSort function to properly handle level 0 stats for sorting
@@ -313,6 +356,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Updated CHANGELOG.md with bug fix details
 
 #### UI Layout Simplification & Dynamic Navigation
+
 - Removed most filter controls from DataGrid (rarity, card type, owned, sort dropdowns)
 - Restored column header click-to-sort functionality with visual indicators (↑/↓)
 - Moved search field from DataGrid to page-level header below titles
@@ -332,30 +376,35 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 ## Key Benefits Achieved
 
 ### Clean Architecture
+
 - No more runtime card_type checks
 - TypeScript properly validates each asset type
 - Better IDE autocompletion and type checking
 - Compile-time error detection
 
 ### Type Safety
+
 - Queries optimized for specific asset types
 - Proper indexing for faster lookups
 - Reduced data transfer with targeted queries
 - Efficient batch processing for data seeding
 
 ### Performance
+
 - Future updates to one asset type won't affect others
 - Clear separation of concerns
 - Easier to understand and extend
 - Consistent patterns across all asset types
 
 ### Maintainability
+
 - Easy to add new asset types in the future
 - Consistent pattern for all asset types
 - Better foundation for growth
 - Modular architecture for easy extension
 
 ### Scalability
+
 - Easy to add new asset types in the future
 - Consistent pattern for all asset types
 - Better foundation for growth
@@ -364,6 +413,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 ## Files Created/Modified
 
 ### New Files Created:
+
 - supabase/migrations/20260109164845_separate_asset_tables.sql
 - src/app/api/drivers/route.ts
 - src/app/api/car-parts/route.ts
@@ -373,6 +423,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - MIGRATION_GUIDE.md
 
 ### Files Updated:
+
 - src/types/database.ts - Added new table types and interfaces
 - src/lib/validation.ts - Added validation schemas
 - src/hooks/useApi.ts - Added new API hooks
@@ -385,16 +436,19 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 ## Timeline
 
 ### Phase 1: Refactoring (COMPLETE)
+
 - Duration: 2026-01-09
 - Status: 100% Complete
 - Deliverables: All code changes, TypeScript types, API endpoints, React components
 
 ### Phase 2: Migration & Testing (IN PROGRESS)
+
 - Duration: 2026-01-09 - 2026-01-10
 - Status: 90% Complete (pending database migration)
 - Deliverables: Database migration, data seeding, comprehensive testing
 
 ### Phase 3: Deployment (PENDING)
+
 - Duration: 2026-01-11 - 2026-01-12
 - Status: 0% Complete
 - Deliverables: Production deployment, monitoring setup, user documentation
@@ -404,12 +458,14 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 The core refactoring to separate drivers, parts, and boosts into distinct tables is 100% complete. All code changes have been implemented, tested, and documented.
 
 What's Working:
+
 - All API endpoints created and tested
 - All TypeScript types validated and working
 - All React components updated and functional
 - Comprehensive documentation and guides created
 
 What's Next:
+
 - Run database migration (Supabase CLI configuration issue)
 - Execute data seeding
 - Final testing and validation
