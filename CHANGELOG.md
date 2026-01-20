@@ -81,6 +81,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Error Handling**: Robust error recovery and validation throughout the component
 
 ### Fixed
+- **Navigation Menu Reordering**
+  - Moved "Setups" navigation item to appear after "Data Input" in both desktop and mobile menus
+  - Updated menu order in `src/app/client-navigation.tsx` for consistent user experience
+
+- **Driver Compare Page Unique Driver Display**
+  - Fixed driver dropdown to show only unique driver names (one per driver) instead of displaying duplicates
+  - Implemented filtering logic to select driver with highest rarity when multiple versions exist
+  - Maintains proper stat calculations and rarity-based level validation
+  - Improved user experience by reducing dropdown clutter and preventing confusion
+
+- **Driver Compare Integration Fix**
+  - Fixed regression where clicking + button on Drivers page to add driver to compare didn't work
+  - Updated handleAddToCompare function to use new data structure with driverName instead of id
+  - Added toast notifications for successful additions and warnings for duplicates
+  - Improved user feedback with success/error messages when adding drivers to compare
+
 - **Drivers Page Sorting with Highest Level Toggle**
   - Fixed sorting logic to use displayed values instead of original level values when "Highest Level" toggle is enabled
   - Updated `getStatValueForSort` function to include `calculateHighestLevel` logic when `showHighestLevel` is true

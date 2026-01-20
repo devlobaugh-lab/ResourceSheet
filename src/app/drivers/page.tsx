@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { useUserDrivers, useDrivers } from '@/hooks/useApi'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useAuth } from '@/components/auth/AuthContext'
+import { useToast } from '@/components/ui/Toast'
 import Link from 'next/link'
 
 function AuthenticatedDriversPage() {
@@ -16,6 +17,8 @@ function AuthenticatedDriversPage() {
     page: 1,
     limit: 100
   })
+
+  const { addToast } = useToast()
 
   const [searchTerm, setSearchTerm] = useState('')
   const [maxSeries, setMaxSeries] = useState(12)
@@ -110,28 +113,45 @@ function AuthenticatedDriversPage() {
       const stored = localStorage.getItem('compare-drivers-settings')
       const existingDrivers: any[] = stored ? JSON.parse(stored) : []
 
-      // Check if driver is already in the compare list
-      const isAlreadyAdded = existingDrivers.some(d => d.id === driver.id)
+      // Check if driver is already in the compare list (using driverName for new format, fallback to id for old format)
+      const isAlreadyAdded = existingDrivers.some((d: any) =>
+        d.driverName === driver.name || d.id === driver.id
+      )
 
       if (!isAlreadyAdded) {
-        // Add the driver with default settings
+        // Add the driver with new data structure
         const newDriver = {
-          id: driver.id,
+          driverName: driver.name,
           rarity: driver.rarity,
-          level: driver.level,
+          level: Math.min(driver.level, getMaxLevelForRarity(driver.rarity)),
           hasBonus: false
         }
 
         const updatedDrivers = [...existingDrivers, newDriver]
         localStorage.setItem('compare-drivers-settings', JSON.stringify(updatedDrivers))
 
-        // Show some feedback (could be a toast in the future)
-        console.log('Driver added to compare:', driver.name)
+        // Show toast notification
+        addToast(`${driver.name} added to compare page`, 'success')
       } else {
-        console.log('Driver already in compare list:', driver.name)
+        addToast(`${driver.name} is already in compare list`, 'warning')
       }
     } catch (error) {
       console.warn('Failed to add driver to compare:', error)
+      addToast('Failed to add driver to compare', 'error')
+    }
+  };
+
+  // Helper function to get max level for a rarity
+  const getMaxLevelForRarity = (rarity: number): number => {
+    // Common: 11, Rare: 9, Epic: 8, Legendary/Special: 7
+    switch (rarity) {
+      case 0: return 11 // Basic
+      case 1: return 11 // Common
+      case 2: return 9  // Rare
+      case 3: return 8  // Epic
+      case 4: return 7  // Legendary
+      case 5: return 7  // Special Edition
+      default: return 11
     }
   };
 
