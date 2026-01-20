@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { UserAssetView, CatalogItem, UserItem, Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup } from '@/types/database'
+import type { UserAssetView, CatalogItem, UserItem, Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup, Track } from '@/types/database'
 
 // API base URL
 const API_BASE = '/api'
@@ -592,6 +592,134 @@ export function useDeleteSetup() {
     onSuccess: () => {
       // Invalidate and refetch setups
       queryClient.invalidateQueries({ queryKey: ['user-car-setups'] })
+    },
+  })
+}
+
+// Fetch tracks
+export function useTracks(filters?: {
+  season_id?: string
+  page?: number
+  limit?: number
+}) {
+  return useQuery({
+    queryKey: ['tracks', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams()
+
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined) {
+            params.append(key, value.toString())
+          }
+        })
+      }
+
+      const response = await fetch(`${API_BASE}/tracks?${params}`)
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch tracks')
+      }
+
+      return response.json()
+    },
+    staleTime: 60 * 1000, // 1 minute
+  })
+}
+
+// Create track mutation
+export function useCreateTrack() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (data: {
+      name: string
+      alt_name?: string | null
+      laps: number
+      driver_track_stat: string
+      car_track_stat: string
+      season_id: string
+    }) => {
+      const response = await fetch(`${API_BASE}/tracks`, {
+        method: 'POST',
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create track')
+      }
+
+      return response.json()
+    },
+    onSuccess: () => {
+      // Invalidate and refetch tracks
+      queryClient.invalidateQueries({ queryKey: ['tracks'] })
+    },
+  })
+}
+
+// Update track mutation
+export function useUpdateTrack() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data
+    }: {
+      id: string
+      data: Partial<{
+        name: string
+        alt_name: string | null
+        laps: number
+        driver_track_stat: string
+        car_track_stat: string
+        season_id: string
+      }>
+    }) => {
+      const response = await fetch(`${API_BASE}/tracks/${id}`, {
+        method: 'PUT',
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update track')
+      }
+
+      return response.json()
+    },
+    onSuccess: () => {
+      // Invalidate and refetch tracks
+      queryClient.invalidateQueries({ queryKey: ['tracks'] })
+    },
+  })
+}
+
+// Delete track mutation
+export function useDeleteTrack() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`${API_BASE}/tracks/${id}`, {
+        method: 'DELETE',
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete track')
+      }
+
+      return response.json()
+    },
+    onSuccess: () => {
+      // Invalidate and refetch tracks
+      queryClient.invalidateQueries({ queryKey: ['tracks'] })
     },
   })
 }

@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { useUserDrivers, useUserCarParts, useBoosts, getAuthHeaders } from '@/hooks/useApi';
+import { useUserDrivers, useUserCarParts, useUserBoosts, useBoosts, getAuthHeaders } from '@/hooks/useApi';
 import { useAuth } from '@/components/auth/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { DriverView, CarPartView, BoostWithCustomName } from '@/types/database';
@@ -88,7 +88,10 @@ const useUpdateBoostData = () => {
 
   return useMutation({
     mutationFn: async ({ boostId, data }: { boostId: string; data: { card_count: number } }) => {
+      console.log('🔄 Starting boost update for:', boostId, data);
       const authHeaders = await getAuthHeaders();
+      console.log('🔑 Auth headers:', Object.keys(authHeaders));
+
       const response = await fetch(`/api/boosts/${boostId}`, {
         method: 'PUT',
         headers: {
@@ -99,15 +102,27 @@ const useUpdateBoostData = () => {
         body: JSON.stringify(data),
       });
 
+      console.log('📡 API response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Failed to update boost data');
+        const errorText = await response.text();
+        console.error('❌ API error response:', errorText);
+        throw new Error(`Failed to update boost data: ${response.status} ${errorText}`);
       }
 
-      return response.json();
+      const result = await response.json();
+      console.log('✅ API success response:', result);
+      return result;
     },
-    onSuccess: () => {
-      // Invalidate and refetch user boosts
+    onSuccess: (data, variables) => {
+      console.log('🎉 Mutation success, invalidating queries for:', variables.boostId, variables.data.card_count);
+
+      // Invalidate both boost-related queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['user-boosts'] });
+      queryClient.invalidateQueries({ queryKey: ['boosts'] });
+    },
+    onError: (error, variables) => {
+      console.error('💥 Mutation failed for boost:', variables.boostId, error);
     },
   });
 };
@@ -159,8 +174,9 @@ function DriversTab() {
   };
 
   return (
-    <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[73vh]">
-      <table className="table divide-y divide-gray-200">
+    <form onSubmit={(e) => e.preventDefault()}>
+      <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[73vh]">
+        <table className="table divide-y divide-gray-200">
         <thead className="bg-gray-700 sticky top-0 z-10">
           <tr>
             <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
@@ -258,6 +274,7 @@ function DriversTab() {
         </tbody>
       </table>
     </div>
+    </form>
   );
 }
 
@@ -329,8 +346,9 @@ function PartsTab() {
   };
 
   return (
-    <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[73vh]">
-      <table className="table divide-y divide-gray-200">
+    <form onSubmit={(e) => e.preventDefault()}>
+      <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[73vh]">
+        <table className="table divide-y divide-gray-200">
         <thead className="bg-gray-700 sticky top-0 z-10">
           <tr>
             <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
@@ -426,21 +444,33 @@ function PartsTab() {
         </tbody>
       </table>
     </div>
+    </form>
   );
 }
 
 function BoostsTab() {
-  const { data: boostsResponse, isLoading } = useBoosts({
+  const { data: boostsResponse, isLoading: boostsLoading } = useBoosts({
     page: 1,
     limit: 200 // Get all boosts
   });
+  const { data: userBoostsResponse, isLoading: userBoostsLoading } = useUserBoosts({
+    page: 1,
+    limit: 200 // Get user's boost ownership data
+  });
   const updateBoostData = useUpdateBoostData();
 
-  // Transform boosts data to include custom names like the boosts page does
-  const rawBoosts = (boostsResponse?.data || []).map((boost: any) => ({
-    ...boost,
-    custom_name: boost.boost_custom_names?.custom_name || null
-  }));
+  // Merge catalog boosts with user ownership data
+  const rawBoosts = (boostsResponse?.data || []).map((boost: any) => {
+    // Find user's ownership data for this boost
+    const userData = (userBoostsResponse?.data || []).find((userBoost: any) => userBoost.id === boost.id);
+    const cardCount = userData?.card_count || 0;
+
+    return {
+      ...boost,
+      custom_name: boost.boost_custom_names?.custom_name || null,
+      card_count: cardCount
+    };
+  });
 
   // Extract number from boost name for sorting (only for data input page)
   const extractBoostNumber = (name: string): number => {
@@ -463,7 +493,7 @@ function BoostsTab() {
     }
   }, [updateBoostData]);
 
-  if (isLoading) {
+  if (boostsLoading || userBoostsLoading) {
     return <div className="text-center py-8">Loading boosts...</div>;
   }
 

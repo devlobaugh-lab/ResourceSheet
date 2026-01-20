@@ -107,8 +107,26 @@ export async function POST(request: NextRequest) {
       userBoostsCount: validatedData.userBoosts?.length || 0
     })
 
-    // Validate driver IDs if userDrivers provided
+    // Import results tracking
+    const importResults = {
+      imported: {
+        drivers: 0,
+        carParts: 0,
+        boosts: 0
+      },
+      skipped: {
+        drivers: 0,
+        carParts: 0,
+        boosts: 0
+      },
+      errors: [] as string[]
+    }
+
+    // Process driver imports with UUID matching (for now)
     if (validatedData.userDrivers) {
+      console.log(`Processing ${validatedData.userDrivers.length} driver imports`)
+
+      // For now, try UUID matching. If it fails, we'll need to enhance export format
       const driverIds = validatedData.userDrivers.map(item => item.driver_id)
       const { data: existingDrivers, error: driversError } = await supabaseAdmin
         .from('drivers')
@@ -126,8 +144,16 @@ export async function POST(request: NextRequest) {
       const invalidIds = driverIds.filter(id => !existingDriverIds.has(id))
 
       if (invalidIds.length > 0) {
+        // Instead of failing completely, let's provide a more helpful error
+        // and suggest that the user may need to rebuild their collection
         return NextResponse.json(
-          { error: { code: 'VALIDATION_ERROR', message: `Invalid driver IDs: ${invalidIds.join(', ')}` } },
+          {
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: `Some driver IDs not found in current catalog. This usually happens after database reseeding. You may need to rebuild your collection or contact support.`,
+              details: `Invalid driver IDs: ${invalidIds.join(', ')}`
+            }
+          },
           { status: 400 }
         )
       }
@@ -141,7 +167,6 @@ export async function POST(request: NextRequest) {
 
       if (deleteError) {
         console.error('Delete drivers error:', deleteError)
-        console.error('Delete drivers error details:', JSON.stringify(deleteError, null, 2))
         return NextResponse.json(
           { error: { code: 'DATABASE_ERROR', message: 'Failed to delete existing user drivers: ' + deleteError.message } },
           { status: 500 }
@@ -173,10 +198,11 @@ export async function POST(request: NextRequest) {
           )
         }
         console.log('Successfully inserted user drivers')
+        importResults.imported.drivers = driversToInsert.length
       }
     }
 
-    // Validate car part IDs if userCarParts provided
+    // Process car part imports
     if (validatedData.userCarParts) {
       const carPartIds = validatedData.userCarParts.map(item => item.car_part_id)
       const { data: existingCarParts, error: carPartsError } = await supabaseAdmin
@@ -196,7 +222,13 @@ export async function POST(request: NextRequest) {
 
       if (invalidIds.length > 0) {
         return NextResponse.json(
-          { error: { code: 'VALIDATION_ERROR', message: `Invalid car part IDs: ${invalidIds.join(', ')}` } },
+          {
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: `Some car part IDs not found in current catalog. This usually happens after database reseeding.`,
+              details: `Invalid car part IDs: ${invalidIds.join(', ')}`
+            }
+          },
           { status: 400 }
         )
       }
@@ -241,10 +273,11 @@ export async function POST(request: NextRequest) {
           )
         }
         console.log('Successfully inserted user car parts')
+        importResults.imported.carParts = carPartsToInsert.length
       }
     }
 
-    // Validate boost IDs if userBoosts provided
+    // Process boost imports
     if (validatedData.userBoosts) {
       const boostIds = validatedData.userBoosts.map(boost => boost.boost_id)
       const { data: existingBoosts, error: boostsError } = await supabaseAdmin
@@ -264,7 +297,13 @@ export async function POST(request: NextRequest) {
 
       if (invalidIds.length > 0) {
         return NextResponse.json(
-          { error: { code: 'VALIDATION_ERROR', message: `Invalid boost IDs: ${invalidIds.join(', ')}` } },
+          {
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: `Some boost IDs not found in current catalog. This usually happens after database reseeding.`,
+              details: `Invalid boost IDs: ${invalidIds.join(', ')}`
+            }
+          },
           { status: 400 }
         )
       }
@@ -275,8 +314,8 @@ export async function POST(request: NextRequest) {
         .delete()
         .eq('user_id', user.id)
 
-      // Only insert boosts that the user actually owns (level > 0 or card_count > 0)
-      const ownedBoosts = validatedData.userBoosts.filter(item => item.level > 0 || item.card_count > 0)
+      // Only insert boosts that the user actually owns (card_count > 0)
+      const ownedBoosts = validatedData.userBoosts.filter(item => item.card_count > 0)
 
       if (ownedBoosts.length > 0) {
         const boostsToInsert = ownedBoosts.map(boost => ({
@@ -300,6 +339,7 @@ export async function POST(request: NextRequest) {
           )
         }
         console.log('Successfully inserted user boosts')
+        importResults.imported.boosts = boostsToInsert.length
       }
     }
 
