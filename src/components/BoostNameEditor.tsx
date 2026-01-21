@@ -9,6 +9,7 @@ import { getAuthHeaders } from '@/hooks/useApi'
 interface BoostNameEditorProps {
   boostId: string
   currentName: string
+  icon?: string
   customName?: string | null
   onNameChange: (newName: string | null) => void
   className?: string
@@ -17,6 +18,7 @@ interface BoostNameEditorProps {
 export function BoostNameEditor({
   boostId,
   currentName,
+  icon,
   customName,
   onNameChange,
   className = ''
@@ -31,8 +33,8 @@ export function BoostNameEditor({
   // Check if user is admin by checking the profile (user should have is_admin set)
   const isAdmin = user?.email === 'thomas.lobaugh@gmail.com' || false
 
-  // Display name logic: custom_name || icon || name
-  const displayName = customName || currentName
+  // Display name logic: custom_name || icon name || current name
+  const displayName = customName || (icon ? icon.replace('BoostIcon_', '') : currentName)
 
   useEffect(() => {
     if (isEditing && inputRef.current) {

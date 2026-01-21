@@ -381,14 +381,14 @@ export function DataGrid({
           }
           break;
         // Boost tier columns
-        case 'overtake_tier':
-        case 'block_tier':
-        case 'corners_tier':
-        case 'tyre_use_tier':
-        case 'power_unit_tier':
-        case 'speed_tier':
-        case 'pit_stop_time_tier':
-        case 'race_start_tier':
+        case 'overtake':
+        case 'block':
+        case 'corners':
+        case 'tyre_use':
+        case 'power_unit':
+        case 'speed':
+        case 'pit_stop':
+        case 'race_start':
           comparison = getBoostTierValueForSort(a, filters.sortBy) - getBoostTierValueForSort(b, filters.sortBy);
           break;
         default:
@@ -479,14 +479,14 @@ export function DataGrid({
 
       // Add boost-specific columns - reordered and DRS removed
       baseColumns.push(
-        { key: 'overtake_tier', label: 'Overtake', sortable: true },
-        { key: 'block_tier', label: 'Defend', sortable: true },
-        { key: 'corners_tier', label: 'Corners', sortable: true },
-        { key: 'tyre_use_tier', label: 'Tyre Use', sortable: true },
-        { key: 'power_unit_tier', label: 'Power Unit', sortable: true },
-        { key: 'speed_tier', label: 'Speed', sortable: true },
-        { key: 'pit_stop_time_tier', label: 'Pit Stop', sortable: true },
-        { key: 'race_start_tier', label: 'Race Start', sortable: true },
+        { key: 'overtake', label: 'Overtake', sortable: true },
+        { key: 'block', label: 'Defend', sortable: true },
+        { key: 'corners', label: 'Corners', sortable: true },
+        { key: 'tyre_use', label: 'Tyre Use', sortable: true },
+        { key: 'power_unit', label: 'Power Unit', sortable: true },
+        { key: 'speed', label: 'Speed', sortable: true },
+        { key: 'pit_stop', label: 'Pit Stop', sortable: true },
+        { key: 'race_start', label: 'Race Start', sortable: true },
         // Removed DRS tier column as requested
       );
     }
@@ -902,6 +902,7 @@ export function DataGrid({
                       <BoostNameEditor
                         boostId={catalogItem.id}
                         currentName={catalogItem.name}
+                        icon={catalogItem.icon}
                         customName={(catalogItem as BoostItem).custom_name}
                         onNameChange={(newName) => {
                           // Update the boost's custom_name in the local state
@@ -1050,44 +1051,44 @@ export function DataGrid({
                   {/* Boost Tier Columns */}
                   {gridType === 'boosts' && (
                     <>
-                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('overtake_tier') > 0 && getBoostValueColor(getBoostTierValue('overtake_tier')))}>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('overtake') > 0 && getBoostValueColor(getBoostTierValue('overtake')))}>
                         <div className="text-sm font-medium">
-                          {getBoostTierValue('overtake_tier') * 5 || ''}
+                          {getBoostTierValue('overtake') * 5 || ''}
                         </div>
                       </td>
-                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('block_tier') > 0 && getBoostValueColor(getBoostTierValue('block_tier')))}>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('block') > 0 && getBoostValueColor(getBoostTierValue('block')))}>
                         <div className="text-sm font-medium">
-                          {getBoostTierValue('block_tier') * 5 || ''}
+                          {getBoostTierValue('block') * 5 || ''}
                         </div>
                       </td>
-                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('corners_tier') > 0 && getBoostValueColor(getBoostTierValue('corners_tier')))}>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('corners') > 0 && getBoostValueColor(getBoostTierValue('corners')))}>
                         <div className="text-sm font-medium">
-                          {getBoostTierValue('corners_tier') * 5 || ''}
+                          {getBoostTierValue('corners') * 5 || ''}
                         </div>
                       </td>
-                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('tyre_use_tier') > 0 && getBoostValueColor(getBoostTierValue('tyre_use_tier')))}>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('tyre_use') > 0 && getBoostValueColor(getBoostTierValue('tyre_use')))}>
                         <div className="text-sm font-medium">
-                          {getBoostTierValue('tyre_use_tier') * 5 || ''}
+                          {getBoostTierValue('tyre_use') * 5 || ''}
                         </div>
                       </td>
-                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('power_unit_tier') > 0 && getBoostValueColor(getBoostTierValue('power_unit_tier')))}>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('power_unit') > 0 && getBoostValueColor(getBoostTierValue('power_unit')))}>
                         <div className="text-sm font-medium">
-                          {getBoostTierValue('power_unit_tier') * 5 || ''}
+                          {getBoostTierValue('power_unit') * 5 || ''}
                         </div>
                       </td>
-                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('speed_tier') > 0 && getBoostValueColor(getBoostTierValue('speed_tier')))}>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('speed') > 0 && getBoostValueColor(getBoostTierValue('speed')))}>
                         <div className="text-sm font-medium">
-                          {getBoostTierValue('speed_tier') * 5 || ''}
+                          {getBoostTierValue('speed') * 5 || ''}
                         </div>
                       </td>
-                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('pit_stop_time_tier') > 0 && getBoostValueColor(getBoostTierValue('pit_stop_time_tier')))}>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('pit_stop') > 0 && getBoostValueColor(getBoostTierValue('pit_stop')))}>
                         <div className="text-sm font-medium">
-                          {getBoostTierValue('pit_stop_time_tier') * 5 || ''}
+                          {getBoostTierValue('pit_stop') * 5 || ''}
                         </div>
                       </td>
-                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('race_start_tier') > 0 && getBoostValueColor(getBoostTierValue('race_start_tier')))}>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('race_start') > 0 && getBoostValueColor(getBoostTierValue('race_start')))}>
                         <div className="text-sm font-medium">
-                          {getBoostTierValue('race_start_tier') * 5 || ''}
+                          {getBoostTierValue('race_start') * 5 || ''}
                         </div>
                       </td>
                     </>

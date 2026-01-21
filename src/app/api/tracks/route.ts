@@ -36,7 +36,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    return NextResponse.json(data)
+    // Transform the data to flatten the season information
+    const transformedData = data.map(track => ({
+      ...track,
+      season_name: track.seasons?.name || 'Unknown',
+      season_is_active: track.seasons?.is_active || false
+    }))
+
+    return NextResponse.json(transformedData)
   } catch (error) {
     console.error('Unexpected error in GET /api/tracks:', error)
     return NextResponse.json(

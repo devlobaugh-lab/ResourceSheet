@@ -157,4 +157,76 @@ INSERT INTO drivers (id, name, rarity, series, season_id, icon, cc_price, num_du
     ('ff8a3d96-c99b-4445-b591-89447639108d', 'Isack Hadjar', 1, 1, 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'Icon_Driver_25_Hadjar', 25, 10, NULL, NULL, NULL, 0, 'HAD', 1, '[{"overtaking":6,"blocking":3,"qualifying":2,"tyreUse":5,"raceStart":4,"cardsToUpgrade":4,"softCurrencyToUpgrade":2000,"legacyPointsToUpgrade":0},{"overtaking":10,"blocking":6,"qualifying":4,"tyreUse":9,"raceStart":7,"cardsToUpgrade":10,"softCurrencyToUpgrade":8000,"legacyPointsToUpgrade":0},{"overtaking":13,"blocking":8,"qualifying":6,"tyreUse":12,"raceStart":10,"cardsToUpgrade":20,"softCurrencyToUpgrade":35000,"legacyPointsToUpgrade":0},{"overtaking":17,"blocking":10,"qualifying":8,"tyreUse":15,"raceStart":12,"cardsToUpgrade":50,"softCurrencyToUpgrade":90000,"legacyPointsToUpgrade":0},{"overtaking":20,"blocking":13,"qualifying":10,"tyreUse":18,"raceStart":15,"cardsToUpgrade":100,"softCurrencyToUpgrade":275000,"legacyPointsToUpgrade":0},{"overtaking":24,"blocking":15,"qualifying":12,"tyreUse":21,"raceStart":18,"cardsToUpgrade":200,"softCurrencyToUpgrade":800000,"legacyPointsToUpgrade":0},{"overtaking":27,"blocking":17,"qualifying":14,"tyreUse":24,"raceStart":20,"cardsToUpgrade":400,"softCurrencyToUpgrade":1600000,"legacyPointsToUpgrade":0},{"overtaking":31,"blocking":19,"qualifying":16,"tyreUse":27,"raceStart":23,"cardsToUpgrade":1000,"softCurrencyToUpgrade":2400000,"legacyPointsToUpgrade":0},{"overtaking":34,"blocking":22,"qualifying":17,"tyreUse":30,"raceStart":26,"cardsToUpgrade":2000,"softCurrencyToUpgrade":3200000,"legacyPointsToUpgrade":0},{"overtaking":38,"blocking":24,"qualifying":19,"tyreUse":33,"raceStart":28,"cardsToUpgrade":4000,"softCurrencyToUpgrade":4000000,"legacyPointsToUpgrade":0},{"overtaking":41,"blocking":26,"qualifying":21,"tyreUse":36,"raceStart":31,"cardsToUpgrade":0,"softCurrencyToUpgrade":0,"legacyPointsToUpgrade":0}]');
 ;
 INSERT INTO boosts (id, name, icon, boost_stats) VALUES
+;
+-- Verify data
+SELECT 'Seasons' as table_name, COUNT(*) as count FROM seasons
+UNION ALL
+SELECT 'Car Parts', COUNT(*) FROM car_parts
+UNION ALL
+SELECT 'Drivers', COUNT(*) FROM drivers
+UNION ALL
+SELECT 'Boosts', COUNT(*) FROM boosts;
+    ('03dbcf8a-096d-40ea-98f9-f1976c4a4559', 'Boost 31', 'BoostIcon_Unstoppable', '{"speed":3,"block":0,"overtake":5,"corners":0,"tyre_use":0,"pit_stop":0,"power_unit":2,"race_start":0,"duration":30}'),
+    ('040549a0-9804-4e52-ae7b-6707451ab305', 'Boost 30', 'BoostIcon_GP_Easter', '{"speed":0,"block":3,"overtake":0,"corners":0,"tyre_use":0,"pit_stop":5,"power_unit":2,"race_start":0,"duration":30}'),
+    ('059a30e3-f649-4c3e-9345-7f4bc2606790', 'Boost 55', 'BoostIcon_Impact', '{"speed":2,"block":0,"overtake":3,"corners":0,"tyre_use":0,"pit_stop":0,"power_unit":1,"race_start":0,"duration":30}'),
+    ('0f03a4cb-a254-4d85-86eb-6cb3cf80cf2f', 'Boost 11', 'BoostIcon_GP_Brazil', '{"speed":1,"block":0,"overtake":0,"corners":0,"tyre_use":0,"pit_stop":4,"power_unit":5,"race_start":0,"duration":30}'),
+    ('192fcf08-1f37-4c1a-91c3-6cd26e89eeca', 'Boost 3', 'BoostIcon_3', '{"speed":0,"block":0,"overtake":0,"corners":2,"tyre_use":0,"pit_stop":1,"power_unit":0,"race_start":1,"duration":30}'),
+    ('1d16d89d-996a-4e8e-9582-a5bad9dc8086', 'Boost 24', 'BoostIcon_GP_Austria', '{"speed":2,"block":0,"overtake":0,"corners":3,"tyre_use":0,"pit_stop":5,"power_unit":0,"race_start":0,"duration":30}'),
+    ('2185b145-2c6c-4048-a9ad-188e83946a6d', 'Boost 23', 'BoostIcon_GP_France', '{"speed":0,"block":0,"overtake":4,"corners":0,"tyre_use":0,"pit_stop":0,"power_unit":2,"race_start":4,"duration":30}'),
+    ('2253190a-c67b-4e36-90c6-76535612cb0c', 'Boost 35', 'BoostIcon_GP_NYE', '{"speed":4,"block":0,"overtake":3,"corners":0,"tyre_use":0,"pit_stop":0,"power_unit":0,"race_start":3,"duration":30}'),
+    ('250b1fd6-924a-41b6-aefe-ce1de81d97ef', 'Boost 4', 'BoostIcon_4', '{"speed":0,"block":0,"overtake":0,"corners":0,"tyre_use":1,"pit_stop":0,"power_unit":3,"race_start":2,"duration":30}'),
+    ('2672ad41-3213-43c0-855d-e7464ef6e044', 'Boost 21', 'BoostIcon_GP_Monaco', '{"speed":0,"block":2,"overtake":0,"corners":4,"tyre_use":0,"pit_stop":0,"power_unit":0,"race_start":4,"duration":30}'),
+    ('2d0556ef-eba9-4575-a688-c832d6f30195', 'Boost 17', 'BoostIcon_GP_Bahrain', '{"speed":0,"block":3,"overtake":0,"corners":3,"tyre_use":0,"pit_stop":0,"power_unit":4,"race_start":0,"duration":30}'),
+    ('376de140-20fa-4b3a-a503-47cdba8f9825', 'Boost 41', 'BoostIcon_GP_Saudi', '{"speed":0,"block":0,"overtake":3,"corners":2,"tyre_use":0,"pit_stop":5,"power_unit":0,"race_start":0,"duration":30}'),
+    ('37c217e0-ab0a-42c1-b4aa-1746144417b1', 'Boost 62', 'BoostIcon_LaunchPad', '{"speed":0,"block":0,"overtake":0,"corners":0,"tyre_use":0,"pit_stop":2,"power_unit":3,"race_start":5,"duration":30}'),
+    ('3d58c8d7-9f72-43e1-a155-0837c8c9f4c3', 'Boost 25', 'BoostIcon_GP_GreatBritain', '{"speed":0,"block":0,"overtake":2,"corners":4,"tyre_use":0,"pit_stop":0,"power_unit":0,"race_start":4,"duration":30}'),
+    ('3ff76b3b-382d-4e6f-a0d7-60765c58fc2c', 'Boost 19', 'BoostIcon_GP_Azerbaijan', '{"speed":3,"block":0,"overtake":5,"corners":0,"tyre_use":2,"pit_stop":0,"power_unit":0,"race_start":0,"duration":30}'),
+    ('412231f2-4e96-4919-8f98-39fb3c53ae42', 'Boost 61', 'BoostIcon_RookieReload', '{"speed":1,"block":0,"overtake":0,"corners":4,"tyre_use":0,"pit_stop":0,"power_unit":5,"race_start":0,"duration":30}'),
+    ('43b993a8-eff6-4a19-810d-273144b17c11', 'Boost 10', 'BoostIcon_GP_America', '{"speed":3,"block":0,"overtake":0,"corners":0,"tyre_use":4,"pit_stop":3,"power_unit":0,"race_start":0,"duration":30}'),
+    ('4b3aad32-87a8-4cdb-b119-75e5761b374b', 'Boost 60', 'BoostIcon_Genesis', '{"speed":2,"block":5,"overtake":0,"corners":3,"tyre_use":0,"pit_stop":0,"power_unit":0,"race_start":0,"duration":30}'),
+    ('4c77fd00-9ca3-4e94-93be-7c8724dcb0fe', 'Boost 20', 'BoostIcon_GP_Spain', '{"speed":4,"block":0,"overtake":1,"corners":0,"tyre_use":0,"pit_stop":0,"power_unit":5,"race_start":0,"duration":30}'),
+    ('4e4a458f-b583-470d-9a1c-684a6090765d', 'Boost 47', 'BoostIcon_GP_SummerBreak', '{"speed":0,"block":0,"overtake":0,"corners":0,"tyre_use":1,"pit_stop":0,"power_unit":4,"race_start":5,"duration":30}'),
+    ('502d8986-5e71-4135-8305-5aaa87c6451d', 'Boost 9', 'BoostIcon_GP_Mexico', '{"speed":5,"block":0,"overtake":3,"corners":0,"tyre_use":0,"pit_stop":0,"power_unit":2,"race_start":0,"duration":30}'),
+    ('5066ffc2-b9ab-4898-af4f-b23a3e9fde8e', 'Boost 13', 'BoostIcon_GP_Belgium', '{"speed":0,"block":4,"overtake":0,"corners":0,"tyre_use":2,"pit_stop":0,"power_unit":4,"race_start":0,"duration":30}'),
+    ('54eacc08-369e-4152-94a4-738997510723', 'Boost 22', 'BoostIcon_GP_Canada', '{"speed":0,"block":3,"overtake":0,"corners":0,"tyre_use":2,"pit_stop":5,"power_unit":0,"race_start":0,"duration":30}'),
+    ('566c5273-016f-4cf7-9511-0d3c77dbe2bf', 'Boost 12', 'BoostIcon_GP_AbuDhabi', '{"speed":0,"block":4,"overtake":0,"corners":0,"tyre_use":4,"pit_stop":0,"power_unit":0,"race_start":2,"duration":30}'),
+    ('599fd54b-4438-4928-9d4c-51eb3c0c5a24', 'Boost 1', 'BoostIcon_1', '{"speed":0,"block":0,"overtake":0,"corners":1,"tyre_use":1,"pit_stop":0,"power_unit":1,"race_start":0,"duration":30}'),
+    ('5a12527c-097d-4487-9540-331df6818e52', 'Boost 63', 'BoostIcon_FullSend', '{"speed":5,"block":0,"overtake":1,"corners":0,"tyre_use":0,"pit_stop":0,"power_unit":4,"race_start":0,"duration":30}'),
+    ('5e95bae0-76aa-4860-b2b1-a35c430676eb', 'Boost 44', 'BoostIcon_GP_Thanksgiving', '{"speed":0,"block":4,"overtake":4,"corners":2,"tyre_use":0,"pit_stop":0,"power_unit":0,"race_start":0,"duration":30}'),
+    ('6072b063-b550-4d42-b29a-b96de5f9f474', 'Boost 57', 'BoostIcon_Christmas25', '{"speed":4,"block":0,"overtake":2,"corners":4,"tyre_use":0,"pit_stop":0,"power_unit":0,"race_start":0,"duration":30}'),
+    ('60f51e95-bcf6-42a1-8ae9-65923de52d6f', 'Boost 56', 'BoostIcon_Crown', '{"speed":0,"block":1,"overtake":0,"corners":0,"tyre_use":4,"pit_stop":5,"power_unit":0,"race_start":0,"duration":30}'),
+    ('63b24b92-c50a-4468-9764-b76c3e39c40d', 'Boost 49', 'BoostIcon_GP_TheNuke', '{"speed":5,"block":0,"overtake":0,"corners":0,"tyre_use":0,"pit_stop":0,"power_unit":3,"race_start":2,"duration":30}'),
+    ('645835dc-03d0-464f-9800-c974e6712fa8', 'Boost 2', 'BoostIcon_2', '{"speed":2,"block":1,"overtake":1,"corners":0,"tyre_use":0,"pit_stop":0,"power_unit":0,"race_start":0,"duration":30}'),
+    ('6751fb40-7dd8-4d0d-bcbc-a434ddff68f4', 'Boost 59', 'BoostIcon_RookieRush', '{"speed":0,"block":3,"overtake":0,"corners":0,"tyre_use":5,"pit_stop":0,"power_unit":0,"race_start":2,"duration":30}'),
+    ('76559b7a-76c4-4936-bcf9-8a894fb348bb', 'Boost 46', 'BoostIcon_GP_LegendaryDrivers', '{"speed":2,"block":0,"overtake":0,"corners":5,"tyre_use":0,"pit_stop":0,"power_unit":0,"race_start":3,"duration":30}'),
+    ('7e64c97f-c9ba-482a-99b4-fb3dc337a759', 'Boost 51', 'BoostIcon_Pumpkin', '{"speed":0,"block":0,"overtake":0,"corners":4,"tyre_use":4,"pit_stop":0,"power_unit":0,"race_start":2,"duration":30}'),
+    ('7fec7e9c-47bb-4314-b0b1-e04a65528009', 'Boost 14', 'BoostIcon_GP_Italy', '{"speed":0,"block":5,"overtake":0,"corners":0,"tyre_use":0,"pit_stop":0,"power_unit":2,"race_start":3,"duration":30}'),
+    ('8330ccff-eddb-413c-acd5-622090b5f26d', 'Boost 40', 'BoostIcon_GP_Earthday', '{"speed":0,"block":0,"overtake":0,"corners":0,"tyre_use":4,"pit_stop":1,"power_unit":5,"race_start":0,"duration":30}'),
+    ('8913ea40-314d-4934-af51-94fa40d5bbf6', 'Boost 16', 'BoostIcon_GP_Australia', '{"speed":3,"block":0,"overtake":2,"corners":0,"tyre_use":0,"pit_stop":0,"power_unit":0,"race_start":5,"duration":30}'),
+    ('8aa55439-e30f-47a9-be77-03e0545e44f1', 'Boost 36', 'BoostIcon_GP_Vietnam', '{"speed":0,"block":2,"overtake":0,"corners":0,"tyre_use":0,"pit_stop":3,"power_unit":0,"race_start":5,"duration":30}'),
+    ('8e8bf64e-0519-456f-938f-7e402a5b6aec', 'Boost 45', 'BoostIcon_GP_LasVegas', '{"speed":0,"block":0,"overtake":3,"corners":3,"tyre_use":0,"pit_stop":0,"power_unit":4,"race_start":0,"duration":30}'),
+    ('9117423b-6923-457c-b0d1-7955edbec45e', 'Boost 15', 'BoostIcon_GP_Singapore', '{"speed":3,"block":0,"overtake":0,"corners":5,"tyre_use":0,"pit_stop":2,"power_unit":0,"race_start":0,"duration":30}'),
+    ('92f72e84-3605-469d-88ea-47f181cf788f', 'Boost 7', 'BoostIcon_GP_Russia', '{"speed":0,"block":2,"overtake":0,"corners":3,"tyre_use":5,"pit_stop":0,"power_unit":0,"race_start":0,"duration":30}'),
+    ('973bbb3a-15f8-45f4-ac58-248e142dc342', 'Boost 37', 'BoostIcon_GP_Winter', '{"speed":0,"block":0,"overtake":0,"corners":0,"tyre_use":5,"pit_stop":0,"power_unit":2,"race_start":3,"duration":30}'),
+    ('9765fcc4-6180-4b15-9309-72ac52beb836', 'Boost 34', 'BoostIcon_GP_Turkey', '{"speed":0,"block":0,"overtake":0,"corners":3,"tyre_use":3,"pit_stop":0,"power_unit":0,"race_start":4,"duration":30}'),
+    ('a02cdf34-f7d7-4041-97e1-d00a1ca7883f', 'Boost 38', 'BoostIcon_GP_Netherlands', '{"speed":4,"block":2,"overtake":0,"corners":0,"tyre_use":0,"pit_stop":4,"power_unit":0,"race_start":0,"duration":30}'),
+    ('a2bbc757-8a1f-4dfa-8874-d9f711de7997', 'Boost 28', 'BoostIcon_DeadFast', '{"speed":5,"block":0,"overtake":0,"corners":0,"tyre_use":1,"pit_stop":0,"power_unit":4,"race_start":0,"duration":30}'),
+    ('aaf73338-e469-4413-a234-b8da2008f089', 'Boost 32', 'BoostIcon_GP_Portugal', '{"speed":0,"block":3,"overtake":0,"corners":5,"tyre_use":0,"pit_stop":0,"power_unit":0,"race_start":2,"duration":30}'),
+    ('bbc6ed61-5070-4efd-94f9-7d3d2bb95112', 'Boost 27', 'BoostIcon_GP_Hungary', '{"speed":0,"block":0,"overtake":2,"corners":3,"tyre_use":0,"pit_stop":0,"power_unit":0,"race_start":5,"duration":30}'),
+    ('bd884465-c323-4f1f-ba21-28ab9ac3c6c4', 'Boost 50', 'BoostIcon_GP_TireWater', '{"speed":0,"block":0,"overtake":0,"corners":1,"tyre_use":2,"pit_stop":1,"power_unit":0,"race_start":0,"duration":30}'),
+    ('bf993439-c805-43cd-8205-e39602660ae3', 'Boost 43', 'BoostIcon_GP_Pride', '{"speed":4,"block":5,"overtake":0,"corners":0,"tyre_use":0,"pit_stop":0,"power_unit":0,"race_start":1,"duration":30}'),
+    ('bfe138ee-c3e1-452f-9827-17c88d2948f2', 'Boost 39', 'BoostIcon_GP_Equinox', '{"speed":5,"block":0,"overtake":3,"corners":0,"tyre_use":0,"pit_stop":2,"power_unit":0,"race_start":0,"duration":30}'),
+    ('c8d6c623-d2ee-4eea-b9f6-e912bab8a5da', 'Boost 18', 'BoostIcon_GP_China', '{"speed":0,"block":0,"overtake":4,"corners":0,"tyre_use":3,"pit_stop":0,"power_unit":3,"race_start":0,"duration":30}'),
+    ('ccf58798-0358-4372-9226-39a9f820cb4d', 'Boost 8', 'BoostIcon_GP_Japan', '{"speed":0,"block":0,"overtake":0,"corners":4,"tyre_use":0,"pit_stop":3,"power_unit":0,"race_start":3,"duration":30}'),
+    ('cf38d7e6-437f-4518-ad84-ecf18d2e8b4a', 'Boost 5', 'BoostIcon_5', '{"speed":0,"block":2,"overtake":0,"corners":1,"tyre_use":3,"pit_stop":0,"power_unit":0,"race_start":0,"duration":30}'),
+    ('d228465e-ae2d-4efe-b885-196903b759f0', 'Boost 26', 'BoostIcon_GP_Germany', '{"speed":0,"block":0,"overtake":0,"corners":0,"tyre_use":5,"pit_stop":2,"power_unit":3,"race_start":0,"duration":30}'),
+    ('e6a4a99f-8ecd-43ec-85f0-d8f6c346b261', 'Boost 48', 'BoostIcon_GP_RoarOfTheThaiger', '{"speed":0,"block":0,"overtake":5,"corners":0,"tyre_use":3,"pit_stop":2,"power_unit":0,"race_start":0,"duration":30}'),
+    ('ef83bf5d-2e7f-4665-8ce1-55f9d9fe5aae', 'Boost 53', 'BoostIcon_GP_Handlebar', '{"speed":0,"block":5,"overtake":0,"corners":2,"tyre_use":3,"pit_stop":0,"power_unit":0,"race_start":0,"duration":30}'),
+    ('f9b628f5-9911-44d8-ae1b-6aaea82af145', 'SERVLOC_TXT_BOOST_NAME_52', 'BoostIcon_GhoulFuel', '{"speed":0,"block":0,"overtake":5,"corners":0,"tyre_use":0,"pit_stop":3,"power_unit":2,"race_start":0,"duration":30}'),
+    ('f9c50b1d-0928-4ecb-8d73-082d0b99c14b', 'Boost 33', 'BoostIcon_GP_Movember', '{"speed":0,"block":3,"overtake":0,"corners":5,"tyre_use":2,"pit_stop":0,"power_unit":0,"race_start":0,"duration":30}'),
+    ('fae0aae8-7aa1-4438-b65c-6e7169640584', 'Boost 58', 'BoostIcon_Confetti', '{"speed":0,"block":0,"overtake":2,"corners":0,"tyre_use":0,"pit_stop":3,"power_unit":0,"race_start":5,"duration":30}'),
+    ('fccbd6dc-f4bd-45f0-89d4-4b8b05de6aa8', 'Boost 29', 'BoostIcon_GP_Xmas', '{"speed":0,"block":4,"overtake":0,"corners":2,"tyre_use":0,"pit_stop":4,"power_unit":0,"race_start":0,"duration":30}'),
+    ('fce48870-011d-4541-b3eb-fb85f6d5111b', 'Boost 6', 'BoostIcon_6', '{"speed":3,"block":0,"overtake":4,"corners":0,"tyre_use":0,"pit_stop":1,"power_unit":0,"race_start":0,"duration":30}'),
+    ('fe071b34-adcc-4acc-9612-f4a31adb40a0', 'Boost 42', 'BoostIcon_GP_Miami', '{"speed":2,"block":5,"overtake":0,"corners":0,"tyre_use":0,"pit_stop":0,"power_unit":3,"race_start":0,"duration":30}');
 
+);

@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Parts Page User Data Sync**: Fixed parts page to show user ownership data (levels/card counts) by merging catalog and user data instead of showing only catalog data
+- **Boost Display Icon Fallback**: Updated boost names to fall back to icon names (GP_China, etc.) instead of boost names for better readability
+- **Boost Stats Display Fix**: Fixed boost tier values to display correctly by updating DataGrid component to use proper property names (`overtake`, `block`, etc.) instead of `_tier` suffixes
+- **User Data Persistence**: Fixed parts page to retain user ownership data across page refreshes by correcting useMemo dependency array
+- **Complete Stats Data Import**: Fixed seeding script to properly import driver/car part stats from JSON files using correct property names (`driverStatsPerLevel`, `carPartStatsPerLevel`)
+
+### Added
 - **Admin Tracks Page Complete Resolution**
   - **Authentication Issues**: Fixed 401 unauthorized errors by updating tracks API to properly validate JWT tokens from Authorization header
   - **RLS Policy Conflict**: Removed problematic tracks table RLS policy that caused infinite recursion with profiles table

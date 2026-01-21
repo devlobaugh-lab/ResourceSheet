@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     // Get user's boosts
     const { data: userBoosts, error: userBoostsError } = await supabaseAdmin
       .from('user_boosts')
-      .select('boost_id, level, card_count')
+      .select('boost_id, level, count')
       .eq('user_id', user.id)
 
     if (userBoostsError) {
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
     userBoosts?.forEach(item => {
       userBoostsMap.set(item.boost_id, {
         level: item.level,
-        card_count: item.card_count
+        card_count: item.count
       })
     })
 

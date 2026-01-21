@@ -5,7 +5,7 @@ import { SkeletonGrid } from '@/components/ui/Skeleton'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { useUserCarParts } from '@/hooks/useApi'
+import { useCarParts, useUserCarParts } from '@/hooks/useApi'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useAuth } from '@/components/auth/AuthContext'
 import Link from 'next/link'
@@ -62,9 +62,29 @@ const getStatBackgroundColor = (value: number, min: number, max: number, median:
 };
 
 function AuthenticatedPartsPage() {
-  const { data: carPartsResponse, isLoading, error } = useUserCarParts({
+  const { data: carPartsResponse, isLoading: carPartsLoading, error: carPartsError } = useCarParts({
     page: 1,
     limit: 100
+  })
+  const { data: userCarPartsResponse, isLoading: userCarPartsLoading, error: userCarPartsError } = useUserCarParts({
+    page: 1,
+    limit: 100
+  })
+
+  const isLoading = carPartsLoading || userCarPartsLoading
+  const error = carPartsError || userCarPartsError
+
+  // Merge catalog car parts with user ownership data
+  const mergedCarParts = (carPartsResponse?.data || []).map((carPart: any) => {
+    // Find user's ownership data for this car part
+    const userData = (userCarPartsResponse?.data || []).find((userCarPart: any) => userCarPart.id === carPart.id);
+
+    return {
+      ...carPart,
+      level: userData?.level || 0,
+      card_count: userData?.card_count || 0,
+      is_owned: !!userData
+    };
   })
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -165,11 +185,11 @@ function AuthenticatedPartsPage() {
     return typeMap[type] || 'Unknown';
   };
 
-  // Apply filters to the data
+  // Apply filters to the merged data
   const filteredCarParts = useMemo(() => {
-    if (!carPartsResponse?.data) return []
+    if (!mergedCarParts) return []
 
-    return carPartsResponse.data.filter(carPart => {
+    return mergedCarParts.filter(carPart => {
       const matchesSearch = !searchTerm ||
         carPart.name.toLowerCase().includes(searchTerm.toLowerCase())
 
@@ -180,7 +200,7 @@ function AuthenticatedPartsPage() {
 
       return matchesSearch && matchesMaxSeries && isNotStarterPart
     })
-  }, [carPartsResponse?.data, searchTerm, maxSeries])
+  }, [mergedCarParts, searchTerm, maxSeries])
 
   // Group parts by part type in the correct order: brakes, gearbox, rear wing, front wing, suspension, engine
   const groupedParts = useMemo(() => {

@@ -516,7 +516,7 @@ function BoostsTab() {
               <td className="px-3 py-1 whitespace-nowrap">
                 <div className="flex items-center">
                   <div className="text-sm font-medium text-gray-900">
-                    {boost.custom_name || boost.name}
+                    {boost.custom_name || boost.icon.replace('BoostIcon_', '') || boost.name}
                   </div>
                 </div>
               </td>

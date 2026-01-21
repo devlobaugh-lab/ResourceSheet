@@ -28,10 +28,8 @@ const stableImportDataSchema = z.object({
   })).optional(),
   boosts: z.array(z.object({
     name: z.string(),
-    rarity: z.number().optional(),
-    series: z.number().optional(),
-    level: z.number().min(0),
-    card_count: z.number().min(0)
+    icon: z.string().optional(),
+    count: z.number().min(0)
   })).optional()
 })
 
@@ -316,7 +314,7 @@ export async function POST(request: NextRequest) {
       // Get all current boosts to build a lookup map
       const { data: allBoosts, error: boostsError } = await supabaseAdmin
         .from('boosts')
-        .select('id, name, rarity, series')
+        .select('id, name')
 
       if (boostsError) {
         return NextResponse.json(
@@ -341,8 +339,7 @@ export async function POST(request: NextRequest) {
         if (boostId) {
           matchedBoosts.push({
             boostId,
-            level: importedBoost.level,
-            card_count: importedBoost.card_count
+            count: importedBoost.count
           })
         } else {
           unmatchedBoosts.push(importedBoost)
@@ -368,15 +365,14 @@ export async function POST(request: NextRequest) {
           )
         }
 
-        // Only insert boosts that the user actually owns (card_count > 0)
-        const ownedBoosts = matchedBoosts.filter(item => item.card_count > 0)
+        // Only insert boosts that the user actually owns (count > 0)
+        const ownedBoosts = matchedBoosts.filter(item => item.count > 0)
 
         if (ownedBoosts.length > 0) {
           const boostsToInsert = ownedBoosts.map(item => ({
             user_id: user.id,
             boost_id: item.boostId,
-            level: item.level,
-            card_count: item.card_count
+            count: item.count
           }))
 
           console.log('Inserting user boosts:', boostsToInsert.length)
