@@ -61,7 +61,7 @@ export default function AdminTracksPage() {
     if (currentSeason && !formData.season_id) {
       setFormData(prev => ({ ...prev, season_id: currentSeason.id }));
     }
-  }, [currentSeason, formData.season_id]);
+  }, [currentSeason]);
 
   // Set default filter to current season
   React.useEffect(() => {
@@ -410,7 +410,7 @@ export default function AdminTracksPage() {
                           {carStats.find(s => s.value === track.car_track_stat)?.label}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {track.seasons?.name || 'Unknown'}
+                          {track.season_name || 'Unknown'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                           <Button

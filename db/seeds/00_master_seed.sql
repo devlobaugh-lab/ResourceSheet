@@ -9,10 +9,8 @@
 -- Verify data
 SELECT 'Seasons' as table_name, COUNT(*) as count FROM seasons
 UNION ALL
-SELECT 'Catalog Items', COUNT(*) FROM catalog_items
-UNION ALL  
-SELECT 'Car Parts', COUNT(*) FROM catalog_items WHERE card_type = 0
+SELECT 'Car Parts', COUNT(*) FROM car_parts
 UNION ALL
-SELECT 'Drivers', COUNT(*) FROM catalog_items WHERE card_type = 1
+SELECT 'Drivers', COUNT(*) FROM drivers
 UNION ALL
 SELECT 'Boosts', COUNT(*) FROM boosts;

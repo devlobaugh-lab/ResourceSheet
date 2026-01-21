@@ -83,7 +83,7 @@ export async function PUT(
       const { data, error } = await supabaseAdmin
         .from('user_boosts')
         .update({
-          card_count: validatedData.card_count,
+          count: validatedData.card_count,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
@@ -105,7 +105,7 @@ export async function PUT(
         .insert({
           user_id: user.id,
           boost_id: params.id,
-          card_count: validatedData.card_count
+          count: validatedData.card_count
         })
         .select()
         .single()

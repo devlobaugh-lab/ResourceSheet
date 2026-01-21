@@ -50,7 +50,6 @@ const PART_TYPES = [
 
 function AuthenticatedSetupsPage() {
   const { data: carPartsResponse, isLoading: partsLoading, error: partsError } = useUserCarParts({
-    owned_only: true,
     page: 1,
     limit: 1000
   })

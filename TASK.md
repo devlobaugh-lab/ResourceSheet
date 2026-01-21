@@ -76,6 +76,11 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
   - [x] Fixed custom name synchronization across boosts page and data input page
   - [x] **Boosts page now shows all boosts with correct ownership counts**
   - [x] **Data input boosts tab works seamlessly with proper saving and display**
+- [x] **Parts Page User Data Sync**: Fixed parts page to show user ownership data (levels/card counts) by merging catalog and user data
+- [x] **Boost Display Icon Fallback**: Updated boost names to fall back to icon names (GP_China, etc.) instead of boost names
+- [x] **Boost Stats Display Fix**: Fixed boost tier values to display correctly with proper property name mapping
+- [x] **User Data Persistence**: Fixed parts page to retain user ownership data across page refreshes
+- [x] **Complete Stats Data Import**: Fixed seeding script to properly import driver/car part stats from JSON files using correct property names (driverStatsPerLevel, carPartStatsPerLevel)
 - [x] **Admin Tracks Page Complete Resolution - COMPLETE FIXES**
   - [x] **Authentication Issues**: Fixed 401 unauthorized errors by updating tracks API to properly validate JWT tokens from Authorization header using `supabaseAdmin.auth.getUser(token)`
   - [x] **RLS Policy Conflict**: Removed problematic tracks table RLS policy that caused infinite recursion with profiles table
@@ -84,6 +89,17 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
   - [x] **Filter Defaults**: Track filter now defaults to current season instead of "All Seasons"
   - [x] **Admin User Setup**: Ensured admin user (thomas.lobaugh@gmail.com) has proper authentication and database profile
   - [x] **Database Seeding**: Complete seeding of admin user, seasons, drivers, car parts, and boosts data
+
+- [x] **Boost Schema Cleanup - COMPLETE**
+  - [x] **Removed Unnecessary Fields**: `boost_type`, `rarity`, `series`, `season_id` from boosts table
+  - [x] **Renamed Field**: Changed `card_count` to `count` in `user_boosts` table for better semantic naming
+  - [x] **Database Migration**: Created `20260121104500_clean_boost_schema.sql` to apply schema changes
+  - [x] **Preserved Functionality**: Kept `boost_stats` JSONB field for app-required game data
+  - [x] **Updated Backup Format**: Simplified to only include `name`, `icon`, `count` for efficient backups
+  - [x] **TypeScript Updates**: Updated Boost, UserBoost, BoostView interfaces
+  - [x] **API Updates**: Updated export/import APIs for new simplified format
+  - [x] **Seed Data Fixed**: Updated seed.sql to match new schema structure
+  - [x] **Database Reset**: Successfully applied migration and seeding
 
 ### Setups page
 

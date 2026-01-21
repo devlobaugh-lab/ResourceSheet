@@ -119,15 +119,14 @@ export async function GET(request: NextRequest) {
       .from('user_boosts')
       .select(`
         level,
-        card_count,
+        count,
         boosts:boost_id (
           name,
-          rarity,
-          series
+          icon
         )
       `)
       .eq('user_id', user.id)
-      .gt('card_count', 0) // Only export items the user actually owns
+      .gt('count', 0) // Only export items the user actually owns
 
     if (boostsError) {
       console.error('Error fetching user boosts:', boostsError)
@@ -184,25 +183,12 @@ export async function GET(request: NextRequest) {
 
         return partData;
       }),
-      boosts: (userBoosts || []).map((item: any) => {
-        const boostData: any = {
-          // Stable identifiers for boosts (name is usually unique)
-          name: item.boosts?.name,
-          // User data
-          level: item.level,
-          card_count: item.card_count
-        };
-
-        // Only include rarity/series if they exist
-        if (item.boosts?.rarity != null) {
-          boostData.rarity = item.boosts.rarity;
-        }
-        if (item.boosts?.series != null) {
-          boostData.series = item.boosts.series;
-        }
-
-        return boostData;
-      })
+      boosts: (userBoosts || []).map((item: any) => ({
+        // Simplified backup format - only essential data for identification
+        name: item.boosts?.name,
+        icon: item.boosts?.icon,
+        count: item.count
+      }))
     }
 
     console.log('Stable export data:', {

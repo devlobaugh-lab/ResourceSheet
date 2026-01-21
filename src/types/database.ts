@@ -149,11 +149,7 @@ export interface Database {
           id: string
           name: string
           icon: string | null
-          boost_type: string
-          rarity: number
           boost_stats: any | null
-          series: number | null
-          season_id: string | null
           created_at: string
           updated_at: string
         }
@@ -161,11 +157,7 @@ export interface Database {
           id?: string
           name: string
           icon?: string | null
-          boost_type: string
-          rarity: number
           boost_stats?: any | null
-          series?: number | null
-          season_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -173,11 +165,7 @@ export interface Database {
           id?: string
           name?: string
           icon?: string | null
-          boost_type?: string
-          rarity?: number
           boost_stats?: any | null
-          series?: number | null
-          season_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -188,7 +176,7 @@ export interface Database {
           user_id: string
           boost_id: string
           level: number
-          card_count: number
+          count: number
           created_at: string
           updated_at: string
         }
@@ -197,7 +185,7 @@ export interface Database {
           user_id: string
           boost_id: string
           level?: number
-          card_count?: number
+          count?: number
           created_at?: string
           updated_at?: string
         }
@@ -206,7 +194,7 @@ export interface Database {
           user_id?: string
           boost_id?: string
           level?: number
-          card_count?: number
+          count?: number
           created_at?: string
           updated_at?: string
         }
@@ -550,16 +538,14 @@ export interface BoostView {
   id: string
   name: string
   icon: string | null
-  boost_type: string
-  rarity: number
   boost_stats: any | null
-  series: number | null
 
   // From boost_custom_names (optional custom override)
   custom_name?: string | null
 
   // From user_boosts (or defaults if not owned)
   level: number
+  count: number
   is_owned: boolean // derived: level > 0
 }
 
