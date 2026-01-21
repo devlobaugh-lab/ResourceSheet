@@ -32,6 +32,20 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [x] Export/import all user data to a JSON file
 - [x] For Admin users, allow export of Custom Boost names to JSON file
 
+### UUID-Independent Backup/Restore System - COMPLETE ✅
+
+- [x] **Stable Export API** - `/api/export-collection-stable` exports data using stable identifiers (name, series, ordinal, part_type) instead of UUIDs
+- [x] **Stable Import API** - `/api/import-collection-stable` matches items using stable identifiers, works across database reseeds
+- [x] **Driver Matching** - Uses name + series + ordinal for precise matching
+- [x] **Car Part Matching** - Uses name + car_part_type + series for precise matching
+- [x] **Boost Matching** - Uses name (boost names are unique) for matching
+- [x] **Error Handling** - Comprehensive error reporting for unmatched items with detailed messages
+- [x] **Frontend Integration** - Renamed to "Backup Collection" and "Restore Collection" buttons in profile page
+- [x] **Migration Support** - Works with data from different database versions and reseeded databases
+- [x] **UI Cleanup** - Removed old UUID-based buttons, focused on stable backup system
+- [x] **Data Validation** - Fixed export to conditionally include optional fields, preventing null value errors
+- [x] **File Download** - Fixed frontend to properly download JSON files with correct filenames
+
 
 ### Misc QOL Changes
 
