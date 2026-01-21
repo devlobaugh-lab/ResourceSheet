@@ -8,6 +8,8 @@ import { useTracks, useCreateTrack, useUpdateTrack, useDeleteTrack, useSeasons }
 import { useAuth } from '@/components/auth/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useToast } from '@/components/ui/Toast';
+import { useQuery } from '@tanstack/react-query';
+import { getAuthHeaders } from '@/hooks/useApi';
 import Link from 'next/link';
 
 interface TrackFormData {
@@ -48,11 +50,11 @@ export default function AdminTracksPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingTrack, setEditingTrack] = useState<any>(null);
   const [formData, setFormData] = useState<TrackFormData>(initialFormData);
-  const [selectedSeason, setSelectedSeason] = useState<string>('');
-
   // Get current active season for default selection
   const { data: seasonsData } = useSeasons({ is_active: true });
-  const currentSeason = seasonsData?.find((season: any) => season.is_active);
+  const currentSeason = seasonsData?.data?.find((season: any) => season.is_active);
+
+  const [selectedSeason, setSelectedSeason] = useState<string>(currentSeason?.id || '');
 
   // Set default season when data loads
   React.useEffect(() => {
@@ -60,6 +62,20 @@ export default function AdminTracksPage() {
       setFormData(prev => ({ ...prev, season_id: currentSeason.id }));
     }
   }, [currentSeason, formData.season_id]);
+
+  // Set default filter to current season
+  React.useEffect(() => {
+    if (currentSeason && !selectedSeason) {
+      setSelectedSeason(currentSeason.id);
+    }
+  }, [currentSeason, selectedSeason]);
+
+  // Reset form with current season when currentSeason changes
+  React.useEffect(() => {
+    if (currentSeason) {
+      resetForm();
+    }
+  }, [currentSeason]);
 
   // Get all seasons for dropdown
   const { data: allSeasons } = useSeasons();
@@ -116,9 +132,37 @@ export default function AdminTracksPage() {
     }
   };
 
-  // Check if user is admin
-  const profile = (user as any)?.user_metadata?.profile;
+  // Check if user is admin by fetching profile
+  const { data: profile, isLoading: isProfileLoading } = useQuery({
+    queryKey: ['user-profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const response = await fetch(`/api/profiles/${user.id}`, {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      });
+      if (!response.ok) return null;
+      return response.json();
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000 // 5 minutes
+  });
+
   const isAdmin = profile?.is_admin || false;
+
+  // Show loading state while checking admin status
+  if (isProfileLoading && user?.id) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <Card className="p-8 max-w-md mx-auto text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p className="text-gray-600">Checking permissions...</p>
+          </Card>
+        </div>
+      </ProtectedRoute>
+    );
+  }
 
   if (!isAdmin) {
     return (
@@ -167,7 +211,7 @@ export default function AdminTracksPage() {
                   className="rounded-lg border-gray-300 text-sm px-3 py-2 bg-white"
                 >
                   <option value="">All Seasons</option>
-                  {allSeasons?.map((season: any) => (
+                  {allSeasons?.data?.map((season: any) => (
                     <option key={season.id} value={season.id}>
                       {season.name} {season.is_active ? '(Active)' : ''}
                     </option>
@@ -244,7 +288,7 @@ export default function AdminTracksPage() {
                     required
                   >
                     <option value="">Select Season</option>
-                    {allSeasons?.map((season: any) => (
+                    {allSeasons?.data?.map((season: any) => (
                       <option key={season.id} value={season.id}>
                         {season.name} {season.is_active ? '(Active)' : ''}
                       </option>
