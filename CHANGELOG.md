@@ -216,6 +216,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Dynamic Updates**: Colors recalculate automatically when filtering changes the visible parts per type
   - **Custom Parts Page Implementation**: Applied directly to the parts page's grouped table structure since it doesn't use the DataGrid component
 
+- **UUID-Independent Backup/Restore System**
+  - **Stable Export API**: `/api/export-collection-stable` exports collection data using stable identifiers instead of UUIDs
+  - **Stable Import API**: `/api/import-collection-stable` imports data by matching stable identifiers, works across database reseeding
+  - **Smart Matching Logic**: Drivers matched by `name + series + ordinal`, car parts by `name + car_part_type + series`, boosts by `name`
+  - **Migration Safe**: Works when database is reseeded and UUIDs change, ensuring reliable backup/restore functionality
+  - **Comprehensive Error Handling**: Detailed reporting of unmatched items with specific error messages
+  - **UI Integration**: "Backup Collection" and "Restore Collection" buttons in profile page with intuitive loading states
+  - **Data Validation**: Proper Zod schema validation for import format with clear error messages
+  - **File Downloads**: Automatic download of `f1-stable-backup-YYYY-MM-DD.json` files for backups
+  - **Cache Invalidation**: Automatic React Query cache updates after successful restore operations
+
 ### Changed
 - **UI Layout Simplification & Column Sorting**: Streamlined the grid pages by removing most filter controls, repositioning search functionality, and restoring column header sorting
   - **Removed**: Rarity dropdown, Card Type dropdown, Owned filter, Sort By controls from DataGrid

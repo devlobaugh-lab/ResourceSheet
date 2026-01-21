@@ -17,9 +17,12 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
   const [exportLoading, setExportLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
+  const [exportStableLoading, setExportStableLoading] = useState(false);
+  const [importStableLoading, setImportStableLoading] = useState(false);
   const [exportCustomNamesLoading, setExportCustomNamesLoading] = useState(false);
   const [importCustomNamesLoading, setImportCustomNamesLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const stableFileInputRef = useRef<HTMLInputElement>(null);
   const customNamesFileInputRef = useRef<HTMLInputElement>(null);
 
   // Check if user is admin
@@ -118,8 +121,97 @@ export default function ProfilePage() {
     }
   };
 
+  const handleExportStable = async () => {
+    setExportStableLoading(true);
+    try {
+      const response = await fetch('/api/export-collection-stable', {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `Stable export failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Create and download file
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const dateStr = new Date().toISOString().split('T')[0];
+      const filename = `f1-stable-backup-${dateStr}.json`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.addToast('Stable collection exported successfully', 'success');
+    } catch (error) {
+      console.error('Stable export error:', error);
+      toast.addToast(error instanceof Error ? error.message : 'Failed to export stable collection', 'error');
+    } finally {
+      setExportStableLoading(false);
+    }
+  };
+
+  const handleImportStable = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImportStableLoading(true);
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      const response = await fetch('/api/import-collection-stable', {
+        method: 'POST',
+        headers: {
+          ...await getAuthHeaders(),
+          'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Stable import failed');
+      }
+
+      const result = await response.json();
+
+      // Invalidate all queries to refresh the UI with new data
+      queryClient.invalidateQueries();
+
+      const successMessage = `Stable collection imported successfully! ${result.summary.imported} items imported.`;
+      toast.addToast(successMessage, 'success');
+
+      if (result.results.errors.length > 0) {
+        console.warn('Import errors:', result.results.errors);
+        toast.addToast(`${result.results.errors.length} items could not be matched and were skipped.`, 'warning');
+      }
+    } catch (error) {
+      console.error('Stable import error:', error);
+      toast.addToast(error instanceof Error ? error.message : 'Failed to import stable collection', 'error');
+    } finally {
+      setImportStableLoading(false);
+      // Reset file input
+      if (stableFileInputRef.current) {
+        stableFileInputRef.current.value = '';
+      }
+    }
+  };
+
   const triggerImport = () => {
     fileInputRef.current?.click();
+  };
+
+  const triggerImportStable = () => {
+    stableFileInputRef.current?.click();
   };
 
   const handleExportCustomNames = async () => {
@@ -241,35 +333,16 @@ export default function ProfilePage() {
             <div className="lg:col-span-2 space-y-6">
               {/* Collection Actions */}
               <Card className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Collection Actions</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Collection Backup & Restore</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <Button
                     variant="outline"
                     className="justify-start"
-                    onClick={triggerImport}
-                    disabled={importLoading}
+                    onClick={handleExportStable}
+                    disabled={exportStableLoading}
                   >
-                    {importLoading ? (
-                      <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                      </svg>
-                    )}
-                    {importLoading ? 'Importing...' : 'Import Collection'}
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="justify-start"
-                    onClick={handleExport}
-                    disabled={exportLoading}
-                  >
-                    {exportLoading ? (
+                    {exportStableLoading ? (
                       <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -279,14 +352,26 @@ export default function ProfilePage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     )}
-                    {exportLoading ? 'Exporting...' : 'Export Collection'}
+                    {exportStableLoading ? 'Backing up...' : 'Backup Collection'}
                   </Button>
 
-                  <Button variant="outline" className="justify-start opacity-50 cursor-not-allowed" disabled>
-                    <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Settings
+                  <Button
+                    variant="outline"
+                    className="justify-start"
+                    onClick={triggerImportStable}
+                    disabled={importStableLoading}
+                  >
+                    {importStableLoading ? (
+                      <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                    )}
+                    {importStableLoading ? 'Restoring...' : 'Restore Collection'}
                   </Button>
 
                   <Button variant="outline" className="justify-start opacity-50 cursor-not-allowed" disabled>
@@ -363,6 +448,15 @@ export default function ProfilePage() {
         type="file"
         ref={fileInputRef}
         onChange={handleImport}
+        accept=".json"
+        style={{ display: 'none' }}
+      />
+
+      {/* Hidden file input for stable import */}
+      <input
+        type="file"
+        ref={stableFileInputRef}
+        onChange={handleImportStable}
         accept=".json"
         style={{ display: 'none' }}
       />
