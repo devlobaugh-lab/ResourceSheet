@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createServerSupabaseClient, supabaseAdmin } from '@/lib/supabase'
 import { Track, Inserts, Updates } from '@/types/database'
 
 // GET /api/tracks - List all tracks with optional season filtering
@@ -49,10 +49,20 @@ export async function GET(request: NextRequest) {
 // POST /api/tracks - Create a new track (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient()
+    // Extract and verify JWT token from Authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
 
-    // Check if user is admin
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
+
+    // Verify the JWT token and get user
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -60,13 +70,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { data: profile, error: profileError } = await supabase
+    // Check admin status
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
       .single()
 
-    if (profileError || !profile?.is_admin) {
+    if (!profile?.is_admin) {
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }
@@ -111,7 +122,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify season exists
-    const { data: season, error: seasonError } = await supabase
+    const { data: season, error: seasonError } = await supabaseAdmin
       .from('seasons')
       .select('id')
       .eq('id', trackData.season_id)
@@ -124,7 +135,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('tracks')
       .insert(trackData)
       .select(`

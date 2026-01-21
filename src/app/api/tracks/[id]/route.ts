@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createServerSupabaseClient, supabaseAdmin } from '@/lib/supabase'
 import { Track, Updates } from '@/types/database'
 
 // GET /api/tracks/[id] - Get a single track
@@ -54,11 +54,20 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createServerSupabaseClient()
-    const id = params.id
+    // Extract and verify JWT token from Authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
 
-    // Check if user is admin
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
+
+    // Verify the JWT token and get user
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -66,18 +75,21 @@ export async function PUT(
       )
     }
 
-    const { data: profile, error: profileError } = await supabase
+    // Check admin status
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
       .single()
 
-    if (profileError || !profile?.is_admin) {
+    if (!profile?.is_admin) {
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }
       )
     }
+
+    const id = params.id
 
     const body = await request.json()
     const updateData: Updates<'tracks'> = {}
@@ -113,7 +125,7 @@ export async function PUT(
 
     // Verify season exists if season_id is being updated
     if (updateData.season_id) {
-      const { data: season, error: seasonError } = await supabase
+      const { data: season, error: seasonError } = await supabaseAdmin
         .from('seasons')
         .select('id')
         .eq('id', updateData.season_id)
@@ -127,7 +139,7 @@ export async function PUT(
       }
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('tracks')
       .update(updateData)
       .eq('id', id)
@@ -171,11 +183,20 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createServerSupabaseClient()
-    const id = params.id
+    // Extract and verify JWT token from Authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
 
-    // Check if user is admin
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
+
+    // Verify the JWT token and get user
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -183,20 +204,23 @@ export async function DELETE(
       )
     }
 
-    const { data: profile, error: profileError } = await supabase
+    // Check admin status
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
       .single()
 
-    if (profileError || !profile?.is_admin) {
+    if (!profile?.is_admin) {
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }
       )
     }
 
-    const { error } = await supabase
+    const id = params.id
+
+    const { error } = await supabaseAdmin
       .from('tracks')
       .delete()
       .eq('id', id)
