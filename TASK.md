@@ -81,6 +81,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [x] **Boost Stats Display Fix**: Fixed boost tier values to display correctly with proper property name mapping
 - [x] **User Data Persistence**: Fixed parts page to retain user ownership data across page refreshes
 - [x] **Complete Stats Data Import**: Fixed seeding script to properly import driver/car part stats from JSON files using correct property names (driverStatsPerLevel, carPartStatsPerLevel)
+- [x] **Boost Custom Names Display Fix**: Fixed boost custom names not displaying due to missing user_id column in database table. Temporarily modified API to fetch names globally until migration can be applied.
 - [x] **Admin Tracks Page Complete Resolution - COMPLETE FIXES**
   - [x] **Authentication Issues**: Fixed 401 unauthorized errors by updating tracks API to properly validate JWT tokens from Authorization header using `supabaseAdmin.auth.getUser(token)`
   - [x] **RLS Policy Conflict**: Removed problematic tracks table RLS policy that caused infinite recursion with profiles table

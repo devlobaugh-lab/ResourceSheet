@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { DataGrid } from '@/components/DataGrid'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
 import { Card } from '@/components/ui/Card'
@@ -9,9 +9,30 @@ import { Input } from '@/components/ui/Input'
 import { useUserBoosts, useBoosts } from '@/hooks/useApi'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useAuth } from '@/components/auth/AuthContext'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { BoostWithCustomName } from '@/types/database'
+
+// Custom hook to fetch boost custom names
+function useBoostCustomNames() {
+  return useQuery<{ [boostId: string]: string }>({
+    queryKey: ['boost-custom-names'],
+    queryFn: async (): Promise<{ [boostId: string]: string }> => {
+      const { getAuthHeaders } = await import('@/hooks/useApi');
+      const response = await fetch('/api/boosts/custom-names', {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch boost custom names');
+      }
+
+      return response.json();
+    },
+    staleTime: 0, // Disable caching to ensure fresh data
+  });
+}
 
 function AuthenticatedBoostsPage() {
   const queryClient = useQueryClient()
@@ -25,19 +46,41 @@ function AuthenticatedBoostsPage() {
   })
 
   const [searchTerm, setSearchTerm] = useState('')
+  const [mergedBoosts, setMergedBoosts] = useState<any[]>([])
 
-  // Merge catalog boosts with user ownership data (like data input page)
-  const rawBoosts = (boostsResponse?.data || []).map((boost: any) => {
-    // Find user's ownership data for this boost
-    const userData = (userBoostsResponse?.data || []).find((userBoost: any) => userBoost.id === boost.id);
-    const cardCount = userData?.card_count || 0;
+  // Merge catalog boosts with user ownership data when data changes
+  // Custom names are already merged server-side by /api/boosts
+  useEffect(() => {
+    if (boostsResponse?.data && userBoostsResponse?.data) {
+      const merged = (boostsResponse.data || []).map((boost: any) => {
+        // Find user's ownership data for this boost
+        const userData = (userBoostsResponse.data || []).find((userBoost: any) => userBoost.id === boost.id);
+        const cardCount = userData?.card_count || 0;
 
-    return {
-      ...boost,
-      custom_name: boost.boost_custom_names?.custom_name || null,
-      card_count: cardCount
-    };
-  })
+        // Custom name is already merged by the API: boost.boost_custom_names?.custom_name
+        const customName = boost.boost_custom_names?.custom_name || null;
+
+        return {
+          ...boost,
+          custom_name: customName,
+          card_count: cardCount
+        };
+      });
+      setMergedBoosts(merged);
+    }
+  }, [boostsResponse?.data, userBoostsResponse?.data]);
+
+  // Update merged boosts when custom name changes
+  const handleBoostNameChange = (boostId: string, newName: string | null) => {
+    setMergedBoosts(prev => prev.map(boost =>
+      boost.id === boostId
+        ? { ...boost, custom_name: newName }
+        : boost
+    ));
+    // Also refetch to ensure data consistency
+    refetchBoosts();
+    refetchUserBoosts();
+  }
 
   const isLoading = boostsLoading || userBoostsLoading
   const error = boostsError || userBoostsError
@@ -48,13 +91,13 @@ function AuthenticatedBoostsPage() {
 
   // Apply search filter
   const filteredBoosts = useMemo(() => {
-    if (!searchTerm) return rawBoosts
+    if (!searchTerm) return mergedBoosts
 
-    return rawBoosts.filter((boost: BoostWithCustomName) => {
+    return mergedBoosts.filter((boost: BoostWithCustomName) => {
       const displayName = boost.custom_name || boost.name
       return displayName.toLowerCase().includes(searchTerm.toLowerCase())
     })
-  }, [rawBoosts, searchTerm])
+  }, [mergedBoosts, searchTerm])
 
   return (
     <div className="space-y-4">
@@ -95,11 +138,7 @@ function AuthenticatedBoostsPage() {
             showFilters={false}
             showSearch={false}
             showCompareButton={true}
-            onBoostNameChange={() => {
-              // Invalidate all boost-related queries when custom name changes
-              queryClient.invalidateQueries({ queryKey: ['boosts'] })
-              queryClient.invalidateQueries({ queryKey: ['user-boosts'] })
-            }}
+            onBoostNameChange={handleBoostNameChange}
           />
         )}
       </ErrorBoundary>
