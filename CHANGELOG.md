@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Data Input Cache Invalidation**: Fixed issue where restoring collection didn't immediately update data input page display. Added dynamic `key` props to input fields that change when data values change, forcing input remounting with correct default values. This ensures UI updates immediately after import operations instead of requiring page navigation.
+- **Backup Export Logic**: Fixed backup export to include items where level > 0 OR card_count > 0, not just card_count > 0. This ensures that maxed-out items (level 11, card_count 0) are properly included in backups and restored correctly.
+
+### Fixed
 - **Series Filter Persistence**: Added localStorage persistence for Max Series filter on drivers and parts pages - remembers filter state when user leaves and returns to page
 - **Driver Compare Duplicate Handling**: Fixed logic to allow adding duplicate drivers to compare if they have different rarities - prevents adding same driver name + rarity combination
 - **Stats Mismatch Fix**: Enhanced DriverCompareGrid to use same data source as drivers page (useUserDrivers) for consistent stats calculation and display

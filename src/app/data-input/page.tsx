@@ -231,6 +231,7 @@ function DriversTab() {
               </td>
               <td className="px-3 py-1 whitespace-nowrap text-center">
                 <input
+                  key={`driver-level-${driver.id}-${driver.level}`}
                   type="number"
                   min={0}
                   max={LEVEL_RANGES[driver.rarity as keyof typeof LEVEL_RANGES]?.max || 11}
@@ -250,6 +251,7 @@ function DriversTab() {
               </td>
               <td className="px-3 py-1 whitespace-nowrap text-center">
                 <input
+                  key={`driver-count-${driver.id}-${driver.card_count}`}
                   type="number"
                   min={0}
                   defaultValue={driver.card_count || 0}
@@ -401,6 +403,7 @@ function PartsTab() {
               </td>
               <td className="px-3 py-1 whitespace-nowrap text-center">
                 <input
+                  key={`part-level-${part.id}-${part.level}`}
                   type="number"
                   min={0}
                   max={LEVEL_RANGES[part.rarity as keyof typeof LEVEL_RANGES]?.max || 11}
@@ -420,6 +423,7 @@ function PartsTab() {
               </td>
               <td className="px-3 py-1 whitespace-nowrap text-center">
                 <input
+                  key={`part-count-${part.id}-${part.card_count}`}
                   type="number"
                   min={0}
                   defaultValue={part.card_count || 0}
@@ -522,6 +526,7 @@ function BoostsTab() {
               </td>
               <td className="px-3 py-1 whitespace-nowrap text-center">
                 <input
+                  key={`boost-count-${boost.id}-${boost.card_count}`}
                   type="number"
                   min={0}
                   defaultValue={boost.card_count || 0}
