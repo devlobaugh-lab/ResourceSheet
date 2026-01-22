@@ -298,7 +298,10 @@ export function useBoosts(filters?: {
         })
       }
 
-      const response = await fetch(`${API_BASE}/boosts?${params}`)
+      const response = await fetch(`${API_BASE}/boosts?${params}`, {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      })
 
       if (!response.ok) {
         throw new Error('Failed to fetch boosts')
@@ -306,7 +309,7 @@ export function useBoosts(filters?: {
 
       return response.json()
     },
-    staleTime: 60 * 1000,
+    staleTime: 60 * 1000, // 1 minute
   })
 }
 

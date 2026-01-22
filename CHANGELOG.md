@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Boost Stats Display Fix**: Fixed boost tier values to display correctly by updating DataGrid component to use proper property names (`overtake`, `block`, etc.) instead of `_tier` suffixes
 - **User Data Persistence**: Fixed parts page to retain user ownership data across page refreshes by correcting useMemo dependency array
 - **Complete Stats Data Import**: Fixed seeding script to properly import driver/car part stats from JSON files using correct property names (`driverStatsPerLevel`, `carPartStatsPerLevel`)
+- **Boost Custom Names Display Fix**: Fixed boost custom names not displaying due to missing `user_id` column in `boost_custom_names` database table. Temporarily modified `/api/boosts` GET route to fetch custom names globally (admin-set) until database migration can be applied. Custom names now display correctly on boosts and data input pages.
 
 ### Added
 - **Admin Tracks Page Complete Resolution**

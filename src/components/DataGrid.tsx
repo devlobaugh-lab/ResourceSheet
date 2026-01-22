@@ -93,7 +93,7 @@ interface DataGridProps {
   showCompareButton?: boolean;
   onAddToCompare?: (driver: DriverView) => void;
   gridType?: 'drivers' | 'parts' | 'boosts' | 'car-parts';
-  onBoostNameChange?: () => void;
+  onBoostNameChange?: (boostId: string, newName: string | null) => void;
   bonusPercentage?: number;
   bonusCheckedItems?: Set<string>;
   onBonusToggle?: (itemId: string) => void;
@@ -224,8 +224,10 @@ export function DataGrid({
 
     // If showHighestLevel is enabled, use the highest possible level instead of current level
     if (showHighestLevel && ('is_driver' in item && item.is_driver || 'is_car_part' in item && item.is_car_part)) {
-      const cardCount = 'is_driver' in item && item.is_driver ? (item as DriverView).card_count : (item as CarPartView).card_count;
-      const rarity = 'is_driver' in item && item.is_driver ? (item as DriverView).rarity : (item as CarPartView).rarity;
+      const isDriverItem = 'is_driver' in item && item.is_driver;
+      const isCarPartItem = 'is_car_part' in item && item.is_car_part;
+      const cardCount = isDriverItem ? (item as DriverView).card_count : isCarPartItem ? (item as CarPartView).card_count : 0;
+      const rarity = isDriverItem ? (item as DriverView).rarity : isCarPartItem ? (item as CarPartView).rarity : 0;
       const highestLevel = calculateHighestLevel(userLevel, cardCount || 0, rarity);
       userLevel = highestLevel;
     }
@@ -292,14 +294,20 @@ export function DataGrid({
           }
           break;
         case 'name':
-          // Special case for boost name sorting - use custom_name or numeric sort
+          // Special case for boost name sorting - use displayed name (custom_name || icon_name || name)
           if (gridType === 'boosts' && 'is_boost' in a && 'is_boost' in b && a.is_boost && b.is_boost) {
             const aBoost = a as BoostItem;
             const bBoost = b as BoostItem;
 
-            // Use custom_name if available, otherwise the regular name
-            const aName = aBoost.custom_name || aBoost.name;
-            const bName = bBoost.custom_name || bBoost.name;
+            // Use the same logic as display: custom_name || icon_name || name
+            const getDisplayedName = (boost: BoostItem): string => {
+              if (boost.custom_name) return boost.custom_name;
+              if (boost.icon) return boost.icon.replace('BoostIcon_', '');
+              return boost.name;
+            };
+
+            const aName = getDisplayedName(aBoost);
+            const bName = getDisplayedName(bBoost);
 
             // Extract number from boost name for numerical sorting
             const extractBoostNumber = (name: string): number => {
@@ -310,11 +318,18 @@ export function DataGrid({
             const numA = extractBoostNumber(aName);
             const numB = extractBoostNumber(bName);
 
-            // If both have numbers, sort numerically
-            if (numA > 0 || numB > 0) {
+            // Sort by number if both have numbers, otherwise alphabetical
+            if (numA > 0 && numB > 0) {
+              // Both have numbers - sort numerically
               comparison = numA - numB;
+            } else if (numA > 0 && numB === 0) {
+              // Only first has number - numbers come after letters
+              comparison = 1;
+            } else if (numA === 0 && numB > 0) {
+              // Only second has number - numbers come after letters
+              comparison = -1;
             } else {
-              // Fall back to alphabetical sorting
+              // Neither has numbers - sort alphabetically
               comparison = aName.localeCompare(bName);
             }
           } else {
@@ -329,10 +344,20 @@ export function DataGrid({
           }
           break;
         case 'rarity':
-          comparison = a.rarity - b.rarity;
+          // Boosts don't have rarity, so skip sorting for boosts
+          if ('is_boost' in a && 'is_boost' in b && a.is_boost && b.is_boost) {
+            comparison = 0; // No sorting for boosts by rarity
+          } else {
+            comparison = (a as DriverView | CarPartView).rarity - (b as DriverView | CarPartView).rarity;
+          }
           break;
         case 'series':
-          comparison = (a.series || 0) - (b.series || 0);
+          // Boosts don't have series, so skip sorting for boosts
+          if ('is_boost' in a && 'is_boost' in b && a.is_boost && b.is_boost) {
+            comparison = 0; // No sorting for boosts by series
+          } else {
+            comparison = ((a as DriverView | CarPartView).series || 0) - ((b as DriverView | CarPartView).series || 0);
+          }
           break;
         case 'user_level':
           // For drivers and parts, sort by level
@@ -847,7 +872,7 @@ export function DataGrid({
                 // If showHighestLevel is enabled, use the highest possible level instead of current level
                 if (showHighestLevel && (isDriver || isCarPart)) {
                   const cardCount = isDriver ? (catalogItem as DriverView).card_count : (catalogItem as CarPartView).card_count;
-                  const highestLevel = calculateHighestLevel(userLevel, cardCount || 0, catalogItem.rarity);
+                  const highestLevel = calculateHighestLevel(userLevel, cardCount || 0, (catalogItem as any).rarity);
                   userLevel = highestLevel;
                 }
 
@@ -897,7 +922,7 @@ export function DataGrid({
                   )}
                 >
                   {/* Name Column with rarity background (except for boosts) */}
-                  <td className={cn("px-3 py-1 whitespace-nowrap", gridType !== 'boosts' && getRarityBackground(catalogItem.rarity))}>
+                  <td className={cn("px-3 py-1 whitespace-nowrap", gridType !== 'boosts' && (isDriver || isCarPart) && getRarityBackground((catalogItem as any).rarity))}>
                     {gridType === 'boosts' ? (
                       <BoostNameEditor
                         boostId={catalogItem.id}
@@ -905,13 +930,8 @@ export function DataGrid({
                         icon={catalogItem.icon}
                         customName={(catalogItem as BoostItem).custom_name}
                         onNameChange={(newName) => {
-                          // Update the boost's custom_name in the local state
-                          if (isBoost) {
-                            const boostItem = item as BoostItem;
-                            boostItem.custom_name = newName;
-                            // Trigger refetch to update the UI
-                            onBoostNameChange?.();
-                          }
+                          // Trigger refetch to update the UI with the new name
+                          onBoostNameChange?.(catalogItem.id, newName);
                         }}
                       />
                     ) : (
@@ -933,10 +953,10 @@ export function DataGrid({
                   )}
 
                   {/* Rarity Column with background color */}
-                  {gridType !== 'boosts' && (
-                  <td className={cn("px-3 py-1 whitespace-nowrap", getRarityBackground(catalogItem.rarity))}>
+                  {gridType !== 'boosts' && (isDriver || isCarPart) && (
+                  <td className={cn("px-3 py-1 whitespace-nowrap", getRarityBackground(isDriver ? (catalogItem as DriverView).rarity : (catalogItem as CarPartView).rarity))}>
                     <div className="text-sm font-medium text-gray-900">
-                      {getRarityDisplay(catalogItem.rarity)}
+                      {getRarityDisplay(isDriver ? (catalogItem as DriverView).rarity : (catalogItem as CarPartView).rarity)}
                     </div>
                   </td>
                   )}
@@ -944,12 +964,12 @@ export function DataGrid({
                   {/* User Level Column for Drivers and Parts */}
                   {(gridType === 'drivers' || gridType === 'parts') && (
                     <td className="px-3 py-1 whitespace-nowrap text-center">
-                      <div className={`text-sm text-gray-900 ${showHighestLevel && (isDriver || isCarPart) && calculateHighestLevel(isDriver ? (item as DriverView).level : (item as CarPartView).level, isDriver ? (item as DriverView).card_count || 0 : (item as CarPartView).card_count || 0, catalogItem.rarity) > (isDriver ? (item as DriverView).level : (item as CarPartView).level) ? 'text-red-600' : ''}`}>
+                      <div className={`text-sm text-gray-900 ${showHighestLevel && (isDriver || isCarPart) && calculateHighestLevel(isDriver ? (item as DriverView).level : (item as CarPartView).level, isDriver ? (item as DriverView).card_count || 0 : (item as CarPartView).card_count || 0, (isDriver ? (item as DriverView) : (item as CarPartView)).rarity) > (isDriver ? (item as DriverView).level : (item as CarPartView).level) ? 'text-red-600' : ''}`}>
                         {showHighestLevel && (isDriver || isCarPart) ?
                           calculateHighestLevel(
                             isDriver ? (item as DriverView).level : (item as CarPartView).level,
                             isDriver ? (item as DriverView).card_count || 0 : (item as CarPartView).card_count || 0,
-                            catalogItem.rarity
+                            (isDriver ? (item as DriverView) : (item as CarPartView)).rarity
                           ) :
                           (isDriver ? (item as DriverView).level :
                            isCarPart ? (item as CarPartView).level : 0)}
@@ -1011,7 +1031,7 @@ export function DataGrid({
                         </div>
                       </td>
                       <td className="px-3 py-1 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">{catalogItem.series}</div>
+                        <div className="text-sm text-gray-900">{(isDriver ? (catalogItem as DriverView).series : isCarPart ? (catalogItem as CarPartView).series : 0)}</div>
                       </td>
                     </>
                   )}
@@ -1043,7 +1063,7 @@ export function DataGrid({
                         </div>
                       </td>
                       <td className="px-3 py-1 whitespace-nowrap text-center">
-                        <div className="text-sm text-gray-900">{catalogItem.series}</div>
+                        <div className="text-sm text-gray-900">{(isDriver ? (catalogItem as DriverView).series : isCarPart ? (catalogItem as CarPartView).series : 0)}</div>
                       </td>
                     </>
                   )}

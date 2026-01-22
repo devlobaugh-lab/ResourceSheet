@@ -159,11 +159,11 @@ function AuthenticatedSetupsPage() {
       return
     }
 
-    // Check for duplicate names
+    // Check for duplicate names (but allow same name when editing the same setup)
     const existingSetup = setupsResponse?.data?.find(
       setup => setup.name.toLowerCase() === setupName.trim().toLowerCase()
     )
-    if (existingSetup) {
+    if (existingSetup && editingSetup !== existingSetup.id) {
       alert('A setup with this name already exists. Please choose a different name.')
       return
     }
@@ -176,23 +176,54 @@ function AuthenticatedSetupsPage() {
     }
 
     try {
-      await createSetup.mutateAsync({
-        name: setupName.trim(),
-        notes: setupNotes.trim() || null,
-        brake_id: selectedParts.brake || null,
-        gearbox_id: selectedParts.gearbox || null,
-        rear_wing_id: selectedParts.rear_wing || null,
-        front_wing_id: selectedParts.front_wing || null,
-        suspension_id: selectedParts.suspension || null,
-        engine_id: selectedParts.engine || null,
-        series_filter: seriesFilter,
-        bonus_percentage: parseFloat(bonusPercentage) || 0
-      })
+      if (editingSetup) {
+        // Update existing setup
+        await updateSetup.mutateAsync({
+          id: editingSetup,
+          data: {
+            name: setupName.trim(),
+            notes: setupNotes.trim() || null,
+            brake_id: selectedParts.brake || null,
+            gearbox_id: selectedParts.gearbox || null,
+            rear_wing_id: selectedParts.rear_wing || null,
+            front_wing_id: selectedParts.front_wing || null,
+            suspension_id: selectedParts.suspension || null,
+            engine_id: selectedParts.engine || null,
+            series_filter: seriesFilter,
+            bonus_percentage: parseFloat(bonusPercentage) || 0
+          }
+        })
+        alert('Setup updated successfully!')
+      } else {
+        // Create new setup
+        await createSetup.mutateAsync({
+          name: setupName.trim(),
+          notes: setupNotes.trim() || null,
+          brake_id: selectedParts.brake || null,
+          gearbox_id: selectedParts.gearbox || null,
+          rear_wing_id: selectedParts.rear_wing || null,
+          front_wing_id: selectedParts.front_wing || null,
+          suspension_id: selectedParts.suspension || null,
+          engine_id: selectedParts.engine || null,
+          series_filter: seriesFilter,
+          bonus_percentage: parseFloat(bonusPercentage) || 0
+        })
+        alert('Setup saved successfully!')
+      }
 
-      // Reset form
+      // Reset form and editing state
       setSetupName('')
       setSetupNotes('')
-      alert('Setup saved successfully!')
+      setEditingSetup(null)
+      setSelectedParts({
+        brake: '',
+        gearbox: '',
+        rear_wing: '',
+        front_wing: '',
+        suspension: '',
+        engine: ''
+      })
+      setBonusParts(new Set())
     } catch (error) {
       console.error('Failed to save setup:', error)
       alert('Failed to save setup')
@@ -201,6 +232,7 @@ function AuthenticatedSetupsPage() {
 
   // Handle load setup
   const handleLoadSetup = (setup: any) => {
+    setEditingSetup(setup.id) // Set editing mode
     setSetupName(setup.name || '')
     setSetupNotes(setup.notes || '')
     setSelectedParts({
@@ -300,7 +332,7 @@ function AuthenticatedSetupsPage() {
         {/* Left Side: Setup Creator and Saved Setups */}
         <div className="space-y-6">
           <Card className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Create Setup</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">{editingSetup ? 'Edit Setup' : 'Create Setup'}</h2>
 
             {/* Setup Name */}
             <div className="mb-4">
@@ -366,14 +398,39 @@ function AuthenticatedSetupsPage() {
               ))}
             </div>
 
-            {/* Save Button */}
-            <Button
-              onClick={handleSaveSetup}
-              disabled={createSetup.isPending}
-              className="w-full"
-            >
-              {createSetup.isPending ? 'Saving...' : 'Save Setup'}
-            </Button>
+            {/* Action Buttons */}
+            <div className="flex space-x-2">
+              <Button
+                onClick={handleSaveSetup}
+                disabled={createSetup.isPending || updateSetup.isPending}
+                className="flex-1"
+              >
+                {(createSetup.isPending || updateSetup.isPending) ? 'Saving...' : editingSetup ? 'Update Setup' : 'Save Setup'}
+              </Button>
+
+              {editingSetup && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditingSetup(null)
+                    setSetupName('')
+                    setSetupNotes('')
+                    setSelectedParts({
+                      brake: '',
+                      gearbox: '',
+                      rear_wing: '',
+                      front_wing: '',
+                      suspension: '',
+                      engine: ''
+                    })
+                    setBonusParts(new Set())
+                  }}
+                  className="px-4"
+                >
+                  New Setup
+                </Button>
+              )}
+            </div>
           </Card>
 
           {/* Saved Setups */}
