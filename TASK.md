@@ -15,7 +15,81 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - Import/Export: Collection data and custom boost names management
 - Sticky Headers: Enhanced UX for long data tables
 
-## COMPLETED TASKS
+## ACTIVE TASKS
+
+### Setups page
+
+- [ ] Would like to re-work Car setup interface. Maybe have the user click a part card and have it bring up a modal with available options instead of a separate form for data entry. Main card would be on left then, and could have an edit icon or an add new icon and then saved setups would be on right side. Another idea is that we may be able to load 2 setups side by side for compare.
+- [ ] Would like to add a feature to suggest a setup for a user. They input max series and style of setup (Speed, Speed + Quali, Corner + Quali, PU, PU + Quali, Balanced, other )  App would look at parts and suggest a setup that meets criteria
+- [ ] Would like to have a suggested driver location too, for different GPs
+
+### Track guides
+
+- [ ] We will have a list of tracks with basic attributes (Track stats, # laps)
+- [ ] User can create basic setups, suggested drivers, and boosts for the track at different GP Levels
+- [ ] Can have a track rotation area to adjust strategy for current rotation
+- [x] **TODO: Clean up boost schema** - Boosts currently have rarity/series/level fields in schema but may only need name/icon for identification
+
+### GP Guide
+
+- [ ] User can setup a GP with data and by choosing tracks that will be involved. 
+- [ ] will show Bonus, and boosted drivers and parts
+- [ ] User can then take the basic setups for the tracks and adjust accordingly (app will highlight boosted #s and will show if RP bonus is not achieved)
+- [ ] User can create a "one sheet" guide for a GP once they have tweaked each track's strategy
+- [ ] User can input notes about performance (Quali position, PvP or bot, PVP boosts used, final result, other notes like safety car, etc.)
+- [ ] Have way for user to update their main track guides based on what they learned from a GP
+
+### Add User Notes and Guidance
+
+- [x] User can create and save Car setups for different scenarios with name and notes
+- [x] **Car Setups Feature - COMPLETE IMPLEMENTATION**
+  - [x] Created dedicated `/setups` page with 2-column layout (creator left, display right)
+  - [x] Implemented 6-part setup creator with brake, gearbox, rear wing, front wing, suspension, engine
+  - [x] Added real-time stat calculation with live updates as parts are selected
+  - [x] Integrated series filtering (1-12 max series) restricting available parts
+  - [x] Added individual bonus checkboxes and global bonus percentage input
+  - [x] Implemented bonus logic: pit stop time decreases (better), other stats increase with Math.ceil rounding
+  - [x] Created save/load/delete functionality with custom setup names and validation
+  - [x] Added setup management interface showing saved setups with notes truncated to 128 characters
+  - [x] Built comprehensive database schema with user_car_setups table and RLS policies
+  - [x] Created complete REST API (/api/setups, /api/setups/[id]) with authentication and validation
+  - [x] Added "Setups" link to main navigation menu (desktop and mobile)
+  - [x] Implemented responsive design with proper mobile stacking
+  - [x] Added professional UI with rarity-colored part cards and compact 3x4 stats grid
+  - [x] Included authentication requirements with Card-based login prompts
+  - [x] Added TypeScript safety throughout with proper interfaces and validation
+  - [x] Implemented duplicate name prevention and comprehensive error handling
+- [ ] User can create and save Full setups including parts, drivers and boosts with name and notes
+- [ ] List tracks and allow for recommended setups for each track at different GP Levels
+- [ ] List GPs and allow user to build recommended setup for each track at different GP Levels
+  - [ ] User can create a GP with name, tracks/races and special considerations
+
+### Admin Interface Development
+
+- [x] Implement data import/export functionality
+- [ ] Create content management tools
+- [ ] Build user management interface
+- [ ] Add bulk editing capabilities
+
+
+### Deployment Preparation
+
+- [ ] Create deployment checklist
+- [ ] Set up production environment
+- [ ] Configure CI/CD pipeline
+- [ ] Implement monitoring and logging
+- [ ] Prepare rollback plan
+
+### Code Review
+
+- [ ] Establish code review checklist and standards
+- [ ] Set up automated code quality checks
+- [ ] Create review process documentation
+- [ ] Implement pre-commit hooks for basic validation
+- [ ] Add performance review guidelines
+- [ ] Establish security review requirements
+
+## ARCHIVED TASKS
 
 ### User Data Input Interface
 
@@ -45,7 +119,6 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [x] **UI Cleanup** - Removed old UUID-based buttons, focused on stable backup system
 - [x] **Data Validation** - Fixed export to conditionally include optional fields, preventing null value errors
 - [x] **File Download** - Fixed frontend to properly download JSON files with correct filenames
-
 
 ### Misc QOL Changes
 
@@ -117,60 +190,6 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [x] **Enhanced logging** - Added detailed progress reporting and Special Edition driver breakdown
 - [x] **Created scripts/direct_seed_improved.js** - New seeding script with better performance and correct rarity mapping
 
-### Setups page
-
-- [ ] Would like to re-work Car setup interface. Maybe have the user click a part card and have it bring up a modal with available options instead of a separate form for data entry. Main card would be on left then, and could have an edit icon or an add new icon and then saved setups would be on right side. Another idea is that we may be able to load 2 setups side by side for compare.
-- [ ] Would like to add a feature to suggest a setup for a user. They input max series and style of setup (Speed, Speed + Quali, Corner + Quali, PU, PU + Quali, Balanced, other )  App would look at parts and suggest a setup that meets criteria
-- [ ] Would like to have a suggested driver location too, for different GPs
-
-### Track guides
-
-- [ ] We will have a list of tracks with basic attributes (Track stats, # laps)
-- [ ] User can create basic setups, suggested drivers, and boosts for the track at different GP Levels
-- [ ] Can have a track rotation area to adjust strategy for current rotation
-- [ ] **TODO: Clean up boost schema** - Boosts currently have rarity/series/level fields in schema but may only need name/icon for identification
-
-### GP Guide
-
-- [ ] User can setup a GP with data and by choosing tracks that will be involved. 
-- [ ] will show Bonus, and boosted drivers and parts
-- [ ] User can then take the basic setups for the tracks and adjust accordingly (app will highlight boosted #s and will show if RP bonus is not achieved)
-- [ ] User can create a "one sheet" guide for a GP once they have tweaked each track's strategy
-- [ ] User can input notes about performance (Quali position, PvP or bot, PVP boosts used, final result, other notes like safety car, etc.)
-- [ ] Have way for user to update their main track guides based on what they learned from a GP
-
-### Add User Notes and Guidance
-
-- [x] User can create and save Car setups for different scenarios with name and notes
-- [x] **Car Setups Feature - COMPLETE IMPLEMENTATION**
-  - [x] Created dedicated `/setups` page with 2-column layout (creator left, display right)
-  - [x] Implemented 6-part setup creator with brake, gearbox, rear wing, front wing, suspension, engine
-  - [x] Added real-time stat calculation with live updates as parts are selected
-  - [x] Integrated series filtering (1-12 max series) restricting available parts
-  - [x] Added individual bonus checkboxes and global bonus percentage input
-  - [x] Implemented bonus logic: pit stop time decreases (better), other stats increase with Math.ceil rounding
-  - [x] Created save/load/delete functionality with custom setup names and validation
-  - [x] Added setup management interface showing saved setups with notes truncated to 128 characters
-  - [x] Built comprehensive database schema with user_car_setups table and RLS policies
-  - [x] Created complete REST API (/api/setups, /api/setups/[id]) with authentication and validation
-  - [x] Added "Setups" link to main navigation menu (desktop and mobile)
-  - [x] Implemented responsive design with proper mobile stacking
-  - [x] Added professional UI with rarity-colored part cards and compact 3x4 stats grid
-  - [x] Included authentication requirements with Card-based login prompts
-  - [x] Added TypeScript safety throughout with proper interfaces and validation
-  - [x] Implemented duplicate name prevention and comprehensive error handling
-- [ ] User can create and save Full setups including parts, drivers and boosts with name and notes
-- [ ] List tracks and allow for recommended setups for each track at different GP Levels
-- [ ] List GPs and allow user to build recommended setup for each track at different GP Levels
-  - [ ] User can create a GP with name, tracks/races and special considerations
-
-### Admin Interface Development
-
-- [x] Implement data import/export functionality
-- [ ] Create content management tools
-- [ ] Build user management interface
-- [ ] Add bulk editing capabilities
-
 ### Compare Page Development
 
 - [x] **Driver Compare Page - Complete Implementation**
@@ -213,25 +232,6 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
   - [x] Updated label column styling with dark gray backgrounds
   - [x] Made Name text bold in driver name row
   - [x] Updated CHANGELOG.md with comprehensive driver compare page documentation
-
-### Deployment Preparation
-
-- [ ] Create deployment checklist
-- [ ] Set up production environment
-- [ ] Configure CI/CD pipeline
-- [ ] Implement monitoring and logging
-- [ ] Prepare rollback plan
-
-### Code Review
-
-- [ ] Establish code review checklist and standards
-- [ ] Set up automated code quality checks
-- [ ] Create review process documentation
-- [ ] Implement pre-commit hooks for basic validation
-- [ ] Add performance review guidelines
-- [ ] Establish security review requirements
-
-## ARCHIVED TASKS
 
 ### Major Refactoring: Separate Asset Types into Distinct Tables
 
