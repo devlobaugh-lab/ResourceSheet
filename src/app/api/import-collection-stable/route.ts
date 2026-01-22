@@ -43,6 +43,15 @@ const stableImportDataSchema = z.object({
     series_filter: z.number(),
     bonus_percentage: z.number(),
     created_at: z.string().optional()
+  })).optional(),
+  tracks: z.array(z.object({
+    name: z.string(),
+    alt_name: z.string().nullable().optional(),
+    laps: z.number(),
+    driver_track_stat: z.string(),
+    car_track_stat: z.string(),
+    season_id: z.string(),
+    created_at: z.string().optional()
   })).optional()
 })
 
@@ -122,7 +131,10 @@ export async function POST(request: NextRequest) {
       hasBoosts: !!validatedData.boosts,
       boostsCount: validatedData.boosts?.length || 0,
       hasSetups: !!validatedData.setups,
-      setupsCount: validatedData.setups?.length || 0
+      setupsCount: validatedData.setups?.length || 0,
+      hasTracks: !!validatedData.tracks,
+      tracksCount: validatedData.tracks?.length || 0,
+      note: 'Tracks are included in backup for reference but not imported (global data)'
     })
 
     // Import results tracking
@@ -131,13 +143,15 @@ export async function POST(request: NextRequest) {
         drivers: 0,
         carParts: 0,
         boosts: 0,
-        setups: 0
+        setups: 0,
+        tracks: 0
       },
       skipped: {
         drivers: 0,
         carParts: 0,
         boosts: 0,
-        setups: 0
+        setups: 0,
+        tracks: 0
       },
       errors: [] as string[]
     }
@@ -466,13 +480,71 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Process track imports (global data - only for admins or if tracks are missing)
+    if (validatedData.tracks) {
+      console.log(`Processing ${validatedData.tracks.length} track imports`)
+
+      // Check if user is admin
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single()
+
+      const isAdmin = profile?.is_admin || false
+
+      if (!isAdmin) {
+        console.log('Skipping track import - user is not admin')
+        importResults.errors.push('Tracks were included in backup but require admin privileges to restore')
+      } else {
+        // For each track in the backup, check if it exists and insert if missing
+        let importedTracks = 0
+        for (const track of validatedData.tracks) {
+          // Check if track already exists by name
+          const { data: existingTrack } = await supabaseAdmin
+            .from('tracks')
+            .select('id')
+            .eq('name', track.name)
+            .single()
+
+          if (!existingTrack) {
+            // Track doesn't exist, insert it
+            const trackToInsert = {
+              name: track.name,
+              alt_name: track.alt_name,
+              laps: track.laps,
+              driver_track_stat: track.driver_track_stat,
+              car_track_stat: track.car_track_stat,
+              season_id: track.season_id,
+              created_at: track.created_at ? new Date(track.created_at).toISOString() : new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+
+            const { error: insertError } = await supabaseAdmin
+              .from('tracks')
+              .insert(trackToInsert)
+
+            if (insertError) {
+              console.error('Insert track error:', insertError)
+              importResults.errors.push(`Failed to import track "${track.name}": ${insertError.message}`)
+            } else {
+              importedTracks++
+            }
+          }
+        }
+
+        console.log(`Imported ${importedTracks} tracks`)
+        importResults.imported.tracks = importedTracks
+      }
+    }
+
     // Return comprehensive import results
     return NextResponse.json({
       message: 'Stable collection imported successfully',
       results: importResults,
       summary: {
-        imported: importResults.imported.drivers + importResults.imported.carParts + importResults.imported.boosts + importResults.imported.setups,
-        skipped: importResults.skipped.drivers + importResults.skipped.carParts + importResults.skipped.boosts + importResults.skipped.setups,
+        imported: importResults.imported.drivers + importResults.imported.carParts + importResults.imported.boosts + importResults.imported.setups + importResults.imported.tracks,
+        skipped: importResults.skipped.drivers + importResults.skipped.carParts + importResults.skipped.boosts + importResults.skipped.setups + importResults.skipped.tracks,
         errors: importResults.errors.length
       }
     })

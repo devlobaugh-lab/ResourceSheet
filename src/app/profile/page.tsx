@@ -107,6 +107,8 @@ export default function ProfilePage() {
 
       // Invalidate all queries to refresh the UI with new data
       queryClient.invalidateQueries();
+      // Also invalidate tracks query in case tracks were restored
+      queryClient.invalidateQueries({ queryKey: ['tracks'] });
 
       toast.addToast('Collection imported successfully', 'success');
     } catch (error) {

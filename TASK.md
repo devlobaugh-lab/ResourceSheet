@@ -136,6 +136,7 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [x] **Data Input Cache Invalidation Fix**: Fixed issue where restoring collection didn't immediately update data input page display. Added dynamic `key` props to input fields that change when data values change, forcing input remounting with correct default values. This ensures UI updates immediately after import operations instead of requiring page navigation.
 - [x] **Backup Export Logic Fix**: Fixed backup export to include items where level > 0 OR card_count > 0, not just card_count > 0. This ensures that maxed-out items (level 11, card_count 0) are properly included in backups and restored correctly.
 - [x] **Saved Setups Backup/Restore**: Added support for backing up and restoring user-created car setups. Setups are now included in the stable backup format and restored during import operations, preserving all setup configurations and metadata.
+- [x] **Track Information in Backups**: Added global track data to backup files. Tracks are included in exports and can be restored by admin users during import operations, ensuring complete data preservation.
 - [x] Move Setups nav item to after Data Input
 - [x] Compare page. Driver drop down list should only show 1 of each driver. Rarity of the driver is determined by the rarity field.
 - [x] Driver Compare Integration Fix - Fixed regression where clicking + button on Drivers page to add driver to compare didn't work. Updated handleAddToCompare function to use new data structure with driverName instead of id.

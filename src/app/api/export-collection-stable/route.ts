@@ -164,6 +164,30 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Get all tracks (global data)
+    const { data: tracks, error: tracksError } = await supabaseAdmin
+      .from('tracks')
+      .select(`
+        id,
+        name,
+        alt_name,
+        laps,
+        driver_track_stat,
+        car_track_stat,
+        season_id,
+        created_at,
+        updated_at
+      `)
+      .order('name')
+
+    if (tracksError) {
+      console.error('Error fetching tracks:', tracksError)
+      return NextResponse.json(
+        { error: { code: 'DATABASE_ERROR', message: 'Failed to fetch tracks' } },
+        { status: 500 }
+      )
+    }
+
     // Transform data to use stable identifiers instead of UUIDs
     const stableExportData = {
       exportedAt: new Date().toISOString(),
@@ -229,6 +253,15 @@ export async function GET(request: NextRequest) {
         series_filter: setup.series_filter,
         bonus_percentage: setup.bonus_percentage,
         created_at: setup.created_at
+      })),
+      tracks: (tracks || []).map((track: any) => ({
+        name: track.name,
+        alt_name: track.alt_name,
+        laps: track.laps,
+        driver_track_stat: track.driver_track_stat,
+        car_track_stat: track.car_track_stat,
+        season_id: track.season_id,
+        created_at: track.created_at
       }))
     }
 
@@ -236,7 +269,8 @@ export async function GET(request: NextRequest) {
       driversCount: stableExportData.drivers.length,
       carPartsCount: stableExportData.carParts.length,
       boostsCount: stableExportData.boosts.length,
-      setupsCount: stableExportData.setups.length
+      setupsCount: stableExportData.setups.length,
+      tracksCount: stableExportData.tracks.length
     })
 
     // Return as JSON file download
