@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Series Filter Persistence**: Added localStorage persistence for Max Series filter on drivers and parts pages - remembers filter state when user leaves and returns to page
+- **Driver Compare Duplicate Handling**: Fixed logic to allow adding duplicate drivers to compare if they have different rarities - prevents adding same driver name + rarity combination
+- **Stats Mismatch Fix**: Enhanced DriverCompareGrid to use both catalog and user driver data sources for accurate stats calculation and display
 - **Parts Page User Data Sync**: Fixed parts page to show user ownership data (levels/card counts) by merging catalog and user data instead of showing only catalog data
 - **Boost Display Icon Fallback**: Updated boost names to fall back to icon names (GP_China, etc.) instead of boost names for better readability
 - **Boost Stats Display Fix**: Fixed boost tier values to display correctly by updating DataGrid component to use proper property names (`overtake`, `block`, etc.) instead of `_tier` suffixes

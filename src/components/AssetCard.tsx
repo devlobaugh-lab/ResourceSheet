@@ -230,9 +230,7 @@ export function AssetCard({
       {boost && (
         <div className="mt-4 pt-4 border-t border-gray-100">
           <div className="text-xs text-gray-500 space-y-1">
-            <div><strong>Boost Type:</strong> {boost.boost_type}</div>
-            {boost.series && <div><strong>Series:</strong> {boost.series}</div>}
-            <div><strong>Rarity:</strong> {getRarityDisplay(boost.rarity)}</div>
+            <div><strong>Boost Stats:</strong> {Object.keys(boost.boost_stats || {}).length} categories</div>
           </div>
         </div>
       )}

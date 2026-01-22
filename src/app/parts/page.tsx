@@ -75,7 +75,7 @@ function AuthenticatedPartsPage() {
   const error = carPartsError || userCarPartsError
 
   // Merge catalog car parts with user ownership data
-  const mergedCarParts = (carPartsResponse?.data || []).map((carPart: any) => {
+  const mergedCarParts: CarPartView[] = (carPartsResponse?.data || []).map((carPart: any) => {
     // Find user's ownership data for this car part
     const userData = (userCarPartsResponse?.data || []).find((userCarPart: any) => userCarPart.id === carPart.id);
 
@@ -88,7 +88,16 @@ function AuthenticatedPartsPage() {
   })
 
   const [searchTerm, setSearchTerm] = useState('')
-  const [maxSeries, setMaxSeries] = useState(12)
+  const [maxSeries, setMaxSeries] = useState(() => {
+    // Initialize from localStorage
+    try {
+      const stored = localStorage.getItem('parts-max-series')
+      return stored ? parseInt(stored, 10) : 12
+    } catch (error) {
+      console.warn('Failed to load max series from localStorage:', error)
+      return 12
+    }
+  })
   const [bonusPercentage, setBonusPercentage] = useState('')
   const [bonusCheckedItems, setBonusCheckedItems] = useState<Set<string>>(() => {
     // Initialize from localStorage
@@ -157,6 +166,14 @@ function AuthenticatedPartsPage() {
       console.warn('Failed to save show highest level to localStorage:', error)
     }
   }, [showHighestLevel])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('parts-max-series', maxSeries.toString())
+    } catch (error) {
+      console.warn('Failed to save max series to localStorage:', error)
+    }
+  }, [maxSeries])
 
   // Handle bonus checkbox changes
   const handleBonusToggle = (itemId: string) => {

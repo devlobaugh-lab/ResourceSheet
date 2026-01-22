@@ -62,11 +62,12 @@ export async function GET(request: NextRequest) {
     const filters = Object.fromEntries(searchParams.entries())
     const validatedFilters = driversFiltersSchema.parse(filters)
 
-    // Get all drivers
+    // Get all drivers (ensure no duplicates by name/rarity)
     let driversQuery = supabaseAdmin
       .from('drivers')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('name', { ascending: true })
+      .order('rarity', { ascending: false }) // Higher rarity first for duplicate removal
 
     // Apply filters
     if (validatedFilters.season_id) {
@@ -131,14 +132,14 @@ export async function GET(request: NextRequest) {
     // Apply owned_only filter if specified
     let filteredData = mergedData
     if (validatedFilters.owned_only) {
-      filteredData = mergedData.filter(driver => driver.is_owned)
+      filteredData = mergedData.filter((driver: typeof mergedData[0]) => driver.is_owned)
     }
 
     // Apply sorting
     const sortBy = validatedFilters.sort_by || 'name'
     const sortOrder = validatedFilters.sort_order || 'asc'
 
-    filteredData.sort((a, b) => {
+    filteredData.sort((a: typeof filteredData[0], b: typeof filteredData[0]) => {
       let comparison = 0
 
       switch (sortBy) {

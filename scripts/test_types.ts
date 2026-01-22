@@ -53,8 +53,6 @@ function testTypes() {
     id: 'boost-1',
     name: 'Test Boost',
     icon: 'boost-icon.png',
-    boost_type: 'standard',
-    rarity: 4,
     boost_stats: {
       overtake_tier: 5,
       block_tier: 4,
@@ -67,8 +65,6 @@ function testTypes() {
       race_start_tier: 4,
       drs_tier: 5
     },
-    series: 1,
-    season_id: 'season-1',
     created_at: '2023-01-01T00:00:00Z',
     updated_at: '2023-01-01T00:00:00Z'
   };
@@ -99,6 +95,7 @@ function testTypes() {
   const testBoostView: BoostView = {
     ...testBoost,
     level: 2,
+    count: 3,
     is_owned: true
   };
 

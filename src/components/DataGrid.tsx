@@ -927,7 +927,7 @@ export function DataGrid({
                       <BoostNameEditor
                         boostId={catalogItem.id}
                         currentName={catalogItem.name}
-                        icon={catalogItem.icon}
+                        icon={catalogItem.icon || undefined}
                         customName={(catalogItem as BoostItem).custom_name}
                         onNameChange={(newName) => {
                           // Trigger refetch to update the UI with the new name
