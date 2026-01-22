@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('user_id', user.id)
-      .gt('card_count', 0) // Only export items the user actually owns
+      .or('level.gt.0,card_count.gt.0') // Export items the user owns (leveled up or has cards)
 
     if (driversError) {
       console.error('Error fetching user drivers:', driversError)
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('user_id', user.id)
-      .gt('card_count', 0) // Only export items the user actually owns
+      .or('level.gt.0,card_count.gt.0') // Export items the user owns (leveled up or has cards)
 
     if (carPartsError) {
       console.error('Error fetching user car parts:', carPartsError)
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('user_id', user.id)
-      .gt('count', 0) // Only export items the user actually owns
+      .gt('count', 0) // Only export items the user actually owns (boosts don't have level, only count)
 
     if (boostsError) {
       console.error('Error fetching user boosts:', boostsError)
