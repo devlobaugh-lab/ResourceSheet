@@ -10,13 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Series Filter Persistence**: Added localStorage persistence for Max Series filter on drivers and parts pages - remembers filter state when user leaves and returns to page
 - **Driver Compare Duplicate Handling**: Fixed logic to allow adding duplicate drivers to compare if they have different rarities - prevents adding same driver name + rarity combination
-- **Stats Mismatch Fix**: Enhanced DriverCompareGrid to use both catalog and user driver data sources for accurate stats calculation and display
+- **Stats Mismatch Fix**: Enhanced DriverCompareGrid to use same data source as drivers page (useUserDrivers) for consistent stats calculation and display
 - **Parts Page User Data Sync**: Fixed parts page to show user ownership data (levels/card counts) by merging catalog and user data instead of showing only catalog data
 - **Boost Display Icon Fallback**: Updated boost names to fall back to icon names (GP_China, etc.) instead of boost names for better readability
 - **Boost Stats Display Fix**: Fixed boost tier values to display correctly by updating DataGrid component to use proper property names (`overtake`, `block`, etc.) instead of `_tier` suffixes
 - **User Data Persistence**: Fixed parts page to retain user ownership data across page refreshes by correcting useMemo dependency array
 - **Complete Stats Data Import**: Fixed seeding script to properly import driver/car part stats from JSON files using correct property names (`driverStatsPerLevel`, `carPartStatsPerLevel`)
 - **Boost Custom Names Display Fix**: Fixed boost custom names not displaying due to missing `user_id` column in `boost_custom_names` database table. Temporarily modified `/api/boosts` GET route to fetch custom names globally (admin-set) until database migration can be applied. Custom names now display correctly on boosts and data input pages.
+
+### Added
+- **Special Edition Drivers Fix - Complete Implementation**
+  - **Turbo SE Rarity Mapping**: Created improved seeding script (`scripts/direct_seed_improved.js`) that maps Special Edition Turbo drivers (SUBTITLE_2) to rarity 6
+  - **Chunked Loading**: Implemented batch processing for large JSON files (97 drivers × 7 levels = 679 stat objects) to prevent memory issues and timeouts
+  - **Enhanced Logging**: Added detailed progress reporting showing Special Edition driver breakdown (7 Standard SE → rarity 5, 7 Turbo SE → rarity 6)
+  - **JSON Structure Analysis**: Verified season_6.drivers.json contains both driver types distinguished by collectionSubName ending with SUBTITLE_1 (Standard) or SUBTITLE_2 (Turbo)
+  - **Improved Performance**: ProcessInChunks utility function for efficient database insertions with proper error handling and progress tracking
+  - **Data Validation**: Confirmed database schema supports rarity 6 (no constraints) and Turbo SE drivers are correctly identified and mapped
+  - **Updated Rarity Labels**: Modified `getRarityDisplay` function in DataGrid component to show "SE Standard" for rarity 5 and "SE Turbo" for rarity 6
+  - **Driver Compare Page Support**: Updated DriverCompareGrid component to support both SE Standard and SE Turbo rarities with proper dropdown options and max level handling
+  - **SE Turbo Color**: Added distinct rose color (`bg-rose-400`) for SE Turbo rarity to differentiate from SE Standard red
+  - **Rare Color Update**: Changed Rare rarity color from `bg-orange-200` to `bg-orange-300` for better visibility
+  - **Level 0 Stats Fix**: Fixed driver compare page to show level 1 stats for level 0 drivers instead of zeros for better comparison
 
 ### Added
 - **Admin Tracks Page Complete Resolution**
