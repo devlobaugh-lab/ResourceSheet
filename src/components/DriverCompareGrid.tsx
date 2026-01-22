@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { DriverView } from '@/types/database'
-import { useDrivers } from '@/hooks/useApi'
+import { useDrivers, useUserDrivers } from '@/hooks/useApi'
 import { cn, calculateHighestLevel } from '@/lib/utils'
 
 // Helper function to get stat background color based on value position in range
@@ -46,12 +46,12 @@ interface DriverCompareGridProps {
 }
 
 export function DriverCompareGrid({ className }: DriverCompareGridProps) {
-  const { data: driversResponse } = useDrivers({
+  const { data: userDriversResponse } = useUserDrivers({
     page: 1,
-    limit: 1000 // Get all drivers for dropdown
+    limit: 1000 // Get all drivers for dropdown and stats
   })
 
-  const allDrivers = driversResponse?.data || []
+  const allDrivers = userDriversResponse?.data || []
 
   // State for the compare grid
   const [compareDrivers, setCompareDrivers] = useState<CompareDriver[]>(() => {
@@ -71,7 +71,8 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
     // Load bonus percentage from localStorage
     try {
       const stored = localStorage.getItem('compare-drivers-bonus-percentage')
-      return stored ? parseFloat(stored) : 0
+      const parsed = stored ? parseFloat(stored) : 0
+      return isNaN(parsed) ? 0 : parsed
     } catch (error) {
       console.warn('Failed to load bonus percentage from localStorage:', error)
       return 0
@@ -97,7 +98,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
 
   // Helper function to get driver by name and rarity
   const getDriverByNameAndRarity = useCallback((driverName: string, rarity: number): DriverView | undefined => {
-    return allDrivers.find(driver => driver.name === driverName && driver.rarity === rarity)
+    return allDrivers.find((driver: DriverView) => driver.name === driverName && driver.rarity === rarity)
   }, [allDrivers])
 
   // Filter to unique drivers by name (highest rarity), then sort by last name
@@ -260,8 +261,8 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
 
   // Handle driver selection change
   const handleDriverChange = (index: number, driverName: string) => {
-    // Just set the driver name, keep the current rarity
-    updateDriver(index, { driverName })
+    // When selecting from dropdown, set rarity to Common (1) by default
+    updateDriver(index, { driverName, rarity: 1 })
   }
 
   // Handle rarity change with level adjustment
@@ -299,14 +300,32 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
             id="bonusPercentage"
             type="text"
             className="rounded-lg border-gray-300 text-sm px-2 py-2 w-12"
-            value={bonusPercentage}
-            onChange={(e) => setBonusPercentage(parseFloat(e.target.value) || 0)}
+            value={bonusPercentage || ''}
+            onChange={(e) => {
+              const value = e.target.value.trim();
+              setBonusPercentage(value === '' ? 0 : parseFloat(value) || 0);
+            }}
             placeholder="0"
           />
         </div>
-        <Button variant="primary" onClick={addDriver}>
-          Add Driver
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Button variant="primary" onClick={addDriver}>
+            Add Driver
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setCompareDrivers([])
+              setBonusPercentage(0)
+              localStorage.removeItem(COMPARE_DRIVERS_KEY)
+              localStorage.removeItem('compare-drivers-bonus-percentage')
+            }}
+            className="text-gray-600"
+          >
+            Reset All
+          </Button>
+        </div>
       </div>
 
       {/* Comparison Grid */}

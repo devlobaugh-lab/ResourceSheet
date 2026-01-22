@@ -544,6 +544,7 @@ export function useUpdateSetup() {
       id: string
       data: Partial<{
         name: string
+        notes: string | null
         brake_id: string | null
         gearbox_id: string | null
         rear_wing_id: string | null

@@ -21,7 +21,16 @@ function AuthenticatedDriversPage() {
   const { addToast } = useToast()
 
   const [searchTerm, setSearchTerm] = useState('')
-  const [maxSeries, setMaxSeries] = useState(12)
+  const [maxSeries, setMaxSeries] = useState(() => {
+    // Initialize from localStorage
+    try {
+      const stored = localStorage.getItem('drivers-max-series')
+      return stored ? parseInt(stored, 10) : 12
+    } catch (error) {
+      console.warn('Failed to load max series from localStorage:', error)
+      return 12
+    }
+  })
   const [bonusPercentage, setBonusPercentage] = useState('')
   const [bonusCheckedItems, setBonusCheckedItems] = useState<Set<string>>(() => {
     // Initialize from localStorage
@@ -93,6 +102,14 @@ function AuthenticatedDriversPage() {
     }
   }, [showHighestLevel])
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('drivers-max-series', maxSeries.toString())
+    } catch (error) {
+      console.warn('Failed to save max series to localStorage:', error)
+    }
+  }, [maxSeries])
+
   // Handle bonus checkbox changes
   const handleBonusToggle = (itemId: string) => {
     setBonusCheckedItems(prev => {
@@ -113,9 +130,10 @@ function AuthenticatedDriversPage() {
       const stored = localStorage.getItem('compare-drivers-settings')
       const existingDrivers: any[] = stored ? JSON.parse(stored) : []
 
-      // Check if driver is already in the compare list (using driverName for new format, fallback to id for old format)
+      // Check if driver with same name AND rarity is already in the compare list
+      // Allow duplicates if they have different rarities
       const isAlreadyAdded = existingDrivers.some((d: any) =>
-        d.driverName === driver.name || d.id === driver.id
+        d.driverName === driver.name && d.rarity === driver.rarity
       )
 
       if (!isAlreadyAdded) {
@@ -133,7 +151,7 @@ function AuthenticatedDriversPage() {
         // Show toast notification
         addToast(`${driver.name} added to compare page`, 'success')
       } else {
-        addToast(`${driver.name} is already in compare list`, 'warning')
+        addToast(`${driver.name} (${getRarityDisplay(driver.rarity)}) is already in compare list`, 'warning')
       }
     } catch (error) {
       console.warn('Failed to add driver to compare:', error)
@@ -153,6 +171,19 @@ function AuthenticatedDriversPage() {
       case 5: return 7  // Special Edition
       default: return 11
     }
+  };
+
+  // Helper function to get rarity display name
+  const getRarityDisplay = (rarity: number): string => {
+    const rarityMap: Record<number, string> = {
+      0: 'Basic',
+      1: 'Common',
+      2: 'Rare',
+      3: 'Epic',
+      4: 'Legendary',
+      5: 'Special Edition'
+    }
+    return rarityMap[rarity] || 'Unknown'
   };
 
   // Apply filters to the data

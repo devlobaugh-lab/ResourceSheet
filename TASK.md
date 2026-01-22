@@ -83,6 +83,12 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 - [x] **Complete Stats Data Import**: Fixed seeding script to properly import driver/car part stats from JSON files using correct property names (driverStatsPerLevel, carPartStatsPerLevel)
 - [x] **Boost Custom Names Display Fix**: Fixed boost custom names not displaying due to missing user_id column in database table. Temporarily modified API to fetch names globally until migration can be applied.
 - [x] **Admin Tracks Page Complete Resolution - COMPLETE FIXES**
+- [x] **Series Filter Persistence**: Added localStorage persistence for Max Series filter on drivers and parts pages - remembers filter state when user leaves and returns to page
+- [x] **Driver Compare Duplicate Handling**: Fixed logic to allow adding duplicate drivers to compare if they have different rarities - prevents adding same driver name + rarity combination
+- [x] **Stats Mismatch Fix**: Enhanced DriverCompareGrid to use same data source as drivers page (useUserDrivers) for consistent stats calculation and display
+- [x] **Driver Dropdown Fix**: Fixed compare page dropdown to show unique driver names - users select driver name first, then choose rarity separately to avoid confusion
+- [x] **Bonus Input Improvements**: Fixed bonus percentage input handling, validation, and added reset functionality for corrupted localStorage states
+- [x] **Duplicate Drivers Database Cleanup**: Created database cleanup script that identified and removed 7 duplicate Special Edition driver records from the database
   - [x] **Authentication Issues**: Fixed 401 unauthorized errors by updating tracks API to properly validate JWT tokens from Authorization header using `supabaseAdmin.auth.getUser(token)`
   - [x] **RLS Policy Conflict**: Removed problematic tracks table RLS policy that caused infinite recursion with profiles table
   - [x] **Database Migration**: Created `20260121084500_fix_tracks_rls_policy.sql` to drop conflicting policy
