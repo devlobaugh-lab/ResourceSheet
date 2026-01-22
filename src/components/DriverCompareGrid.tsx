@@ -141,7 +141,8 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
       case 2: return 9  // Rare
       case 3: return 8  // Epic
       case 4: return 7  // Legendary
-      case 5: return 7  // Special Edition
+      case 5: return 7  // SE Standard
+      case 6: return 7  // SE Turbo
       default: return 11
     }
   }
@@ -154,10 +155,12 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
     hasBonus: boolean,
     bonusPercentage: number
   ): number => {
-    // Level 0 should show all 0 stats
-    if (level === 0 || !driver) {
+    if (!driver) {
       return 0
     }
+
+    // Treat level 0 as level 1 for comparison purposes
+    const effectiveLevel = level === 0 ? 1 : level
 
     let stats: Array<{ [key: string]: number }> | null = null
     if (driver.stats_per_level && Array.isArray(driver.stats_per_level)) {
@@ -165,8 +168,8 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
     }
 
     let baseValue = 0
-    if (stats && stats.length > level - 1 && stats[level - 1][statName] !== undefined) {
-      baseValue = stats[level - 1][statName]
+    if (stats && stats.length > effectiveLevel - 1 && stats[effectiveLevel - 1][statName] !== undefined) {
+      baseValue = stats[effectiveLevel - 1][statName]
     }
 
     // Apply bonus if driver has bonus checked and bonus percentage is set
@@ -282,7 +285,8 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
       2: 'Rare',
       3: 'Epic',
       4: 'Legendary',
-      5: 'Special Edition'
+      5: 'SE Standard',
+      6: 'SE Turbo'
     }
     return rarityMap[rarity] || 'Unknown'
   }
@@ -382,7 +386,8 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                       <option value={2} className="text-gray-900">Rare</option>
                       <option value={3} className="text-gray-900">Epic</option>
                       <option value={4} className="text-gray-900">Legendary</option>
-                      <option value={5} className="text-gray-900">Special Edition</option>
+                      <option value={5} className="text-gray-900">SE Standard</option>
+                      <option value={6} className="text-gray-900">SE Turbo</option>
                     </select>
                   </td>
                 ))}
@@ -422,10 +427,11 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   const getRarityBackground = (rarity: number): string => {
                     return rarity === 0 ? "bg-gray-300" :
                            rarity === 1 ? "bg-blue-200" :
-                           rarity === 2 ? "bg-orange-200" :
+                           rarity === 2 ? "bg-orange-300" :
                            rarity === 3 ? "bg-purple-300" :
                            rarity === 4 ? "bg-yellow-300" :
-                           rarity === 5 ? "bg-red-300" : "bg-gray-300";
+                           rarity === 5 ? "bg-red-300" :
+                           rarity === 6 ? "bg-rose-400" : "bg-gray-300";
                   };
 
                   // Format name as "Last, First Initial"

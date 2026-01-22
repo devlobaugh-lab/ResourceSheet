@@ -428,10 +428,11 @@ export function DataGrid({
   const getRarityBackground = (rarity: number): string => {
     return rarity === 0 ? "bg-gray-300" :
            rarity === 1 ? "bg-blue-200" :
-           rarity === 2 ? "bg-orange-200" :
+           rarity === 2 ? "bg-orange-300" :
            rarity === 3 ? "bg-purple-300" :
            rarity === 4 ? "bg-yellow-300" :
-           rarity === 5 ? "bg-red-300" : "bg-gray-300";
+           rarity === 5 ? "bg-red-300" :
+           rarity === 6 ? "bg-rose-400" : "bg-gray-300";
   };
 
   // Get boost value background color based on tier (1=blue, 2=green, 3=yellow, 4=orange, 5=red)
@@ -695,7 +696,8 @@ export function DataGrid({
       2: 'Rare',
       3: 'Epic',
       4: 'Legendary',
-      5: 'Special Edition'
+      5: 'SE Standard',
+      6: 'SE Turbo'
     };
     return rarityMap[rarity] || 'Unknown';
   };

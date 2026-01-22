@@ -108,9 +108,18 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
   - [x] **Seed Data Fixed**: Updated seed.sql to match new schema structure
   - [x] **Database Reset**: Successfully applied migration and seeding
 
+### Special Edition Drivers Fix - COMPLETE ✅
+
+- [x] **Investigated duplicate Special Edition drivers issue** - Found 7 drivers (BEA, LAW, BOR, ANT, COL, HAD, DOO) each with 2 versions
+- [x] **Identified root cause** - Game has Standard SE (SUBTITLE_1) and Turbo SE (SUBTITLE_2) drivers, both marked as rarity 5
+- [x] **Implemented rarity 6 mapping** - Created improved seeding script that maps Turbo SE drivers (SUBTITLE_2) to rarity 6
+- [x] **Added chunked loading** - Process large JSON files in batches to prevent memory issues and timeouts
+- [x] **Enhanced logging** - Added detailed progress reporting and Special Edition driver breakdown
+- [x] **Created scripts/direct_seed_improved.js** - New seeding script with better performance and correct rarity mapping
+
 ### Setups page
 
-- [ ] Would like to re-work Car setup interface. Maybe have the user click a part card and have it bring up a modal with available options instead of a separate form for data entry. Main card would be on left then, and could have an edit icon or an add new icon and then saved setups would be on right side. Another idea is that we may be able to load 2 setups side by side for compare. 
+- [ ] Would like to re-work Car setup interface. Maybe have the user click a part card and have it bring up a modal with available options instead of a separate form for data entry. Main card would be on left then, and could have an edit icon or an add new icon and then saved setups would be on right side. Another idea is that we may be able to load 2 setups side by side for compare.
 - [ ] Would like to add a feature to suggest a setup for a user. They input max series and style of setup (Speed, Speed + Quali, Corner + Quali, PU, PU + Quali, Balanced, other )  App would look at parts and suggest a setup that meets criteria
 - [ ] Would like to have a suggested driver location too, for different GPs
 
