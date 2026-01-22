@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Data Input Cache Invalidation**: Fixed issue where restoring collection didn't immediately update data input page display. Added dynamic `key` props to input fields that change when data values change, forcing input remounting with correct default values. This ensures UI updates immediately after import operations instead of requiring page navigation.
 - **Backup Export Logic**: Fixed backup export to include items where level > 0 OR card_count > 0, not just card_count > 0. This ensures that maxed-out items (level 11, card_count 0) are properly included in backups and restored correctly.
 - **Saved Setups Backup/Restore**: Added support for backing up and restoring user-created car setups. Setups are now included in the stable backup format and restored during import operations, preserving all setup configurations and metadata.
+- **Track Information in Backups**: Added global track data to backup files for reference. Tracks are included in exports and can be restored by admin users during import operations.
 
 ### Fixed
 - **Series Filter Persistence**: Added localStorage persistence for Max Series filter on drivers and parts pages - remembers filter state when user leaves and returns to page
