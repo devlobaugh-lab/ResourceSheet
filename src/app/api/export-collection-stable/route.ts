@@ -136,6 +136,34 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Get user's car setups
+    const { data: userSetups, error: setupsError } = await supabaseAdmin
+      .from('user_car_setups')
+      .select(`
+        id,
+        name,
+        notes,
+        brake_id,
+        gearbox_id,
+        rear_wing_id,
+        front_wing_id,
+        suspension_id,
+        engine_id,
+        series_filter,
+        bonus_percentage,
+        created_at,
+        updated_at
+      `)
+      .eq('user_id', user.id)
+
+    if (setupsError) {
+      console.error('Error fetching user setups:', setupsError)
+      return NextResponse.json(
+        { error: { code: 'DATABASE_ERROR', message: 'Failed to fetch user setups' } },
+        { status: 500 }
+      )
+    }
+
     // Transform data to use stable identifiers instead of UUIDs
     const stableExportData = {
       exportedAt: new Date().toISOString(),
@@ -188,13 +216,27 @@ export async function GET(request: NextRequest) {
         name: item.boosts?.name,
         icon: item.boosts?.icon,
         count: item.count
+      })),
+      setups: (userSetups || []).map((setup: any) => ({
+        name: setup.name,
+        notes: setup.notes,
+        brake_id: setup.brake_id,
+        gearbox_id: setup.gearbox_id,
+        rear_wing_id: setup.rear_wing_id,
+        front_wing_id: setup.front_wing_id,
+        suspension_id: setup.suspension_id,
+        engine_id: setup.engine_id,
+        series_filter: setup.series_filter,
+        bonus_percentage: setup.bonus_percentage,
+        created_at: setup.created_at
       }))
     }
 
     console.log('Stable export data:', {
       driversCount: stableExportData.drivers.length,
       carPartsCount: stableExportData.carParts.length,
-      boostsCount: stableExportData.boosts.length
+      boostsCount: stableExportData.boosts.length,
+      setupsCount: stableExportData.setups.length
     })
 
     // Return as JSON file download

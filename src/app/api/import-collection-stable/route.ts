@@ -30,6 +30,19 @@ const stableImportDataSchema = z.object({
     name: z.string(),
     icon: z.string().optional(),
     count: z.number().min(0)
+  })).optional(),
+  setups: z.array(z.object({
+    name: z.string(),
+    notes: z.string().nullable().optional(),
+    brake_id: z.string().nullable().optional(),
+    gearbox_id: z.string().nullable().optional(),
+    rear_wing_id: z.string().nullable().optional(),
+    front_wing_id: z.string().nullable().optional(),
+    suspension_id: z.string().nullable().optional(),
+    engine_id: z.string().nullable().optional(),
+    series_filter: z.number(),
+    bonus_percentage: z.number(),
+    created_at: z.string().optional()
   })).optional()
 })
 
@@ -107,7 +120,9 @@ export async function POST(request: NextRequest) {
       hasCarParts: !!validatedData.carParts,
       carPartsCount: validatedData.carParts?.length || 0,
       hasBoosts: !!validatedData.boosts,
-      boostsCount: validatedData.boosts?.length || 0
+      boostsCount: validatedData.boosts?.length || 0,
+      hasSetups: !!validatedData.setups,
+      setupsCount: validatedData.setups?.length || 0
     })
 
     // Import results tracking
@@ -115,12 +130,14 @@ export async function POST(request: NextRequest) {
       imported: {
         drivers: 0,
         carParts: 0,
-        boosts: 0
+        boosts: 0,
+        setups: 0
       },
       skipped: {
         drivers: 0,
         carParts: 0,
-        boosts: 0
+        boosts: 0,
+        setups: 0
       },
       errors: [] as string[]
     }
@@ -394,13 +411,68 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Process setup imports
+    if (validatedData.setups) {
+      console.log(`Processing ${validatedData.setups.length} setup imports`)
+
+      // Delete existing user setups and insert new ones
+      console.log('Deleting existing user setups for user:', user.id)
+      const { error: deleteError } = await supabaseAdmin
+        .from('user_car_setups')
+        .delete()
+        .eq('user_id', user.id)
+
+      if (deleteError) {
+        console.error('Delete setups error:', deleteError)
+        return NextResponse.json(
+          { error: { code: 'DATABASE_ERROR', message: 'Failed to delete existing user setups: ' + deleteError.message } },
+          { status: 500 }
+        )
+      }
+
+      // Insert all imported setups
+      if (validatedData.setups.length > 0) {
+        const setupsToInsert = validatedData.setups.map(setup => ({
+          user_id: user.id,
+          name: setup.name,
+          notes: setup.notes,
+          brake_id: setup.brake_id,
+          gearbox_id: setup.gearbox_id,
+          rear_wing_id: setup.rear_wing_id,
+          front_wing_id: setup.front_wing_id,
+          suspension_id: setup.suspension_id,
+          engine_id: setup.engine_id,
+          series_filter: setup.series_filter,
+          bonus_percentage: setup.bonus_percentage,
+          created_at: setup.created_at ? new Date(setup.created_at).toISOString() : new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }))
+
+        console.log('Inserting user setups:', setupsToInsert.length)
+        const { error: insertError } = await supabaseAdmin
+          .from('user_car_setups')
+          .insert(setupsToInsert)
+
+        if (insertError) {
+          console.error('Insert setups error:', insertError)
+          console.error('Insert setups error details:', JSON.stringify(insertError, null, 2))
+          return NextResponse.json(
+            { error: { code: 'DATABASE_ERROR', message: 'Failed to import user setups: ' + insertError.message } },
+            { status: 500 }
+          )
+        }
+        console.log('Successfully inserted user setups')
+        importResults.imported.setups = setupsToInsert.length
+      }
+    }
+
     // Return comprehensive import results
     return NextResponse.json({
       message: 'Stable collection imported successfully',
       results: importResults,
       summary: {
-        imported: importResults.imported.drivers + importResults.imported.carParts + importResults.imported.boosts,
-        skipped: importResults.skipped.drivers + importResults.skipped.carParts + importResults.skipped.boosts,
+        imported: importResults.imported.drivers + importResults.imported.carParts + importResults.imported.boosts + importResults.imported.setups,
+        skipped: importResults.skipped.drivers + importResults.skipped.carParts + importResults.skipped.boosts + importResults.skipped.setups,
         errors: importResults.errors.length
       }
     })
