@@ -150,6 +150,7 @@ export interface Database {
           name: string
           icon: string | null
           boost_stats: any | null
+          is_free: boolean
           created_at: string
           updated_at: string
         }
@@ -158,6 +159,7 @@ export interface Database {
           name: string
           icon?: string | null
           boost_stats?: any | null
+          is_free?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -166,6 +168,7 @@ export interface Database {
           name?: string
           icon?: string | null
           boost_stats?: any | null
+          is_free?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -427,6 +430,85 @@ export interface Database {
           updated_at?: string
         }
       }
+      user_track_guides: {
+        Row: {
+          id: string
+          user_id: string
+          track_id: string
+          gp_level: number
+          suggested_drivers: any | null
+          free_boost_id: string | null
+          suggested_boosts: any | null
+          saved_setup_id: string | null
+          setup_notes: string | null
+          dry_strategy: string | null
+          wet_strategy: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          track_id: string
+          gp_level: number
+          suggested_drivers?: any | null
+          free_boost_id?: string | null
+          suggested_boosts?: any | null
+          saved_setup_id?: string | null
+          setup_notes?: string | null
+          dry_strategy?: string | null
+          wet_strategy?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          track_id?: string
+          gp_level?: number
+          suggested_drivers?: any | null
+          free_boost_id?: string | null
+          suggested_boosts?: any | null
+          saved_setup_id?: string | null
+          setup_notes?: string | null
+          dry_strategy?: string | null
+          wet_strategy?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      user_track_guide_drivers: {
+        Row: {
+          id: string
+          track_guide_id: string
+          driver_id: string
+          recommended_boost_id: string | null
+          track_strategy: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          track_guide_id: string
+          driver_id: string
+          recommended_boost_id?: string | null
+          track_strategy?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          track_guide_id?: string
+          driver_id?: string
+          recommended_boost_id?: string | null
+          track_strategy?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -461,6 +543,8 @@ export type CarPart = Tables<'car_parts'>
 export type UserDriver = Tables<'user_drivers'>
 export type UserCarPart = Tables<'user_car_parts'>
 export type Track = Tables<'tracks'>
+export type UserTrackGuide = Tables<'user_track_guides'>
+export type UserTrackGuideDriver = Tables<'user_track_guide_drivers'>
 
 // Business logic types
 export interface UserAssetView {
@@ -539,6 +623,7 @@ export interface BoostView {
   name: string
   icon: string | null
   boost_stats: any | null
+  is_free: boolean
 
   // From boost_custom_names (optional custom override)
   custom_name?: string | null

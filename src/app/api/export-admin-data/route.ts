@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { supabaseAdmin } from '@/lib/supabase'
 
-// GET /api/export-custom-names - Export custom boost names (admin only)
+// GET /api/export-admin-data - Export admin data (custom boost names + free boost flags) (admin only)
 export async function GET(request: NextRequest) {
   try {
     // Try to get user from Authorization header first, then fall back to cookies
@@ -91,20 +91,36 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('Export custom names summary:', {
-      customNamesCount: customNames?.length || 0
+    // Get all free boost flags
+    const { data: freeBoosts, error: freeBoostsError } = await supabaseAdmin
+      .from('boosts')
+      .select('id, name, is_free')
+      .eq('is_free', true)
+      .order('id', { ascending: true })
+
+    if (freeBoostsError) {
+      return NextResponse.json(
+        { error: { code: 'DATABASE_ERROR', message: freeBoostsError.message } },
+        { status: 500 }
+      )
+    }
+
+    console.log('Export admin data summary:', {
+      customNamesCount: customNames?.length || 0,
+      freeBoostsCount: freeBoosts?.length || 0
     })
 
     // Return the data
     const exportData = {
       exportedAt: new Date().toISOString(),
-      boostCustomNames: customNames || []
+      boostCustomNames: customNames || [],
+      freeBoosts: freeBoosts || []
     }
 
     return NextResponse.json(exportData)
 
   } catch (error) {
-    console.error('Export custom names error:', error)
+    console.error('Export admin data error:', error)
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
       { status: 500 }
