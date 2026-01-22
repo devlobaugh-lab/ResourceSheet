@@ -219,7 +219,7 @@ export default function ProfilePage() {
   const handleExportCustomNames = async () => {
     setExportCustomNamesLoading(true);
     try {
-      const response = await fetch('/api/export-custom-names', {
+      const response = await fetch('/api/export-admin-data', {
         headers: await getAuthHeaders(),
         credentials: 'same-origin'
       });
@@ -233,7 +233,7 @@ export default function ProfilePage() {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const dateStr = new Date().toISOString().split('T')[0];
-      const filename = `f1-custom-names-backup-${dateStr}.json`;
+      const filename = `f1-admin-data-backup-${dateStr}.json`;
 
       const a = document.createElement('a');
       a.href = url;
@@ -243,10 +243,10 @@ export default function ProfilePage() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.addToast('Custom boost names exported successfully', 'success');
+      toast.addToast('Admin data exported successfully', 'success');
     } catch (error) {
-      console.error('Export custom names error:', error);
-      toast.addToast(error instanceof Error ? error.message : 'Failed to export custom boost names', 'error');
+      console.error('Export admin data error:', error);
+      toast.addToast(error instanceof Error ? error.message : 'Failed to export admin data', 'error');
     } finally {
       setExportCustomNamesLoading(false);
     }
@@ -261,7 +261,7 @@ export default function ProfilePage() {
       const text = await file.text();
       const data = JSON.parse(text);
 
-      const response = await fetch('/api/import-custom-names', {
+      const response = await fetch('/api/import-admin-data', {
         method: 'POST',
         headers: {
           ...await getAuthHeaders(),
@@ -276,13 +276,16 @@ export default function ProfilePage() {
         throw new Error(errorData.error?.message || 'Import failed');
       }
 
-      // Invalidate boost queries to refresh the UI with new custom names
+      const result = await response.json();
+
+      // Invalidate boost queries to refresh the UI with new custom names and free flags
       queryClient.invalidateQueries({ queryKey: ['boosts'] });
 
-      toast.addToast('Custom boost names imported successfully', 'success');
+      const successMessage = `Admin data imported successfully! ${result.imported.customNames} custom names and ${result.imported.freeBoosts} free boost flags imported.`;
+      toast.addToast(successMessage, 'success');
     } catch (error) {
-      console.error('Import custom names error:', error);
-      toast.addToast(error instanceof Error ? error.message : 'Failed to import custom boost names', 'error');
+      console.error('Import admin data error:', error);
+      toast.addToast(error instanceof Error ? error.message : 'Failed to import admin data', 'error');
     } finally {
       setImportCustomNamesLoading(false);
       // Reset file input
@@ -416,7 +419,7 @@ export default function ProfilePage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                         </svg>
                       )}
-                      {importCustomNamesLoading ? 'Importing...' : 'Import Custom Names'}
+                      {importCustomNamesLoading ? 'Importing...' : 'Import Admin Data'}
                     </Button>
 
                     <Button
@@ -435,7 +438,7 @@ export default function ProfilePage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       )}
-                      {exportCustomNamesLoading ? 'Exporting...' : 'Export Custom Names'}
+                      {exportCustomNamesLoading ? 'Exporting...' : 'Export Admin Data'}
                     </Button>
                   </div>
                 </Card>

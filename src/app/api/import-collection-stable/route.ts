@@ -44,6 +44,20 @@ const stableImportDataSchema = z.object({
     bonus_percentage: z.number(),
     created_at: z.string().optional()
   })).optional(),
+  trackGuides: z.array(z.object({
+    track_name: z.string(),
+    track_alt_name: z.string().nullable().optional(),
+    gp_level: z.number().min(0).max(3),
+    suggested_drivers: z.array(z.string()).max(4).optional().default([]),
+    free_boost_id: z.string().nullable().optional(),
+    suggested_boosts: z.array(z.string()).optional().default([]),
+    saved_setup_id: z.string().nullable().optional(),
+    setup_notes: z.string().nullable().optional(),
+    dry_strategy: z.string().nullable().optional(),
+    wet_strategy: z.string().nullable().optional(),
+    notes: z.string().nullable().optional(),
+    created_at: z.string().optional()
+  })).optional(),
   tracks: z.array(z.object({
     name: z.string(),
     alt_name: z.string().nullable().optional(),
@@ -132,6 +146,8 @@ export async function POST(request: NextRequest) {
       boostsCount: validatedData.boosts?.length || 0,
       hasSetups: !!validatedData.setups,
       setupsCount: validatedData.setups?.length || 0,
+      hasTrackGuides: !!validatedData.trackGuides,
+      trackGuidesCount: validatedData.trackGuides?.length || 0,
       hasTracks: !!validatedData.tracks,
       tracksCount: validatedData.tracks?.length || 0,
       note: 'Tracks are included in backup for reference but not imported (global data)'
@@ -144,6 +160,7 @@ export async function POST(request: NextRequest) {
         carParts: 0,
         boosts: 0,
         setups: 0,
+        trackGuides: 0,
         tracks: 0
       },
       skipped: {
@@ -151,6 +168,7 @@ export async function POST(request: NextRequest) {
         carParts: 0,
         boosts: 0,
         setups: 0,
+        trackGuides: 0,
         tracks: 0
       },
       errors: [] as string[]
@@ -477,6 +495,92 @@ export async function POST(request: NextRequest) {
         }
         console.log('Successfully inserted user setups')
         importResults.imported.setups = setupsToInsert.length
+      }
+    }
+
+    // Process track guide imports
+    if (validatedData.trackGuides) {
+      console.log(`Processing ${validatedData.trackGuides.length} track guide imports`)
+
+      // Get all current tracks to build a lookup map
+      const { data: allTracks, error: tracksError } = await supabaseAdmin
+        .from('tracks')
+        .select('id, name, alt_name')
+
+      if (tracksError) {
+        return NextResponse.json(
+          { error: { code: 'DATABASE_ERROR', message: 'Failed to fetch tracks catalog for track guides' } },
+          { status: 500 }
+        )
+      }
+
+      // Build lookup map for tracks: key = "name" or "alt_name"
+      const trackLookup = new Map<string, string>()
+      ;(allTracks || []).forEach(track => {
+        trackLookup.set(track.name, track.id)
+        if (track.alt_name) {
+          trackLookup.set(track.alt_name, track.id)
+        }
+      })
+
+      // Delete existing user track guides and insert new ones
+      console.log('Deleting existing user track guides for user:', user.id)
+      const { error: deleteError } = await supabaseAdmin
+        .from('user_track_guides')
+        .delete()
+        .eq('user_id', user.id)
+
+      if (deleteError) {
+        console.error('Delete track guides error:', deleteError)
+        return NextResponse.json(
+          { error: { code: 'DATABASE_ERROR', message: 'Failed to delete existing user track guides: ' + deleteError.message } },
+          { status: 500 }
+        )
+      }
+
+      // Process and insert track guides
+      const trackGuidesToInsert = []
+      for (const guide of validatedData.trackGuides) {
+        const trackId = trackLookup.get(guide.track_name) || trackLookup.get(guide.track_alt_name || '')
+
+        if (!trackId) {
+          importResults.errors.push(`Track not found for track guide: "${guide.track_name}"`)
+          continue
+        }
+
+        trackGuidesToInsert.push({
+          user_id: user.id,
+          track_id: trackId,
+          gp_level: guide.gp_level,
+          suggested_drivers: guide.suggested_drivers,
+          free_boost_id: guide.free_boost_id,
+          suggested_boosts: guide.suggested_boosts,
+          saved_setup_id: guide.saved_setup_id,
+          setup_notes: guide.setup_notes,
+          dry_strategy: guide.dry_strategy,
+          wet_strategy: guide.wet_strategy,
+          notes: guide.notes,
+          created_at: guide.created_at ? new Date(guide.created_at).toISOString() : new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+      }
+
+      if (trackGuidesToInsert.length > 0) {
+        console.log('Inserting user track guides:', trackGuidesToInsert.length)
+        const { error: insertError } = await supabaseAdmin
+          .from('user_track_guides')
+          .insert(trackGuidesToInsert)
+
+        if (insertError) {
+          console.error('Insert track guides error:', insertError)
+          console.error('Insert track guides error details:', JSON.stringify(insertError, null, 2))
+          return NextResponse.json(
+            { error: { code: 'DATABASE_ERROR', message: 'Failed to import user track guides: ' + insertError.message } },
+            { status: 500 }
+          )
+        }
+        console.log('Successfully inserted user track guides')
+        importResults.imported.trackGuides = trackGuidesToInsert.length
       }
     }
 

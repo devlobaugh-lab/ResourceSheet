@@ -53,11 +53,8 @@ export const updateUserItemSchema = z.object({
 export const createBoostSchema = z.object({
   name: z.string().min(1),
   icon: z.string().optional().nullable(),
-  boost_type: z.string().min(1),
-  rarity: z.number().int().min(0),
   boost_stats: z.any().optional().nullable(),
-  series: z.number().int().optional().nullable(),
-  season_id: uuidSchema.optional().nullable(),
+  is_free: z.boolean().default(false),
 })
 
 export const updateBoostSchema = createBoostSchema.partial()

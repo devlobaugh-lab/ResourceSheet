@@ -164,6 +164,36 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Get user's track guides with stable identifiers
+    const { data: userTrackGuides, error: trackGuidesError } = await supabaseAdmin
+      .from('user_track_guides')
+      .select(`
+        gp_level,
+        suggested_drivers,
+        free_boost_id,
+        suggested_boosts,
+        saved_setup_id,
+        setup_notes,
+        dry_strategy,
+        wet_strategy,
+        notes,
+        created_at,
+        updated_at,
+        tracks:track_id (
+          name,
+          alt_name
+        )
+      `)
+      .eq('user_id', user.id)
+
+    if (trackGuidesError) {
+      console.error('Error fetching user track guides:', trackGuidesError)
+      return NextResponse.json(
+        { error: { code: 'DATABASE_ERROR', message: 'Failed to fetch user track guides' } },
+        { status: 500 }
+      )
+    }
+
     // Get all tracks (global data)
     const { data: tracks, error: tracksError } = await supabaseAdmin
       .from('tracks')
@@ -254,6 +284,20 @@ export async function GET(request: NextRequest) {
         bonus_percentage: setup.bonus_percentage,
         created_at: setup.created_at
       })),
+      trackGuides: (userTrackGuides || []).map((guide: any) => ({
+        track_name: guide.tracks?.name,
+        track_alt_name: guide.tracks?.alt_name,
+        gp_level: guide.gp_level,
+        suggested_drivers: guide.suggested_drivers,
+        free_boost_id: guide.free_boost_id,
+        suggested_boosts: guide.suggested_boosts,
+        saved_setup_id: guide.saved_setup_id,
+        setup_notes: guide.setup_notes,
+        dry_strategy: guide.dry_strategy,
+        wet_strategy: guide.wet_strategy,
+        notes: guide.notes,
+        created_at: guide.created_at
+      })),
       tracks: (tracks || []).map((track: any) => ({
         name: track.name,
         alt_name: track.alt_name,
@@ -270,6 +314,7 @@ export async function GET(request: NextRequest) {
       carPartsCount: stableExportData.carParts.length,
       boostsCount: stableExportData.boosts.length,
       setupsCount: stableExportData.setups.length,
+      trackGuidesCount: stableExportData.trackGuides.length,
       tracksCount: stableExportData.tracks.length
     })
 
