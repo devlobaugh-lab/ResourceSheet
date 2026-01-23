@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
     const rarity = searchParams.get('rarity')
     const series = searchParams.get('series')
     const search = searchParams.get('search')
+    const isFree = searchParams.get('is_free')
 
     if (seasonId) {
       query = query.eq('season_id', seasonId)
@@ -88,6 +89,10 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       query = query.ilike('name', `%${search}%`)
+    }
+
+    if (isFree !== null) {
+      query = query.eq('is_free', isFree === 'true')
     }
 
     const { data: boosts, error: boostsError, count } = await query

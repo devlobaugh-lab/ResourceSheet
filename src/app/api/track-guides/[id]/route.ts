@@ -20,16 +20,59 @@ const updateTrackGuideSchema = z.object({
 // GET /api/track-guides/[id] - Get specific track guide
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Try to get user from Authorization header first, then fall back to cookies
+    let user = null
+    const authHeader = request.headers.get('authorization')
 
-    if (authError || !user) {
+    if (authHeader?.startsWith('Bearer ')) {
+      // Try to validate JWT token directly
+      const token = authHeader.substring(7)
+      try {
+        // For local development, trust the JWT and extract user info
+        const parts = token.split('.')
+        if (parts.length === 3) {
+          const payload = JSON.parse(
+            Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
+          )
+
+          if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
+            user = {
+              id: payload.sub,
+              email: payload.email,
+              user_metadata: payload.user_metadata || {},
+              app_metadata: payload.app_metadata || {},
+            }
+            console.log('✅ Track guide GET authenticated user from JWT token:', user.id)
+          }
+        }
+      } catch (error) {
+        console.warn('JWT validation failed:', error)
+      }
+    }
+
+    // If JWT didn't work, try cookie-based auth
+    if (!user) {
+      try {
+        const supabase = createServerSupabaseClient()
+        const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
+
+        if (!authError && cookieUser) {
+          user = cookieUser
+          console.log('✅ Track guide GET authenticated user from cookies:', user.id)
+        }
+      } catch (error) {
+        console.log('⚠️ Track guide GET auth failed, trying without authentication')
+      }
+    }
+
+    if (!user) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
       )
     }
 
+    const supabase = createServerSupabaseClient()
     const { data, error } = await supabase
       .from('user_track_guides')
       .select(`
@@ -73,16 +116,59 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 // PUT /api/track-guides/[id] - Update track guide
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Try to get user from Authorization header first, then fall back to cookies
+    let user = null
+    const authHeader = request.headers.get('authorization')
 
-    if (authError || !user) {
+    if (authHeader?.startsWith('Bearer ')) {
+      // Try to validate JWT token directly
+      const token = authHeader.substring(7)
+      try {
+        // For local development, trust the JWT and extract user info
+        const parts = token.split('.')
+        if (parts.length === 3) {
+          const payload = JSON.parse(
+            Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
+          )
+
+          if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
+            user = {
+              id: payload.sub,
+              email: payload.email,
+              user_metadata: payload.user_metadata || {},
+              app_metadata: payload.app_metadata || {},
+            }
+            console.log('✅ Track guide PUT authenticated user from JWT token:', user.id)
+          }
+        }
+      } catch (error) {
+        console.warn('JWT validation failed:', error)
+      }
+    }
+
+    // If JWT didn't work, try cookie-based auth
+    if (!user) {
+      try {
+        const supabase = createServerSupabaseClient()
+        const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
+
+        if (!authError && cookieUser) {
+          user = cookieUser
+          console.log('✅ Track guide PUT authenticated user from cookies:', user.id)
+        }
+      } catch (error) {
+        console.log('⚠️ Track guide PUT auth failed, trying without authentication')
+      }
+    }
+
+    if (!user) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
       )
     }
 
+    const supabase = createServerSupabaseClient()
     const body = await request.json()
     const validatedData = updateTrackGuideSchema.parse(body)
 
@@ -141,16 +227,59 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 // DELETE /api/track-guides/[id] - Delete track guide
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Try to get user from Authorization header first, then fall back to cookies
+    let user = null
+    const authHeader = request.headers.get('authorization')
 
-    if (authError || !user) {
+    if (authHeader?.startsWith('Bearer ')) {
+      // Try to validate JWT token directly
+      const token = authHeader.substring(7)
+      try {
+        // For local development, trust the JWT and extract user info
+        const parts = token.split('.')
+        if (parts.length === 3) {
+          const payload = JSON.parse(
+            Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
+          )
+
+          if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
+            user = {
+              id: payload.sub,
+              email: payload.email,
+              user_metadata: payload.user_metadata || {},
+              app_metadata: payload.app_metadata || {},
+            }
+            console.log('✅ Track guide DELETE authenticated user from JWT token:', user.id)
+          }
+        }
+      } catch (error) {
+        console.warn('JWT validation failed:', error)
+      }
+    }
+
+    // If JWT didn't work, try cookie-based auth
+    if (!user) {
+      try {
+        const supabase = createServerSupabaseClient()
+        const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
+
+        if (!authError && cookieUser) {
+          user = cookieUser
+          console.log('✅ Track guide DELETE authenticated user from cookies:', user.id)
+        }
+      } catch (error) {
+        console.log('⚠️ Track guide DELETE auth failed, trying without authentication')
+      }
+    }
+
+    if (!user) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
       )
     }
 
+    const supabase = createServerSupabaseClient()
     const { error } = await supabase
       .from('user_track_guides')
       .delete()

@@ -1,11 +1,16 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import Link from 'next/link'
-import { useQuery } from '@tanstack/react-query'
 import { getAuthHeaders } from '@/hooks/useApi'
 import { Track, UserTrackGuide } from '@/types/database'
+
+// Force dynamic rendering since this page requires authentication
+export const dynamic = 'force-dynamic'
 
 // GP level names and colors
 const GP_LEVELS = [
@@ -15,35 +20,50 @@ const GP_LEVELS = [
   { id: 3, name: 'Champion', color: 'bg-red-100 text-red-800', seriesMax: 12 }
 ]
 
+// Helper function to capitalize stat names
+const capitalizeStat = (stat: string): string => {
+  // Handle camelCase stats (overtaking -> Overtaking, raceStart -> Race Start)
+  return stat
+    .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+    .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
+    .trim() // Remove leading/trailing whitespace
+}
+
 export default function TrackGuidesPage() {
-  // Fetch all tracks
-  const { data: tracks = [], isLoading: tracksLoading } = useQuery({
-    queryKey: ['tracks'],
-    queryFn: async () => {
-      const response = await fetch('/api/tracks', {
-        headers: await getAuthHeaders(),
-        credentials: 'same-origin'
-      })
-      if (!response.ok) return []
-      return response.json()
-    }
-  })
+  const [tracks, setTracks] = useState<Track[]>([])
+  const [trackGuides, setTrackGuides] = useState<UserTrackGuide[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Fetch user's track guides
-  const { data: trackGuides = [], isLoading: guidesLoading } = useQuery({
-    queryKey: ['track-guides'],
-    queryFn: async () => {
-      const response = await fetch('/api/track-guides', {
-        headers: await getAuthHeaders(),
-        credentials: 'same-origin'
-      })
-      if (!response.ok) return []
-      const result = await response.json()
-      return result.data || []
-    }
-  })
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // Fetch tracks
+        const tracksResponse = await fetch('/api/tracks', {
+          headers: await getAuthHeaders(),
+          credentials: 'same-origin'
+        })
+        const tracksData = tracksResponse.ok ? await tracksResponse.json() : []
 
-  const isLoading = tracksLoading || guidesLoading
+        // Fetch track guides
+        const guidesResponse = await fetch('/api/track-guides', {
+          headers: await getAuthHeaders(),
+          credentials: 'same-origin'
+        })
+        const guidesData = guidesResponse.ok ? await guidesResponse.json() : { data: [] }
+
+        setTracks(tracksData || [])
+        setTrackGuides(guidesData.data || [])
+      } catch (error) {
+        console.error('Error fetching track guides data:', error)
+        setTracks([])
+        setTrackGuides([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
 
   // Create a lookup map for track guides by track_id and gp_level
   const guideMap = new Map<string, UserTrackGuide>()
@@ -154,8 +174,8 @@ export default function TrackGuidesPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex flex-col space-y-1">
-                          <span>D: {track.driver_track_stat}</span>
-                          <span>C: {track.car_track_stat}</span>
+                          <span>{capitalizeStat(track.driver_track_stat)}</span>
+                          <span>{capitalizeStat(track.car_track_stat)}</span>
                         </div>
                       </td>
                       {GP_LEVELS.map(level => {
@@ -192,6 +212,15 @@ export default function TrackGuidesPage() {
                 <div className="text-gray-500 text-lg mb-2">No tracks found</div>
                 <div className="text-gray-400 text-sm">
                   Tracks will appear here once loaded from the database.
+                </div>
+              </div>
+            )}
+
+            {tracks.length > 0 && trackGuides.length === 0 && (
+              <div className="text-center py-8 border-t border-gray-200">
+                <div className="text-gray-500 text-lg mb-2">Ready to create your first track guide!</div>
+                <div className="text-gray-400 text-sm mb-4">
+                  Click &quot;View/Edit&quot; on any track above to start creating racing strategies for different GP levels.
                 </div>
               </div>
             )}

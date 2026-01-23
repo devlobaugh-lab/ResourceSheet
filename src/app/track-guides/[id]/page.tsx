@@ -7,10 +7,13 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getAuthHeaders } from '@/hooks/useApi'
+import { getAuthHeaders, useUserCarSetups } from '@/hooks/useApi'
 import { useToast } from '@/components/ui/Toast'
 import { Track, UserTrackGuide, DriverView, BoostView, UserCarSetupWithParts } from '@/types/database'
 import Link from 'next/link'
+
+// Force dynamic rendering since this page requires authentication
+export const dynamic = 'force-dynamic'
 
 // GP level configuration
 const GP_LEVELS = [
@@ -19,6 +22,15 @@ const GP_LEVELS = [
   { id: 2, name: 'Contender', color: 'bg-yellow-100 text-yellow-800', seriesMax: 9 },
   { id: 3, name: 'Champion', color: 'bg-red-100 text-red-800', seriesMax: 12 }
 ]
+
+// Helper function to capitalize stat names
+const capitalizeStat = (stat: string): string => {
+  // Handle camelCase stats (overtaking -> Overtaking, raceStart -> Race Start)
+  return stat
+    .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+    .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
+    .trim() // Remove leading/trailing whitespace
+}
 
 export default function TrackGuideEditorPage() {
   const params = useParams()
@@ -31,6 +43,41 @@ export default function TrackGuideEditorPage() {
   const [formData, setFormData] = useState<Partial<UserTrackGuide>>({})
   const [showDriverModal, setShowDriverModal] = useState(false)
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([])
+  const [driverModalGpLevel, setDriverModalGpLevel] = useState(0)
+  const [showBoostModal, setShowBoostModal] = useState(false)
+
+  // Fetch user's saved car setups
+  const { data: userSetupsResponse } = useUserCarSetups()
+  const userSetups = userSetupsResponse?.data || []
+
+  // Fetch free boosts for the dropdown
+  const { data: freeBoosts = [] } = useQuery({
+    queryKey: ['free-boosts'],
+    queryFn: async () => {
+      const response = await fetch('/api/boosts?is_free=true', {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      })
+      if (!response.ok) return []
+      const result = await response.json()
+      return result.data || []
+    }
+  })
+
+  // Fetch all boosts for the boost selection modal
+  const { data: allBoosts = [], isLoading: boostsLoading } = useQuery({
+    queryKey: ['all-boosts'],
+    queryFn: async () => {
+      const response = await fetch('/api/boosts?limit=100', {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      })
+      if (!response.ok) return []
+      const result = await response.json()
+      return result.data || []
+    },
+    enabled: showBoostModal
+  })
 
   // Fetch track details
   const { data: track, isLoading: trackLoading } = useQuery({
@@ -137,6 +184,25 @@ export default function TrackGuideEditorPage() {
     saveMutation.mutate(dataToSave)
   }
 
+  const handleSelectDrivers = () => {
+    setDriverModalGpLevel(selectedGpLevel)
+    setShowDriverModal(true)
+  }
+
+  const handleDriverSelection = (selectedDriverIds: string[]) => {
+    setFormData(prev => ({ ...prev, suggested_drivers: selectedDriverIds }))
+    setShowDriverModal(false)
+  }
+
+  const handleSelectBoosts = () => {
+    setShowBoostModal(true)
+  }
+
+  const handleBoostSelection = (selectedBoostIds: string[]) => {
+    setFormData(prev => ({ ...prev, suggested_boosts: selectedBoostIds }))
+    setShowBoostModal(false)
+  }
+
   const isLoading = trackLoading || guideLoading
 
   if (isLoading) {
@@ -182,7 +248,7 @@ export default function TrackGuideEditorPage() {
                   {track.name} {track.alt_name && `(${track.alt_name})`}
                 </h1>
                 <p className="mt-2 text-gray-600">
-                  Track Stats: Driver - {track.driver_track_stat}, Car - {track.car_track_stat}
+                  Track Stats: {capitalizeStat(track.driver_track_stat)}, {capitalizeStat(track.car_track_stat)}
                 </p>
               </div>
               <Link href="/track-guides">
@@ -223,7 +289,7 @@ export default function TrackGuideEditorPage() {
                 Select up to 4 drivers for this GP level (2 main + 2 alternates).
                 Drivers are filtered by series and sorted by track performance.
               </div>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={handleSelectDrivers}>
                 Select Drivers ({formData.suggested_drivers?.length || 0}/4)
               </Button>
             </Card>
@@ -236,16 +302,24 @@ export default function TrackGuideEditorPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Free Boost Recommendation
                   </label>
-                  <select className="w-full rounded-lg border-gray-300">
+                  <select
+                    className="w-full rounded-lg border-gray-300"
+                    value={formData.free_boost_id || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, free_boost_id: e.target.value || undefined }))}
+                  >
                     <option value="">Select a free boost...</option>
-                    {/* Free boosts will be populated here */}
+                    {freeBoosts.map((boost: any) => (
+                      <option key={boost.id} value={boost.id}>
+                        {boost.boost_custom_names?.custom_name || boost.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Additional Boost Recommendations
                   </label>
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full" onClick={handleSelectBoosts}>
                     Select Boosts ({formData.suggested_boosts?.length || 0} selected)
                   </Button>
                 </div>
@@ -260,9 +334,17 @@ export default function TrackGuideEditorPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Saved Setup (Optional)
                   </label>
-                  <select className="w-full rounded-lg border-gray-300">
+                  <select
+                    className="w-full rounded-lg border-gray-300"
+                    value={formData.saved_setup_id || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, saved_setup_id: e.target.value || undefined }))}
+                  >
                     <option value="">Select a saved setup...</option>
-                    {/* Saved setups will be populated here */}
+                    {userSetups.map((setup) => (
+                      <option key={setup.id} value={setup.id}>
+                        {setup.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -334,6 +416,363 @@ export default function TrackGuideEditorPage() {
               </Button>
             </div>
           </div>
+
+          {/* Driver Selection Modal */}
+          {showDriverModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
+                <div className="p-6 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Select Drivers - {GP_LEVELS[driverModalGpLevel].name} GP
+                    </h2>
+                    <button
+                      onClick={() => setShowDriverModal(false)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <span className="text-2xl">×</span>
+                    </button>
+                  </div>
+                  <p className="mt-2 text-sm text-gray-600">
+                    Choose up to 4 drivers for this GP level. Drivers are sorted by their {capitalizeStat(track?.driver_track_stat || 'overtaking')} stat.
+                  </p>
+                </div>
+
+                <div className="p-6 overflow-y-auto max-h-[60vh]">
+                  {driversLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {availableDrivers
+                        .sort((a: any, b: any) => {
+                          // Sort by track-relevant stat (driver_track_stat from track)
+                          const statName = track?.driver_track_stat || 'overtaking'
+                          const getStat = (driver: any) => {
+                            if (!driver.stats_per_level || driver.level === 0) return 0
+                            const stats = driver.stats_per_level[driver.level - 1]
+                            return stats?.[statName] || 0
+                          }
+                          return getStat(b) - getStat(a)
+                        })
+                        .map((driver: any) => {
+                          const isSelected = formData.suggested_drivers?.includes(driver.id)
+                          const trackStat = track?.driver_track_stat || 'overtaking'
+                          const getStatValue = (driver: any) => {
+                            if (!driver.stats_per_level || driver.level === 0) return 0
+                            const stats = driver.stats_per_level[driver.level - 1]
+                            return stats?.[trackStat] || 0
+                          }
+
+                          return (
+                            <div
+                              key={driver.id}
+                              className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                                isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                              onClick={() => {
+                                const currentSelected = formData.suggested_drivers || []
+                                let newSelected: string[]
+
+                                if (isSelected) {
+                                  newSelected = currentSelected.filter((id: string) => id !== driver.id)
+                                } else if (currentSelected.length < 4) {
+                                  newSelected = [...currentSelected, driver.id]
+                                } else {
+                                  return // Max 4 drivers
+                                }
+
+                                setFormData(prev => ({ ...prev, suggested_drivers: newSelected }))
+                              }}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => {}} // Handled by onClick
+                                    className="w-4 h-4 text-blue-600 rounded"
+                                  />
+                                  <div>
+                                    <div className="font-medium text-gray-900">
+                                      {driver.name}
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                      Series {driver.series} • Level {driver.level}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {capitalizeStat(trackStat)}: {getStatValue(driver)}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {driver.card_count} cards
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-6 border-t border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      Selected: {formData.suggested_drivers?.length || 0}/4 drivers
+                    </div>
+                    <div className="space-x-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowDriverModal(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => setShowDriverModal(false)}
+                        disabled={!formData.suggested_drivers?.length}
+                      >
+                        Done
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Boost Selection Modal */}
+          {showBoostModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg max-w-5xl w-full mx-4 max-h-[80vh] overflow-hidden">
+                <div className="p-6 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Select Boosts - Additional Recommendations
+                    </h2>
+                    <button
+                      onClick={() => setShowBoostModal(false)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <span className="text-2xl">×</span>
+                    </button>
+                  </div>
+                  <p className="mt-2 text-sm text-gray-600">
+                    Choose additional boosts to recommend for this track. Boosts show their stat effects (values represent +5 per tier).
+                  </p>
+                </div>
+
+                <div className="p-6 overflow-y-auto max-h-[60vh]">
+                  {boostsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {allBoosts
+                        .filter((boost: any) => !boost.is_free) // Exclude free boosts from additional selection
+                        .sort((a: any, b: any) => {
+                          // Sort by boost name
+                          const aName = a.boost_custom_names?.custom_name || a.name
+                          const bName = b.boost_custom_names?.custom_name || b.name
+                          return aName.localeCompare(bName)
+                        })
+                        .map((boost: any) => {
+                          const isSelected = formData.suggested_boosts?.includes(boost.id)
+                          const boostStats = boost.boost_stats || {}
+
+                          return (
+                            <div
+                              key={boost.id}
+                              className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                                isSelected ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                              onClick={() => {
+                                const currentSelected = formData.suggested_boosts || []
+                                let newSelected: string[]
+
+                                if (isSelected) {
+                                  newSelected = currentSelected.filter((id: string) => id !== boost.id)
+                                } else {
+                                  newSelected = [...currentSelected, boost.id]
+                                }
+
+                                setFormData(prev => ({ ...prev, suggested_boosts: newSelected }))
+                              }}
+                            >
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center space-x-3">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => {}} // Handled by onClick
+                                    className="w-4 h-4 text-green-600 rounded"
+                                  />
+                                  <div>
+                                    <div className="font-medium text-gray-900">
+                                      {boost.boost_custom_names?.custom_name || boost.name}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {boost.card_count || 0} cards owned
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Boost Effects */}
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                {boostStats.overtake && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Overtake:</span>
+                                    <span className={`font-medium ${
+                                      boostStats.overtake === 1 ? 'text-blue-600' :
+                                      boostStats.overtake === 2 ? 'text-green-600' :
+                                      boostStats.overtake === 3 ? 'text-yellow-600' :
+                                      boostStats.overtake === 4 ? 'text-orange-600' :
+                                      boostStats.overtake === 5 ? 'text-red-600' : 'text-gray-600'
+                                    }`}>
+                                      +{boostStats.overtake * 5}
+                                    </span>
+                                  </div>
+                                )}
+                                {boostStats.block && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Defend:</span>
+                                    <span className={`font-medium ${
+                                      boostStats.block === 1 ? 'text-blue-600' :
+                                      boostStats.block === 2 ? 'text-green-600' :
+                                      boostStats.block === 3 ? 'text-yellow-600' :
+                                      boostStats.block === 4 ? 'text-orange-600' :
+                                      boostStats.block === 5 ? 'text-red-600' : 'text-gray-600'
+                                    }`}>
+                                      +{boostStats.block * 5}
+                                    </span>
+                                  </div>
+                                )}
+                                {boostStats.corners && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Corners:</span>
+                                    <span className={`font-medium ${
+                                      boostStats.corners === 1 ? 'text-blue-600' :
+                                      boostStats.corners === 2 ? 'text-green-600' :
+                                      boostStats.corners === 3 ? 'text-yellow-600' :
+                                      boostStats.corners === 4 ? 'text-orange-600' :
+                                      boostStats.corners === 5 ? 'text-red-600' : 'text-gray-600'
+                                    }`}>
+                                      +{boostStats.corners * 5}
+                                    </span>
+                                  </div>
+                                )}
+                                {boostStats.tyre_use && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Tyre Use:</span>
+                                    <span className={`font-medium ${
+                                      boostStats.tyre_use === 1 ? 'text-blue-600' :
+                                      boostStats.tyre_use === 2 ? 'text-green-600' :
+                                      boostStats.tyre_use === 3 ? 'text-yellow-600' :
+                                      boostStats.tyre_use === 4 ? 'text-orange-600' :
+                                      boostStats.tyre_use === 5 ? 'text-red-600' : 'text-gray-600'
+                                    }`}>
+                                      +{boostStats.tyre_use * 5}
+                                    </span>
+                                  </div>
+                                )}
+                                {boostStats.power_unit && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Power Unit:</span>
+                                    <span className={`font-medium ${
+                                      boostStats.power_unit === 1 ? 'text-blue-600' :
+                                      boostStats.power_unit === 2 ? 'text-green-600' :
+                                      boostStats.power_unit === 3 ? 'text-yellow-600' :
+                                      boostStats.power_unit === 4 ? 'text-orange-600' :
+                                      boostStats.power_unit === 5 ? 'text-red-600' : 'text-gray-600'
+                                    }`}>
+                                      +{boostStats.power_unit * 5}
+                                    </span>
+                                  </div>
+                                )}
+                                {boostStats.speed && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Speed:</span>
+                                    <span className={`font-medium ${
+                                      boostStats.speed === 1 ? 'text-blue-600' :
+                                      boostStats.speed === 2 ? 'text-green-600' :
+                                      boostStats.speed === 3 ? 'text-yellow-600' :
+                                      boostStats.speed === 4 ? 'text-orange-600' :
+                                      boostStats.speed === 5 ? 'text-red-600' : 'text-gray-600'
+                                    }`}>
+                                      +{boostStats.speed * 5}
+                                    </span>
+                                  </div>
+                                )}
+                                {boostStats.pit_stop && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Pit Stop:</span>
+                                    <span className={`font-medium ${
+                                      boostStats.pit_stop === 1 ? 'text-blue-600' :
+                                      boostStats.pit_stop === 2 ? 'text-green-600' :
+                                      boostStats.pit_stop === 3 ? 'text-yellow-600' :
+                                      boostStats.pit_stop === 4 ? 'text-orange-600' :
+                                      boostStats.pit_stop === 5 ? 'text-red-600' : 'text-gray-600'
+                                    }`}>
+                                      +{boostStats.pit_stop * 5}
+                                    </span>
+                                  </div>
+                                )}
+                                {boostStats.race_start && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Race Start:</span>
+                                    <span className={`font-medium ${
+                                      boostStats.race_start === 1 ? 'text-blue-600' :
+                                      boostStats.race_start === 2 ? 'text-green-600' :
+                                      boostStats.race_start === 3 ? 'text-yellow-600' :
+                                      boostStats.race_start === 4 ? 'text-orange-600' :
+                                      boostStats.race_start === 5 ? 'text-red-600' : 'text-gray-600'
+                                    }`}>
+                                      +{boostStats.race_start * 5}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {Object.keys(boostStats).length === 0 && (
+                                <div className="text-xs text-gray-400 italic">
+                                  No stat effects
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-6 border-t border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      Selected: {formData.suggested_boosts?.length || 0} boosts
+                    </div>
+                    <div className="space-x-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowBoostModal(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => setShowBoostModal(false)}
+                      >
+                        Done
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </ProtectedRoute>
