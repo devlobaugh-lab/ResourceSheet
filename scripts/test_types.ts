@@ -53,6 +53,7 @@ function testTypes() {
     id: 'boost-1',
     name: 'Test Boost',
     icon: 'boost-icon.png',
+    is_free: false,
     boost_stats: {
       overtake_tier: 5,
       block_tier: 4,

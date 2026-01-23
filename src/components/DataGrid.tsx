@@ -46,8 +46,15 @@ function FreeBoostCheckbox({ boostId, isFree }: { boostId: string; isFree: boole
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Failed to update boost');
+        let errorMessage = 'Failed to update boost';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error?.message || errorMessage;
+        } catch (e) {
+          // If response.json() fails (empty response), use default message
+          console.warn('Could not parse error response:', e);
+        }
+        throw new Error(errorMessage);
       }
 
       // Invalidate boosts queries to refresh the UI

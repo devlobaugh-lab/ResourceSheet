@@ -7,6 +7,10 @@ const updateUserBoostSchema = z.object({
   card_count: z.number().min(0),
 })
 
+const updateBoostSchema = z.object({
+  is_free: z.boolean(),
+})
+
 // PUT /api/boosts/[id] - Update user's boost amount
 export async function PUT(
   request: NextRequest,
@@ -130,6 +134,90 @@ export async function PUT(
     }
 
     console.error('Boost PUT error:', error)
+    return NextResponse.json(
+      { error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
+      { status: 500 }
+    )
+  }
+}
+
+// PATCH /api/boosts/[id] - Update boost metadata (admin only)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  console.log('🚀 Boost PATCH API called for ID:', params.id)
+
+  try {
+    // Extract and verify JWT token from Authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+        { status: 401 }
+      )
+    }
+
+    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
+
+    // Verify the JWT token and get user
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+        { status: 401 }
+      )
+    }
+
+    // Check admin status (hardcoded check for now, can be improved later)
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.is_admin) {
+      return NextResponse.json(
+        { error: { code: 'FORBIDDEN', message: 'Admin access required' } },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const validatedData = updateBoostSchema.parse(body)
+
+    // Update the boost's is_free field
+    const { data, error } = await supabaseAdmin
+      .from('boosts')
+      .update({
+        is_free: validatedData.is_free,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', params.id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating boost:', error)
+      return NextResponse.json(
+        { error: { code: 'DATABASE_ERROR', message: error.message } },
+        { status: 500 }
+      )
+    }
+
+    console.log('✅ Boost updated successfully:', data.id)
+    return NextResponse.json({ data })
+
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Invalid request data', details: error.errors } },
+        { status: 400 }
+      )
+    }
+
+    console.error('Boost PATCH error:', error)
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
       { status: 500 }
