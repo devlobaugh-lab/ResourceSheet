@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Saved Setups Backup/Restore**: Added support for backing up and restoring user-created car setups. Setups are now included in the stable backup format and restored during import operations, preserving all setup configurations and metadata.
 - **Track Information in Backups**: Added global track data to backup files for reference. Tracks are included in exports and can be restored by admin users during import operations.
 
+### Added
+- **Series Number Transformation for Special Drivers**: Implemented comprehensive system to transform drivers with series=0 to appropriate series numbers based on their GP tier eligibility
+  - **GP Tier Mapping**: GP Tier 0 → Series 1 (Junior), GP Tier 1 → Series 4 (Challenger), GP Tier 2 → Series 7 (Contender), GP Tier 3+ → Series 10 (Champion)
+  - **Database Updates**: Fixed 97 drivers with null min_gp_tier values and updated 34 legendary/SE drivers with proper series numbers
+  - **JSON Synchronization**: Updated source JSON file to match database changes
+  - **Script Infrastructure**: Created `scripts/update_special_drivers.ts`, `scripts/fix_min_gp_tier.js`, and `scripts/fix_series_mapping.js` for data transformation
+
 ### Fixed
 - **Series Filter Persistence**: Added localStorage persistence for Max Series filter on drivers and parts pages - remembers filter state when user leaves and returns to page
 - **Driver Compare Duplicate Handling**: Fixed logic to allow adding duplicate drivers to compare if they have different rarities - prevents adding same driver name + rarity combination

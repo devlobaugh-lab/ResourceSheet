@@ -10,6 +10,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getAuthHeaders, useUserCarSetups } from '@/hooks/useApi'
 import { useToast } from '@/components/ui/Toast'
 import { Track, UserTrackGuide, DriverView, BoostView, UserCarSetupWithParts } from '@/types/database'
+import { DriverSelectionGrid } from '@/components/DriverSelectionGrid'
 import Link from 'next/link'
 
 // Force dynamic rendering since this page requires authentication
@@ -112,7 +113,7 @@ export default function TrackGuideEditorPage() {
     queryKey: ['drivers-for-gp', selectedGpLevel],
     queryFn: async () => {
       const gpLevel = GP_LEVELS[selectedGpLevel]
-      const response = await fetch(`/api/drivers?gp_level=${selectedGpLevel}&limit=100`, {
+      const response = await fetch(`/api/drivers/user?limit=100`, {
         headers: await getAuthHeaders(),
         credentials: 'same-origin'
       })
@@ -420,10 +421,10 @@ export default function TrackGuideEditorPage() {
           {/* Driver Selection Modal */}
           {showDriverModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
-                <div className="p-6 border-b border-gray-200">
+              <div className="bg-white rounded-lg max-w-6xl w-full mx-4 max-h-[80vh] overflow-hidden">
+                <div className="p-4 border-b border-gray-200">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-900">
+                    <h2 className="text-lg font-semibold text-gray-900">
                       Select Drivers - {GP_LEVELS[driverModalGpLevel].name} GP
                     </h2>
                     <button
@@ -433,96 +434,45 @@ export default function TrackGuideEditorPage() {
                       <span className="text-2xl">×</span>
                     </button>
                   </div>
-                  <p className="mt-2 text-sm text-gray-600">
+                  <p className="mt-1 text-sm text-gray-600">
                     Choose up to 4 drivers for this GP level. Drivers are sorted by their {capitalizeStat(track?.driver_track_stat || 'overtaking')} stat.
                   </p>
                 </div>
 
-                <div className="p-6 overflow-y-auto max-h-[60vh]">
+                <div className="px-4 py-2 overflow-y-auto max-h-[60vh]">
                   {driversLoading ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      {availableDrivers
-                        .sort((a: any, b: any) => {
-                          // Sort by track-relevant stat (driver_track_stat from track)
-                          const statName = track?.driver_track_stat || 'overtaking'
-                          const getStat = (driver: any) => {
-                            if (!driver.stats_per_level || driver.level === 0) return 0
-                            const stats = driver.stats_per_level[driver.level - 1]
-                            return stats?.[statName] || 0
-                          }
-                          return getStat(b) - getStat(a)
-                        })
-                        .map((driver: any) => {
-                          const isSelected = formData.suggested_drivers?.includes(driver.id)
-                          const trackStat = track?.driver_track_stat || 'overtaking'
-                          const getStatValue = (driver: any) => {
-                            if (!driver.stats_per_level || driver.level === 0) return 0
-                            const stats = driver.stats_per_level[driver.level - 1]
-                            return stats?.[trackStat] || 0
-                          }
-
-                          return (
-                            <div
-                              key={driver.id}
-                              className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                                isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                              }`}
-                              onClick={() => {
-                                const currentSelected = formData.suggested_drivers || []
-                                let newSelected: string[]
-
-                                if (isSelected) {
-                                  newSelected = currentSelected.filter((id: string) => id !== driver.id)
-                                } else if (currentSelected.length < 4) {
-                                  newSelected = [...currentSelected, driver.id]
-                                } else {
-                                  return // Max 4 drivers
-                                }
-
-                                setFormData(prev => ({ ...prev, suggested_drivers: newSelected }))
-                              }}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-3">
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={() => {}} // Handled by onClick
-                                    className="w-4 h-4 text-blue-600 rounded"
-                                  />
-                                  <div>
-                                    <div className="font-medium text-gray-900">
-                                      {driver.name}
-                                    </div>
-                                    <div className="text-sm text-gray-500">
-                                      Series {driver.series} • Level {driver.level}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-sm font-medium text-gray-900">
-                                    {capitalizeStat(trackStat)}: {getStatValue(driver)}
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    {driver.card_count} cards
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })}
-                    </div>
+                    <DriverSelectionGrid
+                      drivers={availableDrivers}
+                      selectedDriverIds={formData.suggested_drivers || []}
+                      onDriverSelectionChange={(selectedDriverIds) => {
+                        setFormData(prev => ({ ...prev, suggested_drivers: selectedDriverIds }))
+                      }}
+                      trackStat={track?.driver_track_stat || 'overtaking'}
+                      maxSeries={GP_LEVELS[driverModalGpLevel].seriesMax}
+                      initialShowHighestLevel={false}
+                      maxSelectable={4}
+                    />
                   )}
                 </div>
 
                 <div className="p-6 border-t border-gray-200 bg-gray-50">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      Selected: {formData.suggested_drivers?.length || 0}/4 drivers
+                    <div className="flex items-center space-x-4">
+                      <div className="text-sm text-gray-600">
+                        Selected: {formData.suggested_drivers?.length || 0}/4 drivers
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setFormData(prev => ({ ...prev, suggested_drivers: [] }))}
+                        disabled={!formData.suggested_drivers?.length}
+                      >
+                        Reset
+                      </Button>
                     </div>
                     <div className="space-x-3">
                       <Button

@@ -265,6 +265,17 @@ Implement a comprehensive Track Guides system where users can create detailed ra
 - [x] **Enhanced logging** - Added detailed progress reporting and Special Edition driver breakdown
 - [x] **Created scripts/direct_seed_improved.js** - New seeding script with better performance and correct rarity mapping
 
+### Series Number Transformation for Special Drivers - COMPLETE ✅
+
+- [x] **Analyzed series=0 dependencies** - Found 34 drivers with series=0 that needed proper GP tier mapping
+- [x] **Created migration plan** - Developed comprehensive approach to map GP tiers to appropriate series numbers
+- [x] **Fixed min_gp_tier data** - Updated database with correct min_gp_tier values from JSON source (fixed 97 drivers)
+- [x] **Implemented series mapping logic** - Created scripts to transform series numbers based on GP tier eligibility
+- [x] **Applied GP tier mapping**: GP Tier 0 → Series 1 (Junior), GP Tier 1 → Series 4 (Challenger), GP Tier 2 → Series 7 (Contender), GP Tier 3+ → Series 10 (Champion)
+- [x] **Updated database and JSON** - Synchronized both database and source JSON file with new series numbers
+- [x] **Created comprehensive scripts**: `scripts/update_special_drivers.ts`, `scripts/fix_min_gp_tier.js`, `scripts/fix_series_mapping.js`
+- [x] **Verified results** - Confirmed all 34 legendary/SE drivers now have appropriate series numbers matching their GP tier
+
 ### Compare Page Development
 
 - [x] **Driver Compare Page - Complete Implementation**
