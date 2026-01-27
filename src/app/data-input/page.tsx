@@ -136,16 +136,30 @@ function DriversTab() {
 
   const drivers = driversResponse?.data || [];
 
-  // Sort: series ascending, within series by rarity then ordinal, series 0 at end
+  // Sort: rarity groups first, then series ascending, within series by rarity then ordinal, series 0 at end
   const sortedDrivers = [...drivers].sort((a, b) => {
-    // Put series 0 at the end
+    // Helper function to get rarity group for sorting
+    const getRarityGroup = (rarity: number): number => {
+      if (rarity < 4) return 0; // Group 0: rarities 0, 1, 2, 3
+      if (rarity === 4) return 1; // Group 1: rarity 4
+      if (rarity === 5) return 2; // Group 2: rarity 5
+      return 3; // Group 3: rarity 6
+    };
+
+    const aRarityGroup = getRarityGroup(a.rarity);
+    const bRarityGroup = getRarityGroup(b.rarity);
+
+    // First: sort by rarity group
+    if (aRarityGroup !== bRarityGroup) return aRarityGroup - bRarityGroup;
+
+    // Within same rarity group, put series 0 at the end
     if (a.series === 0 && b.series !== 0) return 1;
     if (b.series === 0 && a.series !== 0) return -1;
 
-    // Sort by series ascending
+    // Then: sort by series ascending
     if (a.series !== b.series) return a.series - b.series;
 
-    // Within same series, sort by rarity ascending then ordinal ascending
+    // Finally: within same series, sort by rarity ascending then ordinal ascending
     if (a.rarity !== b.rarity) return a.rarity - b.rarity;
     return (a.ordinal || 0) - (b.ordinal || 0);
   });
