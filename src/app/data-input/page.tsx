@@ -170,7 +170,8 @@ function DriversTab() {
            rarity === 2 ? "bg-orange-200" :
            rarity === 3 ? "bg-purple-300" :
            rarity === 4 ? "bg-yellow-300" :
-           rarity === 5 ? "bg-red-300" : "bg-gray-300";
+           rarity === 5 ? "bg-red-300":
+           rarity === 6 ? "bg-rose-400" : "bg-gray-300"; 
   };
 
   return (
@@ -223,7 +224,9 @@ function DriversTab() {
                    driver.rarity === 1 ? 'Common' :
                    driver.rarity === 2 ? 'Rare' :
                    driver.rarity === 3 ? 'Epic' :
-                   driver.rarity === 4 ? 'Legendary' : 'Special'}
+                   driver.rarity === 4 ? 'Legendary' :
+                   driver.rarity === 5 ? 'SE Standard' :
+                   driver.rarity === 6 ? 'SE Turbo' : 'Unknown'}
                 </div>
               </td>
               <td className="px-3 py-1 whitespace-nowrap text-center">
@@ -392,7 +395,7 @@ function PartsTab() {
                    part.rarity === 1 ? 'Common' :
                    part.rarity === 2 ? 'Rare' :
                    part.rarity === 3 ? 'Epic' :
-                   part.rarity === 4 ? 'Legendary' : 'Special'}
+                   part.rarity === 4 ? 'Legendary' : 'Unknown'}
                 </div>
               </td>
               <td className="px-3 py-1 whitespace-nowrap text-center">
