@@ -110,3 +110,6 @@ data/*.json
 # Build outputs
 build/
 out/
+
+# external data source files (very large)
+external_data/
