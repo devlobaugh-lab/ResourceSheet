@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/Toast'
 import { Track, UserTrackGuide, DriverView, BoostView, UserCarSetupWithParts } from '@/types/database'
 import { DriverSelectionGrid } from '@/components/DriverSelectionGrid'
 import Link from 'next/link'
+import { calculateHighestLevel } from '@/lib/utils'
 
 // Force dynamic rendering since this page requires authentication
 export const dynamic = 'force-dynamic'
@@ -31,6 +32,31 @@ const capitalizeStat = (stat: string): string => {
     .replace(/([A-Z])/g, ' $1') // Add space before capital letters
     .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
     .trim() // Remove leading/trailing whitespace
+}
+
+// Helper function to get rarity display name
+const getRarityDisplay = (rarity: number): string => {
+  const rarityMap: Record<number, string> = {
+    0: 'Basic',
+    1: 'Common',
+    2: 'Rare',
+    3: 'Epic',
+    4: 'Legendary',
+    5: 'SE Standard',
+    6: 'SE Turbo'
+  }
+  return rarityMap[rarity] || 'Unknown'
+}
+
+// Get rarity background color for cells
+const getRarityBackground = (rarity: number): string => {
+  return rarity === 0 ? "bg-gray-300" :
+         rarity === 1 ? "bg-blue-200" :
+         rarity === 2 ? "bg-orange-300" :
+         rarity === 3 ? "bg-purple-300" :
+         rarity === 4 ? "bg-yellow-300" :
+         rarity === 5 ? "bg-red-300" :
+         rarity === 6 ? "bg-rose-400" : "bg-gray-300";
 }
 
 export default function TrackGuideEditorPage() {
@@ -344,6 +370,39 @@ export default function TrackGuideEditorPage() {
                 Select up to 4 drivers for this GP level (2 main + 2 alternates).
                 Drivers are filtered by series and sorted by track performance.
               </div>
+              
+              {/* Display Selected Drivers */}
+              {formData.suggested_drivers && formData.suggested_drivers.length > 0 ? (
+                <div className="mb-4">
+                  <div className="text-sm font-medium text-gray-700 mb-2">Selected Drivers:</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {formData.suggested_drivers.map((driverId: string, index: number) => {
+                      // Find the driver details from available drivers
+                      const driver = availableDrivers.find((d: DriverView) => d.id === driverId)
+                      return (
+                        <div key={driverId} className={`p-2 rounded-lg ${driver ? getRarityBackground(driver.rarity) : 'bg-gray-200'}`}>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-bold text-black">
+                              {index + 1}. {driver ? driver.name : 'Driver'}
+                            </span>
+                            <span className="text-sm text-black">
+                              • Level {driver ? driver.level : '0'}
+                            </span>
+                            <span className="text-sm text-black">
+                              • {driver ? getRarityDisplay(driver.rarity) : 'Unknown'}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="text-sm text-gray-500">No drivers selected yet</div>
+                </div>
+              )}
+              
               <Button variant="outline" className="w-full" onClick={handleSelectDrivers}>
                 Select Drivers ({formData.suggested_drivers?.length || 0}/4)
               </Button>
