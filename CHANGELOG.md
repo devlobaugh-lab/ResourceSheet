@@ -113,6 +113,19 @@ node scripts/unified_data_processor.js
 
 ## [Unreleased]
 
+### Added
+- **Track Guide Auto-save**: Automatic saving when switching between GP levels
+  - Smart saving logic that only saves when there's meaningful data
+  - User feedback with loading spinners during save operations
+  - Error resilience - tab switching continues even if save fails
+  - State preservation across GP level changes
+- **Driver Display Enhancement**: Visual display of selected drivers on main track guide page
+  - Selected drivers shown immediately with complete information
+  - Rarity-based background colors for visual hierarchy
+  - Professional formatting with bullet separators
+  - Left-justified layout for better readability
+  - Black text on colored backgrounds for optimal contrast
+
 ### Fixed
 - **Data Input Cache Invalidation**: Fixed issue where restoring collection didn't immediately update data input page display. Added dynamic `key` props to input fields that change when data values change, forcing input remounting with correct default values. This ensures UI updates immediately after import operations instead of requiring page navigation.
 - **Backup Export Logic**: Fixed backup export to include items where level > 0 OR card_count > 0, not just card_count > 0. This ensures that maxed-out items (level 11, card_count 0) are properly included in backups and restored correctly.
