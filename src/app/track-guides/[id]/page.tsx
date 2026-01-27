@@ -12,7 +12,7 @@ import { useToast } from '@/components/ui/Toast'
 import { Track, UserTrackGuide, DriverView, BoostView, UserCarSetupWithParts } from '@/types/database'
 import { DriverSelectionGrid } from '@/components/DriverSelectionGrid'
 import Link from 'next/link'
-import { calculateHighestLevel } from '@/lib/utils'
+import { calculateHighestLevel, cn } from '@/lib/utils'
 
 // Force dynamic rendering since this page requires authentication
 export const dynamic = 'force-dynamic'
@@ -57,6 +57,15 @@ const getRarityBackground = (rarity: number): string => {
          rarity === 4 ? "bg-yellow-300" :
          rarity === 5 ? "bg-red-300" :
          rarity === 6 ? "bg-rose-400" : "bg-gray-300";
+}
+
+// Get boost value background color based on tier (1=blue, 2=green, 3=yellow, 4=orange, 5=red)
+const getBoostValueColor = (tierValue: number): string => {
+  return tierValue === 1 ? "bg-blue-200" :
+         tierValue === 2 ? "bg-green-200" :
+         tierValue === 3 ? "bg-yellow-200" :
+         tierValue === 4 ? "bg-orange-200" :
+         tierValue === 5 ? "bg-red-300" : "bg-gray-50";
 }
 
 export default function TrackGuideEditorPage() {
@@ -657,11 +666,11 @@ export default function TrackGuideEditorPage() {
           {/* Boost Selection Modal */}
           {showBoostModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg max-w-5xl w-full mx-4 max-h-[80vh] overflow-hidden">
-                <div className="p-6 border-b border-gray-200">
+              <div className="bg-white rounded-lg max-w-6xl w-full mx-4 max-h-[80vh] overflow-hidden">
+                <div className="p-4 border-b border-gray-200">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-900">
-                      Select Boosts - Additional Recommendations
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Select Recommended Boosts
                     </h2>
                     <button
                       onClick={() => setShowBoostModal(false)}
@@ -670,200 +679,199 @@ export default function TrackGuideEditorPage() {
                       <span className="text-2xl">×</span>
                     </button>
                   </div>
-                  <p className="mt-2 text-sm text-gray-600">
-                    Choose additional boosts to recommend for this track. Boosts show their stat effects (values represent +5 per tier).
-                  </p>
                 </div>
 
-                <div className="p-6 overflow-y-auto max-h-[60vh]">
+                <div className="px-4 py-2 overflow-y-auto max-h-[60vh]">
                   {boostsLoading ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {allBoosts
-                        .filter((boost: any) => !boost.is_free) // Exclude free boosts from additional selection
-                        .sort((a: any, b: any) => {
-                          // Sort by boost name
-                          const aName = a.boost_custom_names?.custom_name || a.name
-                          const bName = b.boost_custom_names?.custom_name || b.name
-                          return aName.localeCompare(bName)
-                        })
-                        .map((boost: any) => {
-                          const isSelected = formData.suggested_boosts?.includes(boost.id)
-                          const boostStats = boost.boost_stats || {}
+                    <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[50vh]">
+                      <table className="table divide-y divide-gray-200">
+                        <thead className="bg-gray-700 sticky top-0 z-10">
+                          <tr>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Name</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Amount</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Defend</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Overtake</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Corners</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Tyre Use</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Power Unit</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Speed</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Pit Stop</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Race Start</div>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {allBoosts
+                            .sort((a: any, b: any) => {
+                              const aStats = a.boost_stats || {}
+                              const bStats = b.boost_stats || {}
+                              
+                              // Map track stat names to boost stat names
+                              const statMap: Record<string, string> = {
+                                'overtaking': 'overtake',
+                                'defending': 'block',
+                                'defend': 'block',
+                                'corners': 'corners',
+                                'tyre_use': 'tyre_use',
+                                'power_unit': 'power_unit',
+                                'powerUnit': 'power_unit',
+                                'speed': 'speed',
+                                'pit_stop': 'pit_stop',
+                                'pitStop': 'pit_stop',
+                                'race_start': 'race_start',
+                                'raceStart': 'race_start'
+                              }
+                              
+                              // Primary sort: track's driver stat (mapped to boost stat)
+                              const trackDriverStat = track?.driver_track_stat || 'block'
+                              const boostDriverStat = statMap[trackDriverStat] || trackDriverStat
+                              const aDriverStat = aStats[boostDriverStat] || 0
+                              const bDriverStat = bStats[boostDriverStat] || 0
+                              
+                              if (aDriverStat !== bDriverStat) {
+                                return bDriverStat - aDriverStat // Descending order
+                              }
+                              
+                              // Secondary sort: track's car stat (mapped to boost stat)
+                              const trackCarStat = track?.car_track_stat || 'speed'
+                              const boostCarStat = statMap[trackCarStat] || trackCarStat
+                              const aCarStat = aStats[boostCarStat] || 0
+                              const bCarStat = bStats[boostCarStat] || 0
+                              
+                              if (aCarStat !== bCarStat) {
+                                return bCarStat - aCarStat // Descending order
+                              }
+                              
+                              // Tertiary sort: boost name (using custom name → icon → name priority, with BoostIcon_ prefix removed)
+                              const aName = a.boost_custom_names?.custom_name || (a.icon ? a.icon.replace('BoostIcon_', '') : null) || a.name
+                              const bName = b.boost_custom_names?.custom_name || (b.icon ? b.icon.replace('BoostIcon_', '') : null) || b.name
+                              return aName.localeCompare(bName)
+                            })
+                            .map((boost: any) => {
+                              const isSelected = formData.suggested_boosts?.includes(boost.id)
+                              const boostStats = boost.boost_stats || {}
 
-                          return (
-                            <div
-                              key={boost.id}
-                              className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                                isSelected ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'
-                              }`}
-                              onClick={() => {
-                                const currentSelected = formData.suggested_boosts || []
-                                let newSelected: string[]
+                              return (
+                                <tr
+                                  key={boost.id}
+                                  className={cn(
+                                    'hover:bg-gray-50 transition-colors',
+                                    isSelected && 'bg-blue-50'
+                                  )}
+                                  onClick={() => {
+                                    const currentSelected = formData.suggested_boosts || []
+                                    let newSelected: string[]
 
-                                if (isSelected) {
-                                  newSelected = currentSelected.filter((id: string) => id !== boost.id)
-                                } else {
-                                  newSelected = [...currentSelected, boost.id]
-                                }
+                                    if (isSelected) {
+                                      newSelected = currentSelected.filter((id: string) => id !== boost.id)
+                                    } else {
+                                      newSelected = [...currentSelected, boost.id]
+                                    }
 
-                                setFormData(prev => ({ ...prev, suggested_boosts: newSelected }))
-                              }}
-                            >
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center space-x-3">
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={() => {}} // Handled by onClick
-                                    className="w-4 h-4 text-green-600 rounded"
-                                  />
-                                  <div>
-                                    <div className="font-medium text-gray-900">
-                                      {boost.boost_custom_names?.custom_name || boost.name}
+                                    setFormData(prev => ({ ...prev, suggested_boosts: newSelected }))
+                                  }}
+                                >
+                                  {/* Name Column */}
+                                  <td className="px-3 py-1 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                      <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => {}} // Handled by onClick
+                                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-2"
+                                      />
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {boost.boost_custom_names?.custom_name || (boost.icon ? boost.icon.replace('BoostIcon_', '') : null) || boost.name}
+                                      </div>
                                     </div>
-                                    <div className="text-xs text-gray-500">
-                                      {boost.card_count || 0} cards owned
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
+                                  </td>
 
-                              {/* Boost Effects */}
-                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                {boostStats.overtake && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-600">Overtake:</span>
-                                    <span className={`font-medium ${
-                                      boostStats.overtake === 1 ? 'text-blue-600' :
-                                      boostStats.overtake === 2 ? 'text-green-600' :
-                                      boostStats.overtake === 3 ? 'text-yellow-600' :
-                                      boostStats.overtake === 4 ? 'text-orange-600' :
-                                      boostStats.overtake === 5 ? 'text-red-600' : 'text-gray-600'
-                                    }`}>
-                                      +{boostStats.overtake * 5}
-                                    </span>
-                                  </div>
-                                )}
-                                {boostStats.block && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-600">Defend:</span>
-                                    <span className={`font-medium ${
-                                      boostStats.block === 1 ? 'text-blue-600' :
-                                      boostStats.block === 2 ? 'text-green-600' :
-                                      boostStats.block === 3 ? 'text-yellow-600' :
-                                      boostStats.block === 4 ? 'text-orange-600' :
-                                      boostStats.block === 5 ? 'text-red-600' : 'text-gray-600'
-                                    }`}>
-                                      +{boostStats.block * 5}
-                                    </span>
-                                  </div>
-                                )}
-                                {boostStats.corners && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-600">Corners:</span>
-                                    <span className={`font-medium ${
-                                      boostStats.corners === 1 ? 'text-blue-600' :
-                                      boostStats.corners === 2 ? 'text-green-600' :
-                                      boostStats.corners === 3 ? 'text-yellow-600' :
-                                      boostStats.corners === 4 ? 'text-orange-600' :
-                                      boostStats.corners === 5 ? 'text-red-600' : 'text-gray-600'
-                                    }`}>
-                                      +{boostStats.corners * 5}
-                                    </span>
-                                  </div>
-                                )}
-                                {boostStats.tyre_use && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-600">Tyre Use:</span>
-                                    <span className={`font-medium ${
-                                      boostStats.tyre_use === 1 ? 'text-blue-600' :
-                                      boostStats.tyre_use === 2 ? 'text-green-600' :
-                                      boostStats.tyre_use === 3 ? 'text-yellow-600' :
-                                      boostStats.tyre_use === 4 ? 'text-orange-600' :
-                                      boostStats.tyre_use === 5 ? 'text-red-600' : 'text-gray-600'
-                                    }`}>
-                                      +{boostStats.tyre_use * 5}
-                                    </span>
-                                  </div>
-                                )}
-                                {boostStats.power_unit && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-600">Power Unit:</span>
-                                    <span className={`font-medium ${
-                                      boostStats.power_unit === 1 ? 'text-blue-600' :
-                                      boostStats.power_unit === 2 ? 'text-green-600' :
-                                      boostStats.power_unit === 3 ? 'text-yellow-600' :
-                                      boostStats.power_unit === 4 ? 'text-orange-600' :
-                                      boostStats.power_unit === 5 ? 'text-red-600' : 'text-gray-600'
-                                    }`}>
-                                      +{boostStats.power_unit * 5}
-                                    </span>
-                                  </div>
-                                )}
-                                {boostStats.speed && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-600">Speed:</span>
-                                    <span className={`font-medium ${
-                                      boostStats.speed === 1 ? 'text-blue-600' :
-                                      boostStats.speed === 2 ? 'text-green-600' :
-                                      boostStats.speed === 3 ? 'text-yellow-600' :
-                                      boostStats.speed === 4 ? 'text-orange-600' :
-                                      boostStats.speed === 5 ? 'text-red-600' : 'text-gray-600'
-                                    }`}>
-                                      +{boostStats.speed * 5}
-                                    </span>
-                                  </div>
-                                )}
-                                {boostStats.pit_stop && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-600">Pit Stop:</span>
-                                    <span className={`font-medium ${
-                                      boostStats.pit_stop === 1 ? 'text-blue-600' :
-                                      boostStats.pit_stop === 2 ? 'text-green-600' :
-                                      boostStats.pit_stop === 3 ? 'text-yellow-600' :
-                                      boostStats.pit_stop === 4 ? 'text-orange-600' :
-                                      boostStats.pit_stop === 5 ? 'text-red-600' : 'text-gray-600'
-                                    }`}>
-                                      +{boostStats.pit_stop * 5}
-                                    </span>
-                                  </div>
-                                )}
-                                {boostStats.race_start && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-600">Race Start:</span>
-                                    <span className={`font-medium ${
-                                      boostStats.race_start === 1 ? 'text-blue-600' :
-                                      boostStats.race_start === 2 ? 'text-green-600' :
-                                      boostStats.race_start === 3 ? 'text-yellow-600' :
-                                      boostStats.race_start === 4 ? 'text-orange-600' :
-                                      boostStats.race_start === 5 ? 'text-red-600' : 'text-gray-600'
-                                    }`}>
-                                      +{boostStats.race_start * 5}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
+                                  {/* Amount Column */}
+                                  <td className="px-3 py-1 whitespace-nowrap text-center">
+                                    <div className="text-sm text-gray-900">{boost.card_count || 0}</div>
+                                  </td>
 
-                              {Object.keys(boostStats).length === 0 && (
-                                <div className="text-xs text-gray-400 italic">
-                                  No stat effects
-                                </div>
-                              )}
-                            </div>
-                          )
-                        })}
+                                  {/* Stat Columns with color coding */}
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.block > 0 && getBoostValueColor(boostStats.block))}>
+                                    <div className="text-sm font-medium">{boostStats.block ? boostStats.block * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.overtake > 0 && getBoostValueColor(boostStats.overtake))}>
+                                    <div className="text-sm font-medium">{boostStats.overtake ? boostStats.overtake * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.corners > 0 && getBoostValueColor(boostStats.corners))}>
+                                    <div className="text-sm font-medium">{boostStats.corners ? boostStats.corners * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.tyre_use > 0 && getBoostValueColor(boostStats.tyre_use))}>
+                                    <div className="text-sm font-medium">{boostStats.tyre_use ? boostStats.tyre_use * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.power_unit > 0 && getBoostValueColor(boostStats.power_unit))}>
+                                    <div className="text-sm font-medium">{boostStats.power_unit ? boostStats.power_unit * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.speed > 0 && getBoostValueColor(boostStats.speed))}>
+                                    <div className="text-sm font-medium">{boostStats.speed ? boostStats.speed * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.pit_stop > 0 && getBoostValueColor(boostStats.pit_stop))}>
+                                    <div className="text-sm font-medium">{boostStats.pit_stop ? boostStats.pit_stop * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.race_start > 0 && getBoostValueColor(boostStats.race_start))}>
+                                    <div className="text-sm font-medium">{boostStats.race_start ? boostStats.race_start * 5 : ''}</div>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                        </tbody>
+                      </table>
+
+                      {/* Empty State */}
+                      {allBoosts.filter((boost: any) => !boost.is_free).length === 0 && (
+                        <div className="text-center py-12">
+                          <div className="text-gray-500 text-lg mb-2">No boosts found</div>
+                          <div className="text-gray-400 text-sm">
+                            Try adjusting your search or filter criteria
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
                 <div className="p-6 border-t border-gray-200 bg-gray-50">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      Selected: {formData.suggested_boosts?.length || 0} boosts
+                    <div className="flex items-center space-x-4">
+                      <div className="text-sm text-gray-600">
+                        Selected: {formData.suggested_boosts?.length || 0} boosts
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setFormData(prev => ({ ...prev, suggested_boosts: [] }))}
+                        disabled={!formData.suggested_boosts?.length}
+                      >
+                        Reset
+                      </Button>
                     </div>
                     <div className="space-x-3">
                       <Button
