@@ -42,6 +42,7 @@ export default function TrackGuideEditorPage() {
 
   const [selectedGpLevel, setSelectedGpLevel] = useState(0)
   const [formData, setFormData] = useState<Partial<UserTrackGuide>>({})
+  const [isSaving, setIsSaving] = useState(false)
   const [showDriverModal, setShowDriverModal] = useState(false)
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([])
   const [driverModalGpLevel, setDriverModalGpLevel] = useState(0)
@@ -185,6 +186,53 @@ export default function TrackGuideEditorPage() {
     saveMutation.mutate(dataToSave)
   }
 
+  const handleGpLevelChange = async (newGpLevel: number) => {
+    // Only auto-save if there are changes to save
+    if (selectedGpLevel !== newGpLevel) {
+      // Check if we have any data to save (not just empty defaults)
+      const hasDataToSave = formData.suggested_drivers?.length > 0 ||
+                           formData.suggested_boosts?.length > 0 ||
+                           formData.free_boost_id ||
+                           formData.saved_setup_id ||
+                           formData.setup_notes ||
+                           formData.dry_strategy ||
+                           formData.wet_strategy ||
+                           formData.notes
+
+      if (hasDataToSave) {
+        setIsSaving(true)
+        try {
+          await new Promise<void>((resolve, reject) => {
+            saveMutation.mutate({
+              ...formData,
+              track_id: trackId,
+              gp_level: selectedGpLevel,
+            }, {
+              onSuccess: () => {
+                setIsSaving(false)
+                setSelectedGpLevel(newGpLevel)
+                resolve()
+              },
+              onError: (error) => {
+                setIsSaving(false)
+                // Still switch tabs even if save fails, but show error
+                setSelectedGpLevel(newGpLevel)
+                addToast(`Failed to save changes: ${error.message}`, 'error')
+                resolve()
+              }
+            })
+          })
+        } catch (error) {
+          setIsSaving(false)
+          setSelectedGpLevel(newGpLevel)
+        }
+      } else {
+        // No data to save, just switch tabs
+        setSelectedGpLevel(newGpLevel)
+      }
+    }
+  }
+
   const handleSelectDrivers = () => {
     setDriverModalGpLevel(selectedGpLevel)
     setShowDriverModal(true)
@@ -264,14 +312,20 @@ export default function TrackGuideEditorPage() {
               {GP_LEVELS.map(level => (
                 <button
                   key={level.id}
-                  onClick={() => setSelectedGpLevel(level.id)}
+                  onClick={() => handleGpLevelChange(level.id)}
+                  disabled={isSaving}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     selectedGpLevel === level.id
                       ? 'bg-blue-100 text-blue-800 border border-blue-200'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
+                  } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {level.name}
+                  {isSaving && selectedGpLevel === level.id && (
+                    <span className="ml-2 inline-flex items-center">
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
