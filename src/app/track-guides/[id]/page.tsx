@@ -135,11 +135,10 @@ export default function TrackGuideEditorPage() {
     }
   })
 
-  // Fetch drivers filtered by GP level for driver selection modal
+  // Fetch drivers for display and selection
   const { data: availableDrivers = [], isLoading: driversLoading } = useQuery({
     queryKey: ['drivers-for-gp', selectedGpLevel],
     queryFn: async () => {
-      const gpLevel = GP_LEVELS[selectedGpLevel]
       const response = await fetch(`/api/drivers/user?limit=100`, {
         headers: await getAuthHeaders(),
         credentials: 'same-origin'
@@ -147,8 +146,31 @@ export default function TrackGuideEditorPage() {
       if (!response.ok) return []
       const result = await response.json()
       return result.data || []
+    }
+  })
+
+  // Fetch driver details for selected drivers to ensure they're available immediately
+  const { data: selectedDriverDetails = [], isLoading: driverDetailsLoading } = useQuery({
+    queryKey: ['driver-details', formData.suggested_drivers],
+    queryFn: async () => {
+      if (!formData.suggested_drivers || formData.suggested_drivers.length === 0) {
+        return []
+      }
+      
+      const response = await fetch(`/api/drivers/user?limit=100`, {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      })
+      if (!response.ok) return []
+      const result = await response.json()
+      const allDrivers = result.data || []
+      
+      // Filter to only include the selected drivers
+      return allDrivers.filter((driver: DriverView) => 
+        formData.suggested_drivers?.includes(driver.id)
+      )
     },
-    enabled: showDriverModal
+    enabled: !!formData.suggested_drivers && formData.suggested_drivers.length > 0
   })
 
   // Update form data when track guide loads
@@ -194,7 +216,7 @@ export default function TrackGuideEditorPage() {
       return response.json()
     },
     onSuccess: () => {
-      addToast('Track guide saved successfully', 'success')
+      // Removed toast message for auto-save during tab navigation
       queryClient.invalidateQueries({ queryKey: ['track-guides'] })
       queryClient.invalidateQueries({ queryKey: ['track-guide', trackId, selectedGpLevel] })
     },
@@ -377,19 +399,44 @@ export default function TrackGuideEditorPage() {
                   <div className="text-sm font-medium text-gray-700 mb-2">Selected Drivers:</div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {formData.suggested_drivers.map((driverId: string, index: number) => {
-                      // Find the driver details from available drivers
-                      const driver = availableDrivers.find((d: DriverView) => d.id === driverId)
+                      // First try to find driver from selected driver details (faster)
+                      let driver = selectedDriverDetails.find((d: DriverView) => d.id === driverId)
+                      
+                      // If not found in selected details, try available drivers
+                      if (!driver) {
+                        driver = availableDrivers.find((d: DriverView) => d.id === driverId)
+                      }
+                      
+                      // If driver is still not found (still loading), show placeholder
+                      if (!driver) {
+                        return (
+                          <div key={driverId} className="p-2 rounded-lg bg-gray-200">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-bold text-black">
+                                {index + 1}. Loading...
+                              </span>
+                              <span className="text-sm text-black">
+                                • Level 0
+                              </span>
+                              <span className="text-sm text-black">
+                                • Unknown
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      }
+                      
                       return (
-                        <div key={driverId} className={`p-2 rounded-lg ${driver ? getRarityBackground(driver.rarity) : 'bg-gray-200'}`}>
+                        <div key={driverId} className={`p-2 rounded-lg ${getRarityBackground(driver.rarity)}`}>
                           <div className="flex items-center space-x-2">
                             <span className="text-sm font-bold text-black">
-                              {index + 1}. {driver ? driver.name : 'Driver'}
+                              {index + 1}. {driver.name}
                             </span>
                             <span className="text-sm text-black">
-                              • Level {driver ? driver.level : '0'}
+                              • Level {driver.level}
                             </span>
                             <span className="text-sm text-black">
-                              • {driver ? getRarityDisplay(driver.rarity) : 'Unknown'}
+                              • {getRarityDisplay(driver.rarity)}
                             </span>
                           </div>
                         </div>
