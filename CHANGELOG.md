@@ -125,6 +125,15 @@ node scripts/unified_data_processor.js
   - Professional formatting with bullet separators
   - Left-justified layout for better readability
   - Black text on colored backgrounds for optimal contrast
+- **Boost Selection Modal Enhancement**: Complete redesign and functionality improvements
+  - **Professional Styling**: Matches driver selection modal appearance with dark headers and consistent layout
+  - **Track-Specific Sorting**: Sorts boosts by track's driver stat (primary) and car stat (secondary)
+  - **Stat Name Mapping**: Handles both camelCase and snake_case naming conventions (raceStart → race_start)
+  - **Boost Name Display**: Custom_name → Icon (prefix removed) → Name priority with "BoostIcon_" prefix removal
+  - **Column Organization**: Driver stats first (Defend), then Car stats (Speed) for logical flow
+  - **Free Boosts Included**: All boosts (free and paid) available in additional boost selection modal
+  - **Enhanced Sorting**: Three-level sorting system (track stats → track stats → name)
+  - **Universal Track Support**: Works with all track stat combinations (Monza, Imola, Silverstone, etc.)
 
 ### Fixed
 - **Data Input Cache Invalidation**: Fixed issue where restoring collection didn't immediately update data input page display. Added dynamic `key` props to input fields that change when data values change, forcing input remounting with correct default values. This ensures UI updates immediately after import operations instead of requiring page navigation.

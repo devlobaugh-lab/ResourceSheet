@@ -331,6 +331,27 @@ Implement a comprehensive Track Guides system where users can create detailed ra
 - [ ] Add performance review guidelines
 - [ ] Establish security review requirements
 
+## [x] Boost Selection Modal Enhancement - COMPLETE
+- [x] Analyze current boost selection modal styling
+- [x] Examine driver selection modal styling for consistency
+- [x] Identify key visual differences between modals
+- [x] Update boost modal to match driver modal appearance
+- [x] Test updated styling and functionality
+- [x] Ensure consistent user experience
+- [x] Update modal title to "Select Recommended Boosts"
+- [x] Remove subtitle text for cleaner appearance
+- [x] Reorder columns: Driver stats first (Defend), then Car stats (Speed)
+- [x] Implement track-specific sorting by driver stat (primary) and car stat (secondary)
+- [x] Fix stat name mapping between camelCase and snake_case conventions
+- [x] Fix boost name display calculation to match Boosts page exactly
+- [x] Fix camelCase vs snake_case stat name mapping for all track combinations
+- [x] Update display name logic: Custom_name → Icon (prefix removed) → Name
+- [x] Remove "BoostIcon_" prefix from icon names for cleaner display
+- [x] Include free boosts in additional boost selection modal
+- [x] Test sorting functionality with Monza (Defending, Speed) and Imola (Race Start, Power Unit)
+- [x] Verify boost name display consistency across all pages
+- [x] Ensure universal track support for all stat combinations
+
 ## ARCHIVED TASKS
 
 ### User Data Input Interface
