@@ -442,10 +442,10 @@ export default function TrackGuideEditorPage() {
                                 {index + 1}. Loading...
                               </span>
                               <span className="text-sm text-black">
-                                • Level 0
+                                Lvl 0
                               </span>
                               <span className="text-sm text-black">
-                                • Unknown
+                                Unknown
                               </span>
                             </div>
                           </div>
@@ -459,10 +459,10 @@ export default function TrackGuideEditorPage() {
                               {index + 1}. {driver.name}
                             </span>
                             <span className="text-sm text-black">
-                              • Level {driver.level}
+                              Lvl {driver.level}
                             </span>
                             <span className="text-sm text-black">
-                              • {getRarityDisplay(driver.rarity)}
+                              {getRarityDisplay(driver.rarity)}
                             </span>
                           </div>
                         </div>
@@ -499,10 +499,10 @@ export default function TrackGuideEditorPage() {
                                 {index + 3}. Loading...
                               </span>
                               <span className="text-sm text-black">
-                                • Level 0
+                                Lvl 0
                               </span>
                               <span className="text-sm text-black">
-                                • Unknown
+                                Unknown
                               </span>
                             </div>
                           </div>
@@ -516,10 +516,10 @@ export default function TrackGuideEditorPage() {
                               {index + 3}. {driver.name}
                             </span>
                             <span className="text-sm text-black">
-                              • Level {driver.level}
+                              Lvl {driver.level}
                             </span>
                             <span className="text-sm text-black">
-                              • {getRarityDisplay(driver.rarity)}
+                              {getRarityDisplay(driver.rarity)}
                             </span>
                           </div>
                         </div>

@@ -96,7 +96,7 @@ export default function TrackGuidesPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Track Guides</h1>
@@ -107,7 +107,7 @@ export default function TrackGuidesPage() {
           </div>
 
           {/* GP Level Legend */}
-          <Card className="p-6 mb-6">
+          {/* <Card className="p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">GP Levels</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {GP_LEVELS.map(level => (
@@ -124,33 +124,33 @@ export default function TrackGuidesPage() {
             <p className="mt-4 text-sm text-gray-600">
               <strong>Legend & SE drivers:</strong> Assigned based on min_gp_tier parameter (0=Junior, 1=Challenger, 2=Contender, 3=Champion)
             </p>
-          </Card>
+          </Card> */}
 
           {/* Track Guides Grid */}
-          <Card className="p-6">
+          <Card>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-100 bg-gray-800 uppercase tracking-wider">
                       Track
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-2 py-3 text-left text-xs font-medium text-gray-100 bg-gray-800 uppercase tracking-wider">
                       Stats
                     </th>
-                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-100 bg-gray-800 uppercase tracking-wider">
                       Junior
                     </th>
-                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-100 bg-gray-800 uppercase tracking-wider">
                       Challenger
                     </th>
-                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-100 bg-gray-800 uppercase tracking-wider">
                       Contender
                     </th>
-                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-100 bg-gray-800 uppercase tracking-wider">
                       Champion
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 pl-10 text-left text-xs font-medium text-gray-100 bg-gray-800 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -158,43 +158,42 @@ export default function TrackGuidesPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {tracks.map((track: Track) => (
                     <tr key={track.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-2 whitespace-nowrap">
                         <div className="flex items-center">
                           <div>
                             <div className="text-sm font-medium text-gray-900">
                               {track.name}
                             </div>
                             {track.alt_name && (
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-gray-600">
                                 {track.alt_name}
                               </div>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-600">
                         <div className="flex flex-col space-y-1">
-                          <span>{capitalizeStat(track.driver_track_stat)}</span>
-                          <span>{capitalizeStat(track.car_track_stat)}</span>
+                          <span>{capitalizeStat(track.driver_track_stat)} / {capitalizeStat(track.car_track_stat)}</span>
                         </div>
                       </td>
                       {GP_LEVELS.map(level => {
                         const status = getCompletionStatus(track.id, level.id)
                         return (
-                          <td key={level.id} className="px-6 py-4 whitespace-nowrap text-center">
+                          <td key={level.id} className="px-6 py-2 whitespace-nowrap text-center">
                             {status === 'complete' ? (
                               <div className="flex justify-center">
                                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                               </div>
                             ) : (
                               <div className="flex justify-center">
-                                <div className="w-3 h-3 border border-gray-300 rounded-full"></div>
+                                <div className="w-3 h-3 border border-gray-500 rounded-full"></div>
                               </div>
                             )}
                           </td>
                         )
                       })}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-2 whitespace-nowrap text-sm font-medium">
                         <Link href={`/track-guides/${track.id}`}>
                           <Button variant="outline" size="sm">
                             View/Edit
