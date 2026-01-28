@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -50,6 +50,7 @@ export default function AdminTracksPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingTrack, setEditingTrack] = useState<any>(null);
   const [formData, setFormData] = useState<TrackFormData>(initialFormData);
+  const trackNameRef = useRef<HTMLInputElement>(null);
   // Get current active season for default selection
   const { data: seasonsData } = useSeasons({ is_active: true });
   const currentSeason = seasonsData?.data?.find((season: any) => season.is_active);
@@ -90,6 +91,15 @@ export default function AdminTracksPage() {
     setEditingTrack(null);
     setShowCreateForm(false);
   };
+
+  // Focus on track name field when form is shown
+  useEffect(() => {
+    if (showCreateForm && trackNameRef.current) {
+      trackNameRef.current.focus();
+      // Select all text to make it easy to replace
+      trackNameRef.current.select();
+    }
+  }, [showCreateForm]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -246,6 +256,7 @@ export default function AdminTracksPage() {
                     Track Name *
                   </label>
                   <Input
+                    ref={trackNameRef}
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -355,25 +366,25 @@ export default function AdminTracksPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-100 bg-gray-800 uppercase tracking-wider">
                       Track Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-100 bg-gray-800 uppercase tracking-wider">
                       Alt Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-100 bg-gray-800 uppercase tracking-wider">
                       Laps
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-100 bg-gray-800 uppercase tracking-wider">
                       Driver Stat
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-100 bg-gray-800 uppercase tracking-wider">
                       Car Stat
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-100 bg-gray-800 uppercase tracking-wider">
                       Season
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-100 bg-gray-800 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -394,25 +405,25 @@ export default function AdminTracksPage() {
                   ) : (
                     tracksData?.map((track: any) => (
                       <tr key={track.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                           {track.name}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
                           {track.alt_name || '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
                           {track.laps}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
                           {driverStats.find(s => s.value === track.driver_track_stat)?.label}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
                           {carStats.find(s => s.value === track.car_track_stat)?.label}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
                           {track.season_name || 'Unknown'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <td className="px-6 py-2 whitespace-nowrap text-sm font-medium space-x-2">
                           <Button
                             variant="outline"
                             size="sm"
