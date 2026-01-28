@@ -7,7 +7,7 @@ import { UserTrackGuide, Updates } from '@/types/database'
 const updateTrackGuideSchema = z.object({
   track_id: z.string().uuid().optional(),
   gp_level: z.number().int().min(0).max(3).optional(),
-  suggested_drivers: z.array(z.string().uuid()).max(4).optional(),
+  suggested_drivers: z.array(z.string().uuid()).max(8).optional(),
   free_boost_id: z.string().uuid().optional().nullable(),
   suggested_boosts: z.array(z.string().uuid()).optional(),
   saved_setup_id: z.string().uuid().optional().nullable(),

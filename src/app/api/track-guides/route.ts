@@ -7,7 +7,7 @@ import { UserTrackGuide, Inserts, Updates } from '@/types/database'
 const createTrackGuideSchema = z.object({
   track_id: z.string().uuid(),
   gp_level: z.number().int().min(0).max(3),
-  suggested_drivers: z.array(z.string().uuid()).max(4).optional().default([]),
+  suggested_drivers: z.array(z.string().uuid()).max(8).optional().default([]),
   free_boost_id: z.string().uuid().optional().nullable(),
   suggested_boosts: z.array(z.string().uuid()).optional().default([]),
   saved_setup_id: z.string().uuid().optional().nullable(),
@@ -17,7 +17,18 @@ const createTrackGuideSchema = z.object({
   notes: z.string().optional().nullable(),
 })
 
-const updateTrackGuideSchema = createTrackGuideSchema.partial()
+const updateTrackGuideSchema = z.object({
+  track_id: z.string().uuid().optional(),
+  gp_level: z.number().int().min(0).max(3).optional(),
+  suggested_drivers: z.array(z.string().uuid()).max(8).optional(),
+  free_boost_id: z.string().uuid().optional().nullable(),
+  suggested_boosts: z.array(z.string().uuid()).optional(),
+  saved_setup_id: z.string().uuid().optional().nullable(),
+  setup_notes: z.string().optional().nullable(),
+  dry_strategy: z.string().optional().nullable(),
+  wet_strategy: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+}).partial()
 
 // GET /api/track-guides - List user's track guides with optional filters
 export async function GET(request: NextRequest) {

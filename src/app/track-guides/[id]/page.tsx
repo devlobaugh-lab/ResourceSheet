@@ -81,7 +81,10 @@ export default function TrackGuideEditorPage() {
   const [showDriverModal, setShowDriverModal] = useState(false)
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([])
   const [driverModalGpLevel, setDriverModalGpLevel] = useState(0)
+  const [driverSelectionMode, setDriverSelectionMode] = useState<'recommended' | 'alternate'>('recommended')
   const [showBoostModal, setShowBoostModal] = useState(false)
+  const [recommendedDrivers, setRecommendedDrivers] = useState<string[]>([])
+  const [alternateDrivers, setAlternateDrivers] = useState<string[]>([])
 
   // Fetch user's saved car setups
   const { data: userSetupsResponse } = useUserCarSetups()
@@ -112,8 +115,7 @@ export default function TrackGuideEditorPage() {
       if (!response.ok) return []
       const result = await response.json()
       return result.data || []
-    },
-    enabled: showBoostModal
+    }
   })
 
   // Fetch track details
@@ -186,6 +188,14 @@ export default function TrackGuideEditorPage() {
   useEffect(() => {
     if (trackGuide) {
       setFormData(trackGuide)
+      // Split drivers into recommended and alternate
+      if (trackGuide.suggested_drivers && trackGuide.suggested_drivers.length > 0) {
+        setRecommendedDrivers(trackGuide.suggested_drivers.slice(0, 2))
+        setAlternateDrivers(trackGuide.suggested_drivers.slice(2, 8))
+      } else {
+        setRecommendedDrivers([])
+        setAlternateDrivers([])
+      }
     } else {
       // Reset form for new guide
       setFormData({
@@ -197,6 +207,8 @@ export default function TrackGuideEditorPage() {
         wet_strategy: '',
         notes: ''
       })
+      setRecommendedDrivers([])
+      setAlternateDrivers([])
     }
   }, [trackGuide, trackId, selectedGpLevel])
 
@@ -296,7 +308,23 @@ export default function TrackGuideEditorPage() {
   }
 
   const handleDriverSelection = (selectedDriverIds: string[]) => {
-    setFormData(prev => ({ ...prev, suggested_drivers: selectedDriverIds }))
+    if (driverSelectionMode === 'recommended') {
+      // For recommended drivers, combine with existing alternate drivers
+      const newSuggestedDrivers = [
+        ...selectedDriverIds,
+        ...alternateDrivers
+      ]
+      setFormData(prev => ({ ...prev, suggested_drivers: newSuggestedDrivers }))
+      setRecommendedDrivers(selectedDriverIds)
+    } else {
+      // For alternate drivers, combine with existing recommended drivers
+      const newSuggestedDrivers = [
+        ...recommendedDrivers,
+        ...selectedDriverIds
+      ]
+      setFormData(prev => ({ ...prev, suggested_drivers: newSuggestedDrivers }))
+      setAlternateDrivers(selectedDriverIds)
+    }
     setShowDriverModal(false)
   }
 
@@ -345,17 +373,14 @@ export default function TrackGuideEditorPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto py-0 px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-4">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  {track.name} {track.alt_name && `(${track.alt_name})`}
+                  {track.name} {track.alt_name && `(${track.alt_name})`} - {capitalizeStat(track.driver_track_stat)} / {capitalizeStat(track.car_track_stat)}
                 </h1>
-                <p className="mt-2 text-gray-600">
-                  Track Stats: {capitalizeStat(track.driver_track_stat)}, {capitalizeStat(track.car_track_stat)}
-                </p>
               </div>
               <Link href="/track-guides">
                 <Button variant="outline">Back to Track Guides</Button>
@@ -364,8 +389,8 @@ export default function TrackGuideEditorPage() {
           </div>
 
           {/* GP Level Tabs */}
-          <Card className="p-6 mb-6">
-            <div className="flex space-x-1 mb-6">
+          <Card className="px-4 pt-2 mb-4">
+            <div className="flex space-x-1 mb-2 justify-center">
               {GP_LEVELS.map(level => (
                 <button
                   key={level.id}
@@ -386,28 +411,20 @@ export default function TrackGuideEditorPage() {
                 </button>
               ))}
             </div>
-
-            <div className="text-sm text-gray-600">
-              <strong>Current Level:</strong> {GP_LEVELS[selectedGpLevel].name} (Series ≤ {GP_LEVELS[selectedGpLevel].seriesMax})
-            </div>
           </Card>
 
           {/* Track Guide Editor */}
           <div className="space-y-6">
             {/* Driver Selection Section */}
             <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Driver Recommendations</h3>
-              <div className="text-sm text-gray-600 mb-4">
-                Select up to 4 drivers for this GP level (2 main + 2 alternates).
-                Drivers are filtered by series and sorted by track performance.
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Driver Recommendations</h3>
               
-              {/* Display Selected Drivers */}
-              {formData.suggested_drivers && formData.suggested_drivers.length > 0 ? (
-                <div className="mb-4">
-                  <div className="text-sm font-medium text-gray-700 mb-2">Selected Drivers:</div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {formData.suggested_drivers.map((driverId: string, index: number) => {
+              {/* Recommended Drivers Section */}
+              <div className="mb-6">
+                {/* <h4 className="text-md font-medium text-gray-800 mb-3">Recommended Drivers</h4> */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  {formData.suggested_drivers && formData.suggested_drivers.length > 0 ? (
+                    formData.suggested_drivers.slice(0, 2).map((driverId: string, index: number) => {
                       // First try to find driver from selected driver details (faster)
                       let driver = selectedDriverDetails.find((d: DriverView) => d.id === driverId)
                       
@@ -419,7 +436,7 @@ export default function TrackGuideEditorPage() {
                       // If driver is still not found (still loading), show placeholder
                       if (!driver) {
                         return (
-                          <div key={driverId} className="p-2 rounded-lg bg-gray-200">
+                          <div key={driverId} className="p-3 rounded-lg bg-gray-200">
                             <div className="flex items-center space-x-2">
                               <span className="text-sm font-bold text-black">
                                 {index + 1}. Loading...
@@ -436,7 +453,7 @@ export default function TrackGuideEditorPage() {
                       }
                       
                       return (
-                        <div key={driverId} className={`p-2 rounded-lg ${getRarityBackground(driver.rarity)}`}>
+                        <div key={driverId} className={`p-3 rounded-lg ${getRarityBackground(driver.rarity)}`}>
                           <div className="flex items-center space-x-2">
                             <span className="text-sm font-bold text-black">
                               {index + 1}. {driver.name}
@@ -450,27 +467,235 @@ export default function TrackGuideEditorPage() {
                           </div>
                         </div>
                       )
-                    })}
-                  </div>
+                    })
+                  ) : (
+                    <div className="col-span-2 p-4 bg-gray-50 rounded-lg">
+                      <div className="text-sm text-gray-500">No recommended drivers selected yet</div>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                  <div className="text-sm text-gray-500">No drivers selected yet</div>
+              </div>
+
+              {/* Alternate Drivers Section */}
+              <div className="mb-6">
+                <h4 className="text-md font-medium text-gray-800 mb-3">Alternate Suggestions (Max 6)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                  {formData.suggested_drivers && formData.suggested_drivers.length > 2 ? (
+                    formData.suggested_drivers.slice(2, 8).map((driverId: string, index: number) => {
+                      // First try to find driver from selected driver details (faster)
+                      let driver = selectedDriverDetails.find((d: DriverView) => d.id === driverId)
+                      
+                      // If not found in selected details, try available drivers
+                      if (!driver) {
+                        driver = availableDrivers.find((d: DriverView) => d.id === driverId)
+                      }
+                      
+                      // If driver is still not found (still loading), show placeholder
+                      if (!driver) {
+                        return (
+                          <div key={driverId} className="p-3 rounded-lg bg-gray-200">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-bold text-black">
+                                {index + 3}. Loading...
+                              </span>
+                              <span className="text-sm text-black">
+                                • Level 0
+                              </span>
+                              <span className="text-sm text-black">
+                                • Unknown
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      }
+                      
+                      return (
+                        <div key={driverId} className={`p-3 rounded-lg ${getRarityBackground(driver.rarity)}`}>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-bold text-black">
+                              {index + 3}. {driver.name}
+                            </span>
+                            <span className="text-sm text-black">
+                              • Level {driver.level}
+                            </span>
+                            <span className="text-sm text-black">
+                              • {getRarityDisplay(driver.rarity)}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="col-span-3 p-4 bg-gray-50 rounded-lg">
+                      <div className="text-sm text-gray-500">No alternate drivers selected yet</div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
               
-              <Button variant="outline" className="w-full" onClick={handleSelectDrivers}>
-                Select Drivers ({formData.suggested_drivers?.length || 0}/4)
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 text-sm" onClick={() => {
+                  setDriverSelectionMode('recommended')
+                  handleSelectDrivers()
+                }}>
+                  Select Recommended (2)
+                </Button>
+                <Button variant="outline" className="flex-1 text-sm" onClick={() => {
+                  setDriverSelectionMode('alternate')
+                  handleSelectDrivers()
+                }}>
+                  Select Alternate (6)
+                </Button>
+              </div>
             </Card>
 
             {/* Boost Recommendations Section */}
             <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Boost Recommendations</h3>
-              <div className="space-y-4">
-                <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Boost Recommendations</h3>
+              
+              {/* Display Selected Boosts in Grid */}
+              {(formData.suggested_boosts && formData.suggested_boosts.length > 0) || formData.free_boost_id ? (
+                <div className="mb-4">
+                  {/* <div className="text-sm font-medium text-gray-700 mb-2">Selected Boosts:</div> */}
+                  <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[200px]">
+                    <table className="table divide-y divide-gray-200">
+                      <thead className="bg-gray-700 sticky top-0 z-10">
+                        <tr>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                            <div className="flex items-center">Name</div>
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                            <div className="flex items-center">Amount</div>
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                            <div className="flex items-center">Defend</div>
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                            <div className="flex items-center">Overtake</div>
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                            <div className="flex items-center">Corners</div>
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                            <div className="flex items-center">Tyre Use</div>
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                            <div className="flex items-center">Power Unit</div>
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                            <div className="flex items-center">Speed</div>
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                            <div className="flex items-center">Pit Stop</div>
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                            <div className="flex items-center">Race Start</div>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {/* Additional Boosts */}
+                        {formData.suggested_boosts && formData.suggested_boosts.map((boostId: string, index: number) => {
+                          const boost = allBoosts.find((b: any) => b.id === boostId)
+                          if (!boost) return null
+                          
+                          const boostStats = boost.boost_stats || {}
+                          return (
+                            <tr key={boostId} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-3 py-1 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {boost.boost_custom_names?.custom_name || (boost.icon ? boost.icon.replace('BoostIcon_', '') : null) || boost.name}
+                                </div>
+                              </td>
+                              <td className="px-3 py-1 whitespace-nowrap text-center">
+                                <div className="text-sm text-gray-900">{boost.card_count || 0}</div>
+                              </td>
+                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.block > 0 && getBoostValueColor(boostStats.block))}>
+                                <div className="text-sm font-medium">{boostStats.block ? boostStats.block * 5 : ''}</div>
+                              </td>
+                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.overtake > 0 && getBoostValueColor(boostStats.overtake))}>
+                                <div className="text-sm font-medium">{boostStats.overtake ? boostStats.overtake * 5 : ''}</div>
+                              </td>
+                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.corners > 0 && getBoostValueColor(boostStats.corners))}>
+                                <div className="text-sm font-medium">{boostStats.corners ? boostStats.corners * 5 : ''}</div>
+                              </td>
+                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.tyre_use > 0 && getBoostValueColor(boostStats.tyre_use))}>
+                                <div className="text-sm font-medium">{boostStats.tyre_use ? boostStats.tyre_use * 5 : ''}</div>
+                              </td>
+                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.power_unit > 0 && getBoostValueColor(boostStats.power_unit))}>
+                                <div className="text-sm font-medium">{boostStats.power_unit ? boostStats.power_unit * 5 : ''}</div>
+                              </td>
+                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.speed > 0 && getBoostValueColor(boostStats.speed))}>
+                                <div className="text-sm font-medium">{boostStats.speed ? boostStats.speed * 5 : ''}</div>
+                              </td>
+                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.pit_stop > 0 && getBoostValueColor(boostStats.pit_stop))}>
+                                <div className="text-sm font-medium">{boostStats.pit_stop ? boostStats.pit_stop * 5 : ''}</div>
+                              </td>
+                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.race_start > 0 && getBoostValueColor(boostStats.race_start))}>
+                                <div className="text-sm font-medium">{boostStats.race_start ? boostStats.race_start * 5 : ''}</div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                        {/* Free Boost at Bottom */}
+                        {formData.free_boost_id && (
+                          (() => {
+                            const freeBoost = freeBoosts.find((b: any) => b.id === formData.free_boost_id)
+                            if (!freeBoost) return null
+                            
+                            const boostStats = freeBoost.boost_stats || {}
+                            return (
+                              <tr key="free-boost" className="bg-blue-50 hover:bg-blue-100 transition-colors">
+                                <td className="px-3 py-1 whitespace-nowrap">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {freeBoost.boost_custom_names?.custom_name || freeBoost.name} (Free)
+                                  </div>
+                                </td>
+                                <td className="px-3 py-1 whitespace-nowrap text-center">
+                                  <div className="text-sm text-gray-900">{freeBoost.card_count || 0}</div>
+                                </td>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.block > 0 && getBoostValueColor(boostStats.block))}>
+                                  <div className="text-sm font-medium">{boostStats.block ? boostStats.block * 5 : ''}</div>
+                                </td>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.overtake > 0 && getBoostValueColor(boostStats.overtake))}>
+                                  <div className="text-sm font-medium">{boostStats.overtake ? boostStats.overtake * 5 : ''}</div>
+                                </td>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.corners > 0 && getBoostValueColor(boostStats.corners))}>
+                                  <div className="text-sm font-medium">{boostStats.corners ? boostStats.corners * 5 : ''}</div>
+                                </td>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.tyre_use > 0 && getBoostValueColor(boostStats.tyre_use))}>
+                                  <div className="text-sm font-medium">{boostStats.tyre_use ? boostStats.tyre_use * 5 : ''}</div>
+                                </td>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.power_unit > 0 && getBoostValueColor(boostStats.power_unit))}>
+                                  <div className="text-sm font-medium">{boostStats.power_unit ? boostStats.power_unit * 5 : ''}</div>
+                                </td>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.speed > 0 && getBoostValueColor(boostStats.speed))}>
+                                  <div className="text-sm font-medium">{boostStats.speed ? boostStats.speed * 5 : ''}</div>
+                                </td>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.pit_stop > 0 && getBoostValueColor(boostStats.pit_stop))}>
+                                  <div className="text-sm font-medium">{boostStats.pit_stop ? boostStats.pit_stop * 5 : ''}</div>
+                                </td>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.race_start > 0 && getBoostValueColor(boostStats.race_start))}>
+                                  <div className="text-sm font-medium">{boostStats.race_start ? boostStats.race_start * 5 : ''}</div>
+                                </td>
+                              </tr>
+                            )
+                          })()
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="text-sm text-gray-500">No boosts selected yet</div>
+                </div>
+              )}
+              
+              <div className="flex space-x-4">
+                <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Free Boost Recommendation
+                    Free Boost
                   </label>
                   <select
                     className="w-full rounded-lg border-gray-300"
@@ -485,9 +710,9 @@ export default function TrackGuideEditorPage() {
                     ))}
                   </select>
                 </div>
-                <div>
+                <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Additional Boost Recommendations
+                    Additional Boosts
                   </label>
                   <Button variant="outline" className="w-full" onClick={handleSelectBoosts}>
                     Select Boosts ({formData.suggested_boosts?.length || 0} selected)
@@ -498,14 +723,34 @@ export default function TrackGuideEditorPage() {
 
             {/* Car Setup Section */}
             <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Car Setup</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Car Setup</h3>
+              
+              {/* Display Selected Setup */}
+              {formData.saved_setup_id && (
+                <div className="mb-4">
+                  <div className="text-sm font-medium text-gray-700 mb-2">Selected Setup:</div>
+                  <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-gray-900">
+                        {userSetups.find(setup => setup.id === formData.saved_setup_id)?.name || 'Unknown Setup'}
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {userSetups.find(setup => setup.id === formData.saved_setup_id)?.notes ? 
+                          userSetups.find(setup => setup.id === formData.saved_setup_id)?.notes : 
+                          'No notes'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Saved Setup (Optional)
                   </label>
                   <select
-                    className="w-full rounded-lg border-gray-300"
+                    className="w-1/2 rounded-lg border-gray-300"
                     value={formData.saved_setup_id || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, saved_setup_id: e.target.value || undefined }))}
                   >
@@ -534,7 +779,29 @@ export default function TrackGuideEditorPage() {
 
             {/* Tire Strategy Section */}
             <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Tire Strategies</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Tire Strategies</h3>
+              
+              {/* Display Current Strategies */}
+              {(formData.dry_strategy || formData.wet_strategy) && (
+                <div className="mb-4">
+                  <div className="text-sm font-medium text-gray-700 mb-2">Current Strategies:</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    {formData.dry_strategy && (
+                      <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
+                        <div className="text-sm font-medium text-gray-900 mb-1">Dry:</div>
+                        <div className="text-sm text-gray-700">{formData.dry_strategy}</div>
+                      </div>
+                    )}
+                    {formData.wet_strategy && (
+                      <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
+                        <div className="text-sm font-medium text-gray-900 mb-1">Wet:</div>
+                        <div className="text-sm text-gray-700">{formData.wet_strategy}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -542,7 +809,7 @@ export default function TrackGuideEditorPage() {
                   </label>
                   <textarea
                     className="w-full rounded-lg border-gray-300"
-                    rows={2}
+                    rows={1}
                     placeholder="e.g., 3m3m2s (3 laps medium, 3 laps medium, 2 laps soft)"
                     value={formData.dry_strategy || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, dry_strategy: e.target.value }))}
@@ -554,7 +821,7 @@ export default function TrackGuideEditorPage() {
                   </label>
                   <textarea
                     className="w-full rounded-lg border-gray-300"
-                    rows={2}
+                    rows={1}
                     placeholder="e.g., 10w (all wet tires)"
                     value={formData.wet_strategy || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, wet_strategy: e.target.value }))}
@@ -604,7 +871,10 @@ export default function TrackGuideEditorPage() {
                     </button>
                   </div>
                   <p className="mt-1 text-sm text-gray-600">
-                    Choose up to 4 drivers for this GP level. Drivers are sorted by their {capitalizeStat(track?.driver_track_stat || 'overtaking')} stat.
+                    {driverSelectionMode === 'recommended' 
+                      ? `Choose up to 2 recommended drivers for this GP level. Drivers are sorted by their ${capitalizeStat(track?.driver_track_stat || 'overtaking')} stat.`
+                      : `Choose up to 6 alternate drivers for this GP level. Drivers are sorted by their ${capitalizeStat(track?.driver_track_stat || 'overtaking')} stat.`
+                    }
                   </p>
                 </div>
 
@@ -616,14 +886,30 @@ export default function TrackGuideEditorPage() {
                   ) : (
                     <DriverSelectionGrid
                       drivers={availableDrivers}
-                      selectedDriverIds={formData.suggested_drivers || []}
+                      selectedDriverIds={driverSelectionMode === 'recommended' ? recommendedDrivers : alternateDrivers}
                       onDriverSelectionChange={(selectedDriverIds) => {
-                        setFormData(prev => ({ ...prev, suggested_drivers: selectedDriverIds }))
+                        if (driverSelectionMode === 'recommended') {
+                          // For recommended drivers, combine with existing alternate drivers
+                          const newSuggestedDrivers = [
+                            ...selectedDriverIds,
+                            ...alternateDrivers
+                          ]
+                          setFormData(prev => ({ ...prev, suggested_drivers: newSuggestedDrivers }))
+                          setRecommendedDrivers(selectedDriverIds)
+                        } else {
+                          // For alternate drivers, combine with existing recommended drivers
+                          const newSuggestedDrivers = [
+                            ...recommendedDrivers,
+                            ...selectedDriverIds
+                          ]
+                          setFormData(prev => ({ ...prev, suggested_drivers: newSuggestedDrivers }))
+                          setAlternateDrivers(selectedDriverIds)
+                        }
                       }}
                       trackStat={track?.driver_track_stat || 'overtaking'}
                       maxSeries={GP_LEVELS[driverModalGpLevel].seriesMax}
                       initialShowHighestLevel={false}
-                      maxSelectable={4}
+                      maxSelectable={driverSelectionMode === 'recommended' ? 2 : 6}
                     />
                   )}
                 </div>
@@ -632,16 +918,8 @@ export default function TrackGuideEditorPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div className="text-sm text-gray-600">
-                        Selected: {formData.suggested_drivers?.length || 0}/4 drivers
+                        Selected: {formData.suggested_drivers?.length || 0}/{driverSelectionMode === 'recommended' ? 2 : 6} drivers
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setFormData(prev => ({ ...prev, suggested_drivers: [] }))}
-                        disabled={!formData.suggested_drivers?.length}
-                      >
-                        Reset
-                      </Button>
                     </div>
                     <div className="space-x-3">
                       <Button

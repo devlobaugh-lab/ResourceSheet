@@ -48,7 +48,7 @@ const stableImportDataSchema = z.object({
     track_name: z.string(),
     track_alt_name: z.string().nullable().optional(),
     gp_level: z.number().min(0).max(3),
-    suggested_drivers: z.array(z.string()).max(4).optional().default([]),
+    suggested_drivers: z.array(z.string()).max(8).optional().default([]),
     free_boost_id: z.string().nullable().optional(),
     suggested_boosts: z.array(z.string()).optional().default([]),
     saved_setup_id: z.string().nullable().optional(),
