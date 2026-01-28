@@ -193,7 +193,7 @@ export default function AdminTracksPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center justify-between">
@@ -211,9 +211,9 @@ export default function AdminTracksPage() {
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div>
-                <label htmlFor="season-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                {/* <label htmlFor="season-filter" className="block text-sm font-medium text-gray-700 mb-1">
                   Filter by Season
-                </label>
+                </label> */}
                 <select
                   id="season-filter"
                   value={selectedSeason}
