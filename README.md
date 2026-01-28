@@ -1,177 +1,189 @@
-# Supabase CLI
+# F1 Resource Manager
 
-[![Coverage Status](https://coveralls.io/repos/github/supabase/cli/badge.svg?branch=main)](https://coveralls.io/github/supabase/cli?branch=main) [![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/supabase-cli/setup-cli/master?style=flat-square&label=Bitbucket%20Canary)](https://bitbucket.org/supabase-cli/setup-cli/pipelines) [![Gitlab Pipeline Status](https://img.shields.io/gitlab/pipeline-status/sweatybridge%2Fsetup-cli?label=Gitlab%20Canary)
-](https://gitlab.com/sweatybridge/setup-cli/-/pipelines)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-[Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
+A comprehensive Formula 1 game resource management application built with Next.js, Supabase, and TypeScript.
 
-This repository contains all the functionality for Supabase CLI.
+## 🎯 Overview
 
-- [x] Running Supabase locally
-- [x] Managing database migrations
-- [x] Creating and deploying Supabase Functions
-- [x] Generating types directly from your database schema
-- [x] Making authenticated HTTP requests to [Management API](https://supabase.com/docs/reference/api/introduction)
+F1 Resource Manager is a web application designed to help Formula 1 game players track and manage their in-game resources including:
 
-## Getting started
+- **Drivers** - Track driver levels, stats, and progression
+- **Car Parts** - Manage car components and performance stats  
+- **Boosts** - Monitor boost availability and custom naming
+- **Setups** - Create and save optimal car configurations
+- **Track Guides** - Build racing strategies for different GP levels
+- **Collection Management** - Import/export your entire collection
 
-### Install the CLI
+## 🚀 Features
 
-Available via [NPM](https://www.npmjs.com) as dev dependency. To install:
+### Core Functionality
+- **Asset Management**: Comprehensive tracking of drivers, car parts, and boosts
+- **Data Input**: Spreadsheet-style interface for quick data entry
+- **Comparison Tools**: Side-by-side comparison of up to 4 items
+- **Collection Backup**: Import/export functionality for data preservation
+- **User Authentication**: Secure login with Supabase Auth
 
-```bash
-npm i supabase --save-dev
-```
+### Advanced Features
+- **Car Setups**: Create and manage custom car configurations
+- **Track Guides**: Build racing strategies for different Grand Prix levels
+- **Boost Customization**: Admin-controlled custom boost naming
+- **Real-time Stats**: Dynamic stat calculations with bonus percentages
+- **Responsive Design**: Works seamlessly on desktop and mobile
 
-When installing with yarn 4, you need to disable experimental fetch with the following nodejs config.
+### Data Processing
+- **Unified Data Pipeline**: Two-stage processing for large external data files
+- **Database Migration**: Automated schema updates and data seeding
+- **Performance Optimized**: Efficient queries with strategic caching
 
-```
-NODE_OPTIONS=--no-experimental-fetch yarn add supabase
-```
+## 🛠 Tech Stack
 
-> **Note**
-For Bun versions below v1.0.17, you must add `supabase` as a [trusted dependency](https://bun.sh/guides/install/trusted) before running `bun add -D supabase`.
+- **Frontend**: Next.js 14 (App Router), React, TypeScript, Tailwind CSS
+- **Backend**: Supabase (PostgreSQL, Auth, RLS)
+- **Database**: PostgreSQL with Row-Level Security
+- **Styling**: Tailwind CSS with custom components
+- **State Management**: React Query for data fetching and caching
+- **Deployment**: Vercel (Free tier)
 
-<details>
-  <summary><b>macOS</b></summary>
+## 📦 Installation
 
-  Available via [Homebrew](https://brew.sh). To install:
+### Prerequisites
 
-  ```sh
-  brew install supabase/tap/supabase
-  ```
+- Node.js 18+
+- Docker (for local Supabase development)
+- Supabase CLI
 
-  To install the beta release channel:
-  
-  ```sh
-  brew install supabase/tap/supabase-beta
-  brew link --overwrite supabase-beta
-  ```
-  
-  To upgrade:
+### Local Development
 
-  ```sh
-  brew upgrade supabase
-  ```
-</details>
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/f1-resource-manager.git
+   cd f1-resource-manager
+   ```
 
-<details>
-  <summary><b>Windows</b></summary>
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-  Available via [Scoop](https://scoop.sh). To install:
+3. **Set up Supabase locally**
+   ```bash
+   supabase init
+   supabase start
+   ```
 
-  ```powershell
-  scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
-  scoop install supabase
-  ```
+4. **Configure environment variables**
+   Create `.env.local` file:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
+   ```
 
-  To upgrade:
+5. **Run database migrations**
+   ```bash
+   supabase db push
+   ```
 
-  ```powershell
-  scoop update supabase
-  ```
-</details>
+6. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
-<details>
-  <summary><b>Linux</b></summary>
+Visit [http://localhost:3000](http://localhost:3000) to see the application.
 
-  Available via [Homebrew](https://brew.sh) and Linux packages.
+## 🏗 Architecture
 
-  #### via Homebrew
+### Database Schema
+The application uses a clean separation of concerns:
 
-  To install:
+- **Global Data**: Catalog items (drivers, parts, boosts) - shared across users
+- **User Data**: Personal collections and preferences - isolated per user
+- **Relationships**: Proper foreign key constraints and indexing
 
-  ```sh
-  brew install supabase/tap/supabase
-  ```
+### Key Tables
+- `drivers` - Driver information and stats
+- `car_parts` - Car component data
+- `boosts` - Boost item details
+- `user_drivers` - User's driver collection
+- `user_car_parts` - User's car parts
+- `user_boosts` - User's boost collection
+- `user_car_setups` - Saved car configurations
+- `user_track_guides` - Racing strategies
 
-  To upgrade:
+### Security
+- **Row-Level Security**: All user data is isolated via RLS policies
+- **Authentication**: Supabase Auth with email magic links
+- **Data Validation**: Comprehensive input validation and sanitization
 
-  ```sh
-  brew upgrade supabase
-  ```
+## 📖 Documentation
 
-  #### via Linux packages
+- [Architecture Design](ARCHITECTURE.md) - System architecture and design decisions
+- [API Documentation](API.md) - REST API endpoints and usage
+- [Setup Guide](SETUP.md) - Detailed development setup instructions
+- [Migration Guide](MIGRATION_GUIDE.md) - Database migration procedures
+- [Product Design](ProductDesign.md) - Product vision and user experience design
+- [CHANGELOG.md](CHANGELOG.md) - Version history and release notes
+- [TASK.md](TASK.md) - Development task tracking and progress
 
-  Linux packages are provided in [Releases](https://github.com/supabase/cli/releases). To install, download the `.apk`/`.deb`/`.rpm`/`.pkg.tar.zst` file depending on your package manager and run the respective commands.
+## 🚀 Deployment
 
-  ```sh
-  sudo apk add --allow-untrusted <...>.apk
-  ```
+### Vercel Deployment
 
-  ```sh
-  sudo dpkg -i <...>.deb
-  ```
+1. **Connect to Vercel**
+   - Import your GitHub repository
+   - Framework preset: Next.js
+   - Build command: `npm run build`
 
-  ```sh
-  sudo rpm -i <...>.rpm
-  ```
+2. **Environment Variables**
+   Add to Vercel project settings:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   ```
 
-  ```sh
-  sudo pacman -U <...>.pkg.tar.zst
-  ```
-</details>
+3. **Database Setup**
+   - Create Supabase project
+   - Run migrations: `supabase db push --project-ref your-project-id`
+   - Seed initial data if needed
 
-<details>
-  <summary><b>Other Platforms</b></summary>
+### Production Considerations
 
-  You can also install the CLI via [go modules](https://go.dev/ref/mod#go-install) without the help of package managers.
+- **Caching**: Leverage Next.js ISR for optimal performance
+- **Monitoring**: Use Supabase dashboard for query monitoring
+- **Backups**: Enable automated database backups
+- **Scaling**: Monitor usage and upgrade plans as needed
 
-  ```sh
-  go install github.com/supabase/cli@latest
-  ```
+## 🤝 Contributing
 
-  Add a symlink to the binary in `$PATH` for easier access:
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-  ```sh
-  ln -s "$(go env GOPATH)/bin/cli" /usr/bin/supabase
-  ```
+### Development Workflow
 
-  This works on other non-standard Linux distros.
-</details>
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Make your changes
+4. Run tests: `npm test`
+5. Commit changes: `git commit -m 'Add feature'`
+6. Push to branch: `git push origin feature-name`
+7. Submit a pull request
 
-<details>
-  <summary><b>Community Maintained Packages</b></summary>
+## 📄 License
 
-  Available via [pkgx](https://pkgx.sh/). Package script [here](https://github.com/pkgxdev/pantry/blob/main/projects/supabase.com/cli/package.yml).
-  To install in your working directory:
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-  ```bash
-  pkgx install supabase
-  ```
+## 🙏 Acknowledgments
 
-  Available via [Nixpkgs](https://nixos.org/). Package script [here](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/supabase-cli/default.nix).
-</details>
+- [Supabase](https://supabase.io) for the excellent backend platform
+- [Next.js](https://nextjs.org) for the powerful React framework
+- [Tailwind CSS](https://tailwindcss.com) for rapid UI development
 
-### Run the CLI
+## 📞 Support
 
-```bash
-supabase bootstrap
-```
+For support and questions:
+- Create an issue in this repository
+- Check the documentation in the `/docs` folder
+- Review the CHANGELOG for recent updates
 
-Or using npx:
+---
 
-```bash
-npx supabase bootstrap
-```
-
-The bootstrap command will guide you through the process of setting up a Supabase project using one of the [starter](https://github.com/supabase-community/supabase-samples/blob/main/samples.json) templates.
-
-## Docs
-
-Command & config reference can be found [here](https://supabase.com/docs/reference/cli/about).
-
-## Breaking changes
-
-We follow semantic versioning for changes that directly impact CLI commands, flags, and configurations.
-
-However, due to dependencies on other service images, we cannot guarantee that schema migrations, seed.sql, and generated types will always work for the same CLI major version. If you need such guarantees, we encourage you to pin a specific version of CLI in package.json.
-
-## Developing
-
-To run from source:
-
-```sh
-# Go >= 1.22
-go run . help
-```
+**Built with ❤️ for F1 game enthusiasts**
