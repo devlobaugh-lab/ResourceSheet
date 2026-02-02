@@ -9,10 +9,21 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getAuthHeaders, useUserCarSetups } from '@/hooks/useApi'
 import { useToast } from '@/components/ui/Toast'
+import { useDriverLookup } from '@/hooks/useDriverLookup'
 import { Track, UserTrackGuide, DriverView, BoostView, UserCarSetupWithParts } from '@/types/database'
 import { DriverSelectionGrid } from '@/components/DriverSelectionGrid'
+import { DriverDisplay } from '@/components/DriverDisplay'
+import { SingleBoostSelectionModal } from '@/components/SingleBoostSelectionModal'
 import Link from 'next/link'
 import { calculateHighestLevel, cn } from '@/lib/utils'
+import { Shield, ArrowUpRight, Signal, Car, Gauge, ArrowRight, Zap, Timer } from 'lucide-react'
+
+// New - imported components for boost stats and editable fields
+import { BoostStatsDisplay } from '@/components/BoostStatsDisplay'
+import { EditableField } from '@/components/EditableField'
+import { EditableSelect } from '@/components/EditableSelect'
+import { EditableTextArea } from '@/components/EditableTextArea'
+
 
 // Force dynamic rendering since this page requires authentication
 export const dynamic = 'force-dynamic'
@@ -34,19 +45,6 @@ const capitalizeStat = (stat: string): string => {
     .trim() // Remove leading/trailing whitespace
 }
 
-// Helper function to get rarity display name
-const getRarityDisplay = (rarity: number): string => {
-  const rarityMap: Record<number, string> = {
-    0: 'Basic',
-    1: 'Common',
-    2: 'Rare',
-    3: 'Epic',
-    4: 'Legendary',
-    5: 'SE Standard',
-    6: 'SE Turbo'
-  }
-  return rarityMap[rarity] || 'Unknown'
-}
 
 // Get rarity background color for cells
 const getRarityBackground = (rarity: number): string => {
@@ -79,12 +77,29 @@ export default function TrackGuideEditorPage() {
   const [formData, setFormData] = useState<Partial<UserTrackGuide>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [showDriverModal, setShowDriverModal] = useState(false)
-  const [selectedDrivers, setSelectedDrivers] = useState<string[]>([])
   const [driverModalGpLevel, setDriverModalGpLevel] = useState(0)
-  const [driverSelectionMode, setDriverSelectionMode] = useState<'recommended' | 'alternate'>('recommended')
+  // const [driverSelectionMode, setDriverSelectionMode] = useState<'recommended' | 'alternate'>('recommended')
+  const [driverSelectionMode, setDriverSelectionMode] = useState<'driver1' | 'driver2' | 'alternate'>('alternate')
   const [showBoostModal, setShowBoostModal] = useState(false)
-  const [recommendedDrivers, setRecommendedDrivers] = useState<string[]>([])
+  const [showDriver1BoostModal, setShowDriver1BoostModal] = useState(false)
+  const [showDriver2BoostModal, setShowDriver2BoostModal] = useState(false)
   const [alternateDrivers, setAlternateDrivers] = useState<string[]>([])
+  
+  const [driver1DryStrategy, setDriver1DryStrategy] = useState('')
+  const [driver2DryStrategy, setDriver2DryStrategy] = useState('')
+  const [driver1WetStrategy, setDriver1WetStrategy] = useState('')
+  const [driver2WetStrategy, setDriver2WetStrategy] = useState('')
+  const [driver_1_id, setDriver_1_id] = useState('')
+  const [driver_2_id, setDriver_2_id] = useState('')
+  const [driver_1_boost_id, setDriver_1_boost_id] = useState<string | null>(null)
+  const [driver_2_boost_id, setDriver_2_boost_id] = useState<string | null>(null)
+
+    // const [showDriver1Modal, setShowDriver1Modal] = useState(false)
+    // const [showDriver2Modal, setShowDriver2Modal] = useState(false)
+    // const [showDriver1BoostModal, setShowDriver1BoostModal] = useState(false)
+    // const [showDriver2BoostModal, setShowDriver2BoostModal] = useState(false)
+    // const [showAltDriversModal, setShowAltDriversModal] = useState(false)
+    // const [showAltBoostsModal, setShowAltBoostsModal] = useState(false)
 
   // Fetch user's saved car setups
   const { data: userSetupsResponse } = useUserCarSetups()
@@ -184,30 +199,107 @@ export default function TrackGuideEditorPage() {
     enabled: !!formData.suggested_drivers && formData.suggested_drivers.length > 0
   })
 
+  // Use the driver lookup hook for optimized driver finding
+  const { findDriver } = useDriverLookup({
+    selectedDriverDetails,
+    availableDrivers
+  })
+
+  // start section holding imported code from new page
+  // New - Fetch driver details for selected drivers
+  const { data: selectedDriver1Details = null } = useQuery({
+    queryKey: ['driver-details', formData.driver_1_id],
+    queryFn: async () => {
+      if (!formData.driver_1_id) return null
+      const response = await fetch(`/api/drivers/user?limit=100`, {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      })
+      if (!response.ok) return null
+      const result = await response.json()
+      const allDrivers = result.data || []
+      return allDrivers.find((d: DriverView) => d.id === formData.driver_1_id) || null
+    },
+    enabled: !!formData.driver_1_id
+  })
+
+  const { data: selectedDriver2Details = null } = useQuery({
+    queryKey: ['driver-details', formData.driver_2_id],
+    queryFn: async () => {
+      if (!formData.driver_2_id) return null
+      const response = await fetch(`/api/drivers/user?limit=100`, {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      })
+      if (!response.ok) return null
+      const result = await response.json()
+      const allDrivers = result.data || []
+      return allDrivers.find((d: DriverView) => d.id === formData.driver_2_id) || null
+    },
+    enabled: !!formData.driver_2_id
+  })
+
+  // New - Fetch boost details for selected boosts
+  const { data: selectedDriver1BoostDetails = null } = useQuery({
+    queryKey: ['boost-details', formData.driver_1_boost_id],
+    queryFn: async () => {
+      if (!formData.driver_1_boost_id) return null
+      const response = await fetch(`/api/boosts?limit=100`, {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      })
+      if (!response.ok) return null
+      const result = await response.json()
+      const allBoosts = result.data || []
+      return allBoosts.find((b: BoostView) => b.id === formData.driver_1_boost_id) || null
+    },
+    enabled: !!formData.driver_1_boost_id
+  })
+
+  const { data: selectedDriver2BoostDetails = null } = useQuery({
+    queryKey: ['boost-details', formData.driver_2_boost_id],
+    queryFn: async () => {
+      if (!formData.driver_2_boost_id) return null
+      const response = await fetch(`/api/boosts?limit=100`, {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      })
+      if (!response.ok) return null
+      const result = await response.json()
+      const allBoosts = result.data || []
+      return allBoosts.find((b: BoostView) => b.id === formData.driver_2_boost_id) || null
+    },
+    enabled: !!formData.driver_2_boost_id
+  })
+
+
   // Update form data when track guide loads
   useEffect(() => {
     if (trackGuide) {
       setFormData(trackGuide)
-      // Split drivers into recommended and alternate
-      if (trackGuide.suggested_drivers && trackGuide.suggested_drivers.length > 0) {
-        setRecommendedDrivers(trackGuide.suggested_drivers.slice(0, 2))
-        setAlternateDrivers(trackGuide.suggested_drivers.slice(2, 8))
-      } else {
-        setRecommendedDrivers([])
-        setAlternateDrivers([])
-      }
+      // Set alternate drivers from the new field or fallback to suggested_drivers
+      setAlternateDrivers(trackGuide.alt_driver_ids || trackGuide.suggested_drivers || [])
     } else {
       // Reset form for new guide
       setFormData({
         track_id: trackId,
         gp_level: selectedGpLevel,
-        suggested_drivers: [],
-        suggested_boosts: [],
+        driver_1_id: null,
+        driver_2_id: null,
+        driver_1_boost_id: null,
+        driver_2_boost_id: null,
+        driver_1_dry_strategy: '',
+        driver_2_dry_strategy: '',
+        driver_1_wet_strategy: '',
+        driver_2_wet_strategy: '',
+        alt_driver_ids: [],
+        alt_boost_ids: [],
         dry_strategy: '',
         wet_strategy: '',
+        suggested_drivers: [],
+        suggested_boosts: [],
         notes: ''
       })
-      setRecommendedDrivers([])
       setAlternateDrivers([])
     }
   }, [trackGuide, trackId, selectedGpLevel])
@@ -308,21 +400,44 @@ export default function TrackGuideEditorPage() {
   }
 
   const handleDriverSelection = (selectedDriverIds: string[]) => {
-    if (driverSelectionMode === 'recommended') {
-      // For recommended drivers, combine with existing alternate drivers
-      const newSuggestedDrivers = [
-        ...selectedDriverIds,
-        ...alternateDrivers
-      ]
-      setFormData(prev => ({ ...prev, suggested_drivers: newSuggestedDrivers }))
-      setRecommendedDrivers(selectedDriverIds)
+    if (driverSelectionMode === 'driver1') {
+      // For driver1, just set the single driver
+      // Add validation to prevent duplicate main drivers
+      if (selectedDriverIds[0] === formData.driver_2_id) {
+        // Clear driver2 if trying to select the same driver
+        setFormData(prev => ({ 
+          ...prev, 
+          driver_1_id: selectedDriverIds[0] || null,
+          driver_2_id: null
+        }))
+        setDriver_1_id(selectedDriverIds[0] || '')
+        setDriver_2_id('')
+      } else {
+        setFormData(prev => ({ ...prev, driver_1_id: selectedDriverIds[0] || null }))
+        setDriver_1_id(selectedDriverIds[0] || '')
+      }
+    } else if (driverSelectionMode === 'driver2') {
+      // For driver2, just set the single driver
+      // Add validation to prevent duplicate main drivers
+      if (selectedDriverIds[0] === formData.driver_1_id) {
+        // Clear driver1 if trying to select the same driver
+        setFormData(prev => ({ 
+          ...prev, 
+          driver_2_id: selectedDriverIds[0] || null,
+          driver_1_id: null
+        }))
+        setDriver_2_id(selectedDriverIds[0] || '')
+        setDriver_1_id('')
+      } else {
+        setFormData(prev => ({ ...prev, driver_2_id: selectedDriverIds[0] || null }))
+        setDriver_2_id(selectedDriverIds[0] || '')
+      }
     } else {
-      // For alternate drivers, combine with existing recommended drivers
-      const newSuggestedDrivers = [
-        ...recommendedDrivers,
-        ...selectedDriverIds
-      ]
-      setFormData(prev => ({ ...prev, suggested_drivers: newSuggestedDrivers }))
+      // For alternate drivers, set the new field
+      setFormData(prev => ({ 
+        ...prev, 
+        alt_driver_ids: selectedDriverIds
+      }))
       setAlternateDrivers(selectedDriverIds)
     }
     setShowDriverModal(false)
@@ -335,6 +450,22 @@ export default function TrackGuideEditorPage() {
   const handleBoostSelection = (selectedBoostIds: string[]) => {
     setFormData(prev => ({ ...prev, suggested_boosts: selectedBoostIds }))
     setShowBoostModal(false)
+  }
+
+  const handleDriverSelect = (driverId: string | null, position: 'driver1' | 'driver2') => {
+    if (position === 'driver1') {
+      setFormData(prev => ({ ...prev, driver_1_id: driverId }))
+    } else {
+      setFormData(prev => ({ ...prev, driver_2_id: driverId }))
+    }
+  }
+
+  const handleBoostSelect = (boostId: string | null, position: 'driver1' | 'driver2') => {
+    if (position === 'driver1') {
+      setFormData(prev => ({ ...prev, driver_1_boost_id: boostId }))
+    } else {
+      setFormData(prev => ({ ...prev, driver_2_boost_id: boostId }))
+    }
   }
 
   const isLoading = trackLoading || guideLoading
@@ -379,12 +510,23 @@ export default function TrackGuideEditorPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  {track.name} {track.alt_name && `(${track.alt_name})`} - {capitalizeStat(track.driver_track_stat)} / {capitalizeStat(track.car_track_stat)}
+                  {track.name} {track.alt_name && `(${track.alt_name})`}
                 </h1>
+                <span className='text-lg font-normal'>{capitalizeStat(track.driver_track_stat)} / {capitalizeStat(track.car_track_stat)}</span>
               </div>
-              <Link href="/track-guides">
-                <Button variant="outline">Back to Track Guides</Button>
-              </Link>
+              {/* Save Button */}
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleSave}
+                  disabled={saveMutation.isPending}
+                  className="px-4 mx-4"
+                >
+                  {saveMutation.isPending ? 'Saving...' : 'Save Guide'}
+                </Button>
+                <Link href="/track-guides">
+                  <Button variant="outline">Back to Track Guides</Button>
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -396,159 +538,214 @@ export default function TrackGuideEditorPage() {
                   key={level.id}
                   onClick={() => handleGpLevelChange(level.id)}
                   disabled={isSaving}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
                     selectedGpLevel === level.id
-                      ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                      ? 'bg-gray-600 text-gray-100 border border-gray-200'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {level.name}
-                  {isSaving && selectedGpLevel === level.id && (
+                  {/* {isSaving && selectedGpLevel === level.id && (
                     <span className="ml-2 inline-flex items-center">
                       <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
                     </span>
-                  )}
+                  )} */}
                 </button>
               ))}
             </div>
           </Card>
 
-          {/* Track Guide Editor */}
-          <div className="space-y-6">
-            {/* Driver Selection Section */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Driver Recommendations</h3>
-              
-              {/* Recommended Drivers Section */}
-              <div className="mb-6">
-                {/* <h4 className="text-md font-medium text-gray-800 mb-3">Recommended Drivers</h4> */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                  {formData.suggested_drivers && formData.suggested_drivers.length > 0 ? (
-                    formData.suggested_drivers.slice(0, 2).map((driverId: string, index: number) => {
-                      // First try to find driver from selected driver details (faster)
-                      let driver = selectedDriverDetails.find((d: DriverView) => d.id === driverId)
-                      
-                      // If not found in selected details, try available drivers
-                      if (!driver) {
-                        driver = availableDrivers.find((d: DriverView) => d.id === driverId)
-                      }
-                      
-                      // If driver is still not found (still loading), show placeholder
-                      if (!driver) {
-                        return (
-                          <div key={driverId} className="p-3 rounded-lg bg-gray-200">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm font-bold text-black">
-                                {index + 1}. Loading...
-                              </span>
-                              <span className="text-sm text-black">
-                                Lvl 0
-                              </span>
-                              <span className="text-sm text-black">
-                                Unknown
-                              </span>
-                            </div>
-                          </div>
-                        )
-                      }
-                      
-                      return (
-                        <div key={driverId} className={`p-3 rounded-lg ${getRarityBackground(driver.rarity)}`}>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-bold text-black">
-                              {index + 1}. {driver.name}
-                            </span>
-                            <span className="text-sm text-black">
-                              Lvl {driver.level}
-                            </span>
-                            <span className="text-sm text-black">
-                              {getRarityDisplay(driver.rarity)}
-                            </span>
-                          </div>
-                        </div>
-                      )
-                    })
+          {/* Main Layout - 4 Column Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            {/* Driver 1 Card */}
+            <Card className={`p-4 ${getRarityBackground(selectedDriver1Details?.rarity || 0)}`}>
+              <div className="space-y-3">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-700 mb-0">Driver 1</h3>
+                  {/* <EditableField
+                    value={selectedDriver1Details?.name || ''}
+                    placeholder="Click to select driver"
+                    onSave={() => {}} // This will be handled by the modal
+                    disabled={true}
+                  /> */}
+                  {formData.driver_1_id ? (
+                    <DriverDisplay
+                      key={formData.driver_1_id}
+                      driver={findDriver(formData.driver_1_id)}
+                      isLoading={driversLoading}
+                      placeholderText="Driver not found"
+                    />
                   ) : (
                     <div className="col-span-2 p-4 bg-gray-50 rounded-lg">
                       <div className="text-sm text-gray-500">No recommended drivers selected yet</div>
                     </div>
                   )}
                 </div>
-              </div>
-
-              {/* Alternate Drivers Section */}
-              <div className="mb-6">
-                <h4 className="text-md font-medium text-gray-800 mb-3">Alternate Suggestions (Max 6)</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                  {formData.suggested_drivers && formData.suggested_drivers.length > 2 ? (
-                    formData.suggested_drivers.slice(2, 8).map((driverId: string, index: number) => {
-                      // First try to find driver from selected driver details (faster)
-                      let driver = selectedDriverDetails.find((d: DriverView) => d.id === driverId)
-                      
-                      // If not found in selected details, try available drivers
-                      if (!driver) {
-                        driver = availableDrivers.find((d: DriverView) => d.id === driverId)
-                      }
-                      
-                      // If driver is still not found (still loading), show placeholder
-                      if (!driver) {
-                        return (
-                          <div key={driverId} className="p-3 rounded-lg bg-gray-200">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm font-bold text-black">
-                                {index + 3}. Loading...
-                              </span>
-                              <span className="text-sm text-black">
-                                Lvl 0
-                              </span>
-                              <span className="text-sm text-black">
-                                Unknown
-                              </span>
-                            </div>
-                          </div>
-                        )
-                      }
-                      
-                      return (
-                        <div key={driverId} className={`p-3 rounded-lg ${getRarityBackground(driver.rarity)}`}>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-bold text-black">
-                              {index + 3}. {driver.name}
-                            </span>
-                            <span className="text-sm text-black">
-                              Lvl {driver.level}
-                            </span>
-                            <span className="text-sm text-black">
-                              {getRarityDisplay(driver.rarity)}
-                            </span>
-                          </div>
+                {/* <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-gray-600">Level:</span>
+                    <span className="ml-1 font-medium">{selectedDriver1Details?.level || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Rarity:</span>
+                    <span className="ml-1 font-medium">{getRarityDisplay(selectedDriver1Details?.rarity || 0)}</span>
+                  </div>
+                </div> */}
+                <div>
+                  <div className="mb-2 p-4 pt-2 bg-gray-100 rounded-lg">
+                    {formData.driver_1_boost_id ? (
+                      <>
+                        <div className="text-lg font-bold text-gray-900 mb-2">
+                          {selectedDriver1BoostDetails?.custom_name || (selectedDriver1BoostDetails?.icon ? selectedDriver1BoostDetails.icon.replace('BoostIcon_', '') : selectedDriver1BoostDetails?.name) || 'Unknown Boost'}
                         </div>
-                      )
-                    })
-                  ) : (
-                    <div className="col-span-3 p-4 bg-gray-50 rounded-lg">
-                      <div className="text-sm text-gray-500">No alternate drivers selected yet</div>
-                    </div>
-                  )}
+                        <BoostStatsDisplay boostStats={selectedDriver1BoostDetails?.boost_stats} />
+                      </>
+                    ) : (
+                      <div className="text-sm text-gray-500 pt-2">No boost selected yet</div>
+                    )}
+                  </div>
                 </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 text-sm" onClick={() => {
-                  setDriverSelectionMode('recommended')
+                {/* <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-1">Boost Stats</h4>
+                  <BoostStatsDisplay boostStats={selectedDriver1BoostDetails?.boost_stats} />
+                </div> */}
+
+                {/* Tire Strategies */}
+                <div>
+                  <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
+                    <div className="text-sm font-bold text-gray-900 px-2 mb-1">Dry:
+                       <input type="text"
+                        className="w-2/3 rounded-lg border-gray-300 ml-2 text-sm"
+                        value={formData.dry_strategy || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, dry_strategy: e.target.value }))}
+                      />
+                    </div>
+                    <div className="text-sm font-bold text-gray-900 px-2 mb-1">Wet:
+                       <input type="text"
+                          className="w-2/3 rounded-lg border-gray-300 ml-2 text-sm"
+                          value={formData.wet_strategy || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, wet_strategy: e.target.value }))}
+                        />
+                    </div>
+                  </div>
+                </div>
+                <Button variant="outline" className="flex-1 text-sm px-2" onClick={() => {
+                  setDriverSelectionMode('driver1')
                   handleSelectDrivers()
                 }}>
-                  Select Recommended (2)
+                  Select Driver
                 </Button>
-                <Button variant="outline" className="flex-1 text-sm" onClick={() => {
-                  setDriverSelectionMode('alternate')
-                  handleSelectDrivers()
-                }}>
-                  Select Alternate (6)
+                <Button variant="outline" className="flex-1 text-sm ml-2 px-2" onClick={() => setShowDriver1BoostModal(true)}>
+                  Select Boost
                 </Button>
               </div>
             </Card>
 
+            {/* Driver 2 Card */}
+            <Card className={`p-4 ${getRarityBackground(selectedDriver2Details?.rarity || 0)}`}>
+              <div className="space-y-3">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-700 mb-0">Driver 2</h3>
+                  {formData.driver_2_id ? (
+                    <DriverDisplay
+                      key={formData.driver_2_id}
+                      driver={findDriver(formData.driver_2_id)}
+                      isLoading={driversLoading}
+                      placeholderText="Driver not found"
+                    />
+                  ) : (
+                    <div className="col-span-2 p-4 bg-gray-50 rounded-lg">
+                      <div className="text-sm text-gray-500">No driver 2 selected yet</div>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="mb-2 p-4 pt-2 bg-gray-100 rounded-lg">
+                    {formData.driver_2_boost_id ? (
+                      <>
+                        <div className="text-lg font-bold text-gray-900 mb-2">
+                          {selectedDriver2BoostDetails?.custom_name || (selectedDriver2BoostDetails?.icon ? selectedDriver2BoostDetails.icon.replace('BoostIcon_', '') : selectedDriver2BoostDetails?.name) || 'Unknown Boost'}
+                        </div>
+                        <BoostStatsDisplay boostStats={selectedDriver2BoostDetails?.boost_stats} />
+                      </>
+                    ) : (
+                      <div className="text-sm text-gray-500 pt-2">No boost selected yet</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tire Strategies */}
+                <div>
+                  <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
+                    <div className="text-sm font-bold text-gray-900 px-2 mb-1">Dry:
+                        <input type="text"
+                        className="w-2/3 rounded-lg border-gray-300 ml-2 text-sm"
+                        value={formData.dry_strategy || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, dry_strategy: e.target.value }))}
+                      />
+                    </div>
+                    <div className="text-sm font-bold text-gray-900 px-2 mb-1">Wet:
+                        <input type="text"
+                          className="w-2/3 rounded-lg border-gray-300 ml-2 text-sm"
+                          value={formData.wet_strategy || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, wet_strategy: e.target.value }))}
+                        />
+                    </div>
+                  </div>
+                </div>
+                
+                <Button variant="outline" className="flex-1 text-sm px-2" onClick={() => {
+                  setDriverSelectionMode('driver2')
+                  handleSelectDrivers()
+                }}>
+                  Select Driver
+                </Button>
+                <Button variant="outline" className="flex-1 text-sm ml-2 px-2" onClick={() => setShowDriver2BoostModal(true)}>
+                  Select Boost
+                </Button>
+              </div>
+            </Card>
+
+
+            {/* Car Setup Card (1 columns width) */}
+            <Card className="p-4">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Car Setup</h3>
+                  {/* <EditableSelect
+                    value={formData.saved_setup_id || ''}
+                    options={userSetups.map(setup => ({
+                      value: setup.id,
+                      label: setup.name
+                    }))}
+                    placeholder="Select saved setup..."
+                    onSave={handleSetupSelect}
+                  /> */}
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-1">Setup Notes</h4>
+                  {/* <EditableTextArea
+                    value={formData.setup_notes || ''}
+                    placeholder="Track-specific setup changes..."
+                    onSave={handleSetupNotesChange}
+                    rows={3}
+                  /> */}
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-1">Other Notes</h4>
+                  {/* <EditableTextArea
+                    value={formData.notes || ''}
+                    placeholder="Any additional notes about this track..."
+                    onSave={handleNotesChange}
+                    rows={4}
+                  /> */}
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Track Guide Editor */}
+          <div className="space-y-6">
             {/* Boost Recommendations Section */}
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">Boost Recommendations</h3>
@@ -777,58 +974,6 @@ export default function TrackGuideEditorPage() {
               </div>
             </Card>
 
-            {/* Tire Strategy Section */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Tire Strategies</h3>
-              
-              {/* Display Current Strategies */}
-              {(formData.dry_strategy || formData.wet_strategy) && (
-                <div className="mb-4">
-                  <div className="text-sm font-medium text-gray-700 mb-2">Current Strategies:</div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                    {formData.dry_strategy && (
-                      <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
-                        <div className="text-sm font-medium text-gray-900 mb-1">Dry:</div>
-                        <div className="text-sm text-gray-700">{formData.dry_strategy}</div>
-                      </div>
-                    )}
-                    {formData.wet_strategy && (
-                      <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
-                        <div className="text-sm font-medium text-gray-900 mb-1">Wet:</div>
-                        <div className="text-sm text-gray-700">{formData.wet_strategy}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Dry Conditions Strategy
-                  </label>
-                  <textarea
-                    className="w-full rounded-lg border-gray-300"
-                    rows={1}
-                    placeholder="e.g., 3m3m2s (3 laps medium, 3 laps medium, 2 laps soft)"
-                    value={formData.dry_strategy || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, dry_strategy: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Wet Conditions Strategy
-                  </label>
-                  <textarea
-                    className="w-full rounded-lg border-gray-300"
-                    rows={1}
-                    placeholder="e.g., 10w (all wet tires)"
-                    value={formData.wet_strategy || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, wet_strategy: e.target.value }))}
-                  />
-                </div>
-              </div>
-            </Card>
 
             {/* Notes Section */}
             <Card className="p-6">
@@ -871,8 +1016,8 @@ export default function TrackGuideEditorPage() {
                     </button>
                   </div>
                   <p className="mt-1 text-sm text-gray-600">
-                    {driverSelectionMode === 'recommended' 
-                      ? `Choose up to 2 recommended drivers for this GP level. Drivers are sorted by their ${capitalizeStat(track?.driver_track_stat || 'overtaking')} stat.`
+                    {driverSelectionMode === 'driver1' || driverSelectionMode === 'driver2'
+                      ? `Choose a driver for this GP level. Drivers are sorted by their ${capitalizeStat(track?.driver_track_stat || 'overtaking')} stat.`
                       : `Choose up to 6 alternate drivers for this GP level. Drivers are sorted by their ${capitalizeStat(track?.driver_track_stat || 'overtaking')} stat.`
                     }
                   </p>
@@ -884,32 +1029,63 @@ export default function TrackGuideEditorPage() {
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     </div>
                   ) : (
+                    
+
                     <DriverSelectionGrid
                       drivers={availableDrivers}
-                      selectedDriverIds={driverSelectionMode === 'recommended' ? recommendedDrivers : alternateDrivers}
+                      selectedDriverIds={driverSelectionMode === 'driver1' 
+                        ? (formData.driver_1_id ? [formData.driver_1_id] : []) 
+                        : driverSelectionMode === 'driver2' 
+                          ? (formData.driver_2_id ? [formData.driver_2_id] : []) 
+                          : alternateDrivers}
+                      
                       onDriverSelectionChange={(selectedDriverIds) => {
-                        if (driverSelectionMode === 'recommended') {
-                          // For recommended drivers, combine with existing alternate drivers
-                          const newSuggestedDrivers = [
-                            ...selectedDriverIds,
-                            ...alternateDrivers
-                          ]
-                          setFormData(prev => ({ ...prev, suggested_drivers: newSuggestedDrivers }))
-                          setRecommendedDrivers(selectedDriverIds)
+                        if (driverSelectionMode === 'driver1') {
+                          // For driver1, just set the single driver
+                          // Add validation to prevent duplicate main drivers
+                          if (selectedDriverIds[0] === formData.driver_2_id) {
+                            // Clear driver2 if trying to select the same driver
+                            setFormData(prev => ({ 
+                              ...prev, 
+                              driver_1_id: selectedDriverIds[0] || null,
+                              driver_2_id: null
+                            }))
+                            setDriver_1_id(selectedDriverIds[0] || '')
+                            setDriver_2_id('')
+                          } else {
+                            setFormData(prev => ({ ...prev, driver_1_id: selectedDriverIds[0] || null }))
+                            setDriver_1_id(selectedDriverIds[0] || '')
+                          }
+                        } else if (driverSelectionMode === 'driver2') {
+                          // For driver2, just set the single driver
+                          // Add validation to prevent duplicate main drivers
+                          if (selectedDriverIds[0] === formData.driver_1_id) {
+                            // Clear driver1 if trying to select the same driver
+                            setFormData(prev => ({ 
+                              ...prev, 
+                              driver_2_id: selectedDriverIds[0] || null,
+                              driver_1_id: null
+                            }))
+                            setDriver_2_id(selectedDriverIds[0] || '')
+                            setDriver_1_id('')
+                          } else {
+                            setFormData(prev => ({ ...prev, driver_2_id: selectedDriverIds[0] || null }))
+                            setDriver_2_id(selectedDriverIds[0] || '')
+                          }
                         } else {
-                          // For alternate drivers, combine with existing recommended drivers
-                          const newSuggestedDrivers = [
-                            ...recommendedDrivers,
-                            ...selectedDriverIds
-                          ]
-                          setFormData(prev => ({ ...prev, suggested_drivers: newSuggestedDrivers }))
+                          // For alternate drivers, just set the alternate drivers
+                          // Allow duplicates - a driver can be both main and alternate
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            alt_driver_ids: selectedDriverIds
+                          }))
                           setAlternateDrivers(selectedDriverIds)
                         }
                       }}
                       trackStat={track?.driver_track_stat || 'overtaking'}
                       maxSeries={GP_LEVELS[driverModalGpLevel].seriesMax}
                       initialShowHighestLevel={false}
-                      maxSelectable={driverSelectionMode === 'recommended' ? 2 : 6}
+                      maxSelectable={driverSelectionMode === 'alternate' ? 6 : 1}
                     />
                   )}
                 </div>
@@ -918,7 +1094,7 @@ export default function TrackGuideEditorPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div className="text-sm text-gray-600">
-                        Selected: {formData.suggested_drivers?.length || 0}/{driverSelectionMode === 'recommended' ? 2 : 6} drivers
+                        Selected: {formData.suggested_drivers?.length || 0}/{driverSelectionMode === 'alternate' ? 6 : 1} drivers
                       </div>
                     </div>
                     <div className="space-x-3">
@@ -941,7 +1117,7 @@ export default function TrackGuideEditorPage() {
             </div>
           )}
 
-          {/* Boost Selection Modal */}
+          {/* Unified Boost Selection Modal */}
           {showBoostModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg max-w-6xl w-full mx-4 max-h-[80vh] overflow-hidden">
@@ -1169,6 +1345,559 @@ export default function TrackGuideEditorPage() {
               </div>
             </div>
           )}
+
+          {/* Driver 1 Individual Boost Selection Modal */}
+          {showDriver1BoostModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg max-w-6xl w-full mx-4 max-h-[80vh] overflow-hidden">
+                <div className="p-4 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Select Driver 1 Boost
+                    </h2>
+                    <button
+                      onClick={() => setShowDriver1BoostModal(false)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <span className="text-2xl">×</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="px-4 py-2 overflow-y-auto max-h-[60vh]">
+                  {boostsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : (
+                    <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[50vh]">
+                      <table className="table divide-y divide-gray-200">
+                        <thead className="bg-gray-700 sticky top-0 z-10">
+                          <tr>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Name</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Amount</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Defend</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Overtake</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Corners</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Tyre Use</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Power Unit</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Speed</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Pit Stop</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Race Start</div>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {/* None option for single select */}
+                          <tr
+                            key="none"
+                            className={cn(
+                              'hover:bg-gray-50 transition-colors cursor-pointer',
+                              formData.driver_1_boost_id === null && 'bg-blue-50'
+                            )}
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, driver_1_boost_id: null }))
+                            }}
+                          >
+                            <td className="px-3 py-1 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name="driver1-boost"
+                                  checked={formData.driver_1_boost_id === null}
+                                  onChange={() => {}}
+                                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-2"
+                                />
+                                <div className="text-sm font-medium text-gray-900">
+                                  No Boost
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm text-gray-900">0</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                          </tr>
+
+                          {allBoosts
+                            .sort((a: any, b: any) => {
+                              const aStats = a.boost_stats || {}
+                              const bStats = b.boost_stats || {}
+                              
+                              // Map track stat names to boost stat names
+                              const statMap: Record<string, string> = {
+                                'overtaking': 'overtake',
+                                'defending': 'block',
+                                'defend': 'block',
+                                'corners': 'corners',
+                                'tyre_use': 'tyre_use',
+                                'power_unit': 'power_unit',
+                                'powerUnit': 'power_unit',
+                                'speed': 'speed',
+                                'pit_stop': 'pit_stop',
+                                'pitStop': 'pit_stop',
+                                'race_start': 'race_start',
+                                'raceStart': 'race_start'
+                              }
+                              
+                              // Primary sort: track's driver stat (mapped to boost stat)
+                              const trackDriverStat = track?.driver_track_stat || 'block'
+                              const boostDriverStat = statMap[trackDriverStat] || trackDriverStat
+                              const aDriverStat = aStats[boostDriverStat] || 0
+                              const bDriverStat = bStats[boostDriverStat] || 0
+                              
+                              if (aDriverStat !== bDriverStat) {
+                                return bDriverStat - aDriverStat // Descending order
+                              }
+                              
+                              // Secondary sort: track's car stat (mapped to boost stat)
+                              const trackCarStat = track?.car_track_stat || 'speed'
+                              const boostCarStat = statMap[trackCarStat] || trackCarStat
+                              const aCarStat = aStats[boostCarStat] || 0
+                              const bCarStat = bStats[boostCarStat] || 0
+                              
+                              if (aCarStat !== bCarStat) {
+                                return bCarStat - aCarStat // Descending order
+                              }
+                              
+                              // Tertiary sort: boost name (using custom name → icon → name priority, with BoostIcon_ prefix removed)
+                              const aName = a.boost_custom_names?.custom_name || (a.icon ? a.icon.replace('BoostIcon_', '') : null) || a.name
+                              const bName = b.boost_custom_names?.custom_name || (b.icon ? b.icon.replace('BoostIcon_', '') : null) || b.name
+                              return aName.localeCompare(bName)
+                            })
+                            .map((boost: any) => {
+                              const isSelected = formData.driver_1_boost_id === boost.id
+                              const boostStats = boost.boost_stats || {}
+
+                              return (
+                                <tr
+                                  key={boost.id}
+                                  className={cn(
+                                    'hover:bg-gray-50 transition-colors cursor-pointer',
+                                    isSelected && 'bg-blue-50'
+                                  )}
+                                  onClick={() => {
+                                    setFormData(prev => ({ ...prev, driver_1_boost_id: boost.id }))
+                                  }}
+                                >
+                                  {/* Name Column */}
+                                  <td className="px-3 py-1 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                      <input
+                                        type="radio"
+                                        name="driver1-boost"
+                                        checked={isSelected}
+                                        onChange={() => {}}
+                                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-2"
+                                      />
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {boost.boost_custom_names?.custom_name || (boost.icon ? boost.icon.replace('BoostIcon_', '') : null) || boost.name}
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {/* Amount Column */}
+                                  <td className="px-3 py-1 whitespace-nowrap text-center">
+                                    <div className="text-sm text-gray-900">{boost.card_count || 0}</div>
+                                  </td>
+
+                                  {/* Stat Columns with color coding */}
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.block > 0 && getBoostValueColor(boostStats.block))}>
+                                    <div className="text-sm font-medium">{boostStats.block ? boostStats.block * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.overtake > 0 && getBoostValueColor(boostStats.overtake))}>
+                                    <div className="text-sm font-medium">{boostStats.overtake ? boostStats.overtake * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.corners > 0 && getBoostValueColor(boostStats.corners))}>
+                                    <div className="text-sm font-medium">{boostStats.corners ? boostStats.corners * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.tyre_use > 0 && getBoostValueColor(boostStats.tyre_use))}>
+                                    <div className="text-sm font-medium">{boostStats.tyre_use ? boostStats.tyre_use * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.power_unit > 0 && getBoostValueColor(boostStats.power_unit))}>
+                                    <div className="text-sm font-medium">{boostStats.power_unit ? boostStats.power_unit * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.speed > 0 && getBoostValueColor(boostStats.speed))}>
+                                    <div className="text-sm font-medium">{boostStats.speed ? boostStats.speed * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.pit_stop > 0 && getBoostValueColor(boostStats.pit_stop))}>
+                                    <div className="text-sm font-medium">{boostStats.pit_stop ? boostStats.pit_stop * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.race_start > 0 && getBoostValueColor(boostStats.race_start))}>
+                                    <div className="text-sm font-medium">{boostStats.race_start ? boostStats.race_start * 5 : ''}</div>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                        </tbody>
+                      </table>
+
+                      {/* Empty State */}
+                      {allBoosts.length === 0 && (
+                        <div className="text-center py-12">
+                          <div className="text-gray-500 text-lg mb-2">No boosts found</div>
+                          <div className="text-gray-400 text-sm">
+                            Try adjusting your search or filter criteria
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-6 border-t border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="text-sm text-gray-600">
+                        Selected: {formData.driver_1_boost_id ? '1 boost' : 'No boost selected'}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setFormData(prev => ({ ...prev, driver_1_boost_id: null }))}
+                        disabled={!formData.driver_1_boost_id}
+                      >
+                        Clear Selection
+                      </Button>
+                    </div>
+                    <div className="space-x-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowDriver1BoostModal(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => setShowDriver1BoostModal(false)}
+                        disabled={!formData.driver_1_boost_id}
+                      >
+                        Done
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Driver 2 Individual Boost Selection Modal */}
+          {showDriver2BoostModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg max-w-6xl w-full mx-4 max-h-[80vh] overflow-hidden">
+                <div className="p-4 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Select Driver 2 Boost
+                    </h2>
+                    <button
+                      onClick={() => setShowDriver2BoostModal(false)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <span className="text-2xl">×</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="px-4 py-2 overflow-y-auto max-h-[60vh]">
+                  {boostsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : (
+                    <div className="overflow-auto bg-white rounded-lg border border-gray-200 w-fit max-h-[50vh]">
+                      <table className="table divide-y divide-gray-200">
+                        <thead className="bg-gray-700 sticky top-0 z-10">
+                          <tr>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Name</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Amount</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Defend</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Overtake</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Corners</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Tyre Use</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Power Unit</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Speed</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Pit Stop</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Race Start</div>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {/* None option for single select */}
+                          <tr
+                            key="none"
+                            className={cn(
+                              'hover:bg-gray-50 transition-colors cursor-pointer',
+                              formData.driver_2_boost_id === null && 'bg-blue-50'
+                            )}
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, driver_2_boost_id: null }))
+                            }}
+                          >
+                            <td className="px-3 py-1 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name="driver2-boost"
+                                  checked={formData.driver_2_boost_id === null}
+                                  onChange={() => {}}
+                                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-2"
+                                />
+                                <div className="text-sm font-medium text-gray-900">
+                                  No Boost
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm text-gray-900">0</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center">
+                              <div className="text-sm font-medium">-</div>
+                            </td>
+                          </tr>
+
+                          {allBoosts
+                            .sort((a: any, b: any) => {
+                              const aStats = a.boost_stats || {}
+                              const bStats = b.boost_stats || {}
+                              
+                              // Map track stat names to boost stat names
+                              const statMap: Record<string, string> = {
+                                'overtaking': 'overtake',
+                                'defending': 'block',
+                                'defend': 'block',
+                                'corners': 'corners',
+                                'tyre_use': 'tyre_use',
+                                'power_unit': 'power_unit',
+                                'powerUnit': 'power_unit',
+                                'speed': 'speed',
+                                'pit_stop': 'pit_stop',
+                                'pitStop': 'pit_stop',
+                                'race_start': 'race_start',
+                                'raceStart': 'race_start'
+                              }
+                              
+                              // Primary sort: track's driver stat (mapped to boost stat)
+                              const trackDriverStat = track?.driver_track_stat || 'block'
+                              const boostDriverStat = statMap[trackDriverStat] || trackDriverStat
+                              const aDriverStat = aStats[boostDriverStat] || 0
+                              const bDriverStat = bStats[boostDriverStat] || 0
+                              
+                              if (aDriverStat !== bDriverStat) {
+                                return bDriverStat - aDriverStat // Descending order
+                              }
+                              
+                              // Secondary sort: track's car stat (mapped to boost stat)
+                              const trackCarStat = track?.car_track_stat || 'speed'
+                              const boostCarStat = statMap[trackCarStat] || trackCarStat
+                              const aCarStat = aStats[boostCarStat] || 0
+                              const bCarStat = bStats[boostCarStat] || 0
+                              
+                              if (aCarStat !== bCarStat) {
+                                return bCarStat - aCarStat // Descending order
+                              }
+                              
+                              // Tertiary sort: boost name (using custom name → icon → name priority, with BoostIcon_ prefix removed)
+                              const aName = a.boost_custom_names?.custom_name || (a.icon ? a.icon.replace('BoostIcon_', '') : null) || a.name
+                              const bName = b.boost_custom_names?.custom_name || (b.icon ? b.icon.replace('BoostIcon_', '') : null) || b.name
+                              return aName.localeCompare(bName)
+                            })
+                            .map((boost: any) => {
+                              const isSelected = formData.driver_2_boost_id === boost.id
+                              const boostStats = boost.boost_stats || {}
+
+                              return (
+                                <tr
+                                  key={boost.id}
+                                  className={cn(
+                                    'hover:bg-gray-50 transition-colors cursor-pointer',
+                                    isSelected && 'bg-blue-50'
+                                  )}
+                                  onClick={() => {
+                                    setFormData(prev => ({ ...prev, driver_2_boost_id: boost.id }))
+                                  }}
+                                >
+                                  {/* Name Column */}
+                                  <td className="px-3 py-1 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                      <input
+                                        type="radio"
+                                        name="driver2-boost"
+                                        checked={isSelected}
+                                        onChange={() => {}}
+                                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-2"
+                                      />
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {boost.boost_custom_names?.custom_name || (boost.icon ? boost.icon.replace('BoostIcon_', '') : null) || boost.name}
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {/* Amount Column */}
+                                  <td className="px-3 py-1 whitespace-nowrap text-center">
+                                    <div className="text-sm text-gray-900">{boost.card_count || 0}</div>
+                                  </td>
+
+                                  {/* Stat Columns with color coding */}
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.block > 0 && getBoostValueColor(boostStats.block))}>
+                                    <div className="text-sm font-medium">{boostStats.block ? boostStats.block * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.overtake > 0 && getBoostValueColor(boostStats.overtake))}>
+                                    <div className="text-sm font-medium">{boostStats.overtake ? boostStats.overtake * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.corners > 0 && getBoostValueColor(boostStats.corners))}>
+                                    <div className="text-sm font-medium">{boostStats.corners ? boostStats.corners * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.tyre_use > 0 && getBoostValueColor(boostStats.tyre_use))}>
+                                    <div className="text-sm font-medium">{boostStats.tyre_use ? boostStats.tyre_use * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.power_unit > 0 && getBoostValueColor(boostStats.power_unit))}>
+                                    <div className="text-sm font-medium">{boostStats.power_unit ? boostStats.power_unit * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.speed > 0 && getBoostValueColor(boostStats.speed))}>
+                                    <div className="text-sm font-medium">{boostStats.speed ? boostStats.speed * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.pit_stop > 0 && getBoostValueColor(boostStats.pit_stop))}>
+                                    <div className="text-sm font-medium">{boostStats.pit_stop ? boostStats.pit_stop * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.race_start > 0 && getBoostValueColor(boostStats.race_start))}>
+                                    <div className="text-sm font-medium">{boostStats.race_start ? boostStats.race_start * 5 : ''}</div>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                        </tbody>
+                      </table>
+
+                      {/* Empty State */}
+                      {allBoosts.length === 0 && (
+                        <div className="text-center py-12">
+                          <div className="text-gray-500 text-lg mb-2">No boosts found</div>
+                          <div className="text-gray-400 text-sm">
+                            Try adjusting your search or filter criteria
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-6 border-t border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="text-sm text-gray-600">
+                        Selected: {formData.driver_2_boost_id ? '1 boost' : 'No boost selected'}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setFormData(prev => ({ ...prev, driver_2_boost_id: null }))}
+                        disabled={!formData.driver_2_boost_id}
+                      >
+                        Clear Selection
+                      </Button>
+                    </div>
+                    <div className="space-x-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowDriver2BoostModal(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => setShowDriver2BoostModal(false)}
+                        disabled={!formData.driver_2_boost_id}
+                      >
+                        Done
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </ProtectedRoute>
