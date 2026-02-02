@@ -81,6 +81,9 @@ interface DriverSelectionGridProps {
   maxSeries?: number;
   initialShowHighestLevel?: boolean;
   maxSelectable?: number;
+  singleSelect?: boolean; // New prop for single select mode
+  driver1Id?: string; // ID of driver selected in driver 1 slot
+  driver2Id?: string; // ID of driver selected in driver 2 slot
 }
 
 export function DriverSelectionGrid({
@@ -91,6 +94,9 @@ export function DriverSelectionGrid({
   maxSeries = 12,
   initialShowHighestLevel = false,
   maxSelectable = 4,
+  singleSelect = false,
+  driver1Id,
+  driver2Id,
 }: DriverSelectionGridProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<string>(trackStat);
@@ -282,21 +288,34 @@ export function DriverSelectionGrid({
 
   // Handle driver selection toggle
   const handleDriverToggle = (driverId: string) => {
-    const newSelected = [...selectedDriverIds];
-
-    if (newSelected.includes(driverId)) {
-      // Remove from selection
-      const index = newSelected.indexOf(driverId);
-      newSelected.splice(index, 1);
-    } else if (newSelected.length < maxSelectable) {
-      // Add to selection
-      newSelected.push(driverId);
+    if (singleSelect) {
+      // Single select mode: if clicking the same driver, toggle it off
+      // If clicking a different driver, select it and clear other selections
+      if (selectedDriverIds.includes(driverId)) {
+        // Remove from selection (toggle off)
+        onDriverSelectionChange([]);
+      } else {
+        // Select this driver and clear others
+        onDriverSelectionChange([driverId]);
+      }
     } else {
-      // Max selection reached
-      return;
-    }
+      // Multi-select mode: existing logic
+      const newSelected = [...selectedDriverIds];
 
-    onDriverSelectionChange(newSelected);
+      if (newSelected.includes(driverId)) {
+        // Remove from selection
+        const index = newSelected.indexOf(driverId);
+        newSelected.splice(index, 1);
+      } else if (newSelected.length < maxSelectable) {
+        // Add to selection
+        newSelected.push(driverId);
+      } else {
+        // Max selection reached
+        return;
+      }
+
+      onDriverSelectionChange(newSelected);
+    }
   };
 
   // Get columns for the grid
@@ -336,6 +355,22 @@ export function DriverSelectionGrid({
 
     return baseValue;
   }, [showHighestLevel]);
+
+  // Get driver name with prefix if selected in other slot
+  const getDriverNameWithPrefix = (driver: DriverView): string => {
+    let name = formatDriverNameForDisplay(driver.name);
+    
+    // Add prefix if driver is selected in other slot (only in single select mode)
+    if (singleSelect) {
+      if (driver.id === driver1Id) {
+        name = `(1) ${name}`;
+      } else if (driver.id === driver2Id) {
+        name = `(2) ${name}`;
+      }
+    }
+    
+    return name;
+  };
 
   return (
     <div className="w-full">
@@ -436,7 +471,7 @@ export function DriverSelectionGrid({
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-2"
                       />
                       <div className="text-sm font-medium text-gray-900">
-                        {formatDriverNameForDisplay(driver.name)}
+                        {getDriverNameWithPrefix(driver)}
                       </div>
                     </div>
                   </td>
