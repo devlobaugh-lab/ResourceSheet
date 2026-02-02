@@ -13,16 +13,13 @@ import { useDriverLookup } from '@/hooks/useDriverLookup'
 import { Track, UserTrackGuide, DriverView, BoostView, UserCarSetupWithParts } from '@/types/database'
 import { DriverSelectionGrid } from '@/components/DriverSelectionGrid'
 import { DriverDisplay } from '@/components/DriverDisplay'
-import { SingleBoostSelectionModal } from '@/components/SingleBoostSelectionModal'
 import Link from 'next/link'
 import { calculateHighestLevel, cn } from '@/lib/utils'
+import { getRarityBackground, getRarityDisplay } from '@/lib/utils'
 import { Shield, ArrowUpRight, Signal, Car, Gauge, ArrowRight, Zap, Timer } from 'lucide-react'
 
 // New - imported components for boost stats and editable fields
 import { BoostStatsDisplay } from '@/components/BoostStatsDisplay'
-import { EditableField } from '@/components/EditableField'
-import { EditableSelect } from '@/components/EditableSelect'
-import { EditableTextArea } from '@/components/EditableTextArea'
 
 
 // Force dynamic rendering since this page requires authentication
@@ -45,17 +42,17 @@ const capitalizeStat = (stat: string): string => {
     .trim() // Remove leading/trailing whitespace
 }
 
-
+// Handles via utils function now
 // Get rarity background color for cells
-const getRarityBackground = (rarity: number): string => {
-  return rarity === 0 ? "bg-gray-300" :
-         rarity === 1 ? "bg-blue-200" :
-         rarity === 2 ? "bg-orange-300" :
-         rarity === 3 ? "bg-purple-300" :
-         rarity === 4 ? "bg-yellow-300" :
-         rarity === 5 ? "bg-red-300" :
-         rarity === 6 ? "bg-rose-400" : "bg-gray-300";
-}
+// const getRarityBackground = (rarity: number): string => {
+//   return rarity === 0 ? "bg-gray-300" :
+//          rarity === 1 ? "bg-blue-200" :
+//          rarity === 2 ? "bg-orange-300" :
+//          rarity === 3 ? "bg-purple-300" :
+//          rarity === 4 ? "bg-yellow-300" :
+//          rarity === 5 ? "bg-red-300" :
+//          rarity === 6 ? "bg-rose-400" : "bg-gray-300";
+// }
 
 // Get boost value background color based on tier (1=blue, 2=green, 3=yellow, 4=orange, 5=red)
 const getBoostValueColor = (tierValue: number): string => {
@@ -558,7 +555,10 @@ export default function TrackGuideEditorPage() {
           {/* Main Layout - 4 Column Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             {/* Driver 1 Card */}
-            <Card className={`p-4 ${getRarityBackground(selectedDriver1Details?.rarity || 0)}`}>
+            <Card 
+              className="p-4"
+              backgroundColor={getRarityBackground(selectedDriver1Details?.rarity || 0)}
+            >
               <div className="space-y-3">
                 <div>
                   <h3 className="text-lg font-bold text-gray-700 mb-0">Driver 1</h3>
@@ -629,20 +629,23 @@ export default function TrackGuideEditorPage() {
                     </div>
                   </div>
                 </div>
-                <Button variant="outline" className="flex-1 text-sm px-2" onClick={() => {
+                <Button variant="outline" className="flex-1 text-sm px-2 bg-gray-200 font-bold" onClick={() => {
                   setDriverSelectionMode('driver1')
                   handleSelectDrivers()
                 }}>
                   Select Driver
                 </Button>
-                <Button variant="outline" className="flex-1 text-sm ml-2 px-2" onClick={() => setShowDriver1BoostModal(true)}>
+                <Button variant="outline" className="flex-1 text-sm ml-2 px-2 bg-gray-200 font-bold" onClick={() => setShowDriver1BoostModal(true)}>
                   Select Boost
                 </Button>
               </div>
             </Card>
 
             {/* Driver 2 Card */}
-            <Card className={`p-4 ${getRarityBackground(selectedDriver2Details?.rarity || 0)}`}>
+            <Card 
+              className="p-4"
+              backgroundColor={getRarityBackground(selectedDriver2Details?.rarity || 0)}
+            >
               <div className="space-y-3">
                 <div>
                   <h3 className="text-lg font-bold text-gray-700 mb-0">Driver 2</h3>
@@ -694,13 +697,13 @@ export default function TrackGuideEditorPage() {
                   </div>
                 </div>
                 
-                <Button variant="outline" className="flex-1 text-sm px-2" onClick={() => {
+                <Button variant="outline" className="flex-1 text-sm px-2 bg-gray-200 font-bold" onClick={() => {
                   setDriverSelectionMode('driver2')
                   handleSelectDrivers()
                 }}>
                   Select Driver
                 </Button>
-                <Button variant="outline" className="flex-1 text-sm ml-2 px-2" onClick={() => setShowDriver2BoostModal(true)}>
+                <Button variant="outline" className="flex-1 text-sm ml-2 px-2 bg-gray-200 font-bold" onClick={() => setShowDriver2BoostModal(true)}>
                   Select Boost
                 </Button>
               </div>
@@ -891,11 +894,11 @@ export default function TrackGuideEditorPage() {
               
               <div className="flex space-x-4">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">
                     Free Boost
                   </label>
                   <select
-                    className="w-full rounded-lg border-gray-300"
+                    className="w-2/3 rounded-lg border-gray-300"
                     value={formData.free_boost_id || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, free_boost_id: e.target.value || undefined }))}
                   >
@@ -908,10 +911,10 @@ export default function TrackGuideEditorPage() {
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
                     Additional Boosts
                   </label>
-                  <Button variant="outline" className="w-full" onClick={handleSelectBoosts}>
+                  <Button variant="outline" className="w-1/2" onClick={handleSelectBoosts}>
                     Select Boosts ({formData.suggested_boosts?.length || 0} selected)
                   </Button>
                 </div>
@@ -1041,36 +1044,46 @@ export default function TrackGuideEditorPage() {
                       
                       onDriverSelectionChange={(selectedDriverIds) => {
                         if (driverSelectionMode === 'driver1') {
-                          // For driver1, just set the single driver
-                          // Add validation to prevent duplicate main drivers
-                          if (selectedDriverIds[0] === formData.driver_2_id) {
-                            // Clear driver2 if trying to select the same driver
-                            setFormData(prev => ({ 
-                              ...prev, 
-                              driver_1_id: selectedDriverIds[0] || null,
-                              driver_2_id: null
-                            }))
-                            setDriver_1_id(selectedDriverIds[0] || '')
-                            setDriver_2_id('')
-                          } else {
-                            setFormData(prev => ({ ...prev, driver_1_id: selectedDriverIds[0] || null }))
-                            setDriver_1_id(selectedDriverIds[0] || '')
-                          }
-                        } else if (driverSelectionMode === 'driver2') {
-                          // For driver2, just set the single driver
-                          // Add validation to prevent duplicate main drivers
-                          if (selectedDriverIds[0] === formData.driver_1_id) {
-                            // Clear driver1 if trying to select the same driver
-                            setFormData(prev => ({ 
-                              ...prev, 
-                              driver_2_id: selectedDriverIds[0] || null,
-                              driver_1_id: null
-                            }))
-                            setDriver_2_id(selectedDriverIds[0] || '')
+                          // Single select logic for driver1
+                          const currentDriverId = formData.driver_1_id
+                          const clickedDriverId = selectedDriverIds[0]
+                          
+                          // If clicking the same driver, toggle it off
+                          if (currentDriverId === clickedDriverId) {
+                            setFormData(prev => ({ ...prev, driver_1_id: null }))
                             setDriver_1_id('')
                           } else {
-                            setFormData(prev => ({ ...prev, driver_2_id: selectedDriverIds[0] || null }))
-                            setDriver_2_id(selectedDriverIds[0] || '')
+                            // If clicking a different driver, deselect all others and select this one
+                            setFormData(prev => ({ ...prev, driver_1_id: clickedDriverId }))
+                            setDriver_1_id(clickedDriverId || '')
+                          }
+                          
+                          // Add validation to prevent duplicate main drivers
+                          if (clickedDriverId === formData.driver_2_id) {
+                            // Clear driver2 if trying to select the same driver
+                            setFormData(prev => ({ ...prev, driver_2_id: null }))
+                            setDriver_2_id('')
+                          }
+                        } else if (driverSelectionMode === 'driver2') {
+                          // Single select logic for driver2
+                          const currentDriverId = formData.driver_2_id
+                          const clickedDriverId = selectedDriverIds[0]
+                          
+                          // If clicking the same driver, toggle it off
+                          if (currentDriverId === clickedDriverId) {
+                            setFormData(prev => ({ ...prev, driver_2_id: null }))
+                            setDriver_2_id('')
+                          } else {
+                            // If clicking a different driver, deselect all others and select this one
+                            setFormData(prev => ({ ...prev, driver_2_id: clickedDriverId }))
+                            setDriver_2_id(clickedDriverId || '')
+                          }
+                          
+                          // Add validation to prevent duplicate main drivers
+                          if (clickedDriverId === formData.driver_1_id) {
+                            // Clear driver1 if trying to select the same driver
+                            setFormData(prev => ({ ...prev, driver_1_id: null }))
+                            setDriver_1_id('')
                           }
                         } else {
                           // For alternate drivers, just set the alternate drivers
@@ -1086,6 +1099,9 @@ export default function TrackGuideEditorPage() {
                       maxSeries={GP_LEVELS[driverModalGpLevel].seriesMax}
                       initialShowHighestLevel={false}
                       maxSelectable={driverSelectionMode === 'alternate' ? 6 : 1}
+                      singleSelect={driverSelectionMode === 'driver1' || driverSelectionMode === 'driver2'}
+                      driver1Id={formData.driver_1_id || undefined}
+                      driver2Id={formData.driver_2_id || undefined}
                     />
                   )}
                 </div>
@@ -1094,19 +1110,41 @@ export default function TrackGuideEditorPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div className="text-sm text-gray-600">
-                        Selected: {formData.suggested_drivers?.length || 0}/{driverSelectionMode === 'alternate' ? 6 : 1} drivers
+                        Selected: {
+                          driverSelectionMode === 'driver1' ? formData.driver_1_id ? '1' : '0' 
+                            : driverSelectionMode === 'driver2' ? formData.driver_2_id ? '1' : '0' 
+                            : driverSelectionMode === 'alternate' ? alternateDrivers?.length : 0}  
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (driverSelectionMode === 'driver1') {
+                            setFormData(prev => ({ ...prev, driver_1_id: null }))
+                            setDriver_1_id('')
+                          } else if (driverSelectionMode === 'driver2') {
+                            setFormData(prev => ({ ...prev, driver_2_id: null }))
+                            setDriver_2_id('')
+                          } else {
+                            // For alternate drivers, clear the new field
+                            setFormData(prev => ({ ...prev, alt_driver_ids: [] }))
+                            setAlternateDrivers([])
+                          }
+                        }}
+                      >
+                        Clear Selection
+                      </Button>
                     </div>
                     <div className="space-x-3">
-                      <Button
+                      {/* <Button
                         variant="outline"
                         onClick={() => setShowDriverModal(false)}
                       >
                         Cancel
-                      </Button>
+                      </Button> */}
                       <Button
                         onClick={() => setShowDriverModal(false)}
-                        disabled={!formData.suggested_drivers?.length}
+                        // disabled={!formData.suggested_drivers?.length}
                       >
                         Done
                       </Button>
@@ -1235,17 +1273,26 @@ export default function TrackGuideEditorPage() {
                                     'hover:bg-gray-50 transition-colors',
                                     isSelected && 'bg-blue-50'
                                   )}
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    // Prevent checkbox click from interfering with row click
+                                    e.stopPropagation()
+                                    
                                     const currentSelected = formData.suggested_boosts || []
                                     let newSelected: string[]
 
                                     if (isSelected) {
+                                      // Toggle off: remove the boost from selection
                                       newSelected = currentSelected.filter((id: string) => id !== boost.id)
                                     } else {
+                                      // Toggle on: add the boost to selection
                                       newSelected = [...currentSelected, boost.id]
                                     }
 
-                                    setFormData(prev => ({ ...prev, suggested_boosts: newSelected }))
+                                    // Force state update with a new array reference
+                                    setFormData(prev => ({ 
+                                      ...prev, 
+                                      suggested_boosts: [...newSelected] 
+                                    }))
                                   }}
                                 >
                                   {/* Name Column */}
@@ -1316,7 +1363,7 @@ export default function TrackGuideEditorPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div className="text-sm text-gray-600">
-                        Selected: {formData.suggested_boosts?.length || 0} boosts
+                        Selected: {formData.suggested_boosts?.length || 0}
                       </div>
                       <Button
                         variant="outline"
@@ -1324,16 +1371,16 @@ export default function TrackGuideEditorPage() {
                         onClick={() => setFormData(prev => ({ ...prev, suggested_boosts: [] }))}
                         disabled={!formData.suggested_boosts?.length}
                       >
-                        Reset
+                        Clear Selection
                       </Button>
                     </div>
                     <div className="space-x-3">
-                      <Button
+                      {/* <Button
                         variant="outline"
                         onClick={() => setShowBoostModal(false)}
                       >
                         Cancel
-                      </Button>
+                      </Button> */}
                       <Button
                         onClick={() => setShowBoostModal(false)}
                       >
@@ -1408,7 +1455,7 @@ export default function TrackGuideEditorPage() {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {/* None option for single select */}
-                          <tr
+                          {/* <tr
                             key="none"
                             className={cn(
                               'hover:bg-gray-50 transition-colors cursor-pointer',
@@ -1459,7 +1506,7 @@ export default function TrackGuideEditorPage() {
                             <td className="px-3 py-1 whitespace-nowrap text-center">
                               <div className="text-sm font-medium">-</div>
                             </td>
-                          </tr>
+                          </tr> */}
 
                           {allBoosts
                             .sort((a: any, b: any) => {
@@ -1519,7 +1566,10 @@ export default function TrackGuideEditorPage() {
                                     isSelected && 'bg-blue-50'
                                   )}
                                   onClick={() => {
-                                    setFormData(prev => ({ ...prev, driver_1_boost_id: boost.id }))
+                                    // Toggle logic for single select: if already selected, deselect it
+                                    const currentBoostId = formData.driver_1_boost_id
+                                    const newBoostId = currentBoostId === boost.id ? null : boost.id
+                                    setFormData(prev => ({ ...prev, driver_1_boost_id: newBoostId }))
                                   }}
                                 >
                                   {/* Name Column */}
@@ -1591,7 +1641,7 @@ export default function TrackGuideEditorPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div className="text-sm text-gray-600">
-                        Selected: {formData.driver_1_boost_id ? '1 boost' : 'No boost selected'}
+                        Selected: {formData.driver_1_boost_id ? '1' : '0'}
                       </div>
                       <Button
                         variant="outline"
@@ -1603,15 +1653,15 @@ export default function TrackGuideEditorPage() {
                       </Button>
                     </div>
                     <div className="space-x-3">
-                      <Button
+                      {/* <Button
                         variant="outline"
                         onClick={() => setShowDriver1BoostModal(false)}
                       >
                         Cancel
-                      </Button>
+                      </Button> */}
                       <Button
                         onClick={() => setShowDriver1BoostModal(false)}
-                        disabled={!formData.driver_1_boost_id}
+                        // disabled={!formData.driver_1_boost_id}
                       >
                         Done
                       </Button>
@@ -1684,7 +1734,7 @@ export default function TrackGuideEditorPage() {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {/* None option for single select */}
-                          <tr
+                          {/* <tr
                             key="none"
                             className={cn(
                               'hover:bg-gray-50 transition-colors cursor-pointer',
@@ -1735,7 +1785,7 @@ export default function TrackGuideEditorPage() {
                             <td className="px-3 py-1 whitespace-nowrap text-center">
                               <div className="text-sm font-medium">-</div>
                             </td>
-                          </tr>
+                          </tr> */}
 
                           {allBoosts
                             .sort((a: any, b: any) => {
@@ -1795,7 +1845,10 @@ export default function TrackGuideEditorPage() {
                                     isSelected && 'bg-blue-50'
                                   )}
                                   onClick={() => {
-                                    setFormData(prev => ({ ...prev, driver_2_boost_id: boost.id }))
+                                    // Toggle logic for single select: if already selected, deselect it
+                                    const currentBoostId = formData.driver_2_boost_id
+                                    const newBoostId = currentBoostId === boost.id ? null : boost.id
+                                    setFormData(prev => ({ ...prev, driver_2_boost_id: newBoostId }))
                                   }}
                                 >
                                   {/* Name Column */}
@@ -1867,7 +1920,7 @@ export default function TrackGuideEditorPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div className="text-sm text-gray-600">
-                        Selected: {formData.driver_2_boost_id ? '1 boost' : 'No boost selected'}
+                        Selected: {formData.driver_2_boost_id ? '1' : '0'}
                       </div>
                       <Button
                         variant="outline"
@@ -1879,15 +1932,15 @@ export default function TrackGuideEditorPage() {
                       </Button>
                     </div>
                     <div className="space-x-3">
-                      <Button
+                      {/* <Button
                         variant="outline"
                         onClick={() => setShowDriver2BoostModal(false)}
                       >
                         Cancel
-                      </Button>
+                      </Button> */}
                       <Button
                         onClick={() => setShowDriver2BoostModal(false)}
-                        disabled={!formData.driver_2_boost_id}
+                        // disabled={!formData.driver_2_boost_id}
                       >
                         Done
                       </Button>
