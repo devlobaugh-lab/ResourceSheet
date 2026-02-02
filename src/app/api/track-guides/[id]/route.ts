@@ -7,13 +7,21 @@ import { UserTrackGuide, Updates } from '@/types/database'
 const updateTrackGuideSchema = z.object({
   track_id: z.string().uuid().optional(),
   gp_level: z.number().int().min(0).max(3).optional(),
-  suggested_drivers: z.array(z.string().uuid()).max(8).optional(),
+  driver_1_id: z.string().uuid().optional().nullable(),
+  driver_2_id: z.string().uuid().optional().nullable(),
+  driver_1_boost_id: z.string().uuid().optional().nullable(),
+  driver_2_boost_id: z.string().uuid().optional().nullable(),
+  alt_driver_ids: z.array(z.string().uuid()).max(6).optional(),
+  alt_boost_ids: z.array(z.string().uuid()).optional(),
   free_boost_id: z.string().uuid().optional().nullable(),
-  suggested_boosts: z.array(z.string().uuid()).optional(),
   saved_setup_id: z.string().uuid().optional().nullable(),
   setup_notes: z.string().optional().nullable(),
   dry_strategy: z.string().optional().nullable(),
   wet_strategy: z.string().optional().nullable(),
+  driver_1_dry_strategy: z.string().optional().nullable(),
+  driver_1_wet_strategy: z.string().optional().nullable(),
+  driver_2_dry_strategy: z.string().optional().nullable(),
+  driver_2_wet_strategy: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
 })
 
