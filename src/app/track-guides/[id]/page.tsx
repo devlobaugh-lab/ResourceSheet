@@ -629,13 +629,13 @@ export default function TrackGuideEditorPage() {
                     </div>
                   </div>
                 </div>
-                <Button variant="outline" className="flex-1 text-sm px-2 bg-gray-200 font-bold" onClick={() => {
+                <Button variant="outline" className="flex-1 text-sm px-2 bg-white font-bold" onClick={() => {
                   setDriverSelectionMode('driver1')
                   handleSelectDrivers()
                 }}>
                   Select Driver
                 </Button>
-                <Button variant="outline" className="flex-1 text-sm ml-2 px-2 bg-gray-200 font-bold" onClick={() => setShowDriver1BoostModal(true)}>
+                <Button variant="outline" className="flex-1 text-sm ml-2 px-2 bg-white font-bold" onClick={() => setShowDriver1BoostModal(true)}>
                   Select Boost
                 </Button>
               </div>
@@ -697,13 +697,13 @@ export default function TrackGuideEditorPage() {
                   </div>
                 </div>
                 
-                <Button variant="outline" className="flex-1 text-sm px-2 bg-gray-200 font-bold" onClick={() => {
+                <Button variant="outline" className="flex-1 text-sm px-2 bg-white font-bold" onClick={() => {
                   setDriverSelectionMode('driver2')
                   handleSelectDrivers()
                 }}>
                   Select Driver
                 </Button>
-                <Button variant="outline" className="flex-1 text-sm ml-2 px-2 bg-gray-200 font-bold" onClick={() => setShowDriver2BoostModal(true)}>
+                <Button variant="outline" className="flex-1 text-sm ml-2 px-2 bg-white font-bold" onClick={() => setShowDriver2BoostModal(true)}>
                   Select Boost
                 </Button>
               </div>
@@ -914,7 +914,7 @@ export default function TrackGuideEditorPage() {
                   <label className="block text-sm font-bold text-gray-700 mb-2">
                     Additional Boosts
                   </label>
-                  <Button variant="outline" className="w-1/2" onClick={handleSelectBoosts}>
+                  <Button variant="outline" className="w-1/2 bg-white font-bold" onClick={handleSelectBoosts}>
                     Select Boosts ({formData.suggested_boosts?.length || 0} selected)
                   </Button>
                 </div>
