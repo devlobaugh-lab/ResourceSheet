@@ -115,7 +115,7 @@ function AuthenticatedSetupsPage() {
 
     PART_TYPES.forEach(({ key, type }) => {
       const partId = selectedParts[key]
-      const part = carPartsResponse?.data?.find(p => p.id === partId)
+      const part = filteredParts.find(p => p.id === partId)
       const hasBonus = bonusParts.has(partId)
 
       if (part) {
@@ -129,7 +129,7 @@ function AuthenticatedSetupsPage() {
     })
 
     return stats
-  }, [selectedParts, bonusParts, bonusPercentage, carPartsResponse?.data])
+  }, [selectedParts, bonusParts, bonusPercentage, filteredParts])
 
   // Handle part selection
   const handlePartChange = (partKey: string, partId: string) => {
@@ -370,7 +370,7 @@ function AuthenticatedSetupsPage() {
                     {label}
                   </label>
                   <select
-                    className="w-32 rounded-lg border-gray-300 text-sm px-2 py-2"
+                    className="w-48 rounded-lg border-gray-300 text-sm px-2 py-2"
                     value={selectedParts[key]}
                     onChange={(e) => handlePartChange(key, e.target.value)}
                   >
@@ -389,9 +389,9 @@ function AuthenticatedSetupsPage() {
                         type="checkbox"
                         checked={bonusParts.has(selectedParts[key])}
                         onChange={() => handleBonusToggle(selectedParts[key])}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-600 rounded focus:ring-blue-500"
                       />
-                      <span className="text-xs text-gray-600">Bonus</span>
+                      <span className="text-xs text-gray-900">Bonus</span>
                     </label>
                   )}
                 </div>
@@ -512,11 +512,11 @@ function AuthenticatedSetupsPage() {
               <div className="grid grid-cols-2 gap-2">
                 <div className="grid grid-cols-[3fr_1fr] gap-0">
                   <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l text-left font-medium flex items-center">Speed</div>
-                  <div className="bg-gray-900 text-white text-base px-0.5 py-1 rounded-r text-right font-semibold flex items-center justify-end">{totalStats.speed}</div>
+                  <div className="bg-gray-900 text-white text-base px-2 py-1 rounded-r text-right font-semibold flex items-center justify-end">{totalStats.speed}</div>
                 </div>
                 <div className="grid grid-cols-[3fr_1fr] gap-0">
                   <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l text-left font-medium flex items-center">Power Unit</div>
-                  <div className="bg-gray-900 text-white text-base px-0.5 py-1 rounded-r text-right font-semibold flex items-center justify-end">{totalStats.powerUnit}</div>
+                  <div className="bg-gray-900 text-white text-base px-2 py-1 rounded-r text-right font-semibold flex items-center justify-end">{totalStats.powerUnit}</div>
                 </div>
               </div>
 
@@ -524,11 +524,11 @@ function AuthenticatedSetupsPage() {
               <div className="grid grid-cols-2 gap-2">
                 <div className="grid grid-cols-[3fr_1fr] gap-0">
                   <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l text-left font-medium flex items-center">Cornering</div>
-                  <div className="bg-gray-900 text-white text-base px-0.5 py-1 rounded-r text-right font-semibold flex items-center justify-end">{totalStats.cornering}</div>
+                  <div className="bg-gray-900 text-white text-base px-2 py-1 rounded-r text-right font-semibold flex items-center justify-end">{totalStats.cornering}</div>
                 </div>
                 <div className="grid grid-cols-[3fr_1fr] gap-0">
                   <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l text-left font-medium flex items-center">Qualifying</div>
-                  <div className="bg-gray-900 text-white text-base px-0.5 py-1 rounded-r text-right font-semibold flex items-center justify-end">{totalStats.qualifying}</div>
+                  <div className="bg-gray-900 text-white text-base px-2 py-1 rounded-r text-right font-semibold flex items-center justify-end">{totalStats.qualifying}</div>
                 </div>
               </div>
 
@@ -536,11 +536,11 @@ function AuthenticatedSetupsPage() {
               <div className="grid grid-cols-2 gap-2">
                 <div className="grid grid-cols-[3fr_1fr] gap-0">
                   <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l text-left font-medium flex items-center">Avg Pit Stop</div>
-                    <div className="bg-gray-900 text-white text-base px-0.5 py-1 rounded-r text-right font-semibold flex items-center justify-end">{totalStats.pitStopTime.toFixed(2)}s</div>
+                    <div className="bg-gray-900 text-white text-base px-2 py-1 rounded-r text-right font-semibold flex items-center justify-end">{totalStats.pitStopTime.toFixed(2)}s</div>
                 </div>
                 <div className="grid grid-cols-[3fr_1fr] gap-0">
                   <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l text-left font-medium flex items-center">DRS</div>
-                  <div className="bg-gray-900 text-white text-base px-0.5 py-1 rounded-r text-right font-semibold flex items-center justify-end">{totalStats.drs}</div>
+                  <div className="bg-gray-900 text-white text-base px-2 py-1 rounded-r text-right font-semibold flex items-center justify-end">{totalStats.drs}</div>
                 </div>
               </div>
             </div>
