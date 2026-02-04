@@ -17,7 +17,7 @@ import Link from 'next/link'
 import { calculateHighestLevel, cn } from '@/lib/utils'
 import { getRarityBackground, getRarityDisplay } from '@/lib/utils'
 import { Shield, ArrowUpRight, Signal, Car, Gauge, ArrowRight, Zap, Timer, AlertTriangle } from 'lucide-react'
-import { EditableSelect } from '@/components/EditableSelect'
+// import { EditableSelect } from '@/components/EditableSelect'
 
 // New - imported components for boost stats and editable fields
 import { BoostStatsDisplay } from '@/components/BoostStatsDisplay'
@@ -510,6 +510,10 @@ export default function TrackGuideEditorPage() {
     }
   }
 
+  // const handleSetupSelect = (setupId: string) => {
+  //   setFormData(prev => ({ ...prev, saved_setup_id: setupId }))
+  // }
+
   const isLoading = trackLoading || guideLoading
 
   if (isLoading) {
@@ -772,13 +776,30 @@ export default function TrackGuideEditorPage() {
               </div>
             </Card>
 
-
             {/* Car Setup Card (1 columns width) */}
             <Card className="p-4">
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Car Setup</h3>
-                  <EditableSelect
+                                  <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Saved Setup
+                  </label>
+                  <select
+                    className="w-full rounded-lg border-gray-300"
+                    value={formData.saved_setup_id || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, saved_setup_id: e.target.value || undefined }))}
+                  >
+                    <option value="">Select a saved setup...</option>
+                    {userSetups.map((setup) => (
+                      <option key={setup.id} value={setup.id}>
+                        {setup.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                  {/* <EditableSelect
                     value={formData.saved_setup_id || ''}
                     options={userSetups.map(setup => ({
                       value: setup.id,
@@ -786,26 +807,24 @@ export default function TrackGuideEditorPage() {
                     }))}
                     placeholder="Select saved setup..."
                     onSave={handleSetupSelect}
+                  /> */}
+                </div>
+                <div className='flex-1'>
+                  {/* <h4 className="text-sm font-medium text-gray-700 mb-1">Setup Notes</h4> */}
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Setup Notes
+                  </label>
+                  <textarea
+                    className="w-full rounded-lg border-gray-300 text-sm"
+                    rows={10}
+                    placeholder="Track-specific setup changes..."
+                    value={formData.setup_notes || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, setup_notes: e.target.value }))}
                   />
                 </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-1">Setup Notes</h4>
-                  {/* <EditableTextArea
-                    value={formData.setup_notes || ''}
-                    placeholder="Track-specific setup changes..."
-                    onSave={handleSetupNotesChange}
-                    rows={3}
-                  /> */}
-                </div>
-                <div>
+                {/* <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-1">Other Notes</h4>
-                  {/* <EditableTextArea
-                    value={formData.notes || ''}
-                    placeholder="Any additional notes about this track..."
-                    onSave={handleNotesChange}
-                    rows={4}
-                  /> */}
-                </div>
+                </div> */}
               </div>
             </Card>
           </div>
@@ -1043,10 +1062,9 @@ export default function TrackGuideEditorPage() {
             </Card>
 
             {/* Car Setup Section */}
-            <Card className="p-6">
+            {/* <Card className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">Car Setup</h3>
               
-              {/* Display Selected Setup */}
               {formData.saved_setup_id && (
                 <div className="mb-4">
                   <div className="text-sm font-medium text-gray-700 mb-2">Selected Setup:</div>
@@ -1096,7 +1114,7 @@ export default function TrackGuideEditorPage() {
                   />
                 </div>
               </div>
-            </Card>
+            </Card> */}
 
 
             {/* Notes Section */}
