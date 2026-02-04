@@ -326,13 +326,15 @@ function PartsTab() {
     return type !== null ? (PART_TYPE_ORDER[type as keyof typeof PART_TYPE_ORDER] ?? 99) : 99;
   };
 
-  // Sort: custom part type order, series ascending, rarity ascending
+  // Sort: custom part type order, series ascending, rarity ascending, then by ID for consistent tiebreaking
   const sortedParts = [...filteredParts].sort((a, b) => {
     const aOrder = getPartTypeOrder(a.car_part_type);
     const bOrder = getPartTypeOrder(b.car_part_type);
     if (aOrder !== bOrder) return aOrder - bOrder;
     if (a.series !== b.series) return a.series - b.series;
-    return a.rarity - b.rarity;
+    if (a.rarity !== b.rarity) return a.rarity - b.rarity;
+    // Final tiebreaker: sort alphabetically by ID to ensure consistent ordering
+    return a.id.localeCompare(b.id);
   });
 
   const handleSave = useCallback(async (partId: string, field: 'level' | 'card_count', value: number) => {
