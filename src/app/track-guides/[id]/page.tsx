@@ -17,6 +17,7 @@ import Link from 'next/link'
 import { calculateHighestLevel, cn } from '@/lib/utils'
 import { getRarityBackground, getRarityDisplay } from '@/lib/utils'
 import { Shield, ArrowUpRight, Signal, Car, Gauge, ArrowRight, Zap, Timer, AlertTriangle } from 'lucide-react'
+import { EditableSelect } from '@/components/EditableSelect'
 
 // New - imported components for boost stats and editable fields
 import { BoostStatsDisplay } from '@/components/BoostStatsDisplay'
@@ -777,7 +778,7 @@ export default function TrackGuideEditorPage() {
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Car Setup</h3>
-                  {/* <EditableSelect
+                  <EditableSelect
                     value={formData.saved_setup_id || ''}
                     options={userSetups.map(setup => ({
                       value: setup.id,
@@ -785,7 +786,7 @@ export default function TrackGuideEditorPage() {
                     }))}
                     placeholder="Select saved setup..."
                     onSave={handleSetupSelect}
-                  /> */}
+                  />
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-1">Setup Notes</h4>
