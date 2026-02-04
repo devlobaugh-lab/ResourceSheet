@@ -443,7 +443,17 @@ export interface Database {
           setup_notes: string | null
           dry_strategy: string | null
           wet_strategy: string | null
+          driver_1_dry_strategy: string | null
+          driver_1_wet_strategy: string | null
+          driver_2_dry_strategy: string | null
+          driver_2_wet_strategy: string | null
           notes: string | null
+          driver_1_id: string | null
+          driver_2_id: string | null
+          driver_1_boost_id: string | null
+          driver_2_boost_id: string | null
+          alt_driver_ids: any | null
+          alt_boost_ids: any | null
           created_at: string
           updated_at: string
         }
@@ -460,6 +470,12 @@ export interface Database {
           dry_strategy?: string | null
           wet_strategy?: string | null
           notes?: string | null
+          driver_1_id?: string | null
+          driver_2_id?: string | null
+          driver_1_boost_id?: string | null
+          driver_2_boost_id?: string | null
+          alt_driver_ids?: any | null
+          alt_boost_ids?: any | null
           created_at?: string
           updated_at?: string
         }
@@ -476,6 +492,12 @@ export interface Database {
           dry_strategy?: string | null
           wet_strategy?: string | null
           notes?: string | null
+          driver_1_id?: string | null
+          driver_2_id?: string | null
+          driver_1_boost_id?: string | null
+          driver_2_boost_id?: string | null
+          alt_driver_ids?: any | null
+          alt_boost_ids?: any | null
           created_at?: string
           updated_at?: string
         }
@@ -543,7 +565,9 @@ export type CarPart = Tables<'car_parts'>
 export type UserDriver = Tables<'user_drivers'>
 export type UserCarPart = Tables<'user_car_parts'>
 export type Track = Tables<'tracks'>
-export type UserTrackGuide = Tables<'user_track_guides'>
+export type UserTrackGuide = Tables<'user_track_guides'> & {
+  alternate_driver_ids?: string[]
+}
 export type UserTrackGuideDriver = Tables<'user_track_guide_drivers'>
 
 // Business logic types

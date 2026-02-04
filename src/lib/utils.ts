@@ -180,3 +180,32 @@ export function calculateHighestLevel(currentLevel: number, cardCount: number, r
 
   return highestLevel;
 }
+
+/**
+ * Get rarity background color for cells
+ */
+export function getRarityBackground(rarity: number): string {
+  return rarity === 0 ? "bg-gray-300" :
+         rarity === 1 ? "bg-blue-200" :
+         rarity === 2 ? "bg-orange-300" :
+         rarity === 3 ? "bg-purple-300" :
+         rarity === 4 ? "bg-yellow-300" :
+         rarity === 5 ? "bg-red-300" :
+         rarity === 6 ? "bg-rose-400" : "bg-gray-300";
+}
+
+/**
+ * Get rarity display name
+ */
+export function getRarityDisplay(rarity: number): string {
+  const rarityMap: Record<number, string> = {
+    0: 'Basic',
+    1: 'Common',
+    2: 'Rare',
+    3: 'Epic',
+    4: 'Legendary',
+    5: 'SE Standard',
+    6: 'SE Turbo'
+  }
+  return rarityMap[rarity] || 'Unknown';
+}
