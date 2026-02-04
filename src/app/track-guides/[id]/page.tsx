@@ -983,6 +983,64 @@ export default function TrackGuideEditorPage() {
               </div>
             </Card>
 
+            {/* Alt Drivers Section */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Alternative Drivers</h3>
+              
+              {/* Display Selected Alt Drivers */}
+              {(formData.alt_driver_ids && formData.alt_driver_ids.length > 0) ? (
+                <div className="mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                    {formData.alt_driver_ids.map((driverId: string, index: number) => {
+                      // Find driver details
+                      const driver = availableDrivers.find((d: DriverView) => d.id === driverId)
+                      
+                      if (!driver) {
+                        return (
+                          <div key={driverId} className="p-3 rounded-lg bg-gray-200">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-bold text-black">
+                                Loading...
+                              </span>
+                              <span className="text-sm text-black">
+                                Level 0
+                              </span>
+                              <span className="text-sm text-black">
+                                • Unknown
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      }
+
+                      return (
+                        <div key={driverId} className={`p-3 rounded-lg ${getRarityBackground(driver.rarity)}`}>
+                          <div className="flex w-full text-sm font-bold text-black">
+                            {/* <div className="flex-1 w-full text-sm font-bold text-black"> */}
+                              {driver.name}
+                          </div>
+                          <div className="flex-1 w-full text-sm font-medium text-gray-700">
+                              Level {driver.level} • {getRarityDisplay(driver.rarity)}
+                            {/* </div> */}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="text-sm text-gray-500">No alternate drivers selected yet</div>
+                </div>
+              )}
+              
+              <div className="flex gap-2">
+                <Button variant="outline" className="w-full bg-white font-bold" onClick={() => setShowDriverModal(true)}>
+                  Select Alternatives ({(formData.alt_driver_ids || []).length}/6 selected)
+                </Button>
+              </div>
+            </Card>
+
             {/* Car Setup Section */}
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">Car Setup</h3>
