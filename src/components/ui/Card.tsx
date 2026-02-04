@@ -3,11 +3,12 @@ import React from 'react'
 interface CardProps {
   children: React.ReactNode
   className?: string
+  backgroundColor?: string
 }
 
-export function Card({ children, className = '' }: CardProps) {
+export function Card({ children, className = '', backgroundColor = 'bg-gray-200' }: CardProps) {
   return (
-    <div className={`bg-white rounded-lg shadow-md overflow-hidden ${className}`}>
+    <div className={`${backgroundColor} rounded-lg shadow-md overflow-hidden ${className}`}>
       {children}
     </div>
   )
