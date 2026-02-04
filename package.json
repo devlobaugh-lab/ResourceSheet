@@ -13,7 +13,12 @@
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
     "db:seed": "supabase db seed",
-    "db:migrate": "supabase migration up"
+    "db:migrate": "supabase migration up",
+    "db:init": "node scripts/init_database.js",
+    "db:seed:seasons": "node scripts/seed_seasons.js",
+    "db:seed:car-parts": "node scripts/seed_car_parts.js",
+    "db:seed:drivers": "node scripts/seed_drivers.js",
+    "db:seed:boosts": "node scripts/seed_boosts.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
