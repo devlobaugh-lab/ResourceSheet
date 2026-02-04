@@ -16,7 +16,7 @@ import { DriverDisplay } from '@/components/DriverDisplay'
 import Link from 'next/link'
 import { calculateHighestLevel, cn } from '@/lib/utils'
 import { getRarityBackground, getRarityDisplay } from '@/lib/utils'
-import { Shield, ArrowUpRight, Signal, Car, Gauge, ArrowRight, Zap, Timer } from 'lucide-react'
+import { Shield, ArrowUpRight, Signal, Car, Gauge, ArrowRight, Zap, Timer, AlertTriangle } from 'lucide-react'
 
 // New - imported components for boost stats and editable fields
 import { BoostStatsDisplay } from '@/components/BoostStatsDisplay'
@@ -73,6 +73,8 @@ export default function TrackGuideEditorPage() {
   const [selectedGpLevel, setSelectedGpLevel] = useState(0)
   const [formData, setFormData] = useState<Partial<UserTrackGuide>>({})
   const [isSaving, setIsSaving] = useState(false)
+  const [isDirty, setIsDirty] = useState(false)
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [showDriverModal, setShowDriverModal] = useState(false)
   const [driverModalGpLevel, setDriverModalGpLevel] = useState(0)
   // const [driverSelectionMode, setDriverSelectionMode] = useState<'recommended' | 'alternate'>('recommended')
@@ -276,6 +278,9 @@ export default function TrackGuideEditorPage() {
       setFormData(trackGuide)
       // Set alternate drivers from the new field or fallback to suggested_drivers
       setAlternateDrivers(trackGuide.alt_driver_ids || trackGuide.suggested_drivers || [])
+      // Reset dirty state when loading existing guide
+      setIsDirty(false)
+      setAutoSaveStatus('idle')
     } else {
       // Reset form for new guide
       setFormData({
@@ -298,8 +303,29 @@ export default function TrackGuideEditorPage() {
         notes: ''
       })
       setAlternateDrivers([])
+      // Reset dirty state for new guide
+      setIsDirty(false)
+      setAutoSaveStatus('idle')
     }
   }, [trackGuide, trackId, selectedGpLevel])
+
+  // Track form changes to set dirty state
+  useEffect(() => {
+    if (!trackGuide) {
+      // For new guides, check if form has any data (other than default values)
+      const hasData = Object.values(formData).some(value => {
+        if (value === null || value === undefined) return false
+        if (typeof value === 'string') return value.trim() !== ''
+        if (Array.isArray(value)) return value.length > 0
+        return true
+      })
+      setIsDirty(hasData)
+    } else {
+      // Compare current form data with saved guide data
+      const hasChanges = JSON.stringify(formData) !== JSON.stringify(trackGuide)
+      setIsDirty(hasChanges)
+    }
+  }, [formData, trackGuide])
 
   // Save track guide mutation
   const saveMutation = useMutation({
@@ -347,45 +373,63 @@ export default function TrackGuideEditorPage() {
   const handleGpLevelChange = async (newGpLevel: number) => {
     // Only auto-save if there are changes to save
     if (selectedGpLevel !== newGpLevel) {
-      // Check if we have any data to save (not just empty defaults)
-      const hasDataToSave = formData.suggested_drivers?.length > 0 ||
-                           formData.suggested_boosts?.length > 0 ||
-                           formData.free_boost_id ||
-                           formData.saved_setup_id ||
-                           formData.setup_notes ||
-                           formData.dry_strategy ||
-                           formData.wet_strategy ||
-                           formData.notes
-
-      if (hasDataToSave) {
+      // Use the dirty state to determine if we have changes to save
+      const hasChangesToSave = isDirty
+      
+      if (hasChangesToSave) {
+        setAutoSaveStatus('saving')
         setIsSaving(true)
+        
         try {
           await new Promise<void>((resolve, reject) => {
             saveMutation.mutate({
               ...formData,
               track_id: trackId,
-              gp_level: selectedGpLevel,
+              gp_level: selectedGpLevel, // Save with current GP level, not new one
             }, {
               onSuccess: () => {
+                setAutoSaveStatus('saved')
                 setIsSaving(false)
                 setSelectedGpLevel(newGpLevel)
+                
+                // Reset dirty state after successful save
+                setIsDirty(false)
+                
+                // Reset auto save status after a short delay
+                setTimeout(() => {
+                  setAutoSaveStatus('idle')
+                }, 2000)
+                
                 resolve()
               },
               onError: (error) => {
+                setAutoSaveStatus('error')
                 setIsSaving(false)
                 // Still switch tabs even if save fails, but show error
                 setSelectedGpLevel(newGpLevel)
                 addToast(`Failed to save changes: ${error.message}`, 'error')
+                
+                // Reset auto save status after a short delay
+                setTimeout(() => {
+                  setAutoSaveStatus('idle')
+                }, 3000)
+                
                 resolve()
               }
             })
           })
         } catch (error) {
+          setAutoSaveStatus('error')
           setIsSaving(false)
           setSelectedGpLevel(newGpLevel)
+          
+          // Reset auto save status after a short delay
+          setTimeout(() => {
+            setAutoSaveStatus('idle')
+          }, 3000)
         }
       } else {
-        // No data to save, just switch tabs
+        // No changes to save, just switch tabs
         setSelectedGpLevel(newGpLevel)
       }
     }
@@ -535,18 +579,36 @@ export default function TrackGuideEditorPage() {
                   key={level.id}
                   onClick={() => handleGpLevelChange(level.id)}
                   disabled={isSaving}
-                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors relative ${
                     selectedGpLevel === level.id
                       ? 'bg-gray-600 text-gray-100 border border-gray-200'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {level.name}
-                  {/* {isSaving && selectedGpLevel === level.id && (
-                    <span className="ml-2 inline-flex items-center">
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                    </span>
-                  )} */}
+                  {/* Auto-save status indicator */}
+                  {selectedGpLevel === level.id && (
+                    <div className="absolute -top-1 -right-1">
+                      {autoSaveStatus === 'saving' && (
+                        <div className="flex items-center space-x-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                          <div className="animate-spin rounded-full h-2 w-2 border-b-2 border-blue-600"></div>
+                          <span>Saving</span>
+                        </div>
+                      )}
+                      {autoSaveStatus === 'saved' && (
+                        <div className="flex items-center space-x-1 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                          <Shield className="h-3 w-3" />
+                          <span>Saved</span>
+                        </div>
+                      )}
+                      {autoSaveStatus === 'error' && (
+                        <div className="flex items-center space-x-1 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">
+                          <AlertTriangle className="h-3 w-3" />
+                          <span>Error</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
