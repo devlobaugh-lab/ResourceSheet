@@ -185,13 +185,13 @@ export function calculateHighestLevel(currentLevel: number, cardCount: number, r
  * Get rarity background color for cells
  */
 export function getRarityBackground(rarity: number): string {
-  return rarity === 0 ? "bg-gray-300" :
+  return rarity === 0 ? "bg-gray-200" :
          rarity === 1 ? "bg-blue-200" :
          rarity === 2 ? "bg-orange-300" :
          rarity === 3 ? "bg-purple-300" :
          rarity === 4 ? "bg-yellow-300" :
          rarity === 5 ? "bg-red-300" :
-         rarity === 6 ? "bg-rose-400" : "bg-gray-300";
+         rarity === 6 ? "bg-rose-400" : "bg-gray-200";
 }
 
 /**
