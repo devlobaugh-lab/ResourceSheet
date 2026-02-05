@@ -495,17 +495,22 @@ function BoostsTab() {
     };
   });
 
-  // Extract number from boost name for sorting (only for data input page)
-  const extractBoostNumber = (name: string): number => {
-    const match = name.match(/(\d+)$/); // Get the last number in the string
-    return match ? parseInt(match[1], 10) : 0;
-  };
-
-  // Sort by extracted number from boost name (numerical sort)
+  // Sort: BoostIcon_1 through BoostIcon_6 first (alphabetically), then rest by ID
   const sortedBoosts = [...rawBoosts].sort((a, b) => {
-    const numA = extractBoostNumber(a.name);
-    const numB = extractBoostNumber(b.name);
-    return numA - numB;
+    const aIsSpecial = a.icon && a.icon.startsWith('BoostIcon_') && ['1','2','3','4','5','6'].includes(a.icon.replace('BoostIcon_', ''));
+    const bIsSpecial = b.icon && b.icon.startsWith('BoostIcon_') && ['1','2','3','4','5','6'].includes(b.icon.replace('BoostIcon_', ''));
+    
+    // If one is special and the other isn't, special comes first
+    if (aIsSpecial && !bIsSpecial) return -1;
+    if (!aIsSpecial && bIsSpecial) return 1;
+    
+    // If both are special, sort by icon name (BoostIcon_1, BoostIcon_2, etc.)
+    if (aIsSpecial && bIsSpecial) {
+      return a.icon.localeCompare(b.icon);
+    }
+    
+    // If neither is special, sort by ID
+    return a.id.localeCompare(b.id);
   });
 
   const handleSave = useCallback(async (boostId: string, value: number) => {

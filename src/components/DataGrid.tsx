@@ -217,10 +217,15 @@ export function DataGrid({
   const [filters, setFilters] = useState<FilterState>(() => {
     // Load saved sort preferences on component initialization
     const savedPrefs = loadSortPreferences(gridType);
+    
+    // Set default sort preferences with Name column defaulting to Asc
+    const defaultPrefs = getDefaultSortForGridType(gridType);
+    
     return {
       search: '',
       maxSeries: 12, // Default to show all series
-      ...savedPrefs,
+      sortBy: savedPrefs.sortBy || defaultPrefs.sortBy,
+      sortOrder: savedPrefs.sortOrder || defaultPrefs.sortOrder,
     };
   });
 
@@ -354,7 +359,7 @@ export function DataGrid({
 
     return [...filteredItems].sort((a: FilterableItem, b: FilterableItem) => {
       let comparison = 0;
-
+      
       switch (filters.sortBy) {
         case 'card_count':
           // Special case for boost card_count - direct comparison
@@ -445,7 +450,6 @@ export function DataGrid({
           comparison = getStatValueForSort(a, filters.sortBy) - getStatValueForSort(b, filters.sortBy);
           break;
         // Car part stat columns
-        case 'speed':
         case 'cornering':
         case 'powerUnit':
         case 'drs':
@@ -484,6 +488,19 @@ export function DataGrid({
         case 'pit_stop':
         case 'race_start':
           comparison = getBoostTierValueForSort(a, filters.sortBy) - getBoostTierValueForSort(b, filters.sortBy);
+          break;
+        // Boost free status column
+        case 'is_free':
+          if ('is_boost' in a && 'is_boost' in b && a.is_boost && b.is_boost) {
+            const aIsFree = (a as BoostItem).is_free || false;
+            const bIsFree = (b as BoostItem).is_free || false;
+            // Sort free boosts first (true comes before false)
+            // When Asc: free (true) should come before non-free (false)
+            // When Desc: free (true) should come before non-free (false) - same logic
+            if (aIsFree && !bIsFree) comparison = -1; // Free comes before non-free
+            else if (!aIsFree && bIsFree) comparison = 1; // Non-free comes after free
+            else comparison = 0; // Both same, no change
+          }
           break;
         default:
           comparison = 0;
@@ -887,13 +904,31 @@ export function DataGrid({
                   )}
                   onClick={() => {
                     if (column.sortable && column.key !== 'actions') {
-                      setFilters(prev => ({
-                        ...prev,
-                        sortBy: column.key as FilterState['sortBy'],
-                        sortOrder: prev.sortBy === column.key
-                          ? prev.sortOrder === 'desc' ? 'asc' : 'desc'
-                          : 'desc'
-                      }));
+                      setFilters(prev => {
+                        const newSortBy = column.key as FilterState['sortBy'];
+                        let newSortOrder: 'asc' | 'desc';
+                        
+                        // Determine the new sort order based on current state
+                        if (prev.sortBy === newSortBy) {
+                          // Column is already active, toggle the order
+                          newSortOrder = prev.sortOrder === 'desc' ? 'asc' : 'desc';
+                        } else {
+                        // New column selected, set default order
+                        if (newSortBy === 'name') {
+                          newSortOrder = 'asc'; // Name defaults to Asc
+                        } else if (newSortBy === 'is_free') {
+                          newSortOrder = 'asc'; // Free defaults to Asc (non-free first)
+                        } else {
+                          newSortOrder = 'desc'; // Everything else defaults to Desc
+                        }
+                        }
+                        
+                        return {
+                          ...prev,
+                          sortBy: newSortBy,
+                          sortOrder: newSortOrder
+                        };
+                      });
                     }
                   }}
                 >
