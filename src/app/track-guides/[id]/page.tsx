@@ -645,18 +645,21 @@ export default function TrackGuideEditorPage() {
                 {/* Tire Strategies */}
                 <div>
                   <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
+                    <div className="text-normal font-bold text-gray-900 px-2 mb-2">
+                      {track.laps} Laps
+                    </div>                    
                     <div className="text-sm font-bold text-gray-900 px-2 mb-1">Dry:
                        <input type="text"
                         className="w-2/3 rounded-lg border-gray-300 ml-2 text-sm"
-                        value={formData.dry_strategy || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, dry_strategy: e.target.value }))}
+                        value={formData.driver_1_dry_strategy || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, driver_1_dry_strategy: e.target.value }))}
                       />
                     </div>
                     <div className="text-sm font-bold text-gray-900 px-2 mb-1">Wet:
                        <input type="text"
                           className="w-2/3 rounded-lg border-gray-300 ml-2 text-sm"
-                          value={formData.wet_strategy || ''}
-                          onChange={(e) => setFormData(prev => ({ ...prev, wet_strategy: e.target.value }))}
+                          value={formData.driver_1_wet_strategy || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, driver_1_wet_strategy: e.target.value }))}
                         />
                     </div>
                   </div>
@@ -700,18 +703,21 @@ export default function TrackGuideEditorPage() {
                 {/* Tire Strategies */}
                 <div>
                   <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
+                    <div className="text-normal font-bold text-gray-900 px-2 mb-2">
+                      {track.laps} Laps
+                    </div>
                     <div className="text-sm font-bold text-gray-900 px-2 mb-1">Dry:
                         <input type="text"
                         className="w-2/3 rounded-lg border-gray-300 ml-2 text-sm"
-                        value={formData.dry_strategy || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, dry_strategy: e.target.value }))}
+                        value={formData.driver_2_dry_strategy || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, driver_2_dry_strategy: e.target.value }))}
                       />
                     </div>
                     <div className="text-sm font-bold text-gray-900 px-2 mb-1">Wet:
                         <input type="text"
                           className="w-2/3 rounded-lg border-gray-300 ml-2 text-sm"
-                          value={formData.wet_strategy || ''}
-                          onChange={(e) => setFormData(prev => ({ ...prev, wet_strategy: e.target.value }))}
+                          value={formData.driver_2_wet_strategy || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, driver_2_wet_strategy: e.target.value }))}
                         />
                     </div>
                   </div>
@@ -1234,24 +1240,54 @@ export default function TrackGuideEditorPage() {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {allBoosts
+                            .slice() // Create a copy to avoid mutating the original array
                             .sort((a: any, b: any) => {
                               const aStats = a.boost_stats || {}
                               const bStats = b.boost_stats || {}
                               
                               // Map track stat names to boost stat names
                               const statMap: Record<string, string> = {
+                                // Overtaking variations
                                 'overtaking': 'overtake',
+                                'overtake': 'overtake',
+                                
+                                // Defending variations
                                 'defending': 'block',
                                 'defend': 'block',
+                                'block': 'block',
+                                
+                                // Corners variations
                                 'corners': 'corners',
+                                'cornering': 'corners',
+                                
+                                // Tyre Use variations
                                 'tyre_use': 'tyre_use',
+                                'tyreUse': 'tyre_use',  // Added camelCase version
+                                'tyre': 'tyre_use',
+                                'tire': 'tyre_use',
+                                'tyre_management': 'tyre_use',
+                                'tyre_mgt': 'tyre_use',
+                                'tire_use': 'tyre_use',
+                                'tire_management': 'tyre_use',
+                                'tire_mgt': 'tyre_use',
+                                
+                                // Power Unit variations
                                 'power_unit': 'power_unit',
                                 'powerUnit': 'power_unit',
+                                'powerunit': 'power_unit',
+                                
+                                // Speed variations
                                 'speed': 'speed',
+                                
+                                // Pit Stop variations
                                 'pit_stop': 'pit_stop',
                                 'pitStop': 'pit_stop',
+                                'pitstop': 'pit_stop',
+                                
+                                // Race Start variations
                                 'race_start': 'race_start',
-                                'raceStart': 'race_start'
+                                'raceStart': 'race_start',
+                                'racestart': 'race_start'
                               }
                               
                               // Primary sort: track's driver stat (mapped to boost stat)
@@ -1259,6 +1295,17 @@ export default function TrackGuideEditorPage() {
                               const boostDriverStat = statMap[trackDriverStat] || trackDriverStat
                               const aDriverStat = aStats[boostDriverStat] || 0
                               const bDriverStat = bStats[boostDriverStat] || 0
+                              
+                              // Debug logging
+                              if (process.env.NODE_ENV === 'development') {
+                                console.log('Track driver stat:', trackDriverStat)
+                                console.log('Mapped boost stat:', boostDriverStat)
+                                console.log('Available boost stats for A:', Object.keys(aStats))
+                                console.log('Available boost stats for B:', Object.keys(bStats))
+                                console.log('Boost A', a.name, 'stat:', aDriverStat)
+                                console.log('Boost B', b.name, 'stat:', bDriverStat)
+                                console.log('Stat map lookup result:', statMap[trackDriverStat])
+                              }
                               
                               if (aDriverStat !== bDriverStat) {
                                 return bDriverStat - aDriverStat // Descending order
@@ -1466,24 +1513,54 @@ export default function TrackGuideEditorPage() {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {allBoosts
+                            .slice() // Create a copy to avoid mutating the original array
                             .sort((a: any, b: any) => {
                               const aStats = a.boost_stats || {}
                               const bStats = b.boost_stats || {}
                               
                               // Map track stat names to boost stat names
                               const statMap: Record<string, string> = {
+                                // Overtaking variations
                                 'overtaking': 'overtake',
+                                'overtake': 'overtake',
+                                
+                                // Defending variations
                                 'defending': 'block',
                                 'defend': 'block',
+                                'block': 'block',
+                                
+                                // Corners variations
                                 'corners': 'corners',
+                                'cornering': 'corners',
+                                
+                                // Tyre Use variations
                                 'tyre_use': 'tyre_use',
+                                'tyreUse': 'tyre_use',  // Added camelCase version
+                                'tyre': 'tyre_use',
+                                'tire': 'tyre_use',
+                                'tyre_management': 'tyre_use',
+                                'tyre_mgt': 'tyre_use',
+                                'tire_use': 'tyre_use',
+                                'tire_management': 'tyre_use',
+                                'tire_mgt': 'tyre_use',
+                                
+                                // Power Unit variations
                                 'power_unit': 'power_unit',
                                 'powerUnit': 'power_unit',
+                                'powerunit': 'power_unit',
+                                
+                                // Speed variations
                                 'speed': 'speed',
+                                
+                                // Pit Stop variations
                                 'pit_stop': 'pit_stop',
                                 'pitStop': 'pit_stop',
+                                'pitstop': 'pit_stop',
+                                
+                                // Race Start variations
                                 'race_start': 'race_start',
-                                'raceStart': 'race_start'
+                                'raceStart': 'race_start',
+                                'racestart': 'race_start'
                               }
                               
                               // Primary sort: track's driver stat (mapped to boost stat)
@@ -1491,6 +1568,17 @@ export default function TrackGuideEditorPage() {
                               const boostDriverStat = statMap[trackDriverStat] || trackDriverStat
                               const aDriverStat = aStats[boostDriverStat] || 0
                               const bDriverStat = bStats[boostDriverStat] || 0
+                              
+                              // Debug logging
+                              if (process.env.NODE_ENV === 'development') {
+                                console.log('Track driver stat:', trackDriverStat)
+                                console.log('Mapped boost stat:', boostDriverStat)
+                                console.log('Available boost stats for A:', Object.keys(aStats))
+                                console.log('Available boost stats for B:', Object.keys(bStats))
+                                console.log('Boost A', a.name, 'stat:', aDriverStat)
+                                console.log('Boost B', b.name, 'stat:', bDriverStat)
+                                console.log('Stat map lookup result:', statMap[trackDriverStat])
+                              }
                               
                               if (aDriverStat !== bDriverStat) {
                                 return bDriverStat - aDriverStat // Descending order
@@ -1685,24 +1773,54 @@ export default function TrackGuideEditorPage() {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {allBoosts
+                            .slice() // Create a copy to avoid mutating the original array
                             .sort((a: any, b: any) => {
                               const aStats = a.boost_stats || {}
                               const bStats = b.boost_stats || {}
                               
                               // Map track stat names to boost stat names
                               const statMap: Record<string, string> = {
+                                // Overtaking variations
                                 'overtaking': 'overtake',
+                                'overtake': 'overtake',
+                                
+                                // Defending variations
                                 'defending': 'block',
                                 'defend': 'block',
+                                'block': 'block',
+                                
+                                // Corners variations
                                 'corners': 'corners',
+                                'cornering': 'corners',
+                                
+                                // Tyre Use variations
                                 'tyre_use': 'tyre_use',
+                                'tyreUse': 'tyre_use',  // Added camelCase version
+                                'tyre': 'tyre_use',
+                                'tire': 'tyre_use',
+                                'tyre_management': 'tyre_use',
+                                'tyre_mgt': 'tyre_use',
+                                'tire_use': 'tyre_use',
+                                'tire_management': 'tyre_use',
+                                'tire_mgt': 'tyre_use',
+                                
+                                // Power Unit variations
                                 'power_unit': 'power_unit',
                                 'powerUnit': 'power_unit',
+                                'powerunit': 'power_unit',
+                                
+                                // Speed variations
                                 'speed': 'speed',
+                                
+                                // Pit Stop variations
                                 'pit_stop': 'pit_stop',
                                 'pitStop': 'pit_stop',
+                                'pitstop': 'pit_stop',
+                                
+                                // Race Start variations
                                 'race_start': 'race_start',
-                                'raceStart': 'race_start'
+                                'raceStart': 'race_start',
+                                'racestart': 'race_start'
                               }
                               
                               // Primary sort: track's driver stat (mapped to boost stat)
@@ -1710,6 +1828,17 @@ export default function TrackGuideEditorPage() {
                               const boostDriverStat = statMap[trackDriverStat] || trackDriverStat
                               const aDriverStat = aStats[boostDriverStat] || 0
                               const bDriverStat = bStats[boostDriverStat] || 0
+                              
+                              // Debug logging
+                              if (process.env.NODE_ENV === 'development') {
+                                console.log('Track driver stat:', trackDriverStat)
+                                console.log('Mapped boost stat:', boostDriverStat)
+                                console.log('Available boost stats for A:', Object.keys(aStats))
+                                console.log('Available boost stats for B:', Object.keys(bStats))
+                                console.log('Boost A', a.name, 'stat:', aDriverStat)
+                                console.log('Boost B', b.name, 'stat:', bDriverStat)
+                                console.log('Stat map lookup result:', statMap[trackDriverStat])
+                              }
                               
                               if (aDriverStat !== bDriverStat) {
                                 return bDriverStat - aDriverStat // Descending order
