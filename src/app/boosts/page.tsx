@@ -94,8 +94,22 @@ function AuthenticatedBoostsPage() {
     if (!searchTerm) return mergedBoosts
 
     return mergedBoosts.filter((boost: BoostWithCustomName) => {
-      const displayName = boost.custom_name || boost.name
-      return displayName.toLowerCase().includes(searchTerm.toLowerCase())
+      // Search across all possible display names (same logic as BoostDisplay component)
+      const customName = boost.custom_name
+      const iconName = boost.icon ? boost.icon.replace('BoostIcon_', '') : null
+      const fallbackName = boost.name
+      
+      // Create array of all possible search terms
+      const searchTerms = [
+        customName,
+        iconName,
+        fallbackName
+      ].filter(Boolean) // Remove null/undefined values
+
+      // Check if any of the search terms contain the user's search input
+      return searchTerms.some(term => 
+        term && term.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     })
   }, [mergedBoosts, searchTerm])
 
