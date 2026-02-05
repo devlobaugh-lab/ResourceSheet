@@ -625,7 +625,7 @@ export default function TrackGuideEditorPage() {
             >
               <div className="space-y-3">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-700 mb-0 pb-3">Driver 1</h3>
+                  <h3 className="text-lg font-bold text-gray-700">Driver 1</h3>
                   <DriverDisplay
                     driver={formData.driver_1_id ? findDriver(formData.driver_1_id) : null}
                     isLoading={driversLoading}
@@ -680,7 +680,7 @@ export default function TrackGuideEditorPage() {
             >
               <div className="space-y-3">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-700 mb-0 pb-3">Driver 2</h3>
+                  <h3 className="text-lg font-bold text-gray-700">Driver 2</h3>
                   <DriverDisplay
                     driver={formData.driver_2_id ? findDriver(formData.driver_2_id) : null}
                     isLoading={driversLoading}
@@ -735,7 +735,7 @@ export default function TrackGuideEditorPage() {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Car Setup</h3>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">
                       Saved Setup
                     </label>
                     <select
@@ -754,7 +754,7 @@ export default function TrackGuideEditorPage() {
                 </div>
                 <div className='flex-1'>
                   {/* <h4 className="text-sm font-medium text-gray-700 mb-1">Setup Notes</h4> */}
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
                       Setup Notes
                   </label>
                   <textarea
@@ -937,7 +937,7 @@ export default function TrackGuideEditorPage() {
                     Additional Boosts
                   </label>
                   <Button variant="outline" className="w-1/2 bg-white font-bold" onClick={handleSelectBoosts}>
-                    Select Boosts ({formData.suggested_boosts?.length || 0} selected)
+                    Select Boosts
                   </Button>
                 </div>
               </div>

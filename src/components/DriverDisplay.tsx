@@ -21,7 +21,7 @@ export function DriverDisplay({
   onBoostEdit
 }: DriverDisplayProps) {
   return (
-    <div className={`relative rounded-lg ${isLoading || !driver ? 'p-4 pt-2 bg-gray-100' : getRarityBackground(driver.rarity) + 'px-3 pt-1'} ${className}`}>
+    <div className={`relative rounded-lg ${isLoading || !driver ? 'p-4 pt-2 mt-2 bg-gray-100' : getRarityBackground(driver.rarity) + 'px-3 pt-1'} ${className}`}>
       {onEdit && (
         <button
           onClick={onEdit}
