@@ -57,7 +57,7 @@ export function BoostStatsDisplay({ boostStats, className = '' }: BoostStatsDisp
       const IconComponent = statIcons[stat.key]
       const colorClass = getBoostValueColor(boostStats[stat.key])
       return (
-        <span key={stat.key} className={`flex items-center gap-1 ${colorClass} px-3 py-2 rounded`}>
+        <span key={stat.key} className={`flex items-center gap-1 ${colorClass} px-2 py-1 rounded`}>
           {IconComponent && <IconComponent className="w-6 h-6" />}
           <span className="text-lg font-bold">+{value}</span>
         </span>
