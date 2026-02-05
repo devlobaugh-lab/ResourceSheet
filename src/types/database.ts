@@ -650,7 +650,9 @@ export interface BoostView {
   is_free: boolean
 
   // From boost_custom_names (optional custom override)
-  custom_name?: string | null
+  boost_custom_names?: {
+    custom_name?: string | null
+  }
 
   // From user_boosts (or defaults if not owned)
   level: number

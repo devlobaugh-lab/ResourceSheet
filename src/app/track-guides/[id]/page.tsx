@@ -16,10 +16,11 @@ import { DriverDisplay } from '@/components/DriverDisplay'
 import Link from 'next/link'
 import { calculateHighestLevel, cn } from '@/lib/utils'
 import { getRarityBackground, getRarityDisplay } from '@/lib/utils'
-import { Shield, ArrowUpRight, Signal, Car, Gauge, ArrowRight, Zap, Timer, AlertTriangle } from 'lucide-react'
+import { Shield, ArrowUpRight, Signal, Car, Gauge, ArrowRight, Zap, Timer, AlertTriangle, Pencil } from 'lucide-react'
 
 // New - imported components for boost stats and editable fields
 import { BoostStatsDisplay } from '@/components/BoostStatsDisplay'
+import { BoostDisplay } from '@/components/BoostDisplay'
 
 
 // Force dynamic rendering since this page requires authentication
@@ -490,6 +491,26 @@ export default function TrackGuideEditorPage() {
     }
   }
 
+  // Edit handler functions for driver cards
+  const handleEditDriver1 = () => {
+    setDriverSelectionMode('driver1')
+    handleSelectDrivers()
+  }
+
+  const handleEditDriver2 = () => {
+    setDriverSelectionMode('driver2')
+    handleSelectDrivers()
+  }
+
+  // Edit handler functions for boost cards
+  const handleEditDriver1Boost = () => {
+    setShowDriver1BoostModal(true)
+  }
+
+  const handleEditDriver2Boost = () => {
+    setShowDriver2BoostModal(true)
+  }
+
   const isLoading = trackLoading || guideLoading
 
   if (isLoading) {
@@ -604,33 +625,21 @@ export default function TrackGuideEditorPage() {
             >
               <div className="space-y-3">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-700 mb-0">Driver 1</h3>
-                  {formData.driver_1_id ? (
-                    <DriverDisplay
-                      key={formData.driver_1_id}
-                      driver={findDriver(formData.driver_1_id)}
-                      isLoading={driversLoading}
-                      placeholderText="Driver not found"
-                    />
-                  ) : (
-                    <div className="col-span-2 p-4 bg-gray-50 rounded-lg">
-                      <div className="text-sm text-gray-500">No recommended drivers selected yet</div>
-                    </div>
-                  )}
+                  <h3 className="text-lg font-bold text-gray-700 mb-0 pb-3">Driver 1</h3>
+                  <DriverDisplay
+                    driver={formData.driver_1_id ? findDriver(formData.driver_1_id) : null}
+                    isLoading={driversLoading}
+                    placeholderText="No driver selected yet"
+                    onEdit={handleEditDriver1}
+                  />
                 </div>
                 <div>
-                  <div className="mb-2 p-4 pt-2 bg-gray-100 rounded-lg">
-                    {formData.driver_1_boost_id ? (
-                      <>
-                        <div className="text-lg font-bold text-gray-900 mb-2">
-                          {selectedDriver1BoostDetails?.custom_name || (selectedDriver1BoostDetails?.icon ? selectedDriver1BoostDetails.icon.replace('BoostIcon_', '') : selectedDriver1BoostDetails?.name) || 'Unknown Boost'}
-                        </div>
-                        <BoostStatsDisplay boostStats={selectedDriver1BoostDetails?.boost_stats} />
-                      </>
-                    ) : (
-                      <div className="text-sm text-gray-500 pt-2">No boost selected yet</div>
-                    )}
-                  </div>
+                  <BoostDisplay
+                    boost={selectedDriver1BoostDetails}
+                    isLoading={boostsLoading}
+                    placeholderText="No boost selected yet"
+                    onEdit={handleEditDriver1Boost}
+                  />
                 </div>
 
                 {/* Tire Strategies */}
@@ -652,7 +661,7 @@ export default function TrackGuideEditorPage() {
                     </div>
                   </div>
                 </div>
-                <Button variant="outline" className="flex-1 text-sm px-2 bg-white font-bold" onClick={() => {
+                {/* <Button variant="outline" className="flex-1 text-sm px-2 bg-white font-bold" onClick={() => {
                   setDriverSelectionMode('driver1')
                   handleSelectDrivers()
                 }}>
@@ -660,7 +669,7 @@ export default function TrackGuideEditorPage() {
                 </Button>
                 <Button variant="outline" className="flex-1 text-sm ml-2 px-2 bg-white font-bold" onClick={() => setShowDriver1BoostModal(true)}>
                   Select Boost
-                </Button>
+                </Button> */}
               </div>
             </Card>
 
@@ -671,33 +680,21 @@ export default function TrackGuideEditorPage() {
             >
               <div className="space-y-3">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-700 mb-0">Driver 2</h3>
-                  {formData.driver_2_id ? (
-                    <DriverDisplay
-                      key={formData.driver_2_id}
-                      driver={findDriver(formData.driver_2_id)}
-                      isLoading={driversLoading}
-                      placeholderText="Driver not found"
-                    />
-                  ) : (
-                    <div className="col-span-2 p-4 bg-gray-50 rounded-lg">
-                      <div className="text-sm text-gray-500">No driver 2 selected yet</div>
-                    </div>
-                  )}
+                  <h3 className="text-lg font-bold text-gray-700 mb-0 pb-3">Driver 2</h3>
+                  <DriverDisplay
+                    driver={formData.driver_2_id ? findDriver(formData.driver_2_id) : null}
+                    isLoading={driversLoading}
+                    placeholderText="No driver selected yet"
+                    onEdit={handleEditDriver2}
+                  />
                 </div>
                 <div>
-                  <div className="mb-2 p-4 pt-2 bg-gray-100 rounded-lg">
-                    {formData.driver_2_boost_id ? (
-                      <>
-                        <div className="text-lg font-bold text-gray-900 mb-2">
-                          {selectedDriver2BoostDetails?.custom_name || (selectedDriver2BoostDetails?.icon ? selectedDriver2BoostDetails.icon.replace('BoostIcon_', '') : selectedDriver2BoostDetails?.name) || 'Unknown Boost'}
-                        </div>
-                        <BoostStatsDisplay boostStats={selectedDriver2BoostDetails?.boost_stats} />
-                      </>
-                    ) : (
-                      <div className="text-sm text-gray-500 pt-2">No boost selected yet</div>
-                    )}
-                  </div>
+                  <BoostDisplay
+                    boost={selectedDriver2BoostDetails}
+                    isLoading={boostsLoading}
+                    placeholderText="No boost selected yet"
+                    onEdit={handleEditDriver2Boost}
+                  />
                 </div>
 
                 {/* Tire Strategies */}
@@ -720,7 +717,7 @@ export default function TrackGuideEditorPage() {
                   </div>
                 </div>
                 
-                <Button variant="outline" className="flex-1 text-sm px-2 bg-white font-bold" onClick={() => {
+                {/* <Button variant="outline" className="flex-1 text-sm px-2 bg-white font-bold" onClick={() => {
                   setDriverSelectionMode('driver2')
                   handleSelectDrivers()
                 }}>
@@ -728,7 +725,7 @@ export default function TrackGuideEditorPage() {
                 </Button>
                 <Button variant="outline" className="flex-1 text-sm ml-2 px-2 bg-white font-bold" onClick={() => setShowDriver2BoostModal(true)}>
                   Select Boost
-                </Button>
+                </Button> */}
               </div>
             </Card>
 
@@ -737,24 +734,23 @@ export default function TrackGuideEditorPage() {
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Car Setup</h3>
-                                  <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Saved Setup
-                  </label>
-                  <select
-                    className="w-full rounded-lg border-gray-300"
-                    value={formData.saved_setup_id || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, saved_setup_id: e.target.value || undefined }))}
-                  >
-                    <option value="">Select a saved setup...</option>
-                    {userSetups.map((setup) => (
-                      <option key={setup.id} value={setup.id}>
-                        {setup.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Saved Setup
+                    </label>
+                    <select
+                      className="w-full rounded-lg border-gray-300"
+                      value={formData.saved_setup_id || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, saved_setup_id: e.target.value || undefined }))}
+                    >
+                      <option value="">Select a saved setup...</option>
+                      {userSetups.map((setup) => (
+                        <option key={setup.id} value={setup.id}>
+                          {setup.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div className='flex-1'>
                   {/* <h4 className="text-sm font-medium text-gray-700 mb-1">Setup Notes</h4> */}
@@ -763,13 +759,12 @@ export default function TrackGuideEditorPage() {
                   </label>
                   <textarea
                     className="w-full rounded-lg border-gray-300 text-sm"
-                    rows={10}
+                    rows={8}
                     placeholder="Track-specific setup changes..."
                     value={formData.setup_notes || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, setup_notes: e.target.value }))}
                   />
                 </div>
-               
               </div>
             </Card>
           </div>
@@ -830,9 +825,9 @@ export default function TrackGuideEditorPage() {
                           return (
                             <tr key={boostId} className="hover:bg-gray-50 transition-colors">
                               <td className="px-3 py-1 whitespace-nowrap">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {boost.boost_custom_names?.custom_name || (boost.icon ? boost.icon.replace('BoostIcon_', '') : null) || boost.name}
-                                </div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {boost.boost_custom_names?.custom_name || (boost.icon ? boost.icon.replace('BoostIcon_', '') : null) || boost.name}
+                                  </div>
                               </td>
                               <td className="px-3 py-1 whitespace-nowrap text-center">
                                 <div className="text-sm text-gray-900">{boost.card_count || 0}</div>
