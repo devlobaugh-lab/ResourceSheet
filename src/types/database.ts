@@ -531,6 +531,129 @@ export interface Database {
           updated_at?: string
         }
       }
+      gp_guides: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          start_date: string | null
+          gp_level: number
+          boosted_assets: any | null
+          reward_bonus: any | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          start_date?: string | null
+          gp_level: number
+          boosted_assets?: any | null
+          reward_bonus?: any | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          start_date?: string | null
+          gp_level?: number
+          boosted_assets?: any | null
+          reward_bonus?: any | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      gp_guide_tracks: {
+        Row: {
+          id: string
+          gp_guide_id: string
+          track_id: string
+          race_number: number | null
+          race_type: string | null
+          track_condition: string | null
+          driver_1_id: string | null
+          driver_2_id: string | null
+          driver_1_boost_id: string | null
+          driver_2_boost_id: string | null
+          driver_1_strategy: string | null
+          driver_2_strategy: string | null
+          setup_notes: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          gp_guide_id: string
+          track_id: string
+          race_number?: number | null
+          race_type?: string | null
+          track_condition?: string | null
+          driver_1_id?: string | null
+          driver_2_id?: string | null
+          driver_1_boost_id?: string | null
+          driver_2_boost_id?: string | null
+          driver_1_strategy?: string | null
+          driver_2_strategy?: string | null
+          setup_notes?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          gp_guide_id?: string
+          track_id?: string
+          race_number?: number | null
+          race_type?: string | null
+          track_condition?: string | null
+          driver_1_id?: string | null
+          driver_2_id?: string | null
+          driver_1_boost_id?: string | null
+          driver_2_boost_id?: string | null
+          driver_1_strategy?: string | null
+          driver_2_strategy?: string | null
+          setup_notes?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      gp_guide_results: {
+        Row: {
+          id: string
+          gp_guide_id: string
+          track_id: string
+          race_number: number | null
+          race_type: string | null
+          result_notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          gp_guide_id: string
+          track_id: string
+          race_number?: number | null
+          race_type?: string | null
+          result_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          gp_guide_id?: string
+          track_id?: string
+          race_number?: number | null
+          race_type?: string | null
+          result_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -701,4 +824,20 @@ export interface StatLevel {
   pitStopTime: number
   cardsToUpgrade: number
   softCurrencyToUpgrade: number
+}
+
+// GP Guides types
+export type GPGuide = Tables<'gp_guides'> & {
+  gp_guide_tracks?: GPGuideTrack[]
+  gp_guide_results?: GPGuideResult[]
+  driver_1_id?: string | null
+  driver_2_id?: string | null
+  suggested_boosts?: string[] | null
+}
+export type GPGuideTrack = Tables<'gp_guide_tracks'> & {
+  tracks?: Tables<'tracks'>
+  suggested_boosts?: string[] | null
+}
+export type GPGuideResult = Tables<'gp_guide_results'> & {
+  tracks?: Tables<'tracks'>
 }
