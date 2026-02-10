@@ -100,7 +100,43 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse season filter
-    const seasonNumbers = parseSeasonFilter(seasonFilter)
+    let seasonNumbers = parseSeasonFilter(seasonFilter)
+
+    // Load seasons and determine mapping from season number -> season id
+    const seasonIdMap: Record<number, string> = {}
+    try {
+      const { data: seasons } = await supabaseAdmin.from('seasons').select('id,name,is_active')
+      if (Array.isArray(seasons)) {
+        for (const s of seasons) {
+          if (s && s.name) {
+            const match = (s.name || '').match(/(\d+)/)
+            if (match) {
+              const num = parseInt(match[1], 10)
+              if (!isNaN(num)) {
+                seasonIdMap[num] = s.id
+              }
+            }
+          }
+        }
+      }
+
+      // If no season filter provided, default to the active season (local/dev)
+      if (seasonNumbers.length === 0) {
+        const active = (seasons || []).find((s: any) => s.is_active)
+        if (active && active.name) {
+          const match = (active.name || '').match(/(\d+)/)
+          if (match) {
+            const num = parseInt(match[1], 10)
+            if (!isNaN(num)) {
+              seasonNumbers = [num]
+              console.log('No season_filter provided — defaulting import to active season:', num)
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Could not load seasons for mapping — importing without season mapping', err)
+    }
 
     // Read and parse the uploaded file
     const fileText = await file.text()
@@ -119,7 +155,7 @@ export async function POST(request: NextRequest) {
     const validatedData = contentCacheSchema.parse(contentCacheData)
 
     // Process and import data with change detection
-    const results = await processContentCache(validatedData, seasonNumbers, allowModifications)
+    const results = await processContentCache(validatedData, seasonNumbers, allowModifications, seasonIdMap)
 
     return NextResponse.json({
       message: 'Content cache processed successfully',
@@ -170,7 +206,7 @@ function parseSeasonFilter(seasonFilter: string): number[] {
 }
 
 // Helper function to process content cache with change detection
-async function processContentCache(validatedData: any, seasonNumbers: number[], allowModifications: boolean = false) {
+async function processContentCache(validatedData: any, seasonNumbers: number[], allowModifications: boolean = false, seasonIdMap: Record<number, string> = {}) {
   const results = {
     drivers: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
     car_parts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
@@ -180,8 +216,30 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
   // Process drivers - handle both wrapped and unwrapped formats
   let driversData = validatedData._contentResponse?.drivers || validatedData.drivers;
   
+  // Process collections if present in the uploaded content cache
+  let collectionsData = validatedData._contentResponse?.collections || (validatedData as any).collections
+  if (collectionsData) {
+        const collections = collectionsData.map((c: any) => ({
+      id: c.id,
+      name: c.name ?? c.theme ?? c.description ?? null,
+      theme: c.theme ?? c.description ?? c.name ?? null,
+      description: c.description ?? null,
+      ordinal: c.ordinal ?? null,
+    }))
+
+    if (collections.length > 0) {
+      try {
+        // Insert or update collections depending on allowModifications
+        const collResults = await processItems(collections, 'collections', 'id', allowModifications)
+        console.log(`Content upload: processed collections - new=${collResults.new} modified=${collResults.modified} unchanged=${collResults.unchanged}`)
+      } catch (err) {
+        console.error('Failed to process collections from content cache upload:', err)
+      }
+    }
+  }
+  
   if (driversData) {
-    const drivers = driversData
+        const drivers = driversData
       .filter((driver: any) => shouldImportBySeason(driver, seasonNumbers))
       .map((driver: any) => ({
         id: driver.id,
@@ -197,7 +255,8 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         collection_sub_name: driver.collectionSubName || null,
         min_gp_tier: driver.minGpTier || null, // Map camelCase to snake_case
         tag_name: driver.tagName || null, // Map camelCase to snake_case
-        stats_per_level: driver.driverStatsPerLevel || [] // Map camelCase to snake_case
+        stats_per_level: driver.driverStatsPerLevel || [], // Map camelCase to snake_case
+        season_id: seasonIdMap[driver.season] || null
       }))
 
     // Apply preprocessing to drivers before comparison and database insertion
@@ -243,7 +302,8 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         visual_override: part.visualOverride || null,
         collection_sub_name: part.collectionSubName || null,
         car_part_type: part.carPartType || 0,
-        stats_per_level: part.carPartStatsPerLevel || []
+        stats_per_level: part.carPartStatsPerLevel || [],
+        season_id: seasonIdMap[part.season] || null
       }))
 
     if (carParts.length > 0) {
@@ -360,19 +420,55 @@ async function processItems(items: any[], tableName: string, idField: string, al
 
 // Helper function to get existing items from database
 async function getExistingItems(items: any[], tableName: string, idField: string) {
-  const ids = items.map(item => item[idField])
-  
-  const { data, error } = await supabaseAdmin
-    .from(tableName)
-    .select('*')
-    .in(idField, ids)
+  const ids = items.map(item => item[idField]).filter(Boolean)
 
-  if (error) {
-    console.error(`Error fetching existing ${tableName}:`, error)
-    return []
+  if (ids.length === 0) return []
+
+  // Split into batches to avoid creating extremely long URIs for the Supabase
+  // REST requests when many ids are passed to `.in()`.
+  // Use 50 to be safe with UUID-length IDs
+  const BATCH_SIZE = 50
+  const batches: string[][] = []
+  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+    batches.push(ids.slice(i, i + BATCH_SIZE))
   }
 
-  return data || []
+  let merged: any[] = []
+
+  for (const batch of batches) {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from(tableName)
+        .select('*')
+        .in(idField, batch)
+
+      if (error) {
+        console.error(`Error fetching existing ${tableName} for batch:`, error)
+        // Continue with other batches rather than aborting entirely
+        continue
+      }
+
+      if (Array.isArray(data)) {
+        merged = merged.concat(data)
+      }
+    } catch (err) {
+      console.error(`Unexpected error fetching existing ${tableName} for batch:`, err)
+    }
+  }
+
+  // Remove duplicates just in case
+  const seen = new Set()
+  const unique = []
+  for (const row of merged) {
+    const key = row && row[idField]
+    if (!key) continue
+    if (!seen.has(key)) {
+      seen.add(key)
+      unique.push(row)
+    }
+  }
+
+  return unique
 }
 
 // Helper function to detect changes between existing and new items
