@@ -1,4 +1,10 @@
 import { z } from 'zod'
+import type { StatsPerLevel, BoostStats } from '@/types/database'
+
+/**
+ * Zod schema validation for API requests and responses
+ * Provides runtime validation and type inference
+ */
 
 // Common schemas
 export const uuidSchema = z.string().uuid()
@@ -6,6 +12,18 @@ export const paginationSchema = z.object({
   page: z.number().int().positive().default(1),
   limit: z.number().int().positive().max(100).default(20),
 })
+
+/**
+ * Schema for stats_per_level field
+ * Allows flexible structure matching StatsPerLevel type
+ */
+export const statsPerLevelSchema = z.record(z.union([z.number(), z.record(z.number())])).nullable()
+
+/**
+ * Schema for boost_stats field
+ * Allows flexible structure matching BoostStats type
+ */
+export const boostStatsSchema = z.record(z.union([z.number(), z.string(), z.boolean()])).nullable()
 
 // Catalog Item schemas
 export const createCatalogItemSchema = z.object({
@@ -24,7 +42,7 @@ export const createCatalogItemSchema = z.object({
   tag_name: z.string().optional().nullable(),
   ordinal: z.number().int().optional().nullable(),
   min_gp_tier: z.number().int().optional().nullable(),
-  stats_per_level: z.any().optional().nullable(),
+  stats_per_level: statsPerLevelSchema.optional(),
 })
 
 export const updateCatalogItemSchema = createCatalogItemSchema.partial()
@@ -53,7 +71,7 @@ export const updateUserItemSchema = z.object({
 export const createBoostSchema = z.object({
   name: z.string().min(1),
   icon: z.string().optional().nullable(),
-  boost_stats: z.any().optional().nullable(),
+  boost_stats: boostStatsSchema.optional(),
   is_free: z.boolean().default(false),
 })
 

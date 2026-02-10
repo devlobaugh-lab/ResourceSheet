@@ -45,8 +45,8 @@ export async function GET(request: NextRequest) {
             getAll() {
               return request.cookies.getAll()
             },
-            setAll(cookiesToSet: any[]) {
-              cookiesToSet.forEach(({ name, value, options }: any) => {
+            setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
+              cookiesToSet.forEach(({ name, value, options }) => {
                 request.cookies.set(name, value)
               })
             },
@@ -225,53 +225,58 @@ export async function GET(request: NextRequest) {
       userEmail: user.email,
       version: '2.0', // Version to distinguish from UUID-based exports
       format: 'stable-identifiers', // Identifier for this format
-      drivers: (userDrivers || []).map((item: any) => {
-        const driverData: any = {
+      drivers: (userDrivers || []).map((item: Record<string, unknown>) => {
+        const driver = item.drivers as Record<string, unknown> | null
+        const driverData: Record<string, unknown> = {
           // Stable identifiers for drivers
-          name: item.drivers?.name,
-          series: item.drivers?.series,
+          name: driver?.name,
+          series: driver?.series,
           // User data
           level: item.level,
           card_count: item.card_count
-        };
+        }
 
         // Only include ordinal if it exists and is not null
-        if (item.drivers?.ordinal != null) {
-          driverData.ordinal = item.drivers.ordinal;
+        if (driver?.ordinal != null) {
+          driverData.ordinal = driver.ordinal
         }
 
         // Only include rarity if it exists
-        if (item.drivers?.rarity != null) {
-          driverData.rarity = item.drivers.rarity;
+        if (driver?.rarity != null) {
+          driverData.rarity = driver.rarity
         }
 
-        return driverData;
+        return driverData
       }),
-      carParts: (userCarParts || []).map((item: any) => {
-        const partData: any = {
+      carParts: (userCarParts || []).map((item: Record<string, unknown>) => {
+        const carPart = item.car_parts as Record<string, unknown> | null
+        const partData: Record<string, unknown> = {
           // Stable identifiers for car parts
-          name: item.car_parts?.name,
-          car_part_type: item.car_parts?.car_part_type,
-          series: item.car_parts?.series,
+          name: carPart?.name,
+          car_part_type: carPart?.car_part_type,
+          series: carPart?.series,
           // User data
           level: item.level,
           card_count: item.card_count
-        };
-
-        // Only include rarity if it exists
-        if (item.car_parts?.rarity != null) {
-          partData.rarity = item.car_parts.rarity;
         }
 
-        return partData;
+        // Only include rarity if it exists
+        if (carPart?.rarity != null) {
+          partData.rarity = carPart.rarity
+        }
+
+        return partData
       }),
-      boosts: (userBoosts || []).map((item: any) => ({
-        // Simplified backup format - only essential data for identification
-        name: item.boosts?.name,
-        icon: item.boosts?.icon,
-        count: item.count
-      })),
-      setups: (userSetups || []).map((setup: any) => ({
+      boosts: (userBoosts || []).map((item: Record<string, unknown>) => {
+        const boost = item.boosts as Record<string, unknown> | null
+        return {
+          // Simplified backup format - only essential data for identification
+          name: boost?.name,
+          icon: boost?.icon,
+          count: item.count
+        }
+      }),
+      setups: (userSetups || []).map((setup: Record<string, unknown>) => ({
         name: setup.name,
         notes: setup.notes,
         brake_id: setup.brake_id,
@@ -284,21 +289,24 @@ export async function GET(request: NextRequest) {
         bonus_percentage: setup.bonus_percentage,
         created_at: setup.created_at
       })),
-      trackGuides: (userTrackGuides || []).map((guide: any) => ({
-        track_name: guide.tracks?.name,
-        track_alt_name: guide.tracks?.alt_name,
-        gp_level: guide.gp_level,
-        suggested_drivers: guide.suggested_drivers,
-        free_boost_id: guide.free_boost_id,
-        suggested_boosts: guide.suggested_boosts,
-        saved_setup_id: guide.saved_setup_id,
-        setup_notes: guide.setup_notes,
-        dry_strategy: guide.dry_strategy,
-        wet_strategy: guide.wet_strategy,
-        notes: guide.notes,
-        created_at: guide.created_at
-      })),
-      tracks: (tracks || []).map((track: any) => ({
+      trackGuides: (userTrackGuides || []).map((guide: Record<string, unknown>) => {
+        const track = guide.tracks as Record<string, unknown> | null
+        return {
+          track_name: track?.name,
+          track_alt_name: track?.alt_name,
+          gp_level: guide.gp_level,
+          suggested_drivers: guide.suggested_drivers,
+          free_boost_id: guide.free_boost_id,
+          suggested_boosts: guide.suggested_boosts,
+          saved_setup_id: guide.saved_setup_id,
+          setup_notes: guide.setup_notes,
+          dry_strategy: guide.dry_strategy,
+          wet_strategy: guide.wet_strategy,
+          notes: guide.notes,
+          created_at: guide.created_at
+        }
+      }),
+      tracks: (tracks || []).map((track: Record<string, unknown>) => ({
         name: track.name,
         alt_name: track.alt_name,
         laps: track.laps,

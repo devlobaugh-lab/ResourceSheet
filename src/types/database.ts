@@ -1,3 +1,26 @@
+/**
+ * Represents stat progression for a driver or car part by level
+ * Maps level number to stat values for that level
+ * Example: { 1: { power: 100 }, 2: { power: 105 }, ... }
+ */
+export type StatsPerLevel = Record<string, number | Record<string, number>> | null
+
+/**
+ * Represents statistics for a boost
+ * Contains boost effect values and properties
+ */
+export type BoostStats = Record<string, number | string | boolean> | null
+
+/**
+ * Array of driver IDs for track guides
+ */
+export type SuggestedDriverIds = string[] | null
+
+/**
+ * Array of boost IDs for track guides
+ */
+export type SuggestedBoostIds = string[] | null
+
 export interface Database {
   public: {
     Tables: {
@@ -68,7 +91,7 @@ export interface Database {
           tag_name: string | null
           ordinal: number | null
           min_gp_tier: number | null
-          stats_per_level: any | null
+          stats_per_level: StatsPerLevel
           created_at: string
           updated_at: string
         }
@@ -89,7 +112,7 @@ export interface Database {
           tag_name?: string | null
           ordinal?: number | null
           min_gp_tier?: number | null
-          stats_per_level?: any | null
+          stats_per_level?: StatsPerLevel
           created_at?: string
           updated_at?: string
         }
@@ -110,7 +133,7 @@ export interface Database {
           tag_name?: string | null
           ordinal?: number | null
           min_gp_tier?: number | null
-          stats_per_level?: any | null
+          stats_per_level?: StatsPerLevel
           created_at?: string
           updated_at?: string
         }
@@ -149,7 +172,7 @@ export interface Database {
           id: string
           name: string
           icon: string | null
-          boost_stats: any | null
+          boost_stats: BoostStats
           is_free: boolean
           created_at: string
           updated_at: string
@@ -158,7 +181,7 @@ export interface Database {
           id?: string
           name: string
           icon?: string | null
-          boost_stats?: any | null
+          boost_stats?: BoostStats
           is_free?: boolean
           created_at?: string
           updated_at?: string
@@ -167,7 +190,7 @@ export interface Database {
           id?: string
           name?: string
           icon?: string | null
-          boost_stats?: any | null
+          boost_stats?: BoostStats
           is_free?: boolean
           created_at?: string
           updated_at?: string
@@ -218,7 +241,7 @@ export interface Database {
           min_gp_tier: number | null
           tag_name: string | null
           ordinal: number | null
-          stats_per_level: any | null
+          stats_per_level: StatsPerLevel
           created_at: string
           updated_at: string
         }
@@ -237,7 +260,7 @@ export interface Database {
           min_gp_tier?: number | null
           tag_name?: string | null
           ordinal?: number | null
-          stats_per_level?: any | null
+          stats_per_level?: StatsPerLevel
           created_at?: string
           updated_at?: string
         }
@@ -256,7 +279,7 @@ export interface Database {
           min_gp_tier?: number | null
           tag_name?: string | null
           ordinal?: number | null
-          stats_per_level?: any | null
+          stats_per_level?: StatsPerLevel
           created_at?: string
           updated_at?: string
         }
@@ -275,7 +298,7 @@ export interface Database {
           visual_override: string | null
           collection_sub_name: string | null
           car_part_type: number
-          stats_per_level: any | null
+          stats_per_level: StatsPerLevel
           created_at: string
           updated_at: string
         }
@@ -292,7 +315,7 @@ export interface Database {
           visual_override?: string | null
           collection_sub_name?: string | null
           car_part_type: number
-          stats_per_level?: any | null
+          stats_per_level?: StatsPerLevel
           created_at?: string
           updated_at?: string
         }
@@ -309,7 +332,7 @@ export interface Database {
           visual_override?: string | null
           collection_sub_name?: string | null
           car_part_type?: number
-          stats_per_level?: any | null
+          stats_per_level?: StatsPerLevel
           created_at?: string
           updated_at?: string
         }
@@ -436,9 +459,9 @@ export interface Database {
           user_id: string
           track_id: string
           gp_level: number
-          suggested_drivers: any | null
+          suggested_drivers: SuggestedDriverIds
           free_boost_id: string | null
-          suggested_boosts: any | null
+          suggested_boosts: SuggestedBoostIds
           saved_setup_id: string | null
           setup_notes: string | null
           dry_strategy: string | null
@@ -452,8 +475,8 @@ export interface Database {
           driver_2_id: string | null
           driver_1_boost_id: string | null
           driver_2_boost_id: string | null
-          alt_driver_ids: any | null
-          alt_boost_ids: any | null
+          alt_driver_ids: SuggestedDriverIds
+          alt_boost_ids: SuggestedBoostIds
           created_at: string
           updated_at: string
         }
@@ -462,9 +485,9 @@ export interface Database {
           user_id: string
           track_id: string
           gp_level: number
-          suggested_drivers?: any | null
+          suggested_drivers?: SuggestedDriverIds
           free_boost_id?: string | null
-          suggested_boosts?: any | null
+          suggested_boosts?: SuggestedBoostIds
           saved_setup_id?: string | null
           setup_notes?: string | null
           dry_strategy?: string | null
@@ -474,8 +497,8 @@ export interface Database {
           driver_2_id?: string | null
           driver_1_boost_id?: string | null
           driver_2_boost_id?: string | null
-          alt_driver_ids?: any | null
-          alt_boost_ids?: any | null
+          alt_driver_ids?: SuggestedDriverIds
+          alt_boost_ids?: SuggestedBoostIds
           created_at?: string
           updated_at?: string
         }
@@ -484,9 +507,9 @@ export interface Database {
           user_id?: string
           track_id?: string
           gp_level?: number
-          suggested_drivers?: any | null
+          suggested_drivers?: SuggestedDriverIds
           free_boost_id?: string | null
-          suggested_boosts?: any | null
+          suggested_boosts?: SuggestedBoostIds
           saved_setup_id?: string | null
           setup_notes?: string | null
           dry_strategy?: string | null
@@ -496,8 +519,8 @@ export interface Database {
           driver_2_id?: string | null
           driver_1_boost_id?: string | null
           driver_2_boost_id?: string | null
-          alt_driver_ids?: any | null
-          alt_boost_ids?: any | null
+          alt_driver_ids?: SuggestedDriverIds
+          alt_boost_ids?: SuggestedBoostIds
           created_at?: string
           updated_at?: string
         }

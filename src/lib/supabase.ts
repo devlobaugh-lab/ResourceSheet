@@ -1,3 +1,8 @@
+/**
+ * Supabase client configuration and initialization
+ * Provides three different client types for different use cases
+ */
+
 import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 
@@ -5,7 +10,16 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.sup
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key'
 
-// Server-side client (uses service role key)
+/**
+ * Server-side admin client with full privileges
+ * Uses the service role key for unrestricted database access
+ * Should only be used in server-side code (API routes, server components)
+ *
+ * @example
+ * const { data, error } = await supabaseAdmin
+ *   .from('users')
+ *   .select('*')
+ */
 export const supabaseAdmin = createClient(
   supabaseUrl,
   serviceRoleKey,
@@ -17,7 +31,16 @@ export const supabaseAdmin = createClient(
   }
 )
 
-// Client-side client (uses anon key)
+/**
+ * Client-side public client with user-level privileges
+ * Uses the anonymous key and respects Row-Level Security (RLS) policies
+ * Safe to use in browser code
+ *
+ * @example
+ * const { data, error } = await supabase
+ *   .from('public_items')
+ *   .select('*')
+ */
 export const supabase = createClient(
   supabaseUrl,
   supabaseAnonKey,
@@ -30,7 +53,17 @@ export const supabase = createClient(
   }
 )
 
-// Server-side client for API routes (with cookies)
+/**
+ * Create a server-side client for API routes that handles cookies
+ * Automatically manages authentication tokens via cookies
+ * Should be used in Next.js API routes and server functions
+ *
+ * @returns A Supabase client configured to handle cookie-based sessions
+ *
+ * @example
+ * const supabase = createServerSupabaseClient()
+ * const { data: { user } } = await supabase.auth.getUser()
+ */
 export function createServerSupabaseClient() {
   const { cookies } = require('next/headers')
   const cookieStore = cookies()
@@ -43,7 +76,7 @@ export function createServerSupabaseClient() {
         getAll() {
           return cookieStore.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
           cookiesToSet.forEach(({ name, value, options }) => {
             cookieStore.set(name, value, options)
           })

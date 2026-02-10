@@ -3,13 +3,14 @@ import { createAuthProvider } from './src/lib/auth'
 
 const authProvider = createAuthProvider()
 
+/**
+ * Middleware to handle authentication checks
+ * Currently minimal - can be expanded for auth-specific route handling
+ */
 export async function middleware(request) {
-  console.log('🚀 MIDDLEWARE IS RUNNING! Path:', request.nextUrl.pathname)
-
   try {
     // Test auth provider
     const { user, error } = await authProvider.getUser(request)
-    console.log('👤 Middleware auth check:', { hasUser: !!user, error: error?.message })
 
     const response = NextResponse.next()
     response.headers.set('X-Middleware-Working', 'yes')
@@ -17,13 +18,6 @@ export async function middleware(request) {
 
     return response
   } catch (error) {
-    console.log('❌ Middleware auth error:', error.message)
-
-    const response = NextResponse.next()
-    response.headers.set('X-Middleware-Working', 'error')
-
-    return response
-  }
 }
 
 export const config = {

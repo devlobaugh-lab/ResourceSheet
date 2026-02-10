@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { UserAssetView, CatalogItem, UserItem, Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup, Track } from '@/types/database'
+import type { PaginationMeta } from '@/types/api'
 
 // API base URL
 const API_BASE = '/api'
@@ -73,7 +74,7 @@ export function useUserDrivers(filters?: {
 }) {
   return useQuery({
     queryKey: ['user-drivers', filters],
-    queryFn: async (): Promise<{ data: DriverView[]; pagination: any }> => {
+    queryFn: async (): Promise<{ data: DriverView[]; pagination: PaginationMeta }> => {
       const params = new URLSearchParams()
 
       if (filters) {
@@ -114,7 +115,7 @@ export function useUserAssets(filters?: {
 }) {
   return useQuery({
     queryKey: ['user-assets', filters],
-    queryFn: async (): Promise<{ data: UserAssetView[]; pagination: any }> => {
+    queryFn: async (): Promise<{ data: UserAssetView[]; pagination: PaginationMeta }> => {
       const params = new URLSearchParams()
 
       if (filters) {
@@ -250,7 +251,7 @@ export function useUserCarParts(filters?: {
 }) {
   return useQuery({
     queryKey: ['user-car-parts', filters],
-    queryFn: async (): Promise<{ data: CarPartView[]; pagination: any }> => {
+    queryFn: async (): Promise<{ data: CarPartView[]; pagination: PaginationMeta }> => {
       const params = new URLSearchParams()
 
       if (filters) {
@@ -327,7 +328,7 @@ export function useUserBoosts(filters?: {
 }) {
   return useQuery({
     queryKey: ['user-boosts', filters],
-    queryFn: async (): Promise<{ data: any[]; pagination: any }> => {
+    queryFn: async (): Promise<{ data: BoostView[]; pagination: PaginationMeta }> => {
       const params = new URLSearchParams()
 
       if (filters) {
@@ -468,7 +469,7 @@ export function useDeleteUserItem() {
 export function useUserCarSetups() {
   return useQuery({
     queryKey: ['user-car-setups'],
-    queryFn: async (): Promise<{ data: UserCarSetup[]; pagination: any }> => {
+    queryFn: async (): Promise<{ data: UserCarSetup[]; pagination: PaginationMeta }> => {
       // Wait a bit for auth to initialize
       await new Promise(resolve => setTimeout(resolve, 100))
 
