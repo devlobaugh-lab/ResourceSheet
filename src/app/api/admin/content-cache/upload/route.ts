@@ -239,7 +239,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
   }
   
   if (driversData) {
-        const drivers = driversData
+    const drivers = driversData
       .filter((driver: any) => shouldImportBySeason(driver, seasonNumbers))
       .map((driver: any) => ({
         id: driver.id,
@@ -269,11 +269,11 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
     console.log('Sample driver after preprocessing:', JSON.stringify(processedDrivers[0], null, 2))
     
     // Log SE Turbo drivers specifically
-    const seTurboDrivers = processedDrivers.filter(d => d.collection_sub_name && d.collection_sub_name.endsWith('SUBTITLE_2'))
-    console.log('SE Turbo drivers after preprocessing:', seTurboDrivers.length)
-    seTurboDrivers.forEach(driver => {
-      console.log(`  ${driver.name} - Rarity: ${driver.rarity} - ID: ${driver.id}`)
-    })
+    // const seTurboDrivers = processedDrivers.filter(d => d.collection_sub_name && d.collection_sub_name.endsWith('SUBTITLE_2'))
+    // console.log('SE Turbo drivers after preprocessing:', seTurboDrivers.length)
+    // seTurboDrivers.forEach(driver => {
+    //   console.log(`  ${driver.name} - Rarity: ${driver.rarity} - ID: ${driver.id}`)
+    // })
 
     if (processedDrivers.length > 0) {
       const driverResults = await processItems(processedDrivers, 'drivers', 'id', allowModifications)
@@ -437,12 +437,12 @@ async function getExistingItems(items: any[], tableName: string, idField: string
 
   for (const batch of batches) {
     try {
-      const { data, error } = await supabaseAdmin
-        .from(tableName)
-        .select('*')
+  const { data, error } = await supabaseAdmin
+    .from(tableName)
+    .select('*')
         .in(idField, batch)
 
-      if (error) {
+  if (error) {
         console.error(`Error fetching existing ${tableName} for batch:`, error)
         // Continue with other batches rather than aborting entirely
         continue

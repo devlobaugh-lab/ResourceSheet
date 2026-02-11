@@ -11,6 +11,8 @@
  */
 
 /**
+ * NOTE: Deprecated logic - no longer using rarity 6 
+ * 
  * Apply SE Turbo mapping (Rarity 5 → Rarity 6)
  * SE Turbo drivers are identified by collectionSubName ending with 'SUBTITLE_2'
  * Also generate unique IDs for SE Turbo drivers to avoid conflicts with SE Standard
@@ -56,10 +58,10 @@ export function preprocessDrivers(drivers: any[]): any[] {
   console.log('preprocessDrivers called with', drivers.length, 'drivers')
   
   // Apply SE Turbo mapping first (Rarity 5 → Rarity 6)
-  const driversWithTurboMapping = applySETurboMapping(drivers);
+  // const driversWithTurboMapping = applySETurboMapping(drivers);
   
   // Then apply series mapping for Legendary/SE drivers
-  const processedDrivers = applySeriesMapping(driversWithTurboMapping);
+  const processedDrivers = applySeriesMapping(drivers);
   
   console.log('preprocessDrivers completed, returning', processedDrivers.length, 'drivers')
   return processedDrivers;

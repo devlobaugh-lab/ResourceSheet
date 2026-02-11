@@ -51,7 +51,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
     limit: 1000 // Get all drivers for dropdown and stats
   })
 
-  const allDrivers = userDriversResponse?.data || []
+  const allDrivers = useMemo(() => userDriversResponse?.data || [], [userDriversResponse?.data])
 
   // State for the compare grid
   const [compareDrivers, setCompareDrivers] = useState<CompareDriver[]>(() => {
@@ -141,8 +141,8 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
       case 2: return 9  // Rare
       case 3: return 8  // Epic
       case 4: return 7  // Legendary
-      case 5: return 7  // SE Standard
-      case 6: return 7  // SE Turbo
+      case 5: return 7  // Special Edition
+      // case 6: return 7  // SE Turbo
       default: return 11
     }
   }
@@ -237,7 +237,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
     })
 
     return stats
-  }, [compareDrivers, allDrivers, getStatValue, bonusPercentage, getDriverByNameAndRarity])
+  }, [compareDrivers, getStatValue, bonusPercentage, getDriverByNameAndRarity])
 
   // Add a new driver column
   const addDriver = () => {
