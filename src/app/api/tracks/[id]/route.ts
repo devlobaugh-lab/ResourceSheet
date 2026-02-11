@@ -95,6 +95,172 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
+// DELETE /api/tracks/[id] - Delete specific track (admin only)
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    // Try to get user from Authorization header first, then fall back to cookies
+    let user = null
+    const authHeader = request.headers.get('authorization')
+
+    if (authHeader?.startsWith('Bearer ')) {
+      // Try to validate JWT token directly
+      const token = authHeader.substring(7)
+      try {
+        // For local development, trust the JWT and extract user info
+        const parts = token.split('.')
+        if (parts.length === 3) {
+          const payload = JSON.parse(
+            Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
+          )
+
+          if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
+            user = {
+              id: payload.sub,
+              email: payload.email,
+              user_metadata: payload.user_metadata || {},
+              app_metadata: payload.app_metadata || {},
+            }
+            console.log('✅ Authenticated user from JWT token:', user.id)
+          }
+        }
+      } catch (error) {
+        console.warn('JWT validation failed:', error)
+      }
+    }
+
+    // If JWT didn't work, try cookie-based auth
+    if (!user) {
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll()
+            },
+            setAll(cookiesToSet: any[]) {
+              cookiesToSet.forEach(({ name, value, options }: any) => {
+                request.cookies.set(name, value)
+              })
+            },
+          },
+        }
+      )
+      const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
+
+      if (authError || !cookieUser) {
+        return NextResponse.json(
+          { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+          { status: 401 }
+        )
+      }
+      user = cookieUser
+    }
+
+    // Check if user is admin
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile?.is_admin) {
+      return NextResponse.json(
+        { error: { code: 'FORBIDDEN', message: 'Admin privileges required' } },
+        { status: 403 }
+      )
+    }
+
+    // If cascade=true, remove dependent user track guides and drivers first
+    const url = new URL(request.url)
+    const cascade = url.searchParams.get('cascade') === 'true'
+
+    if (cascade) {
+      // Find related track guide ids
+      const { data: guides, error: guideErr } = await supabaseAdmin
+        .from('user_track_guides')
+        .select('id')
+        .eq('track_id', params.id)
+
+      if (guideErr) {
+        return NextResponse.json(
+          { error: { code: 'DATABASE_ERROR', message: guideErr.message } },
+          { status: 500 }
+        )
+      }
+
+      const guideIds = (guides || []).map((g: any) => g.id).filter(Boolean)
+
+      if (guideIds.length > 0) {
+        // Delete guide drivers
+        const { error: delDriversErr } = await supabaseAdmin
+          .from('user_track_guide_drivers')
+          .delete()
+          .in('track_guide_id', guideIds)
+
+        if (delDriversErr) {
+          return NextResponse.json(
+            { error: { code: 'DATABASE_ERROR', message: delDriversErr.message } },
+            { status: 500 }
+          )
+        }
+
+        // Delete the guides
+        const { error: delGuidesErr } = await supabaseAdmin
+          .from('user_track_guides')
+          .delete()
+          .in('id', guideIds)
+
+        if (delGuidesErr) {
+          return NextResponse.json(
+            { error: { code: 'DATABASE_ERROR', message: delGuidesErr.message } },
+            { status: 500 }
+          )
+        }
+      }
+    }
+
+    // Attempt delete
+    const { data, error } = await supabaseAdmin
+      .from('tracks')
+      .delete()
+      .eq('id', params.id)
+      .select()
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return NextResponse.json(
+          { error: { code: 'NOT_FOUND', message: 'Track not found' } },
+          { status: 404 }
+        )
+      }
+
+      // Foreign key constraint error - return conflict with helpful message
+      if (error.message && error.message.includes('violates foreign key constraint')) {
+        return NextResponse.json(
+          { error: { code: 'CONFLICT', message: 'Cannot delete track: dependent records exist' } },
+          { status: 409 }
+        )
+      }
+
+      return NextResponse.json(
+        { error: { code: 'DATABASE_ERROR', message: error.message } },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json(data)
+
+  } catch (error) {
+    console.error('Tracks DELETE error:', error)
+    return NextResponse.json(
+      { error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
+      { status: 500 }
+    )
+  }
+}
+
 // PUT /api/tracks/[id] - Update specific track
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {

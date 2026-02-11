@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { DriverView } from '@/types/database'
 import { useDrivers, useUserDrivers } from '@/hooks/useApi'
-import { cn, calculateHighestLevel } from '@/lib/utils'
+import { cn, calculateHighestLevel, getRarityDisplay } from '@/lib/utils'
 
 // Helper function to get stat background color based on value position in range
 const getStatBackgroundColor = (value: number, min: number, max: number, median: number): string => {
@@ -277,19 +277,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
     })
   }
 
-  // Get rarity display name
-  const getRarityDisplay = (rarity: number): string => {
-    const rarityMap: Record<number, string> = {
-      0: 'Basic',
-      1: 'Common',
-      2: 'Rare',
-      3: 'Epic',
-      4: 'Legendary',
-      5: 'SE Standard',
-      6: 'SE Turbo'
-    }
-    return rarityMap[rarity] || 'Unknown'
-  }
+  // Use shared utility for rarity display (collection-driven for rarity 5 when available)
 
   return (
     <div className={cn('w-full', className)}>
@@ -386,8 +374,8 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                       <option value={2} className="text-gray-900">Rare</option>
                       <option value={3} className="text-gray-900">Epic</option>
                       <option value={4} className="text-gray-900">Legendary</option>
-                      <option value={5} className="text-gray-900">SE Standard</option>
-                      <option value={6} className="text-gray-900">SE Turbo</option>
+                      <option value={5} className="text-gray-900">{getRarityDisplay(5)}</option>
+                      <option value={6} className="text-gray-900">{getRarityDisplay(6)}</option>
                     </select>
                   </td>
                 ))}

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { DriverView } from '@/types/database';
-import { cn, formatNumber, calculateHighestLevel } from '@/lib/utils';
+import { cn, formatNumber, calculateHighestLevel, getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils';
 
 // Helper function to get stat background color based on value position in range
 const getStatBackgroundColor = (value: number, min: number, max: number, median: number): string => {
@@ -48,30 +48,7 @@ const formatDriverNameForDisplay = (name: string): string => {
   return name
 };
 
-// Helper function to get rarity display name
-const getRarityDisplay = (rarity: number): string => {
-  const rarityMap: Record<number, string> = {
-    0: 'Basic',
-    1: 'Common',
-    2: 'Rare',
-    3: 'Epic',
-    4: 'Legendary',
-    5: 'SE Standard',
-    6: 'SE Turbo'
-  }
-  return rarityMap[rarity] || 'Unknown'
-};
-
-// Get rarity background color for cells
-const getRarityBackground = (rarity: number): string => {
-  return rarity === 0 ? "bg-gray-300" :
-         rarity === 1 ? "bg-blue-200" :
-         rarity === 2 ? "bg-orange-300" :
-         rarity === 3 ? "bg-purple-300" :
-         rarity === 4 ? "bg-yellow-300" :
-         rarity === 5 ? "bg-red-300" :
-         rarity === 6 ? "bg-rose-400" : "bg-gray-300";
-};
+// Rarity helpers are provided from shared utils
 
 interface DriverSelectionGridProps {
   drivers: DriverView[];
@@ -214,6 +191,17 @@ export function DriverSelectionGrid({
           break;
         case 'rarity':
           comparison = a.rarity - b.rarity;
+          if (a.rarity === b.rarity) {
+            if (a.rarity === 5) {
+              // For SE drivers, sort by collection ordinal then driver ordinal
+              comparison = (a.collection_ordinal || 0) - (b.collection_ordinal || 0)
+              if (comparison === 0) {
+                comparison = (a.ordinal || 0) - (b.ordinal || 0)
+              }
+            } else {
+              comparison = (a.ordinal || 0) - (b.ordinal || 0)
+            }
+          }
           break;
         case 'series':
           comparison = a.series - b.series;
@@ -479,7 +467,9 @@ export function DriverSelectionGrid({
                   {/* Rarity Column with background color */}
                   <td className={cn("px-3 py-1 whitespace-nowrap", getRarityBackground(driver.rarity))}>
                     <div className="text-sm font-medium text-gray-900">
-                      {getRarityDisplay(driver.rarity)}
+                      {driver.rarity === 5
+                        ? getCollectionRarityDisplay(driver.collection_theme ?? null, driver.collection_sub_name ?? null)
+                        : getRarityDisplay(driver.rarity)}
                     </div>
                   </td>
 

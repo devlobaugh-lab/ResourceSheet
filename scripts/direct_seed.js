@@ -46,7 +46,43 @@ async function seedData() {
     }
     console.log('✅ Seasons seeded');
 
-    // 2. Seed car parts
+    // 2. Seed collections (if available)
+    console.log('📚 Seeding collections (if available)...');
+    try {
+      const collectionsPath = 'external_data/processed/collections.json';
+      if (fs.existsSync(collectionsPath)) {
+        const collectionsJson = fs.readFileSync(collectionsPath, 'utf8');
+        const collectionsData = JSON.parse(collectionsJson).collections || [];
+
+        // Upsert collections into existing schema: populate `description` with the theme
+        // to make `collection_theme` available to the app even if `theme` column is missing.
+        const transformedCollections = collectionsData.map(c => ({
+          id: c.id,
+          name: c.name || c.internalName || 'Collection',
+          description: c.theme || c.name || c.internalName || 'Collection'
+        }));
+
+        if (transformedCollections.length > 0) {
+          const { error: collectionsError } = await supabase
+            .from('collections')
+            .upsert(transformedCollections);
+
+          if (collectionsError) {
+            console.error('❌ Collections seeding failed:', collectionsError);
+          } else {
+            console.log('✅ Collections seeded');
+          }
+        } else {
+          console.log('⚠️  No collections to seed');
+        }
+      } else {
+        console.log('⚠️  collections.json not found — skipping collections seed');
+      }
+    } catch (err) {
+      console.error('❌ Collections seeding failed:', err.message);
+    }
+
+    // 3. Seed car parts
     console.log('🔧 Seeding car parts...');
     const carPartsJson = fs.readFileSync('globalContent/season_6.carparts.json', 'utf8');
     const carPartsData = JSON.parse(carPartsJson);

@@ -32,9 +32,20 @@ function AuthenticatedComparePage() {
   }
 
   // Group by rarity for the comparison view
-  const getRarityLabel = (rarity: number): string => {
+  const getRarityLabel = (rarity: number, item?: UserAssetView): string => {
     const labels = ['Basic', 'Common', 'Rare', 'Epic', 'Legendary']
-    return labels[rarity] || 'Unknown'
+    // Handle rarity 5 (Special Edition) with collection-driven display
+    if (rarity === 5 && item?.collection_theme) {
+      const subname = item.collection_sub_name
+      if (subname && subname.length > 0) {
+        const lastChar = subname.slice(-1)
+        return `${item.collection_theme}-${lastChar}`
+      }
+      return item.collection_theme
+    }
+    // Only handle valid rarities 0-4
+    if (rarity >= 0 && rarity <= 4) return labels[rarity]
+    return 'Unknown'
   }
 
   const getRarityColor = (rarity: number): string => {
@@ -97,7 +108,7 @@ function AuthenticatedComparePage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Rarity</span>
                     <Badge className={getRarityColor(item.rarity)}>
-                      {getRarityLabel(item.rarity)}
+                      {getRarityLabel(item.rarity, item)}
                     </Badge>
                   </div>
 

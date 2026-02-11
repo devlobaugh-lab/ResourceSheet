@@ -10,7 +10,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useAuth } from '@/components/auth/AuthContext'
 import Link from 'next/link'
 import { CarPartView } from '@/types/database'
-import { cn, calculateHighestLevel } from '@/lib/utils'
+import { cn, calculateHighestLevel, getRarityDisplay, getCollectionRarityDisplay, getRarityBackground } from '@/lib/utils'
 
 // Helper function to get stat background color based on value position in range
 const getStatBackgroundColor = (value: number, min: number, max: number, median: number, isPitStopTime: boolean = false): string => {
@@ -341,27 +341,8 @@ function AuthenticatedPartsPage() {
     return stats;
   }, [filteredCarParts, bonusCheckedItems, bonusPercentage]);
 
-  // Helper functions
-  const getRarityDisplay = (rarity: number): string => {
-    const rarityMap: Record<number, string> = {
-      0: 'Basic',
-      1: 'Common',
-      2: 'Rare',
-      3: 'Epic',
-      4: 'Legendary',
-      5: 'Special Edition'
-    };
-    return rarityMap[rarity] || 'Unknown';
-  };
-
-  const getRarityBackground = (rarity: number): string => {
-    return rarity === 0 ? "bg-gray-300" :
-           rarity === 1 ? "bg-blue-200" :
-           rarity === 2 ? "bg-orange-200" :
-           rarity === 3 ? "bg-purple-300" :
-           rarity === 4 ? "bg-yellow-300" :
-           rarity === 5 ? "bg-red-300" : "bg-gray-300";
-  };
+  // Use shared rarity helpers (for rarity 5, prefer collection-driven label)
+  const rarityLabel = (item: any) => item.rarity === 5 ? getCollectionRarityDisplay(item.collection_theme ?? null, item.collection_sub_name ?? null) : getRarityDisplay(item.rarity)
 
   return (
     <div className="space-y-6">
@@ -548,7 +529,7 @@ function AuthenticatedPartsPage() {
                             </td>
                             <td className={cn("px-3 py-1 whitespace-nowrap", getRarityBackground(part.rarity))}>
                               <div className="text-sm font-medium text-gray-900">
-                                {getRarityDisplay(part.rarity)}
+                                {rarityLabel(part)}
                               </div>
                             </td>
                             <td className="px-3 py-1 whitespace-nowrap text-center">

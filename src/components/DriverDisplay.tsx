@@ -1,6 +1,6 @@
 import React from 'react'
 import { DriverView } from '@/types/database'
-import { getRarityBackground, getRarityDisplay } from '@/lib/utils'
+import { getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils'
 import { Pencil } from 'lucide-react'
 
 interface DriverDisplayProps {
@@ -57,7 +57,9 @@ export function DriverDisplay({
               Lvl {driver.level}
             </span>
             <span className="text-sm text-black ml-2">
-              {getRarityDisplay(driver.rarity)}
+              {driver.rarity === 5
+                ? getCollectionRarityDisplay(driver.collection_theme ?? null, driver.collection_sub_name ?? null)
+                : getRarityDisplay(driver.rarity)}
             </span>
           </div>
         </>

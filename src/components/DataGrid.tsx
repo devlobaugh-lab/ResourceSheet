@@ -12,7 +12,8 @@ interface BoostItem extends BoostWithCustomName {
   is_boost: true;
   card_count: number;
 }
-import { cn, formatNumber, calculateHighestLevel } from '@/lib/utils';
+import { cn, formatNumber, calculateHighestLevel, getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils';
+import { useCollections } from '@/lib/collectionsContext'
 import { useToast } from '@/components/ui/Toast';
 import { getAuthHeaders } from '@/hooks/useApi';
 
@@ -214,6 +215,23 @@ export function DataGrid({
   onBonusToggle,
   showHighestLevel = false,
 }: DataGridProps) {
+  const [collectionThemeMap, setCollectionThemeMap] = useState<Record<string, string | null>>({})
+
+  // Resolve collection themes for any displayed items that are SE (rarity 5)
+  const { getTheme } = useCollections()
+
+  useEffect(() => {
+    const map: Record<string, string | null> = {}
+    const candidates = [...(items || []), ...(drivers || []), ...(carParts || [])]
+    candidates.forEach((catalogItem: any) => {
+      if ((catalogItem?.rarity === 5) && !catalogItem?.collection_theme && catalogItem?.collection_id) {
+        map[catalogItem.collection_id] = getTheme(catalogItem.collection_id)
+      }
+    })
+
+    if (Object.keys(map).length === 0) return
+    setCollectionThemeMap(prev => ({ ...prev, ...map }))
+  }, [items, drivers, carParts, getTheme])
   const [filters, setFilters] = useState<FilterState>(() => {
     // Load saved sort preferences on component initialization
     const savedPrefs = loadSortPreferences(gridType);
@@ -777,19 +795,7 @@ export function DataGrid({
     return compareItems.some(compared => compared.id === item.id);
   };
 
-  // Helper function to get rarity display name
-  const getRarityDisplay = (rarity: number): string => {
-    const rarityMap: Record<number, string> = {
-      0: 'Basic',
-      1: 'Common',
-      2: 'Rare',
-      3: 'Epic',
-      4: 'Legendary',
-      5: 'SE Standard',
-      6: 'SE Turbo'
-    };
-    return rarityMap[rarity] || 'Unknown';
-  };
+  // Rarity display handled by shared utilities: `getRarityDisplay` and `getCollectionRarityDisplay`
 
   // Helper function to get card type display name
   const getCardTypeDisplay = (cardType: number): string => {
@@ -1075,7 +1081,14 @@ export function DataGrid({
                   {gridType !== 'boosts' && (isDriver || isCarPart) && (
                   <td className={cn("px-3 py-1 whitespace-nowrap", getRarityBackground(isDriver ? (catalogItem as DriverView).rarity : (catalogItem as CarPartView).rarity))}>
                     <div className="text-sm font-medium text-gray-900">
-                      {getRarityDisplay(isDriver ? (catalogItem as DriverView).rarity : (catalogItem as CarPartView).rarity)}
+                      {(() => {
+                        const rarity = isDriver ? (catalogItem as DriverView).rarity : (catalogItem as CarPartView).rarity
+                        const collectionTheme = (catalogItem as any).collection_theme ?? null
+                        const collectionSub = (catalogItem as any).collection_sub_name ?? null
+                        const collectionId = (catalogItem as any).collection_id
+                        const resolvedTheme = collectionTheme ?? (collectionId ? collectionThemeMap[collectionId] ?? null : null)
+                        return rarity === 5 ? getCollectionRarityDisplay(resolvedTheme, collectionSub) : getRarityDisplay(rarity)
+                      })()}
                     </div>
                   </td>
                   )}

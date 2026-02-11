@@ -190,8 +190,7 @@ export function getRarityBackground(rarity: number): string {
          rarity === 2 ? "bg-orange-300" :
          rarity === 3 ? "bg-purple-300" :
          rarity === 4 ? "bg-yellow-300" :
-         rarity === 5 ? "bg-red-300" :
-         rarity === 6 ? "bg-rose-400" : "bg-gray-200";
+         rarity === 5 ? "bg-red-300" : "bg-gray-200";
 }
 
 /**
@@ -204,8 +203,26 @@ export function getRarityDisplay(rarity: number): string {
     2: 'Rare',
     3: 'Epic',
     4: 'Legendary',
-    5: 'SE Standard',
-    6: 'SE Turbo'
+    // Rarity 5 is a Special Edition type; display value is collection-driven when available.
+    5: 'Special Edition'
   }
   return rarityMap[rarity] || 'Unknown';
+}
+
+/**
+ * Get collection-based rarity display for Special Edition (rarity 5) drivers.
+ * - `collectionTheme` is expected to be the `theme` from the collections table.
+ * - If `collectionSubName` is present, the last character will be appended
+ *   to the base theme separated by a hyphen (e.g. "Stars-2").
+ */
+export function getCollectionRarityDisplay(collectionTheme?: string | null, collectionSubName?: string | null): string {
+  if (!collectionTheme) return 'Special Edition';
+
+  let base = collectionTheme;
+  if (collectionSubName && collectionSubName.length > 0) {
+    const lastChar = collectionSubName.slice(-1);
+    base = `${base}-${lastChar}`;
+  }
+
+  return base;
 }

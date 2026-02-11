@@ -8,7 +8,7 @@ import { useAuth } from '@/components/auth/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { DriverView, CarPartView, BoostWithCustomName } from '@/types/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { calculateHighestLevel } from '@/lib/utils';
+import { calculateHighestLevel, getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils';
 
 // Level range validation by rarity
 const LEVEL_RANGES = {
@@ -143,7 +143,7 @@ function DriversTab() {
       if (rarity < 4) return 0; // Group 0: rarities 0, 1, 2, 3
       if (rarity === 4) return 1; // Group 1: rarity 4
       if (rarity === 5) return 2; // Group 2: rarity 5
-      return 3; // Group 3: rarity 6
+      return 99; // Unknown/invalid rarity
     };
 
     const aRarityGroup = getRarityGroup(a.rarity);
@@ -155,6 +155,14 @@ function DriversTab() {
     // Within same rarity group, put series 0 at the end
     if (a.series === 0 && b.series !== 0) return 1;
     if (b.series === 0 && a.series !== 0) return -1;
+
+    // For rarity 5 (Special Edition with collections), sort by collection ordinal then driver ordinal
+    if (a.rarity === 5 && b.rarity === 5) {
+      const aCollOrd = a.collection_ordinal || 999;
+      const bCollOrd = b.collection_ordinal || 999;
+      if (aCollOrd !== bCollOrd) return aCollOrd - bCollOrd;
+      return (a.ordinal || 0) - (b.ordinal || 0);
+    }
 
     // Then: sort by series ascending
     if (a.series !== b.series) return a.series - b.series;
@@ -233,15 +241,11 @@ function DriversTab() {
                 </div>
               </td>
               <td className={`px-3 py-1 whitespace-nowrap ${getRarityBackground(driver.rarity)}`}>
-                <div className="text-sm font-medium text-gray-900">
-                  {driver.rarity === 0 ? 'Basic' :
-                   driver.rarity === 1 ? 'Common' :
-                   driver.rarity === 2 ? 'Rare' :
-                   driver.rarity === 3 ? 'Epic' :
-                   driver.rarity === 4 ? 'Legendary' :
-                   driver.rarity === 5 ? 'SE Standard' :
-                   driver.rarity === 6 ? 'SE Turbo' : 'Unknown'}
-                </div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {driver.rarity === 5
+                      ? (driver.collection_theme ? getCollectionRarityDisplay(driver.collection_theme, driver.collection_sub_name) : getRarityDisplay(5))
+                      : getRarityDisplay(driver.rarity)}
+                  </div>
               </td>
               <td className="px-3 py-1 whitespace-nowrap text-center">
                 <div className="text-sm text-gray-900">{driver.series}</div>
