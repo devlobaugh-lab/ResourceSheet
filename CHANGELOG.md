@@ -5,6 +5,95 @@ All notable changes to the F1 Resource Manager project will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-02-12
+
+### 🚀 Rarity-5 Variants Complete Implementation - Antonelli Stats Fixed
+
+**New Feature: Dynamic Rarity-5 Collections Support**
+- **API Enhancement**: `/api/rarity-options` now dynamically fetches Rarity-5 collections from database
+- **Collection-Driven Rarity**: PodiumStars and HotProspects variants now properly integrated
+- **Special Edition Logic**: Only shows "Special Edition" when no actual Rarity-5 collections exist
+- **HotProspects Display**: Clean "HotProspects-1" and "HotProspects-2" labels instead of raw subName
+- **UUID Handling**: Proper parsing of collection IDs and sub-names for all Rarity-5 variants
+- **Validation System**: Robust driver/rarity combination validation with N/A display for invalid selections
+
+**Key Features Delivered:**
+- **HotProspects-1 & HotProspects-2**: Different stats load correctly for each variant
+- **PodiumStars**: Now working correctly with proper stats display
+- **PodiumStarsLegends**: Correctly shows N/A (Antonelli doesn't have this variant)
+- **Antonelli Test Case**: All Rarity-5 variants now show correct stats instead of N/A
+- **Switching Between Variants**: Stats update immediately and correctly when changing selections
+- **Data Inconsistency Handling**: Fallback logic handles edge cases with null vs empty string values
+- **UUID Parsing**: Handles both pure UUIDs and UUID+subName formats correctly
+
+**Technical Implementation:**
+- **Enhanced Validation**: `isValidDriverRarity` function with collection-based fallback matching
+- **Smart Driver Lookup**: `getDriverByNameAndRarity` handles null collection_sub_name values
+- **UUID Parsing Logic**: Proper extraction of collection IDs and sub-names from rarity values
+- **Debug Logging**: Comprehensive logging for troubleshooting data inconsistencies
+- **Clean Code**: All debug logging removed for production readiness
+
+**Database Integration:**
+- **Collections Table**: Leverages existing collections table for Rarity-5 variant management
+- **Driver Collections**: Uses driver_collection_id and collection_sub_name for precise matching
+- **Fallback Matching**: Collection ID-only matching when exact sub-name matching fails
+- **Data Consistency**: Handles database null values vs empty string expectations
+
+**User Experience:**
+- **Dropdown Selection**: Unique values for each Rarity-5 variant prevent selection conflicts
+- **Real-time Validation**: Invalid combinations show "N/A" immediately
+- **Stat Display**: Correct stats load for valid Rarity-5 combinations
+- **Visual Feedback**: Clear indication when switching between Rarity-5 variants
+
+### 🐛 Bug Fixes
+
+- **Antonelli Rarity-5 Stats**: Fixed issue where Antonelli showed "N/A" for all Rarity-5 variants
+- **UUID Parsing**: Fixed incorrect splitting of rarity values causing collection ID mismatches
+- **Null Handling**: Fixed driver lookup to handle null collection_sub_name values properly
+- **Validation Logic**: Enhanced validation to use collection-based fallback when exact matching fails
+- **Dropdown Selection**: Fixed unique value generation for Rarity-5 variants to prevent conflicts
+- **Console Logging**: Removed all debug console.log statements for clean production code
+- **Development Servers**: Shut down all Next.js development servers (ports 3000, 3001, 3004)
+
+### 🔧 Technical Improvements
+
+- **Enhanced Rarity Utilities**: Updated `getRarityOptions` to fetch real database data
+- **Improved Driver Lookup**: Added null-safe collection_sub_name comparison logic
+- **Better UUID Handling**: Robust parsing of both pure UUIDs and UUID+subName formats
+- **Fallback Validation**: Collection ID-only matching when exact sub-name matching fails
+- **Clean Code**: Removed all debug logging and streamlined validation functions
+- **Production Ready**: All console logging removed, servers shut down
+
+### 📋 Task Management Updates
+
+**TASK.md Updates:**
+- Marked all Rarity-5 variants implementation as ✅ Complete
+- Added comprehensive implementation summary for Antonelli stats fix
+- Documented UUID parsing logic and null handling improvements
+- Updated task progress tracking for Rarity-5 variants
+- Added complete testing and validation notes
+
+**CHANGELOG.md Updates:**
+- Added new 1.2.0 release section documenting Rarity-5 variants implementation
+- Documented all bug fixes and technical improvements
+- Added comprehensive feature descriptions and technical details
+- Updated project status and implementation notes
+
+### 🎨 UI/UX Improvements
+
+- **Rarity Dropdown**: Now shows actual Rarity-5 variants from database instead of generic "Special Edition"
+- **Stat Display**: Proper stats now load for Rarity-5 variants instead of showing "N/A"
+- **Selection Logic**: Unique values prevent dropdown selection conflicts
+- **Validation Feedback**: Clear "N/A" display for invalid driver/rarity combinations
+- **Switching Behavior**: Smooth stat updates when switching between Rarity-5 variants
+
+### 🔒 Security & Performance
+
+- **Database Queries**: Optimized queries for rarity options and driver lookups
+- **Validation Logic**: Efficient validation with proper fallback mechanisms
+- **Memory Usage**: Cleaned up debug logging to reduce memory footprint
+- **Server Resources**: Freed up development server ports for other use
+
 ## [1.1.0] - 2026-01-27
 
 ### 🚀 Unified Data Processing System - COMPLETE

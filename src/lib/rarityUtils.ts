@@ -12,12 +12,17 @@ export interface RarityDisplayConfig {
  * Get the display name for a rarity level
  * @param rarity - The numeric rarity (1-5)
  * @param collectionTheme - The collection theme for rarity 5 drivers
+ * @param collectionSubName - The collection sub-name for rarity 5 drivers (e.g., "1", "2")
  * @returns The display name for the rarity
  */
-export function getRarityDisplay(rarity: number, collectionTheme?: string): string {
+export function getRarityDisplay(rarity: number, collectionTheme?: string, collectionSubName?: string): string {
   if (rarity === 5) {
     // For rarity 5, use collection theme if available, otherwise fallback to "Special Edition"
-    return collectionTheme || "Special Edition"
+    if (collectionTheme) {
+      // If there's a sub-name, append it to the theme
+      return collectionSubName ? `${collectionTheme}-${collectionSubName}` : collectionTheme
+    }
+    return "Special Edition"
   }
   
   // Map numeric rarity to display names
@@ -29,6 +34,63 @@ export function getRarityDisplay(rarity: number, collectionTheme?: string): stri
   }
   
   return rarityNames[rarity] || "Unknown"
+}
+
+/**
+ * Get all available rarity options from the API
+ * @returns Promise<Array<{ rarity: number; display: string; collectionId?: string }>>
+ */
+export async function getRarityOptions(): Promise<Array<{ rarity: number; display: string; collectionId?: string }>> {
+  try {
+    // Try to get session token from Supabase localStorage
+    const supabaseKeys = Object.keys(localStorage).filter(key => 
+      key.includes('supabase') && key.includes('auth') && key.includes('access-token')
+    )
+    
+    let token = null
+    if (supabaseKeys.length > 0) {
+      const tokenData = localStorage.getItem(supabaseKeys[0])
+      if (tokenData) {
+        try {
+          const parsed = JSON.parse(tokenData)
+          token = parsed.access_token
+        } catch (e) {
+          console.warn('Failed to parse Supabase token:', e)
+        }
+      }
+    }
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json'
+    }
+    
+    // Add authorization header if token exists
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const response = await fetch('/api/rarity-options', {
+      headers,
+      credentials: 'include' // Include cookies for session-based auth
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch rarity options')
+    }
+    
+    const data = await response.json()
+    return data.rarities || []
+  } catch (error) {
+    console.error('Error fetching rarity options:', error)
+    // Fallback to basic rarities if API fails
+    return [
+      { rarity: 1, display: 'Common' },
+      { rarity: 2, display: 'Rare' },
+      { rarity: 3, display: 'Epic' },
+      { rarity: 4, display: 'Legendary' },
+      { rarity: 5, display: 'Special Edition' }
+    ]
+  }
 }
 
 /**
