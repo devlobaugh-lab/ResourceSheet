@@ -215,23 +215,8 @@ export function DataGrid({
   onBonusToggle,
   showHighestLevel = false,
 }: DataGridProps) {
-  const [collectionThemeMap, setCollectionThemeMap] = useState<Record<string, string | null>>({})
-
   // Resolve collection themes for any displayed items that are SE (rarity 5)
   const { getTheme } = useCollections()
-
-  useEffect(() => {
-    const map: Record<string, string | null> = {}
-    const candidates = [...(items || []), ...(drivers || []), ...(carParts || [])]
-    candidates.forEach((catalogItem: any) => {
-      if ((catalogItem?.rarity === 5) && !catalogItem?.collection_theme && catalogItem?.collection_id) {
-        map[catalogItem.collection_id] = getTheme(catalogItem.collection_id)
-      }
-    })
-
-    if (Object.keys(map).length === 0) return
-    setCollectionThemeMap(prev => ({ ...prev, ...map }))
-  }, [items, drivers, carParts, getTheme])
   const [filters, setFilters] = useState<FilterState>(() => {
     // Load saved sort preferences on component initialization
     const savedPrefs = loadSortPreferences(gridType);
@@ -440,7 +425,40 @@ export function DataGrid({
           if ('is_boost' in a && 'is_boost' in b && a.is_boost && b.is_boost) {
             comparison = 0; // No sorting for boosts by rarity
           } else {
-            comparison = (a as DriverView | CarPartView).rarity - (b as DriverView | CarPartView).rarity;
+            const aRarity = (a as DriverView | CarPartView).rarity;
+            const bRarity = (b as DriverView | CarPartView).rarity;
+            comparison = aRarity - bRarity;
+            
+            // If rarities are equal, sort by ordinal
+            if (comparison === 0) {
+              if (aRarity === 5) {
+                // For SE drivers, sort by collection ordinal then driver ordinal
+                if ('is_driver' in a && 'is_driver' in b && a.is_driver && b.is_driver) {
+                  const aDriver = a as DriverView;
+                  const bDriver = b as DriverView;
+                  comparison = (aDriver.collection_ordinal || 0) - (bDriver.collection_ordinal || 0);
+                  if (comparison === 0) {
+                    comparison = (aDriver.ordinal || 0) - (bDriver.ordinal || 0);
+                  }
+                } else {
+                  // For non-drivers with rarity 5, just use ordinal (only for drivers)
+                  if ('is_driver' in a && 'is_driver' in b && a.is_driver && b.is_driver) {
+                    const aDriver = a as DriverView;
+                    const bDriver = b as DriverView;
+                    comparison = (aDriver.ordinal || 0) - (bDriver.ordinal || 0);
+                  }
+                  // For car parts, no additional sorting needed
+                }
+              } else {
+                // For other rarities, use ordinal (only for drivers)
+                if ('is_driver' in a && 'is_driver' in b && a.is_driver && b.is_driver) {
+                  const aDriver = a as DriverView;
+                  const bDriver = b as DriverView;
+                  comparison = (aDriver.ordinal || 0) - (bDriver.ordinal || 0);
+                }
+                // For car parts, no additional sorting needed
+              }
+            }
           }
           break;
         case 'series':
@@ -1082,12 +1100,23 @@ export function DataGrid({
                   <td className={cn("px-3 py-1 whitespace-nowrap", getRarityBackground(isDriver ? (catalogItem as DriverView).rarity : (catalogItem as CarPartView).rarity))}>
                     <div className="text-sm font-medium text-gray-900">
                       {(() => {
-                        const rarity = isDriver ? (catalogItem as DriverView).rarity : (catalogItem as CarPartView).rarity
-                        const collectionTheme = (catalogItem as any).collection_theme ?? null
-                        const collectionSub = (catalogItem as any).collection_sub_name ?? null
-                        const collectionId = (catalogItem as any).collection_id
-                        const resolvedTheme = collectionTheme ?? (collectionId ? collectionThemeMap[collectionId] ?? null : null)
-                        return rarity === 5 ? getCollectionRarityDisplay(resolvedTheme, collectionSub) : getRarityDisplay(rarity)
+                        if (isDriver) {
+                          const driverData = catalogItem as DriverView;
+                          const rarity = driverData.rarity;
+                          
+                          // For Special Edition drivers (rarity 5), use collection theme + sub name logic
+                          if (rarity === 5) {
+                            return getCollectionRarityDisplay(driverData.collection_theme ?? null, driverData.collection_sub_name ?? null);
+                          }
+                          
+                          // For other rarities, use the standard rarity display
+                          return getRarityDisplay(rarity);
+                        } else if (isCarPart) {
+                          const carPartData = catalogItem as CarPartView;
+                          return getRarityDisplay(carPartData.rarity);
+                        }
+                        
+                        return 'Unknown';
                       })()}
                     </div>
                   </td>

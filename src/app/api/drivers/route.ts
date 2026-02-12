@@ -65,11 +65,14 @@ export async function GET(request: NextRequest) {
             d.collection_theme = null
             d.collection_ordinal = null
           }
+          // Always include the driver's own collection_sub_name field
+          d.collection_sub_name = d.collection_sub_name ?? null
         })
       } else {
         drivers.forEach((d: any) => {
           d.collection_theme = null
           d.collection_ordinal = null
+          d.collection_sub_name = d.collection_sub_name ?? null
         })
       }
     }

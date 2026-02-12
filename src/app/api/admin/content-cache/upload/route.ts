@@ -17,11 +17,13 @@ const contentCacheSchema = z.object({
     drivers: z.array(z.any()).optional(),
     carparts: z.array(z.any()).optional(),
     boosts: z.array(z.any()).optional(),
+    collections: z.array(z.any()).optional(),
   }).optional(),
   // Support both wrapped and unwrapped formats
   drivers: z.array(z.any()).optional(),
   carparts: z.array(z.any()).optional(),
   boosts: z.array(z.any()).optional(),
+  collections: z.array(z.any()).optional(),
 })
 
 // POST /api/admin/content-cache/upload - Upload and process content_cache.json (admin only)
@@ -210,33 +212,58 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
   const results = {
     drivers: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
     car_parts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
-    boosts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> }
+    boosts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
+    collections: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> }
   }
 
-  // Process drivers - handle both wrapped and unwrapped formats
-  let driversData = validatedData._contentResponse?.drivers || validatedData.drivers;
-  
-  // Process collections if present in the uploaded content cache
+  // Process collections FIRST - handle both wrapped and unwrapped formats
+  // This ensures collections exist before drivers are processed (foreign key relationships)
   let collectionsData = validatedData._contentResponse?.collections || (validatedData as any).collections
   if (collectionsData) {
-        const collections = collectionsData.map((c: any) => ({
+    const collections = collectionsData.map((c: any) => ({
       id: c.id,
-      name: c.name ?? c.theme ?? c.description ?? null,
-      theme: c.theme ?? c.description ?? c.name ?? null,
+      name: c.name ?? null,                    // Use c.name (display name like "SERVLOC_TXT_PODIUM_STARS_COLLECTION_TITLE")
+      theme: c.theme ?? null,                  // Use c.theme (theme name like "PodiumStars")
       description: c.description ?? null,
       ordinal: c.ordinal ?? null,
     }))
 
     if (collections.length > 0) {
+      console.log(`📦 Processing ${collections.length} collections...`);
+      console.log('📋 Collections to import:');
+      collections.forEach((coll, i) => {
+        console.log(`  ${i + 1}. ID: ${coll.id}, Theme: '${coll.theme}', Name: '${coll.name}', Ordinal: ${coll.ordinal}`);
+      });
+      
       try {
         // Insert or update collections depending on allowModifications
         const collResults = await processItems(collections, 'collections', 'id', allowModifications)
-        console.log(`Content upload: processed collections - new=${collResults.new} modified=${collResults.modified} unchanged=${collResults.unchanged}`)
+        results.collections.new = collResults.new
+        results.collections.modified = collResults.modified
+        results.collections.unchanged = collResults.unchanged
+        results.collections.modified_items = collResults.modified_items
+        console.log(`✅ Collections processed: new=${collResults.new} modified=${collResults.modified} unchanged=${collResults.unchanged}`)
+        
+        // Verify collections were actually inserted
+        const { data: insertedCollections, error: verifyError } = await supabaseAdmin.from('collections').select('*')
+        if (verifyError) {
+          console.error('❌ Error verifying collections after import:', verifyError)
+        } else {
+          console.log(`📊 Collections in DB after import: ${insertedCollections.length}`)
+          insertedCollections.forEach((coll: any, i: number) => {
+            console.log(`  ${i + 1}. ID: ${coll.id}, Theme: '${coll.theme}', Name: '${coll.name}', Ordinal: ${coll.ordinal}`)
+          })
+        }
       } catch (err) {
-        console.error('Failed to process collections from content cache upload:', err)
+        console.error('❌ Failed to process collections from content cache upload:', err)
       }
     }
+  } else {
+    console.log('⚠️  No collections data found in content_cache')
   }
+  
+  // Process drivers - handle both wrapped and unwrapped formats
+  let driversData = validatedData._contentResponse?.drivers || validatedData.drivers;
   
   if (driversData) {
     const drivers = driversData
