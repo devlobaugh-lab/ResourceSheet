@@ -613,6 +613,10 @@ export interface UserAssetView {
   min_gp_tier: number | null
   num_duplicates_after_unlock: number | null
 
+  // Collection fields attached by API
+  collection_theme?: string | null
+  collection_ordinal?: number | null
+
   // From user_items (or defaults if not owned)
   level: number
   card_count: number
@@ -636,6 +640,9 @@ export interface DriverView {
   tag_name: string | null
   ordinal: number | null
   stats_per_level: any | null
+  // Collection fields attached by API
+  collection_theme?: string | null
+  collection_ordinal?: number | null
 
   // From user_drivers (or defaults if not owned)
   level: number

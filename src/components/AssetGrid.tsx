@@ -24,7 +24,7 @@ interface AssetGridProps {
 
 interface FilterState {
   search: string;
-  rarity: number | null;
+  rarity: number | string | null; // string for collection names like "PodiumStars", "HotProspects-2"
   cardType: number | null;
   owned: boolean | null;
   sortBy: 'name' | 'rarity' | 'series' | 'level';
@@ -75,7 +75,26 @@ export function AssetGrid({
     const matchesSearch = !filters.search || 
       item.name.toLowerCase().includes(filters.search.toLowerCase());
     
-    const matchesRarity = filters.rarity === null || item.rarity === filters.rarity;
+    // Handle rarity/collection filtering
+    let matchesRarity = filters.rarity === null;
+    if (!matchesRarity) {
+      if (typeof filters.rarity === 'number') {
+        // Filter by rarity number (0-4, 6)
+        matchesRarity = item.rarity === filters.rarity;
+      } else if (typeof filters.rarity === 'string') {
+        // Filter by collection name (for rarity 5)
+        if (item.rarity === 5 && item.collection_theme) {
+          const subname = item.collection_sub_name;
+          if (subname && subname.length > 0) {
+            const lastChar = subname.slice(-1);
+            const collectionLabel = `${item.collection_theme}-${lastChar}`;
+            matchesRarity = collectionLabel === filters.rarity;
+          } else {
+            matchesRarity = item.collection_theme === filters.rarity;
+          }
+        }
+      }
+    }
     
     const matchesCardType = filters.cardType === null || item.card_type === filters.cardType;
     
@@ -193,7 +212,7 @@ export function AssetGrid({
                 value={filters.rarity ?? ''}
                 onChange={(e) => setFilters(prev => ({ 
                   ...prev, 
-                  rarity: e.target.value ? Number(e.target.value) : null 
+                  rarity: e.target.value ? (isNaN(Number(e.target.value)) ? e.target.value : Number(e.target.value)) : null 
                 }))}
               >
                 <option value="">All Rarities</option>
@@ -202,6 +221,33 @@ export function AssetGrid({
                 <option value="2">Rare</option>
                 <option value="1">Common</option>
                 <option value="0">Basic</option>
+                {/* Generate collection-based options for rarity 5 items */}
+                {(() => {
+                  const collections = new Set<string>();
+                  allItems.forEach((item: FilterableItem) => {
+                    if (item.rarity === 5 && item.collection_theme) {
+                      const subname = item.collection_sub_name;
+                      if (subname && subname.length > 0) {
+                        const lastChar = subname.slice(-1);
+                        collections.add(`${item.collection_theme}-${lastChar}`);
+                      } else {
+                        collections.add(item.collection_theme);
+                      }
+                    }
+                  });
+                  // Sort collections alphabetically
+                  const sortedCollections = Array.from(collections).sort();
+                  return sortedCollections.length > 0 && (
+                    <>
+                      <option disabled>─ Special Edition ─</option>
+                      {sortedCollections.map((collection) => (
+                        <option key={collection} value={collection}>
+                          {collection}
+                        </option>
+                      ))}
+                    </>
+                  );
+                })()}
               </select>
             </div>
             

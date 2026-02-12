@@ -1,4 +1,7 @@
 /**
+ * 
+ * This script is depricated and should not be used for future imports as logic has changed. Going forward, the import process should be handled by the admin panel with proper mapping logic in place.
+ * 
  * Proper Driver Import Script
  *
  * This script imports drivers correctly by:

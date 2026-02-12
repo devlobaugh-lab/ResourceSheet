@@ -42,6 +42,7 @@ function extractSeason6PlusData() {
       drivers: [],
       car_parts: [],
       boosts: [],
+      collections: [],
       metadata: {
         source: 'external_data/content_cache.json',
         extraction_date: new Date().toISOString(),
@@ -76,6 +77,22 @@ function extractSeason6PlusData() {
       console.log(`✅ Included ${extractedData.boosts.length} boosts`);
     }
 
+    // Process collections (if present)
+    if (contentResponse.collections && Array.isArray(contentResponse.collections)) {
+      console.log(`🔄 Processing ${contentResponse.collections.length} collections...`);
+      // Collections are not season-filtered here — keep all for reference
+      extractedData.collections = contentResponse.collections.map(c => ({
+        id: c.id || c.collectionId || null,
+        internalName: c.internalName || c.internal_name || null,
+        season: c.season || null,
+        ordinal: c.ordinal || null,
+        name: c.name || null,
+        theme: c.theme || c.themeName || null,
+        metadata: c
+      })).filter(c => c.id !== null);
+      console.log(`✅ Included ${extractedData.collections.length} collections`);
+    }
+
     // Calculate size reduction
     const filteredDataSize = JSON.stringify(extractedData).length;
     const originalSize = fs.statSync(INPUT_FILE).size;
@@ -93,6 +110,12 @@ function extractSeason6PlusData() {
 
     // Create individual entity files
     const entities = ['drivers', 'car_parts', 'boosts'];
+    // Also write collections separately if present
+    if (extractedData.collections && extractedData.collections.length > 0) {
+      const collectionsPath = path.join(OUTPUT_DIR, `collections.json`);
+      fs.writeFileSync(collectionsPath, JSON.stringify({ collections: extractedData.collections, metadata: { source: INPUT_FILE, count: extractedData.collections.length } }, null, 2));
+      console.log(`✅ collections saved to: ${collectionsPath}`);
+    }
     entities.forEach(entity => {
       const entityPath = path.join(OUTPUT_DIR, `${entity}.json`);
       fs.writeFileSync(entityPath, JSON.stringify({

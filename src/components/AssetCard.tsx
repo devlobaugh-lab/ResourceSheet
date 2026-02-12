@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { UserAssetView, CatalogItem, Boost } from '@/types/database';
-import { formatNumber } from '@/lib/utils';
+import { formatNumber, getRarityDisplay, getCollectionRarityDisplay, getRarityBackground } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 interface AssetCardProps {
@@ -36,17 +36,13 @@ export function AssetCard({
   
   if (!catalogItem) return null;
 
-  // Helper function to get rarity display name
-  const getRarityDisplay = (rarity: number): string => {
-    const rarityMap: Record<number, string> = {
-      0: 'Basic',
-      1: 'Common', 
-      2: 'Rare',
-      3: 'Epic',
-      4: 'Legendary'
-    };
-    return rarityMap[rarity] || 'Unknown';
-  };
+  // Use shared rarity helpers; for SE (rarity 5) try collection-driven label
+  const rarityLabel = (item: any) => {
+    if (item.rarity === 5) {
+      return getCollectionRarityDisplay(item.collection_theme ?? null, item.collection_sub_name ?? null)
+    }
+    return getRarityDisplay(item.rarity)
+  }
 
   // Helper function to get card type display name
   const getCardTypeDisplay = (cardType: number): string => {
@@ -109,7 +105,7 @@ export function AssetCard({
               catalogItem.rarity === 3 ? 'secondary' :
               catalogItem.rarity === 2 ? 'default' : 'outline'
             }>
-              {getRarityDisplay(catalogItem.rarity)}
+              {rarityLabel(catalogItem)}
             </Badge>
           </div>
           

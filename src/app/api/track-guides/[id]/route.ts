@@ -14,6 +14,8 @@ const updateTrackGuideSchema = z.object({
   alt_driver_ids: z.array(z.string().uuid()).max(6).optional(),
   alt_boost_ids: z.array(z.string().uuid()).optional(),
   free_boost_id: z.string().uuid().optional().nullable(),
+  suggested_boosts: z.array(z.string().uuid()).optional(),
+  suggested_drivers: z.array(z.string().uuid()).optional(),
   saved_setup_id: z.string().uuid().optional().nullable(),
   setup_notes: z.string().optional().nullable(),
   dry_strategy: z.string().optional().nullable(),

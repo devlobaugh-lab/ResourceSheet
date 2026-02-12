@@ -43,6 +43,40 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Attach collection info (theme, ordinal) for drivers that have a collection_id
+    if (drivers && drivers.length > 0) {
+      const collectionIds = Array.from(new Set(drivers.map(d => d.collection_id).filter(Boolean)))
+      if (collectionIds.length > 0) {
+        const { data: collections } = await supabaseAdmin
+          .from('collections')
+          .select('*')
+          .in('id', collectionIds)
+
+        console.log('Drivers API: fetched collections count=', (collections || []).length, 'for ids=', collectionIds)
+
+        const collectionMap = new Map((collections || []).map((c: any) => [c.id, c]))
+
+        drivers.forEach((d: any) => {
+          if (d.collection_id) {
+            const c = collectionMap.get(d.collection_id)
+            d.collection_theme = c?.theme ?? c?.description ?? c?.name ?? null
+            d.collection_ordinal = c?.ordinal ?? null
+          } else {
+            d.collection_theme = null
+            d.collection_ordinal = null
+          }
+          // Always include the driver's own collection_sub_name field
+          d.collection_sub_name = d.collection_sub_name ?? null
+        })
+      } else {
+        drivers.forEach((d: any) => {
+          d.collection_theme = null
+          d.collection_ordinal = null
+          d.collection_sub_name = d.collection_sub_name ?? null
+        })
+      }
+    }
+
     // Apply pagination
     const page = validatedFilters.page || 1
     const limit = validatedFilters.limit || 20

@@ -11,29 +11,17 @@
  */
 
 /**
+ * NOTE: Deprecated logic - no longer using rarity 6 
+ * 
  * Apply SE Turbo mapping (Rarity 5 → Rarity 6)
  * SE Turbo drivers are identified by collectionSubName ending with 'SUBTITLE_2'
  * Also generate unique IDs for SE Turbo drivers to avoid conflicts with SE Standard
  */
 export function applySETurboMapping(drivers: any[]): any[] {
-  console.log('applySETurboMapping called with', drivers.length, 'drivers')
-  
-  return drivers.map(driver => {
-    console.log('Checking driver:', driver.name, 'Rarity:', driver.rarity, 'Collection:', driver.collectionSubName || driver.collection_sub_name)
-    
-    // Check for both camelCase and snake_case properties
-    const collectionName = driver.collectionSubName || driver.collection_sub_name
-    
-    if (driver.rarity === 5 && collectionName && collectionName.endsWith('SUBTITLE_2')) {
-      console.log('Found SE Turbo driver:', driver.name, 'Converting Rarity 5 → 6')
-      return { 
-        ...driver, 
-        rarity: 6
-        // Don't modify the ID - let the database handle uniqueness
-      };
-    }
-    return driver;
-  });
+  // Previously this converted certain SUBTITLE_2 collection variants to rarity 6 (SE Turbo).
+  // SE Turbo is deprecated; do not change rarity here. Keep incoming rarity as-is.
+  console.log('applySETurboMapping called (no-op) with', drivers.length, 'drivers')
+  return drivers
 }
 
 /**
@@ -70,10 +58,10 @@ export function preprocessDrivers(drivers: any[]): any[] {
   console.log('preprocessDrivers called with', drivers.length, 'drivers')
   
   // Apply SE Turbo mapping first (Rarity 5 → Rarity 6)
-  const driversWithTurboMapping = applySETurboMapping(drivers);
+  // const driversWithTurboMapping = applySETurboMapping(drivers);
   
   // Then apply series mapping for Legendary/SE drivers
-  const processedDrivers = applySeriesMapping(driversWithTurboMapping);
+  const processedDrivers = applySeriesMapping(drivers);
   
   console.log('preprocessDrivers completed, returning', processedDrivers.length, 'drivers')
   return processedDrivers;
@@ -84,8 +72,8 @@ export function preprocessDrivers(drivers: any[]): any[] {
  * Returns true for Legendary/SE drivers (rarity >= 4) or SE Turbo drivers
  */
 export function requiresPreprocessing(driver: any): boolean {
-  return driver.rarity >= 4 || 
-         (driver.rarity === 5 && driver.collection_sub_name && driver.collection_sub_name.endsWith('SUBTITLE_2'));
+  // Only drivers with rarity >= 4 require series mapping / special preprocessing
+  return driver.rarity >= 4;
 }
 
 /**

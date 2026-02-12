@@ -15,7 +15,7 @@ import { DriverSelectionGrid } from '@/components/DriverSelectionGrid'
 import { DriverDisplay } from '@/components/DriverDisplay'
 import Link from 'next/link'
 import { calculateHighestLevel, cn } from '@/lib/utils'
-import { getRarityBackground, getRarityDisplay } from '@/lib/utils'
+import { getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils'
 import { Shield, ArrowUpRight, Signal, Car, Gauge, ArrowRight, Zap, Timer, AlertTriangle, Pencil } from 'lucide-react'
 
 // New - imported components for boost stats and editable fields
@@ -986,7 +986,7 @@ export default function TrackGuideEditorPage() {
                               {driver.name}
                           </div>
                           <div className="flex-1 w-full text-sm font-medium text-gray-700">
-                              Level {driver.level} • {getRarityDisplay(driver.rarity)}
+                              Level {driver.level} • {driver.rarity === 5 ? getCollectionRarityDisplay(driver.collection_theme ?? null, driver.collection_sub_name ?? null) : getRarityDisplay(driver.rarity)}
                             {/* </div> */}
                           </div>
                         </div>
@@ -1296,16 +1296,7 @@ export default function TrackGuideEditorPage() {
                               const aDriverStat = aStats[boostDriverStat] || 0
                               const bDriverStat = bStats[boostDriverStat] || 0
                               
-                              // Debug logging
-                              if (process.env.NODE_ENV === 'development') {
-                                console.log('Track driver stat:', trackDriverStat)
-                                console.log('Mapped boost stat:', boostDriverStat)
-                                console.log('Available boost stats for A:', Object.keys(aStats))
-                                console.log('Available boost stats for B:', Object.keys(bStats))
-                                console.log('Boost A', a.name, 'stat:', aDriverStat)
-                                console.log('Boost B', b.name, 'stat:', bDriverStat)
-                                console.log('Stat map lookup result:', statMap[trackDriverStat])
-                              }
+                              // Removed debug logging
                               
                               if (aDriverStat !== bDriverStat) {
                                 return bDriverStat - aDriverStat // Descending order
@@ -1569,16 +1560,7 @@ export default function TrackGuideEditorPage() {
                               const aDriverStat = aStats[boostDriverStat] || 0
                               const bDriverStat = bStats[boostDriverStat] || 0
                               
-                              // Debug logging
-                              if (process.env.NODE_ENV === 'development') {
-                                console.log('Track driver stat:', trackDriverStat)
-                                console.log('Mapped boost stat:', boostDriverStat)
-                                console.log('Available boost stats for A:', Object.keys(aStats))
-                                console.log('Available boost stats for B:', Object.keys(bStats))
-                                console.log('Boost A', a.name, 'stat:', aDriverStat)
-                                console.log('Boost B', b.name, 'stat:', bDriverStat)
-                                console.log('Stat map lookup result:', statMap[trackDriverStat])
-                              }
+                              // Removed debug logging
                               
                               if (aDriverStat !== bDriverStat) {
                                 return bDriverStat - aDriverStat // Descending order
@@ -1829,16 +1811,7 @@ export default function TrackGuideEditorPage() {
                               const aDriverStat = aStats[boostDriverStat] || 0
                               const bDriverStat = bStats[boostDriverStat] || 0
                               
-                              // Debug logging
-                              if (process.env.NODE_ENV === 'development') {
-                                console.log('Track driver stat:', trackDriverStat)
-                                console.log('Mapped boost stat:', boostDriverStat)
-                                console.log('Available boost stats for A:', Object.keys(aStats))
-                                console.log('Available boost stats for B:', Object.keys(bStats))
-                                console.log('Boost A', a.name, 'stat:', aDriverStat)
-                                console.log('Boost B', b.name, 'stat:', bDriverStat)
-                                console.log('Stat map lookup result:', statMap[trackDriverStat])
-                              }
+                              // Removed debug logging
                               
                               if (aDriverStat !== bDriverStat) {
                                 return bDriverStat - aDriverStat // Descending order

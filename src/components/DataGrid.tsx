@@ -12,7 +12,8 @@ interface BoostItem extends BoostWithCustomName {
   is_boost: true;
   card_count: number;
 }
-import { cn, formatNumber, calculateHighestLevel } from '@/lib/utils';
+import { cn, formatNumber, calculateHighestLevel, getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils';
+import { useCollections } from '@/lib/collectionsContext'
 import { useToast } from '@/components/ui/Toast';
 import { getAuthHeaders } from '@/hooks/useApi';
 
@@ -214,6 +215,8 @@ export function DataGrid({
   onBonusToggle,
   showHighestLevel = false,
 }: DataGridProps) {
+  // Resolve collection themes for any displayed items that are SE (rarity 5)
+  const { getTheme } = useCollections()
   const [filters, setFilters] = useState<FilterState>(() => {
     // Load saved sort preferences on component initialization
     const savedPrefs = loadSortPreferences(gridType);
@@ -422,7 +425,40 @@ export function DataGrid({
           if ('is_boost' in a && 'is_boost' in b && a.is_boost && b.is_boost) {
             comparison = 0; // No sorting for boosts by rarity
           } else {
-            comparison = (a as DriverView | CarPartView).rarity - (b as DriverView | CarPartView).rarity;
+            const aRarity = (a as DriverView | CarPartView).rarity;
+            const bRarity = (b as DriverView | CarPartView).rarity;
+            comparison = aRarity - bRarity;
+            
+            // If rarities are equal, sort by ordinal
+            if (comparison === 0) {
+              if (aRarity === 5) {
+                // For SE drivers, sort by collection ordinal then driver ordinal
+                if ('is_driver' in a && 'is_driver' in b && a.is_driver && b.is_driver) {
+                  const aDriver = a as DriverView;
+                  const bDriver = b as DriverView;
+                  comparison = (aDriver.collection_ordinal || 0) - (bDriver.collection_ordinal || 0);
+                  if (comparison === 0) {
+                    comparison = (aDriver.ordinal || 0) - (bDriver.ordinal || 0);
+                  }
+                } else {
+                  // For non-drivers with rarity 5, just use ordinal (only for drivers)
+                  if ('is_driver' in a && 'is_driver' in b && a.is_driver && b.is_driver) {
+                    const aDriver = a as DriverView;
+                    const bDriver = b as DriverView;
+                    comparison = (aDriver.ordinal || 0) - (bDriver.ordinal || 0);
+                  }
+                  // For car parts, no additional sorting needed
+                }
+              } else {
+                // For other rarities, use ordinal (only for drivers)
+                if ('is_driver' in a && 'is_driver' in b && a.is_driver && b.is_driver) {
+                  const aDriver = a as DriverView;
+                  const bDriver = b as DriverView;
+                  comparison = (aDriver.ordinal || 0) - (bDriver.ordinal || 0);
+                }
+                // For car parts, no additional sorting needed
+              }
+            }
           }
           break;
         case 'series':
@@ -777,19 +813,7 @@ export function DataGrid({
     return compareItems.some(compared => compared.id === item.id);
   };
 
-  // Helper function to get rarity display name
-  const getRarityDisplay = (rarity: number): string => {
-    const rarityMap: Record<number, string> = {
-      0: 'Basic',
-      1: 'Common',
-      2: 'Rare',
-      3: 'Epic',
-      4: 'Legendary',
-      5: 'SE Standard',
-      6: 'SE Turbo'
-    };
-    return rarityMap[rarity] || 'Unknown';
-  };
+  // Rarity display handled by shared utilities: `getRarityDisplay` and `getCollectionRarityDisplay`
 
   // Helper function to get card type display name
   const getCardTypeDisplay = (cardType: number): string => {
@@ -1075,7 +1099,25 @@ export function DataGrid({
                   {gridType !== 'boosts' && (isDriver || isCarPart) && (
                   <td className={cn("px-3 py-1 whitespace-nowrap", getRarityBackground(isDriver ? (catalogItem as DriverView).rarity : (catalogItem as CarPartView).rarity))}>
                     <div className="text-sm font-medium text-gray-900">
-                      {getRarityDisplay(isDriver ? (catalogItem as DriverView).rarity : (catalogItem as CarPartView).rarity)}
+                      {(() => {
+                        if (isDriver) {
+                          const driverData = catalogItem as DriverView;
+                          const rarity = driverData.rarity;
+                          
+                          // For Special Edition drivers (rarity 5), use collection theme + sub name logic
+                          if (rarity === 5) {
+                            return getCollectionRarityDisplay(driverData.collection_theme ?? null, driverData.collection_sub_name ?? null);
+                          }
+                          
+                          // For other rarities, use the standard rarity display
+                          return getRarityDisplay(rarity);
+                        } else if (isCarPart) {
+                          const carPartData = catalogItem as CarPartView;
+                          return getRarityDisplay(carPartData.rarity);
+                        }
+                        
+                        return 'Unknown';
+                      })()}
                     </div>
                   </td>
                   )}

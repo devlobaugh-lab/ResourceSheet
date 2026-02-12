@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { DriverView } from '@/types/database'
 import { useDrivers, useUserDrivers } from '@/hooks/useApi'
 import { cn, calculateHighestLevel } from '@/lib/utils'
+import { getRarityDisplay, getRarityOptions } from '@/lib/rarityUtils'
 
 // Helper function to get stat background color based on value position in range
 const getStatBackgroundColor = (value: number, min: number, max: number, median: number): string => {
@@ -30,13 +31,14 @@ const getStatBackgroundColor = (value: number, min: number, max: number, median:
   }
 }
 
-// Data structure for a driver in the compare grid
-interface CompareDriver {
-  driverName: string
-  rarity: number
-  level: number
-  hasBonus: boolean
-}
+  // Data structure for a driver in the compare grid
+  interface CompareDriver {
+    driverName: string
+    rarity: number
+    rarityValue?: string // Store the unique value from the API (optional for backward compatibility)
+    level: number
+    hasBonus: boolean
+  }
 
 // localStorage key for persistence
 const COMPARE_DRIVERS_KEY = 'compare-drivers-settings'
@@ -51,7 +53,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
     limit: 1000 // Get all drivers for dropdown and stats
   })
 
-  const allDrivers = userDriversResponse?.data || []
+  const allDrivers = useMemo(() => userDriversResponse?.data || [], [userDriversResponse?.data])
 
   // State for the compare grid
   const [compareDrivers, setCompareDrivers] = useState<CompareDriver[]>(() => {
@@ -66,6 +68,9 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
     }
     return []
   })
+
+  // State for rarity options
+  const [rarityOptions, setRarityOptions] = useState<Array<{ rarity: number; display: string; collectionId?: string; value?: string }>>([])
 
   const [bonusPercentage, setBonusPercentage] = useState(() => {
     // Load bonus percentage from localStorage
@@ -96,9 +101,108 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
     }
   }, [bonusPercentage])
 
+  // Fetch rarity options on component mount
+  useEffect(() => {
+    const fetchRarityOptions = async () => {
+      try {
+        const options = await getRarityOptions()
+        setRarityOptions(options)
+      } catch (error) {
+        console.error('Failed to fetch rarity options:', error)
+        // Fallback to basic rarities
+        setRarityOptions([
+          { rarity: 1, display: 'Common' },
+          { rarity: 2, display: 'Rare' },
+          { rarity: 3, display: 'Epic' },
+          { rarity: 4, display: 'Legendary' },
+          { rarity: 5, display: 'Special Edition' }
+        ])
+      }
+    }
+
+    fetchRarityOptions()
+  }, [])
+
   // Helper function to get driver by name and rarity
-  const getDriverByNameAndRarity = useCallback((driverName: string, rarity: number): DriverView | undefined => {
+  const getDriverByNameAndRarity = useCallback((driverName: string, rarity: number, rarityValue?: string): DriverView | undefined => {
+    // If we have a rarityValue, try to find by collection_id and collection_sub_name
+    if (rarityValue && rarity === 5) {
+      // Handle UUID format properly - UUIDs are 36 characters long
+      let collectionId: string
+      let subName: string
+      
+      if (rarityValue.length === 36) {
+        // Pure UUID (like PodiumStars)
+        collectionId = rarityValue
+        subName = ''
+      } else if (rarityValue.includes('-') && rarityValue.split('-')[0].length === 36) {
+        // UUID followed by subName
+        const parts = rarityValue.split('-')
+        collectionId = parts[0]
+        subName = parts.slice(1).join('-')
+      } else {
+        // Fallback: try to find the UUID (first 36 characters)
+        collectionId = rarityValue.substring(0, 36)
+        subName = rarityValue.substring(37)
+      }
+      
+      return allDrivers.find((driver: DriverView) => 
+        driver.name === driverName && 
+        driver.rarity === rarity &&
+        driver.collection_id === collectionId &&
+        (driver.collection_sub_name === subName || (driver.collection_sub_name === null && subName === ''))
+      )
+    }
+    
+    // Fallback to basic rarity lookup for non-Rarity-5 or when rarityValue is not available
     return allDrivers.find((driver: DriverView) => driver.name === driverName && driver.rarity === rarity)
+  }, [allDrivers])
+
+  // Helper function to check if driver/rarity combination exists
+  const isValidDriverRarity = useCallback((driverName: string, rarity: number, rarityValue?: string): boolean => {
+    if (!driverName || rarity < 1) return false
+    
+    // For Rarity-5 variants, we need to check the specific collection_id and collection_sub_name
+    if (rarityValue && rarity === 5) {
+      // Handle UUID format properly - UUIDs are 36 characters long
+      let collectionId: string
+      let subName: string
+      
+      if (rarityValue.length === 36) {
+        // Pure UUID (like PodiumStars)
+        collectionId = rarityValue
+        subName = ''
+      } else if (rarityValue.includes('-') && rarityValue.split('-')[0].length === 36) {
+        // UUID followed by subName
+        const parts = rarityValue.split('-')
+        collectionId = parts[0]
+        subName = parts.slice(1).join('-')
+      } else {
+        // Fallback: try to find the UUID (first 36 characters)
+        collectionId = rarityValue.substring(0, 36)
+        subName = rarityValue.substring(37)
+      }
+      
+      // First try exact match
+      const exactMatch = allDrivers.some((driver: DriverView) => 
+        driver.name === driverName && 
+        driver.rarity === rarity &&
+        driver.collection_id === collectionId &&
+        driver.collection_sub_name === subName
+      )
+      
+      if (exactMatch) return true
+      
+      // If exact match fails, try just collection_id match (fallback for data inconsistencies)
+      return allDrivers.some((driver: DriverView) => 
+        driver.name === driverName && 
+        driver.rarity === rarity &&
+        driver.collection_id === collectionId
+      )
+    }
+    
+    // For non-Rarity-5 or when rarityValue is not available, use basic lookup
+    return allDrivers.some((driver: DriverView) => driver.name === driverName && driver.rarity === rarity)
   }, [allDrivers])
 
   // Filter to unique drivers by name (highest rarity), then sort by last name
@@ -141,8 +245,8 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
       case 2: return 9  // Rare
       case 3: return 8  // Epic
       case 4: return 7  // Legendary
-      case 5: return 7  // SE Standard
-      case 6: return 7  // SE Turbo
+      case 5: return 7  // Special Edition
+      // case 6: return 7  // SE Turbo
       default: return 11
     }
   }
@@ -185,6 +289,30 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
 
     return baseValue
   }, [])
+
+  // Helper function to get stat display value (with N/A for invalid combinations)
+  const getStatDisplayValue = useCallback((
+    compareDriver: CompareDriver,
+    statName: string
+  ): string => {
+    // Check if driver/rarity combination is valid
+    if (!isValidDriverRarity(compareDriver.driverName, compareDriver.rarity, compareDriver.rarityValue)) {
+      return 'N/A'
+    }
+
+    const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity, compareDriver.rarityValue)
+    const value = getStatValue(driver, statName, compareDriver.level, compareDriver.hasBonus, bonusPercentage)
+    
+    // For total value, calculate sum of stats
+    if (statName === 'total_value') {
+      if (!driver) return 'N/A'
+      const total = ['overtaking', 'blocking', 'qualifying', 'raceStart', 'tyreUse']
+        .reduce((sum, stat) => sum + getStatValue(driver, stat, compareDriver.level, compareDriver.hasBonus, bonusPercentage), 0)
+      return total.toString()
+    }
+
+    return value.toString()
+  }, [isValidDriverRarity, getDriverByNameAndRarity, getStatValue, bonusPercentage])
 
   // Calculate column statistics for color coding
   const columnStats = useMemo(() => {
@@ -237,7 +365,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
     })
 
     return stats
-  }, [compareDrivers, allDrivers, getStatValue, bonusPercentage, getDriverByNameAndRarity])
+  }, [compareDrivers, getStatValue, bonusPercentage, getDriverByNameAndRarity])
 
   // Add a new driver column
   const addDriver = () => {
@@ -277,19 +405,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
     })
   }
 
-  // Get rarity display name
-  const getRarityDisplay = (rarity: number): string => {
-    const rarityMap: Record<number, string> = {
-      0: 'Basic',
-      1: 'Common',
-      2: 'Rare',
-      3: 'Epic',
-      4: 'Legendary',
-      5: 'SE Standard',
-      6: 'SE Turbo'
-    }
-    return rarityMap[rarity] || 'Unknown'
-  }
+  // Use shared utility for rarity display (collection-driven for rarity 5 when available)
 
   return (
     <div className={cn('w-full', className)}>
@@ -379,15 +495,23 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   <td key={index} className="px-3 py-2 text-center">
                     <select
                       className="w-full rounded border-gray-300 text-xs px-2 py-1 bg-white text-gray-900"
-                      value={compareDriver.rarity}
-                      onChange={(e) => handleRarityChange(index, Number(e.target.value))}
+                      value={compareDriver.rarityValue || compareDriver.rarity}
+                      onChange={(e) => {
+                        const selectedValue = e.target.value
+                        const selectedOption = rarityOptions.find(opt => opt.value === selectedValue)
+                        if (selectedOption) {
+                          updateDriver(index, { 
+                            rarity: selectedOption.rarity, 
+                            rarityValue: selectedValue 
+                          })
+                        }
+                      }}
                     >
-                      <option value={1} className="text-gray-900">Common</option>
-                      <option value={2} className="text-gray-900">Rare</option>
-                      <option value={3} className="text-gray-900">Epic</option>
-                      <option value={4} className="text-gray-900">Legendary</option>
-                      <option value={5} className="text-gray-900">SE Standard</option>
-                      <option value={6} className="text-gray-900">SE Turbo</option>
+                      {rarityOptions.map((rarityOption, index) => (
+                        <option key={`${rarityOption.rarity}-${rarityOption.display}`} value={rarityOption.value} className="text-gray-900">
+                          {rarityOption.display}
+                        </option>
+                      ))}
                     </select>
                   </td>
                 ))}
@@ -475,11 +599,11 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   Overtaking
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
-                  const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity)
-                  const value = driver ? getStatValue(driver, 'overtaking', compareDriver.level, compareDriver.hasBonus, bonusPercentage) : 0
+                  const displayValue = getStatDisplayValue(compareDriver, 'overtaking')
+                  const numericValue = displayValue === 'N/A' ? 0 : parseInt(displayValue)
                   return (
-                    <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['overtaking'] && getStatBackgroundColor(value, columnStats['overtaking'].min, columnStats['overtaking'].max, columnStats['overtaking'].median))}>
-                      <div className="text-sm text-gray-900">{value}</div>
+                    <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['overtaking'] && getStatBackgroundColor(numericValue, columnStats['overtaking'].min, columnStats['overtaking'].max, columnStats['overtaking'].median))}>
+                      <div className="text-sm text-gray-900">{displayValue}</div>
                     </td>
                   )
                 })}
@@ -491,11 +615,11 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   Defending
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
-                  const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity)
-                  const value = driver ? getStatValue(driver, 'blocking', compareDriver.level, compareDriver.hasBonus, bonusPercentage) : 0
+                  const displayValue = getStatDisplayValue(compareDriver, 'blocking')
+                  const numericValue = displayValue === 'N/A' ? 0 : parseInt(displayValue)
                   return (
-                    <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['blocking'] && getStatBackgroundColor(value, columnStats['blocking'].min, columnStats['blocking'].max, columnStats['blocking'].median))}>
-                      <div className="text-sm text-gray-900">{value}</div>
+                    <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['blocking'] && getStatBackgroundColor(numericValue, columnStats['blocking'].min, columnStats['blocking'].max, columnStats['blocking'].median))}>
+                      <div className="text-sm text-gray-900">{displayValue}</div>
                     </td>
                   )
                 })}
@@ -507,11 +631,11 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   Qualifying
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
-                  const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity)
-                  const value = driver ? getStatValue(driver, 'qualifying', compareDriver.level, compareDriver.hasBonus, bonusPercentage) : 0
+                  const displayValue = getStatDisplayValue(compareDriver, 'qualifying')
+                  const numericValue = displayValue === 'N/A' ? 0 : parseInt(displayValue)
                   return (
-                    <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['qualifying'] && getStatBackgroundColor(value, columnStats['qualifying'].min, columnStats['qualifying'].max, columnStats['qualifying'].median))}>
-                      <div className="text-sm text-gray-900">{value}</div>
+                    <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['qualifying'] && getStatBackgroundColor(numericValue, columnStats['qualifying'].min, columnStats['qualifying'].max, columnStats['qualifying'].median))}>
+                      <div className="text-sm text-gray-900">{displayValue}</div>
                     </td>
                   )
                 })}
@@ -523,11 +647,11 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   Race Start
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
-                  const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity)
-                  const value = driver ? getStatValue(driver, 'raceStart', compareDriver.level, compareDriver.hasBonus, bonusPercentage) : 0
+                  const displayValue = getStatDisplayValue(compareDriver, 'raceStart')
+                  const numericValue = displayValue === 'N/A' ? 0 : parseInt(displayValue)
                   return (
-                    <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['raceStart'] && getStatBackgroundColor(value, columnStats['raceStart'].min, columnStats['raceStart'].max, columnStats['raceStart'].median))}>
-                      <div className="text-sm text-gray-900">{value}</div>
+                    <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['raceStart'] && getStatBackgroundColor(numericValue, columnStats['raceStart'].min, columnStats['raceStart'].max, columnStats['raceStart'].median))}>
+                      <div className="text-sm text-gray-900">{displayValue}</div>
                     </td>
                   )
                 })}
@@ -539,11 +663,11 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   Tyre Mgt
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
-                  const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity)
-                  const value = driver ? getStatValue(driver, 'tyreUse', compareDriver.level, compareDriver.hasBonus, bonusPercentage) : 0
+                  const displayValue = getStatDisplayValue(compareDriver, 'tyreUse')
+                  const numericValue = displayValue === 'N/A' ? 0 : parseInt(displayValue)
                   return (
-                    <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['tyreUse'] && getStatBackgroundColor(value, columnStats['tyreUse'].min, columnStats['tyreUse'].max, columnStats['tyreUse'].median))}>
-                      <div className="text-sm text-gray-900">{value}</div>
+                    <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['tyreUse'] && getStatBackgroundColor(numericValue, columnStats['tyreUse'].min, columnStats['tyreUse'].max, columnStats['tyreUse'].median))}>
+                      <div className="text-sm text-gray-900">{displayValue}</div>
                     </td>
                   )
                 })}
@@ -555,12 +679,11 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
                   Total Value
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
-                  const driver = getDriverByNameAndRarity(compareDriver.driverName, compareDriver.rarity)
-                  const totalValue = driver ? ['overtaking', 'blocking', 'qualifying', 'raceStart', 'tyreUse']
-                    .reduce((sum, stat) => sum + getStatValue(driver, stat, compareDriver.level, compareDriver.hasBonus, bonusPercentage), 0) : 0
+                  const displayValue = getStatDisplayValue(compareDriver, 'total_value')
+                  const numericValue = displayValue === 'N/A' ? 0 : parseInt(displayValue)
                   return (
-                    <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['total_value'] && getStatBackgroundColor(totalValue, columnStats['total_value'].min, columnStats['total_value'].max, columnStats['total_value'].median))}>
-                      <div className="text-sm font-medium text-gray-900">{totalValue}</div>
+                    <td key={index} className={cn("px-3 py-2 whitespace-nowrap text-center", columnStats['total_value'] && getStatBackgroundColor(numericValue, columnStats['total_value'].min, columnStats['total_value'].max, columnStats['total_value'].median))}>
+                      <div className="text-sm font-medium text-gray-900">{displayValue}</div>
                     </td>
                   )
                 })}

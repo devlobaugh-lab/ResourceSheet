@@ -17,11 +17,13 @@ const contentCacheSchema = z.object({
     drivers: z.array(z.any()).optional(),
     carparts: z.array(z.any()).optional(),
     boosts: z.array(z.any()).optional(),
+    collections: z.array(z.any()).optional(),
   }).optional(),
   // Support both wrapped and unwrapped formats
   drivers: z.array(z.any()).optional(),
   carparts: z.array(z.any()).optional(),
   boosts: z.array(z.any()).optional(),
+  collections: z.array(z.any()).optional(),
 })
 
 // POST /api/admin/content-cache/upload - Upload and process content_cache.json (admin only)
@@ -100,7 +102,43 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse season filter
-    const seasonNumbers = parseSeasonFilter(seasonFilter)
+    let seasonNumbers = parseSeasonFilter(seasonFilter)
+
+    // Load seasons and determine mapping from season number -> season id
+    const seasonIdMap: Record<number, string> = {}
+    try {
+      const { data: seasons } = await supabaseAdmin.from('seasons').select('id,name,is_active')
+      if (Array.isArray(seasons)) {
+        for (const s of seasons) {
+          if (s && s.name) {
+            const match = (s.name || '').match(/(\d+)/)
+            if (match) {
+              const num = parseInt(match[1], 10)
+              if (!isNaN(num)) {
+                seasonIdMap[num] = s.id
+              }
+            }
+          }
+        }
+      }
+
+      // If no season filter provided, default to the active season (local/dev)
+      if (seasonNumbers.length === 0) {
+        const active = (seasons || []).find((s: any) => s.is_active)
+        if (active && active.name) {
+          const match = (active.name || '').match(/(\d+)/)
+          if (match) {
+            const num = parseInt(match[1], 10)
+            if (!isNaN(num)) {
+              seasonNumbers = [num]
+              console.log('No season_filter provided — defaulting import to active season:', num)
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Could not load seasons for mapping — importing without season mapping', err)
+    }
 
     // Read and parse the uploaded file
     const fileText = await file.text()
@@ -119,7 +157,7 @@ export async function POST(request: NextRequest) {
     const validatedData = contentCacheSchema.parse(contentCacheData)
 
     // Process and import data with change detection
-    const results = await processContentCache(validatedData, seasonNumbers, allowModifications)
+    const results = await processContentCache(validatedData, seasonNumbers, allowModifications, seasonIdMap)
 
     return NextResponse.json({
       message: 'Content cache processed successfully',
@@ -170,13 +208,60 @@ function parseSeasonFilter(seasonFilter: string): number[] {
 }
 
 // Helper function to process content cache with change detection
-async function processContentCache(validatedData: any, seasonNumbers: number[], allowModifications: boolean = false) {
+async function processContentCache(validatedData: any, seasonNumbers: number[], allowModifications: boolean = false, seasonIdMap: Record<number, string> = {}) {
   const results = {
     drivers: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
     car_parts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
-    boosts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> }
+    boosts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
+    collections: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> }
   }
 
+  // Process collections FIRST - handle both wrapped and unwrapped formats
+  // This ensures collections exist before drivers are processed (foreign key relationships)
+  let collectionsData = validatedData._contentResponse?.collections || (validatedData as any).collections
+  if (collectionsData) {
+    const collections = collectionsData.map((c: any) => ({
+      id: c.id,
+      name: c.name ?? null,                    // Use c.name (display name like "SERVLOC_TXT_PODIUM_STARS_COLLECTION_TITLE")
+      theme: c.theme ?? null,                  // Use c.theme (theme name like "PodiumStars")
+      description: c.description ?? null,
+      ordinal: c.ordinal ?? null,
+    }))
+
+    if (collections.length > 0) {
+      console.log(`📦 Processing ${collections.length} collections...`);
+      console.log('📋 Collections to import:');
+      collections.forEach((coll, i) => {
+        console.log(`  ${i + 1}. ID: ${coll.id}, Theme: '${coll.theme}', Name: '${coll.name}', Ordinal: ${coll.ordinal}`);
+      });
+      
+      try {
+        // Insert or update collections depending on allowModifications
+        const collResults = await processItems(collections, 'collections', 'id', allowModifications)
+        results.collections.new = collResults.new
+        results.collections.modified = collResults.modified
+        results.collections.unchanged = collResults.unchanged
+        results.collections.modified_items = collResults.modified_items
+        console.log(`✅ Collections processed: new=${collResults.new} modified=${collResults.modified} unchanged=${collResults.unchanged}`)
+        
+        // Verify collections were actually inserted
+        const { data: insertedCollections, error: verifyError } = await supabaseAdmin.from('collections').select('*')
+        if (verifyError) {
+          console.error('❌ Error verifying collections after import:', verifyError)
+        } else {
+          console.log(`📊 Collections in DB after import: ${insertedCollections.length}`)
+          insertedCollections.forEach((coll: any, i: number) => {
+            console.log(`  ${i + 1}. ID: ${coll.id}, Theme: '${coll.theme}', Name: '${coll.name}', Ordinal: ${coll.ordinal}`)
+          })
+        }
+      } catch (err) {
+        console.error('❌ Failed to process collections from content cache upload:', err)
+      }
+    }
+  } else {
+    console.log('⚠️  No collections data found in content_cache')
+  }
+  
   // Process drivers - handle both wrapped and unwrapped formats
   let driversData = validatedData._contentResponse?.drivers || validatedData.drivers;
   
@@ -197,7 +282,8 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         collection_sub_name: driver.collectionSubName || null,
         min_gp_tier: driver.minGpTier || null, // Map camelCase to snake_case
         tag_name: driver.tagName || null, // Map camelCase to snake_case
-        stats_per_level: driver.driverStatsPerLevel || [] // Map camelCase to snake_case
+        stats_per_level: driver.driverStatsPerLevel || [], // Map camelCase to snake_case
+        season_id: seasonIdMap[driver.season] || null
       }))
 
     // Apply preprocessing to drivers before comparison and database insertion
@@ -210,11 +296,11 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
     console.log('Sample driver after preprocessing:', JSON.stringify(processedDrivers[0], null, 2))
     
     // Log SE Turbo drivers specifically
-    const seTurboDrivers = processedDrivers.filter(d => d.collection_sub_name && d.collection_sub_name.endsWith('SUBTITLE_2'))
-    console.log('SE Turbo drivers after preprocessing:', seTurboDrivers.length)
-    seTurboDrivers.forEach(driver => {
-      console.log(`  ${driver.name} - Rarity: ${driver.rarity} - ID: ${driver.id}`)
-    })
+    // const seTurboDrivers = processedDrivers.filter(d => d.collection_sub_name && d.collection_sub_name.endsWith('SUBTITLE_2'))
+    // console.log('SE Turbo drivers after preprocessing:', seTurboDrivers.length)
+    // seTurboDrivers.forEach(driver => {
+    //   console.log(`  ${driver.name} - Rarity: ${driver.rarity} - ID: ${driver.id}`)
+    // })
 
     if (processedDrivers.length > 0) {
       const driverResults = await processItems(processedDrivers, 'drivers', 'id', allowModifications)
@@ -243,7 +329,8 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         visual_override: part.visualOverride || null,
         collection_sub_name: part.collectionSubName || null,
         car_part_type: part.carPartType || 0,
-        stats_per_level: part.carPartStatsPerLevel || []
+        stats_per_level: part.carPartStatsPerLevel || [],
+        season_id: seasonIdMap[part.season] || null
       }))
 
     if (carParts.length > 0) {
@@ -360,19 +447,55 @@ async function processItems(items: any[], tableName: string, idField: string, al
 
 // Helper function to get existing items from database
 async function getExistingItems(items: any[], tableName: string, idField: string) {
-  const ids = items.map(item => item[idField])
-  
+  const ids = items.map(item => item[idField]).filter(Boolean)
+
+  if (ids.length === 0) return []
+
+  // Split into batches to avoid creating extremely long URIs for the Supabase
+  // REST requests when many ids are passed to `.in()`.
+  // Use 50 to be safe with UUID-length IDs
+  const BATCH_SIZE = 50
+  const batches: string[][] = []
+  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+    batches.push(ids.slice(i, i + BATCH_SIZE))
+  }
+
+  let merged: any[] = []
+
+  for (const batch of batches) {
+    try {
   const { data, error } = await supabaseAdmin
     .from(tableName)
     .select('*')
-    .in(idField, ids)
+        .in(idField, batch)
 
   if (error) {
-    console.error(`Error fetching existing ${tableName}:`, error)
-    return []
+        console.error(`Error fetching existing ${tableName} for batch:`, error)
+        // Continue with other batches rather than aborting entirely
+        continue
+      }
+
+      if (Array.isArray(data)) {
+        merged = merged.concat(data)
+      }
+    } catch (err) {
+      console.error(`Unexpected error fetching existing ${tableName} for batch:`, err)
+    }
   }
 
-  return data || []
+  // Remove duplicates just in case
+  const seen = new Set()
+  const unique = []
+  for (const row of merged) {
+    const key = row && row[idField]
+    if (!key) continue
+    if (!seen.has(key)) {
+      seen.add(key)
+      unique.push(row)
+    }
+  }
+
+  return unique
 }
 
 // Helper function to detect changes between existing and new items

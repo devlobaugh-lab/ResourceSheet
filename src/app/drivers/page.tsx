@@ -11,6 +11,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useAuth } from '@/components/auth/AuthContext'
 import { useToast } from '@/components/ui/Toast'
 import Link from 'next/link'
+import { getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils'
 
 function AuthenticatedDriversPage() {
   const { data: driversResponse, isLoading, error } = useUserDrivers({
@@ -124,7 +125,7 @@ function AuthenticatedDriversPage() {
   };
 
   // Handle adding driver to compare
-  const handleAddToCompare = (driver: { id: string; name: string; level: number; rarity: number }) => {
+  const handleAddToCompare = (driver: any) => {
     try {
       // Get existing compare drivers from localStorage
       const stored = localStorage.getItem('compare-drivers-settings')
@@ -151,7 +152,8 @@ function AuthenticatedDriversPage() {
         // Show toast notification
         addToast(`${driver.name} added to compare page`, 'success')
       } else {
-        addToast(`${driver.name} (${getRarityDisplay(driver.rarity)}) is already in compare list`, 'warning')
+        const label = driver.rarity === 5 ? getCollectionRarityDisplay(driver.collection_theme ?? null, driver.collection_sub_name ?? null) : getRarityDisplay(driver.rarity)
+        addToast(`${driver.name} (${label}) is already in compare list`, 'warning')
       }
     } catch (error) {
       console.warn('Failed to add driver to compare:', error)
@@ -173,18 +175,7 @@ function AuthenticatedDriversPage() {
     }
   };
 
-  // Helper function to get rarity display name
-  const getRarityDisplay = (rarity: number): string => {
-    const rarityMap: Record<number, string> = {
-      0: 'Basic',
-      1: 'Common',
-      2: 'Rare',
-      3: 'Epic',
-      4: 'Legendary',
-      5: 'Special Edition'
-    }
-    return rarityMap[rarity] || 'Unknown'
-  };
+  // shared rarity helpers imported above
 
   // Apply filters to the data
   const filteredDrivers = useMemo(() => {
