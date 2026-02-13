@@ -73,100 +73,6 @@ export interface Database {
           updated_at?: string
         }
       }
-      catalog_items: {
-        Row: {
-          id: string
-          name: string
-          card_type: number // 0 = car part, 1 = driver
-          rarity: number
-          series: number
-          season_id: string | null
-          icon: string | null
-          cc_price: number | null
-          num_duplicates_after_unlock: number | null
-          collection_id: string | null
-          visual_override: string | null
-          collection_sub_name: string | null
-          car_part_type: number | null
-          tag_name: string | null
-          ordinal: number | null
-          min_gp_tier: number | null
-          stats_per_level: StatsPerLevel
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          card_type: number
-          rarity: number
-          series: number
-          season_id?: string | null
-          icon?: string | null
-          cc_price?: number | null
-          num_duplicates_after_unlock?: number | null
-          collection_id?: string | null
-          visual_override?: string | null
-          collection_sub_name?: string | null
-          car_part_type?: number | null
-          tag_name?: string | null
-          ordinal?: number | null
-          min_gp_tier?: number | null
-          stats_per_level?: StatsPerLevel
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          card_type?: number
-          rarity?: number
-          series?: number
-          season_id?: string | null
-          icon?: string | null
-          cc_price?: number | null
-          num_duplicates_after_unlock?: number | null
-          collection_id?: string | null
-          visual_override?: string | null
-          collection_sub_name?: string | null
-          car_part_type?: number | null
-          tag_name?: string | null
-          ordinal?: number | null
-          min_gp_tier?: number | null
-          stats_per_level?: StatsPerLevel
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      user_items: {
-        Row: {
-          id: string
-          user_id: string
-          catalog_item_id: string
-          level: number
-          card_count: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          catalog_item_id: string
-          level?: number
-          card_count?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          catalog_item_id?: string
-          level?: number
-          card_count?: number
-          created_at?: string
-          updated_at?: string
-        }
-      }
       boosts: {
         Row: {
           id: string
@@ -578,8 +484,6 @@ export type Updates<T extends keyof Database['public']['Tables']> = Database['pu
 // Specific table types
 export type Season = Tables<'seasons'>
 export type Profile = Tables<'profiles'>
-export type CatalogItem = Tables<'catalog_items'>
-export type UserItem = Tables<'user_items'>
 export type Boost = Tables<'boosts'>
 export type BoostCustomName = Tables<'boost_custom_names'>
 export type UserBoost = Tables<'user_boosts'>
@@ -594,36 +498,6 @@ export type UserTrackGuide = Tables<'user_track_guides'> & {
 export type UserTrackGuideDriver = Tables<'user_track_guide_drivers'>
 
 // Business logic types
-export interface UserAssetView {
-  // From catalog_items
-  id: string
-  name: string
-  card_type: number
-  rarity: number
-  series: number
-  icon: string | null
-  cc_price: number | null
-  car_part_type: number | null
-  stats_per_level: any | null
-  tag_name: string | null
-  collection_id: string | null
-  visual_override: string | null
-  collection_sub_name: string | null
-  ordinal: number | null
-  min_gp_tier: number | null
-  num_duplicates_after_unlock: number | null
-
-  // Collection fields attached by API
-  collection_theme?: string | null
-  collection_ordinal?: number | null
-
-  // From user_items (or defaults if not owned)
-  level: number
-  card_count: number
-  is_owned: boolean // derived: level > 0 || card_count > 0
-}
-
-// New specific asset types
 export interface DriverView {
   // From drivers
   id: string

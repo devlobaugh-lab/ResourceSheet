@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { UserAssetView, CatalogItem, UserItem, Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup, Track } from '@/types/database'
+import type { Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup, Track } from '@/types/database'
 import type { PaginationMeta } from '@/types/api'
 
 // API base URL
@@ -97,107 +97,6 @@ export function useUserDrivers(filters?: {
       return response.json()
     },
     staleTime: 30 * 1000, // 30 seconds
-  })
-}
-
-// Fetch user assets (merged catalog + user data)
-export function useUserAssets(filters?: {
-  season_id?: string
-  card_type?: number
-  rarity?: number
-  series?: number
-  search?: string
-  owned_only?: boolean
-  sort_by?: string
-  sort_order?: 'asc' | 'desc'
-  page?: number
-  limit?: number
-}) {
-  return useQuery({
-    queryKey: ['user-assets', filters],
-    queryFn: async (): Promise<{ data: UserAssetView[]; pagination: PaginationMeta }> => {
-      const params = new URLSearchParams()
-
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined) {
-            params.append(key, value.toString())
-          }
-        })
-      }
-
-      const response = await fetch(`${API_BASE}/user-assets?${params}`, {
-        headers: await getAuthHeaders(),
-        credentials: 'same-origin'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch user assets')
-      }
-
-      return response.json()
-    },
-    staleTime: 30 * 1000, // 30 seconds
-  })
-}
-
-// Fetch catalog items
-export function useCatalogItems(filters?: {
-  season_id?: string
-  card_type?: number
-  rarity?: number
-  series?: number
-  search?: string
-  page?: number
-  limit?: number
-}) {
-  return useQuery({
-    queryKey: ['catalog-items', filters],
-    queryFn: async () => {
-      const params = new URLSearchParams()
-
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined) {
-            // Handle numeric values properly
-            if (typeof value === 'number') {
-              params.append(key, value.toString())
-            } else {
-              params.append(key, value)
-            }
-          }
-        })
-      }
-
-      const response = await fetch(`${API_BASE}/catalog-items?${params}`)
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch catalog items')
-      }
-
-      return response.json()
-    },
-    staleTime: 60 * 1000, // 1 minute
-  })
-}
-
-// Fetch user items
-export function useUserItems() {
-  return useQuery({
-    queryKey: ['user-items'],
-    queryFn: async () => {
-      const response = await fetch(`${API_BASE}/user-items`, {
-        headers: await getAuthHeaders(),
-        credentials: 'same-origin'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch user items')
-      }
-
-      return response.json()
-    },
-    staleTime: 30 * 1000,
   })
 }
 
@@ -382,86 +281,6 @@ export function useSeasons(filters?: {
       return response.json()
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-  })
-}
-
-// Update user item mutation
-export function useUpdateUserItem() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { level?: number; card_count?: number } }) => {
-      const response = await fetch(`${API_BASE}/user-items/${id}`, {
-        method: 'PUT',
-        headers: await getAuthHeaders(),
-        credentials: 'same-origin',
-        body: JSON.stringify(data),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to update user item')
-      }
-
-      return response.json()
-    },
-    onSuccess: () => {
-      // Invalidate and refetch user items and user assets
-      queryClient.invalidateQueries({ queryKey: ['user-items'] })
-      queryClient.invalidateQueries({ queryKey: ['user-assets'] })
-    },
-  })
-}
-
-// Add user item mutation
-export function useAddUserItem() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (data: { catalog_item_id: string; level?: number; card_count?: number }) => {
-      const response = await fetch(`${API_BASE}/user-items`, {
-        method: 'POST',
-        headers: await getAuthHeaders(),
-        credentials: 'same-origin',
-        body: JSON.stringify(data),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to add user item')
-      }
-
-      return response.json()
-    },
-    onSuccess: () => {
-      // Invalidate and refetch user items and user assets
-      queryClient.invalidateQueries({ queryKey: ['user-items'] })
-      queryClient.invalidateQueries({ queryKey: ['user-assets'] })
-    },
-  })
-}
-
-// Delete user item mutation
-export function useDeleteUserItem() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const response = await fetch(`${API_BASE}/user-items/${id}`, {
-        method: 'DELETE',
-        headers: await getAuthHeaders(),
-        credentials: 'same-origin'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to delete user item')
-      }
-
-      return response.json()
-    },
-    onSuccess: () => {
-      // Invalidate and refetch user items and user assets
-      queryClient.invalidateQueries({ queryKey: ['user-items'] })
-      queryClient.invalidateQueries({ queryKey: ['user-assets'] })
-    },
   })
 }
 
