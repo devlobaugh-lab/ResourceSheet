@@ -203,6 +203,15 @@ node scripts/unified_data_processor.js
 ## [Unreleased]
 
 ### Added
+### Cleanup - 2026-02-13
+- **Deprecated Tables Removed**: Dropped `catalog_items` and `user_items` tables from database
+- **Deprecated API Routes Deleted**: Removed `/api/catalog-items`, `/api/user-items`, and `/api/user-assets` endpoints
+- **Frontend Cleanup**: Removed deprecated hooks (`useCatalogItems`, `useUserItems`, `useUserAssets`) from useApi.ts
+- **TypeScript Types Updated**: Removed deprecated table types from database.ts
+- **Consolidated Migration**: Created new `20260213000000_consolidated_initial_schema.sql` with clean schema
+- **Database Backups**: Created full, user-data, and global-data backups before cleanup
+- **Field Naming**: Verified `collection_sub_name` field is consistent across database and API
+
 - **Track Guide Auto-save**: Automatic saving when switching between GP levels
   - Smart saving logic that only saves when there's meaningful data
   - User feedback with loading spinners during save operations
