@@ -231,7 +231,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
     if (collections.length > 0) {
       console.log(`📦 Processing ${collections.length} collections...`);
       console.log('📋 Collections to import:');
-      collections.forEach((coll, i) => {
+      collections.forEach((coll: { id: string; theme: string | null; name: string | null; ordinal: number | null }, i: number) => {
         console.log(`  ${i + 1}. ID: ${coll.id}, Theme: '${coll.theme}', Name: '${coll.name}', Ordinal: ${coll.ordinal}`);
       });
       

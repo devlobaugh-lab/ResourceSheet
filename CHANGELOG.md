@@ -203,6 +203,24 @@ node scripts/unified_data_processor.js
 ## [Unreleased]
 
 ### Added
+
+### Hosting & Deployment Documentation
+- **VERCEL_HOSTING.md**: Complete guide for deploying to Vercel with Supabase Cloud
+  - Step-by-step Supabase project setup
+  - Vercel deployment with GitHub integration
+  - Environment variable configuration
+  - CI/CD setup (automatic deployments)
+  - Custom domain support
+  - Cost analysis (Free tier usage)
+- **SELF_HOSTING.md**: Complete guide for self-hosting the application
+  - Option A: Full self-hosted (PostgreSQL + Next.js)
+  - Option B: Hybrid (Supabase Cloud + self-hosted frontend)
+  - PM2 process management setup
+  - Nginx reverse proxy configuration
+  - Let's Encrypt HTTPS setup
+  - Git-based CI/CD deployment
+  - Cost comparison between options
+
 ### Cleanup - 2026-02-13
 - **Deprecated Tables Removed**: Dropped `catalog_items` and `user_items` tables from database
 - **Deprecated API Routes Deleted**: Removed `/api/catalog-items`, `/api/user-items`, and `/api/user-assets` endpoints

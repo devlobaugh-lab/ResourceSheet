@@ -352,7 +352,10 @@ The Rarity-5 variants implementation is now complete and production-ready. The s
 
 ### Deployment Preparation
 
-- [ ] Create deployment checklist
+- [x] Create deployment checklist (see VERCEL_HOSTING.md and SELF_HOSTING.md)
+- [x] Document hosting options for price-conscious deployment
+- [x] Create Vercel deployment guide (VERCEL_HOSTING.md)
+- [x] Create self-hosting guide (SELF_HOSTING.md)
 - [ ] Set up production environment
 - [ ] Configure CI/CD pipeline
 - [ ] Implement monitoring and logging

@@ -311,11 +311,11 @@ export function DataGrid({
 
     let stats: Array<{ [key: string]: number }> | null = null;
     if ('is_driver' in item && item.is_driver && (item as DriverView).stats_per_level) {
-      stats = (item as DriverView).stats_per_level;
+      stats = (item as DriverView).stats_per_level as unknown as Array<{ [key: string]: number }>;
     } else if ('is_car_part' in item && item.is_car_part && (item as CarPartView).stats_per_level) {
-      stats = (item as CarPartView).stats_per_level;
+      stats = (item as CarPartView).stats_per_level as unknown as Array<{ [key: string]: number }>;
     } else if ('is_asset' in item && item.is_asset && (item as UserAssetView).stats_per_level) {
-      stats = (item as UserAssetView).stats_per_level;
+      stats = (item as UserAssetView).stats_per_level as unknown as Array<{ [key: string]: number }>;
     }
 
     let baseValue = 0;
@@ -1011,11 +1011,11 @@ export function DataGrid({
 
                 let stats: Array<{ [key: string]: number }> | null = null;
                 if (isAsset && (catalogItem as UserAssetView).stats_per_level && Array.isArray((catalogItem as UserAssetView).stats_per_level)) {
-                  stats = (catalogItem as UserAssetView).stats_per_level;
+                  stats = (catalogItem as UserAssetView).stats_per_level as unknown as Array<{ [key: string]: number }>;
                 } else if (isDriver && (catalogItem as DriverView).stats_per_level && Array.isArray((catalogItem as DriverView).stats_per_level)) {
-                  stats = (catalogItem as DriverView).stats_per_level;
+                  stats = (catalogItem as DriverView).stats_per_level as unknown as Array<{ [key: string]: number }>;
                 } else if (isCarPart && (catalogItem as CarPartView).stats_per_level && Array.isArray((catalogItem as CarPartView).stats_per_level)) {
-                  stats = (catalogItem as CarPartView).stats_per_level;
+                  stats = (catalogItem as CarPartView).stats_per_level as unknown as Array<{ [key: string]: number }>;
                 }
 
                 let baseValue = 0;

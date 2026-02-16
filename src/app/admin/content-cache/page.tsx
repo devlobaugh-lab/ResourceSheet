@@ -100,7 +100,7 @@ export default function AdminContentCachePage() {
     }
 
     if (!seasonFilter.trim()) {
-      addToast('Please specify season filter (e.g., "2,3,4,5" or "6")', 'error');
+      addToast('Please specify season filter (e.g., &quot;2,3,4,5&quot; or &quot;6&quot;)', 'error');
       return;
     }
 
@@ -340,10 +340,10 @@ export default function AdminContentCachePage() {
             {uploadResult ? (
               <Card className={`p-6 ${allowModifications ? 'border-yellow-200' : 'border-green-200'}`}>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                    <AlertCircle className={`w-5 h-5 mr-2 ${allowModifications ? 'text-yellow-600' : 'text-green-600'}`} />
-                    {allowModifications ? 'Override Mode Results' : 'Upload Results'}
-                  </h2>
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                  <AlertCircle className={`w-5 h-5 mr-2 ${allowModifications ? 'text-yellow-600' : 'text-green-600'}`} />
+                  {allowModifications ? 'Override Mode Results' : 'Upload Results'}
+                </h2>
                   <button
                     onClick={() => setUploadResult(null)}
                     className="text-gray-600 hover:text-gray-800 text-sm"
@@ -478,7 +478,7 @@ export default function AdminContentCachePage() {
                     <h4 className="font-medium text-gray-900 mb-2">Update Process:</h4>
                     <ol className="list-decimal list-inside space-y-1">
                       <li>Download latest content_cache.json from the game</li>
-                      <li>Specify which seasons to import (e.g., "2,3,4,5" or "6")</li>
+                      <li>Specify which seasons to import (e.g., &quot;2,3,4,5&quot; or &quot;6&quot;)</li>
                       <li>Upload the file - system processes and imports new content only</li>
                       <li>Review change detection report for any data differences</li>
                     </ol>

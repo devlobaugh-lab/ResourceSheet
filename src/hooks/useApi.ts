@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup, Track } from '@/types/database'
+import type { Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup, Track, CatalogItem } from '@/types/database'
 import type { PaginationMeta } from '@/types/api'
 
 // API base URL
@@ -297,7 +297,7 @@ export function useUserCarSetups() {
       // If no auth header, the user might not be logged in yet
       if (!headers.Authorization) {
         console.log('No auth header found for setups - user may not be logged in')
-        return { data: [], pagination: { total: 0 } }
+        return { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } }
       }
 
       const response = await fetch(`${API_BASE}/setups`, {
@@ -544,6 +544,39 @@ export function useDeleteTrack() {
     onSuccess: () => {
       // Invalidate and refetch tracks
       queryClient.invalidateQueries({ queryKey: ['tracks'] })
+    },
+  })
+}
+
+// Deprecated hooks - kept for backward compatibility with old components
+// The catalog_items table has been removed, these hooks return empty data
+export function useCatalogItems() {
+  return useQuery<CatalogItem[]>({
+    queryKey: ['catalog-items-deprecated'],
+    queryFn: async () => {
+      // Return empty array - the old catalog_items table no longer exists
+      return [] as CatalogItem[]
+    },
+    staleTime: Infinity, // Never refetch deprecated data
+  })
+}
+
+export function useAddUserItem() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (data: {
+      catalog_item_id: string
+      level: number
+      card_count: number
+    }) => {
+      // This function is deprecated - the catalog_items table no longer exists
+      // Return a mock success response
+      console.warn('useAddUserItem is deprecated - catalog_items table has been removed')
+      return { success: true, ...data }
+    },
+    onSuccess: () => {
+      // No-op since we're not actually updating anything
     },
   })
 }

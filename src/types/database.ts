@@ -561,6 +561,7 @@ export interface BoostView {
   // From user_boosts (or defaults if not owned)
   level: number
   count: number
+  card_count: number // Alias for count (kept for backward compatibility)
   is_owned: boolean // derived: level > 0
 }
 
@@ -605,4 +606,34 @@ export interface StatLevel {
   pitStopTime: number
   cardsToUpgrade: number
   softCurrencyToUpgrade: number
+}
+
+// Deprecated types - kept for backward compatibility with old components
+// These types were from the old catalog_items table which has been removed
+export interface CatalogItem {
+  id: string
+  name: string
+  rarity: number
+  series: number
+  card_type: number // 0 = car part, 1 = driver
+  stats_per_level: StatsPerLevel
+  // Additional properties used by old components
+  icon: string | null
+  cc_price: number | null
+  num_duplicates_after_unlock: number | null
+  collection_id: string | null
+  visual_override: string | null
+  collection_sub_name: string | null
+  collection_theme: string | null
+  tag_name: string | null
+  min_gp_tier: number | null
+  ordinal: number | null
+  car_part_type: number | null
+  season_id: string | null
+}
+
+export interface UserAssetView extends CatalogItem {
+  level: number
+  card_count: number
+  is_owned: boolean
 }

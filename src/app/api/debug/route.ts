@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authProvider } from '@/lib/auth'
+import { createAuthProvider } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
 
     // Test auth provider
     console.log('🔍 Testing auth provider...')
+    const authProvider = createAuthProvider()
     const { user, error } = await authProvider.getUser(request)
 
     console.log('🔍 Auth provider result:', {
