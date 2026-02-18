@@ -127,6 +127,12 @@ export function ClientNavigation() {
               Track Guides
             </Link>
             <Link
+              href="/gp-guides"
+              className="px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              GP Guides
+            </Link>
+            <Link
               href="/compare/drivers"
               className="px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
             >
@@ -184,6 +190,12 @@ export function ClientNavigation() {
             className="block px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50"
           >
             Track Guides
+          </Link>
+          <Link
+            href="/gp-guides"
+            className="block px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+          >
+            GP Guides
           </Link>
           <Link
             href="/compare/drivers"

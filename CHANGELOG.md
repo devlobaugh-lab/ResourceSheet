@@ -202,6 +202,44 @@ node scripts/unified_data_processor.js
 
 ## [Unreleased]
 
+### Added - GP Guide Feature (2026-02-17)
+
+#### Database
+- New `user_gp_guides` table: stores GP guide header (name, start_date, gp_level, notes, weekend_strategy_same toggle)
+- New `user_gp_guide_tracks` table: stores race slots (qualifying 1-4, opening/final 1-8) with track, conditions (wet/dry), drivers, boosts, setup, and tire strategy data
+- New `user_gp_guide_results` table: stores per-track results notes shared across qualifying/opening/final appearances of the same track
+- Full RLS policies, performance indexes, and updated_at triggers for all three tables
+- Migration file: `supabase/migrations/20260217000000_create_gp_guides_tables.sql`
+
+#### API Routes
+- `GET/POST /api/gp-guides` — List and create GP guides; POST auto-creates 12 empty track slots (4 qualifying + 8 opening)
+- `GET/PUT/DELETE /api/gp-guides/[id]` — Full guide retrieval with joined data, header updates, cascading delete; PUT handles creating Final Round slots when weekend_strategy_same is toggled off
+- `PUT /api/gp-guides/[id]/tracks/[slotId]` — Update individual race track slots with all strategy fields
+- `GET /api/gp-guides/[id]/import/[trackId]` — Read-only import of a Track Guide for a track at the GP's level; `is_wet` query param selects wet or dry tire strategy
+- `PUT /api/gp-guides/[id]/results/[trackId]` — Upsert per-track results notes
+
+#### TypeScript Types
+- Added `user_gp_guides`, `user_gp_guide_tracks`, `user_gp_guide_results` to `Database` interface in `src/types/database.ts`
+- Exported `UserGpGuide`, `UserGpGuideTrack`, `UserGpGuideResult` type aliases
+
+#### Frontend Pages
+- `/gp-guides` — List page: table of all GP guides with Name, Start Date, GP Level badge, Notes preview, View/Edit and Delete actions; inline "Create New GP Guide" form
+- `/gp-guides/[id]` — Full GP Guide editor:
+  - Header: editable Name, Start Date, GP Level, Notes (Boosted Assets / Bonus Requirements & Rewards)
+  - Qualifying Rounds section (4 race slots) with "Import All Track Guides" bulk button
+  - Opening/Final round toggle ("same strategy" default) — toggling off auto-creates Final Round slots from Opening Round
+  - Opening Round section (8 race slots) and optional Final Round section (8 race slots)
+  - Each track slot: track selector, ☀️/🌧️ wet/dry toggle, "📥 Import Track Guide" button, expandable strategy fields (Driver 1 & 2 with boost & tire strat, setup, setup notes, strategy notes)
+  - Race Results Notes section: per unique track, shared across qualifying/opening/final appearances
+  - "📋 Condensed View" toggle showing one-sheet summary (Race#, Track, Laps, Stats, Setup, D1/D2 with boost & tyre strat)
+  - "🖨️ Print" button in condensed mode; @media print CSS hides nav/buttons for clean output
+
+#### Navigation
+- "GP Guides" added to both desktop and mobile navigation (between Track Guides and Compare)
+
+#### Print Support
+- Added `@media print` CSS to `globals.css` hiding nav/buttons and optimizing font sizes for GP Guide print output
+
 ### Added
 
 ### Hosting & Deployment Documentation

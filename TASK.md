@@ -308,14 +308,42 @@ The Rarity-5 variants implementation is now complete and production-ready. The s
 
 **No further work required** - the implementation is complete and fully functional.
 
-### GP Guide
+### GP Guide - ✅ COMPLETE
 
-- [ ] User can setup a GP with data and by choosing tracks that will be involved. 
-- [ ] will show Bonus, and boosted drivers and parts
-- [ ] User can then take the basic setups for the tracks and adjust accordingly (app will highlight boosted #s and will show if RP bonus is not achieved)
-- [ ] User can create a "one sheet" guide for a GP once they have tweaked each track's strategy
-- [ ] User can input notes about performance (Quali position, PvP or bot, PVP boosts used, final result, other notes like safety car, etc.)
-- [ ] Have way for user to update their main track guides based on what they learned from a GP
+- [x] User can create a GP guide with Name, Start Date, GP Level, and Notes (boosted assets, bonus requirements & rewards)
+- [x] User sets up qualifying tracks (4 races) and weekend tracks (8 races each for Opening/Final rounds)
+- [x] Wet/Dry toggle per track slot — determines which tire strategy is imported from Track Guide
+- [x] Import single track guide or bulk-import all track guides per section (qualifying/opening/final)
+- [x] Strategy fields per track: Driver 1 & 2 with boost and tire strategy, car setup, setup notes, strategy notes
+- [x] Opening/Final round toggle — "same strategy" (default) or separate strategies per round
+- [x] When toggled to separate strategies, Final Round slots are auto-created from Opening Round data
+- [x] User can input results notes per track (shared across qualifying/opening/final appearances of the same track)
+- [x] Condensed "one sheet" view showing all races in compact format (Driver, Boost, Tyre Strat)
+- [x] Print-friendly output via browser print (window.print) with @media print CSS
+- [x] GP Guides added to both desktop and mobile navigation
+- [x] Full CRUD: create, list, edit, delete GP guides
+- [x] All changes do NOT affect original track guides (read-only import)
+
+#### Database Schema - GP Guides
+- [x] `user_gp_guides` table: id, user_id, name, start_date, gp_level, notes, weekend_strategy_same
+- [x] `user_gp_guide_tracks` table: race slots with track, conditions, driver/boost/setup/tire strategy data
+- [x] `user_gp_guide_results` table: per-track results notes shared across race types
+- [x] RLS policies for all three tables
+- [x] Migration: `supabase/migrations/20260217000000_create_gp_guides_tables.sql`
+
+#### API Endpoints - GP Guides
+- [x] `GET /api/gp-guides` — List user's GP guides
+- [x] `POST /api/gp-guides` — Create new guide (auto-creates 12 empty track slots)
+- [x] `GET /api/gp-guides/[id]` — Full guide with tracks, results, and joined data
+- [x] `PUT /api/gp-guides/[id]` — Update header; handles toggle creating Final Round slots
+- [x] `DELETE /api/gp-guides/[id]` — Delete guide (cascades)
+- [x] `PUT /api/gp-guides/[id]/tracks/[slotId]` — Update a track slot
+- [x] `GET /api/gp-guides/[id]/import/[trackId]` — Fetch track guide data for import (wet/dry aware)
+- [x] `PUT /api/gp-guides/[id]/results/[trackId]` — Upsert per-track results notes
+
+#### Frontend Pages
+- [x] `/gp-guides` — List page with create form and guide table
+- [x] `/gp-guides/[id]` — Editor with all sections: header, qualifying, opening/final, results, condensed view
 
 ### Add User Notes and Guidance
 
