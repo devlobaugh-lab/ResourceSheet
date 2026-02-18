@@ -202,6 +202,48 @@ node scripts/unified_data_processor.js
 
 ## [Unreleased]
 
+### Added - Car Setups Page Refactor (2026-02-18)
+
+#### New Components
+- **CarPartSelectionGrid Component**: Reusable modal-ready grid for selecting car parts
+  - Filter by part type (Brake, Gearbox, Engine, Suspension, Front Wing, Rear Wing)
+  - Color-coded stats (green=best, red=worst within part type)
+  - Search, Max Series filter, Highest Level toggle
+  - Single-select mode with radio buttons
+  - Bonus checkbox per part for bonus percentage calculations
+  - Sortable columns with visual indicators
+
+#### Page Refactor - Car Setups (`/setups`)
+- **In-Place Card Editing**: Click any part slot on the card to open selection modal
+  - Pencil icon appears on hover as visual indicator
+  - No separate edit/view modes - card is always editable
+  - Inline name editing directly on card
+- **Side-by-Side Comparison**: Two setup card slots (A and B) displayed side by side
+  - Both slots independently editable
+  - Load saved setups into either slot via "Load A" / "Load B" buttons
+  - Fixed card width (max-w-md) - no stretching when only one slot in use
+- **Notes on Card**: 2-row textarea for free-text notes at bottom of each setup card
+- **Part Selection Modal**: Full modal with comparison grid when selecting parts
+  - Shows all parts of selected type with stats
+  - Bonus checkbox directly in selection modal
+  - Done button to confirm selection
+- **Suggested Setups Feature**: Auto-generate optimal setups based on criteria
+  - 8 setup types: Speed, Cornering, Power Unit, Speed + Quali, Cornering + Quali, PU + Quali, Speed + Cornering, Speed + Cornering + Quali
+  - Max Series filter for eligible parts
+  - Highest Level toggle (use current level or potential max level)
+  - Bonus percentage input
+  - Algorithm scores parts based on setup type:
+    - Pure types: maximize single stat
+    - +Quali combos: main stat + (qualifying × 0.8) for smart trade-offs
+    - Balanced combos: equal-weighted sum of primary stats
+  - Generated setup pre-loads into selected slot for further editing
+
+#### Technical Improvements
+- **No Database Migration Required**: All features use existing `user_car_setups` table schema
+- **Reusable Components**: CarPartSelectionGrid can be used in other contexts
+- **Type Safety**: Full TypeScript coverage for all new components
+- **Consistent Styling**: Matches existing card and modal patterns from Track Guides
+
 ### Added - GP Guide Feature (2026-02-17)
 
 #### Database
