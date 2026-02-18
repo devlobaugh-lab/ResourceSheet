@@ -536,7 +536,16 @@ export function useDeleteTrack() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to delete track')
+        // Try to parse the error message from the response body
+        try {
+          const errorData = await response.json()
+          throw new Error(errorData?.error?.message || 'Failed to delete track')
+        } catch (parseError) {
+          if (parseError instanceof SyntaxError) {
+            throw new Error('Failed to delete track')
+          }
+          throw parseError
+        }
       }
 
       return response.json()

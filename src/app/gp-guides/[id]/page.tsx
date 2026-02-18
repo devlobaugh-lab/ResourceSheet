@@ -19,9 +19,9 @@ export const dynamic = 'force-dynamic'
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const GP_LEVELS = [
-  { id: 0, name: 'Junior', color: 'bg-blue-100 text-blue-800', seriesMax: 3 },
-  { id: 1, name: 'Challenger', color: 'bg-green-100 text-green-800', seriesMax: 6 },
-  { id: 2, name: 'Contender', color: 'bg-yellow-100 text-yellow-800', seriesMax: 9 },
+  { id: 0, name: 'Junior', color: 'bg-yellow-100 text-yellow-800', seriesMax: 3 },
+  { id: 1, name: 'Challenger', color: 'bg-blue-100 text-blue-800', seriesMax: 6 },
+  { id: 2, name: 'Contender', color: 'bg-green-100 text-green-800', seriesMax: 9 },
   { id: 3, name: 'Champion', color: 'bg-red-100 text-red-800', seriesMax: 12 },
 ]
 
@@ -246,7 +246,7 @@ function TrackSlotCard({
         {slot.track_id && (
           <Button variant="outline" size="sm" disabled={importingSlotId === slot.id}
             onClick={() => onImport(slot.id, slot.track_id!, slot.is_wet)} className="text-xs">
-            {importingSlotId === slot.id ? '⏳ Importing…' : '📥 Import Track Guide'}
+            {importingSlotId === slot.id ? 'Importing…' : '↓ Import Track Guide'}
           </Button>
         )}
         {/* Completion badge */}
@@ -591,26 +591,40 @@ export default function GpGuideEditorPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto py-0 px-4 sm:px-6 lg:px-8">
           {toast && (
             <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium ${toast.type === 'error' ? 'bg-red-600' : 'bg-green-600'}`}>
               {toast.msg}
             </div>
           )}
 
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Link href="/gp-guides" className="hover:text-blue-600">GP Guides</Link>
-              <span>›</span>
-              <span className="text-gray-900 font-medium">{guide.name}</span>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setShowCondensed(v => !v)}>
-                {showCondensed ? '✏️ Edit Mode' : '📋 Condensed View'}
-              </Button>
-              {showCondensed && (
-                <Button variant="outline" size="sm" onClick={() => window.print()}>🖨️ Print</Button>
-              )}
+          {/* Header — matches Track Guide style */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">{guide.name}</h1>
+                <div className="flex items-center gap-3 mt-1">
+                  {guide.start_date && (
+                    <span className="text-lg text-gray-600">
+                      {new Date(guide.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  )}
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-base font-medium ${gpLevel.color}`}>
+                    {gpLevel.name}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowCondensed(v => !v)}>
+                  {showCondensed ? '✏️ Edit Mode' : '📋 Condensed View'}
+                </Button>
+                {showCondensed && (
+                  <Button variant="outline" size="sm" onClick={() => window.print()}>🖨️ Print</Button>
+                )}
+                <Link href="/gp-guides">
+                  <Button variant="outline">Back to Guides</Button>
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -637,7 +651,7 @@ export default function GpGuideEditorPage() {
                       <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">GP Level</label>
                       <select value={guide.gp_level} onChange={e => saveHeader({ gp_level: Number(e.target.value) })}
                         className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        {GP_LEVELS.map(l => <option key={l.id} value={l.id}>{l.name} (≤S{l.seriesMax})</option>)}
+                        {GP_LEVELS.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                       </select>
                     </div>
                   </div>
@@ -654,7 +668,7 @@ export default function GpGuideEditorPage() {
                 </div>
               </Card>
 
-              <SectionHeader title="Qualifying Rounds" subtitle="4 qualification races" raceType="qualifying" onBulkImport={handleBulkImport} bulkImporting={bulkImporting} />
+              <SectionHeader title="Qualifying Round" subtitle="4 qualification races" raceType="qualifying" onBulkImport={handleBulkImport} bulkImporting={bulkImporting} />
               <div className="mb-4">{qualifying.map(slot => <TrackSlotCard key={slot.id} slot={slot} {...sharedSlotProps} />)}</div>
 
               <Card className="p-3 mb-3 flex items-center gap-3 bg-gray-50 border border-gray-200">
@@ -726,7 +740,7 @@ function SectionHeader({ title, subtitle, raceType, onBulkImport, bulkImporting 
       </div>
       <Button variant="outline" size="sm" disabled={bulkImporting === raceType}
         onClick={() => onBulkImport(raceType)} className="text-xs">
-        {bulkImporting === raceType ? '⏳ Importing…' : '📥 Import All Track Guides'}
+        {bulkImporting === raceType ? 'Importing…' : '↓ Import All Track Guides'}
       </Button>
     </div>
   )
@@ -751,35 +765,28 @@ function CondensedView({ guide, allTracks, allDrivers, allBoosts, allSetups }: {
     const b2 = allBoosts.find(b => b.id === slot.driver_2_boost_id) || null
     const setup = allSetups.find(s => s.id === slot.saved_setup_id) || null
     return (
-      <div key={slot.id} className="mb-3 print:mb-2">
-        <div className="font-semibold text-sm text-gray-900">
+      <div key={slot.id} className="mb-4 print:mb-2 border-b border-gray-100 pb-2 last:border-0">
+        <div className="font-semibold text-base print:text-sm text-gray-900">
           {i + 1}. {track?.name || '?'} — {track?.laps || '?'} Laps
           {track ? ` · ${capitalizeStat(track.driver_track_stat)} / ${capitalizeStat(track.car_track_stat)}` : ''}
           {' '}{slot.is_wet ? '🌧️' : '☀️'}
         </div>
-        {setup && <div className="ml-4 text-xs text-gray-600"><strong>Setup:</strong> {setup.name}{slot.setup_notes ? ` — ${slot.setup_notes}` : ''}</div>}
-        {d1 && <div className="ml-4 text-xs text-gray-700"><strong>D1:</strong> {d1.name} ({RARITY_NAMES[d1.rarity] || `R${d1.rarity}`}){b1 ? ` — ${boostDisplayName(b1)}` : ''}{slot.driver_1_tire_strategy ? ` — ${slot.driver_1_tire_strategy}` : ''}</div>}
-        {d2 && <div className="ml-4 text-xs text-gray-700"><strong>D2:</strong> {d2.name} ({RARITY_NAMES[d2.rarity] || `R${d2.rarity}`}){b2 ? ` — ${boostDisplayName(b2)}` : ''}{slot.driver_2_tire_strategy ? ` — ${slot.driver_2_tire_strategy}` : ''}</div>}
-        {slot.strategy_notes && <div className="ml-4 text-xs text-gray-500 italic">{slot.strategy_notes}</div>}
+        {setup && <div className="ml-4 text-sm print:text-xs text-gray-600"><strong>Setup:</strong> {setup.name}{slot.setup_notes ? ` — ${slot.setup_notes}` : ''}</div>}
+        {d1 && <div className="ml-4 text-sm print:text-xs text-gray-700"><strong>D1:</strong> {d1.name} ({RARITY_NAMES[d1.rarity] || `R${d1.rarity}`}){b1 ? ` — ${boostDisplayName(b1)}` : ''}{slot.driver_1_tire_strategy ? ` — ${slot.driver_1_tire_strategy}` : ''}</div>}
+        {d2 && <div className="ml-4 text-sm print:text-xs text-gray-700"><strong>D2:</strong> {d2.name} ({RARITY_NAMES[d2.rarity] || `R${d2.rarity}`}){b2 ? ` — ${boostDisplayName(b2)}` : ''}{slot.driver_2_tire_strategy ? ` — ${slot.driver_2_tire_strategy}` : ''}</div>}
+        {slot.strategy_notes && <div className="ml-4 text-sm print:text-xs text-gray-500 italic">{slot.strategy_notes}</div>}
       </div>
     )
   })
 
   return (
     <div className="print:text-xs">
-      <div className="mb-4 pb-3 border-b border-gray-300">
-        <h1 className="text-2xl font-bold text-gray-900 print:text-xl">{guide.name}</h1>
-        <div className="flex gap-4 text-sm text-gray-600 mt-1">
-          {guide.start_date && <span>📅 {new Date(guide.start_date + 'T00:00:00').toLocaleDateString()}</span>}
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${gpLevel.color}`}>{gpLevel.name}</span>
+      {guide.notes && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-gray-800 whitespace-pre-line">
+          <strong>Notes:</strong> {guide.notes}
         </div>
-        {guide.notes && (
-          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-gray-800 whitespace-pre-line">
-            <strong>Notes:</strong> {guide.notes}
-          </div>
-        )}
-      </div>
-      {qualifying.length > 0 && <div className="mb-4"><h2 className="text-base font-bold text-gray-800 mb-2 border-b pb-1">Qualifying Rounds</h2>{renderSlots(qualifying)}</div>}
+      )}
+      {qualifying.length > 0 && <div className="mb-4"><h2 className="text-base font-bold text-gray-800 mb-2 border-b pb-1">Qualifying Round</h2>{renderSlots(qualifying)}</div>}
       {opening.length > 0 && <div className="mb-4"><h2 className="text-base font-bold text-gray-800 mb-2 border-b pb-1">Opening Round (Saturday)</h2>{renderSlots(opening)}</div>}
       {!guide.weekend_strategy_same && final.length > 0 && <div className="mb-4"><h2 className="text-base font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday)</h2>{renderSlots(final)}</div>}
       {guide.weekend_strategy_same && opening.length > 0 && <div className="mb-4"><h2 className="text-base font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday) — Same as Opening</h2><p className="text-xs text-gray-500 italic">Uses the same strategy as Opening Round above.</p></div>}

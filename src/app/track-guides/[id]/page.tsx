@@ -1001,7 +1001,10 @@ export default function TrackGuideEditorPage() {
               )}
               
               <div className="flex gap-2">
-                <Button variant="outline" className="w-full bg-white font-bold" onClick={() => setShowDriverModal(true)}>
+                <Button variant="outline" className="w-full bg-white font-bold" onClick={() => {
+                  setDriverSelectionMode('alternate')
+                  setShowDriverModal(true)
+                }}>
                   Select Alternatives ({(formData.alt_driver_ids || []).length}/6 selected)
                 </Button>
               </div>

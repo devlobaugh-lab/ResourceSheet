@@ -239,7 +239,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       // Foreign key constraint error - return conflict with helpful message
       if (error.message && error.message.includes('violates foreign key constraint')) {
         return NextResponse.json(
-          { error: { code: 'CONFLICT', message: 'Cannot delete track: dependent records exist' } },
+          { error: { code: 'CONFLICT', message: 'Cannot delete this track because it is referenced by one or more GP Guides or Track Guides. Remove all references to this track first, then try again.' } },
           { status: 409 }
         )
       }

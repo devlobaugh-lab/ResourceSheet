@@ -13,9 +13,9 @@ import { UserGpGuide } from '@/types/database'
 export const dynamic = 'force-dynamic'
 
 const GP_LEVELS = [
-  { id: 0, name: 'Junior', color: 'bg-blue-100 text-blue-800', seriesMax: 3 },
-  { id: 1, name: 'Challenger', color: 'bg-green-100 text-green-800', seriesMax: 6 },
-  { id: 2, name: 'Contender', color: 'bg-yellow-100 text-yellow-800', seriesMax: 9 },
+  { id: 0, name: 'Junior', color: 'bg-yellow-100 text-yellow-800', seriesMax: 3 },
+  { id: 1, name: 'Challenger', color: 'bg-blue-100 text-blue-800', seriesMax: 6 },
+  { id: 2, name: 'Contender', color: 'bg-green-100 text-green-800', seriesMax: 9 },
   { id: 3, name: 'Champion', color: 'bg-red-100 text-red-800', seriesMax: 12 },
 ]
 
@@ -116,7 +116,7 @@ export default function GpGuidesPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-6 flex items-start justify-between">
             <div>
@@ -182,7 +182,7 @@ export default function GpGuidesPage() {
                   >
                     {GP_LEVELS.map(level => (
                       <option key={level.id} value={level.id}>
-                        {level.name} (Series ≤{level.seriesMax})
+                        {level.name}
                       </option>
                     ))}
                   </select>
