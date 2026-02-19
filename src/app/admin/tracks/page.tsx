@@ -137,7 +137,8 @@ export default function AdminTracksPage() {
         await deleteTrack.mutateAsync(trackId);
         addToast('Track deleted successfully', 'success');
       } catch (error) {
-        addToast('Failed to delete track', 'error');
+        const message = error instanceof Error ? error.message : 'Failed to delete track'
+        addToast(message, 'error');
       }
     }
   };

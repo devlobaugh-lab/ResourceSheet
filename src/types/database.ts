@@ -431,6 +431,132 @@ export interface Database {
           updated_at?: string
         }
       }
+      user_gp_guides: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          start_date: string | null
+          gp_level: number
+          notes: string | null
+          weekend_strategy_same: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          start_date?: string | null
+          gp_level: number
+          notes?: string | null
+          weekend_strategy_same?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          start_date?: string | null
+          gp_level?: number
+          notes?: string | null
+          weekend_strategy_same?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      user_gp_guide_tracks: {
+        Row: {
+          id: string
+          gp_guide_id: string
+          track_id: string | null
+          race_number: number
+          race_type: 'qualifying' | 'opening' | 'final'
+          is_wet: boolean
+          driver_1_id: string | null
+          driver_2_id: string | null
+          driver_1_boost_id: string | null
+          driver_2_boost_id: string | null
+          alt_driver_ids: string[] | null
+          alt_boost_ids: string[] | null
+          saved_setup_id: string | null
+          setup_notes: string | null
+          driver_1_tire_strategy: string | null
+          driver_2_tire_strategy: string | null
+          strategy_notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          gp_guide_id: string
+          track_id?: string | null
+          race_number: number
+          race_type: 'qualifying' | 'opening' | 'final'
+          is_wet?: boolean
+          driver_1_id?: string | null
+          driver_2_id?: string | null
+          driver_1_boost_id?: string | null
+          driver_2_boost_id?: string | null
+          alt_driver_ids?: string[] | null
+          alt_boost_ids?: string[] | null
+          saved_setup_id?: string | null
+          setup_notes?: string | null
+          driver_1_tire_strategy?: string | null
+          driver_2_tire_strategy?: string | null
+          strategy_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          gp_guide_id?: string
+          track_id?: string | null
+          race_number?: number
+          race_type?: 'qualifying' | 'opening' | 'final'
+          is_wet?: boolean
+          driver_1_id?: string | null
+          driver_2_id?: string | null
+          driver_1_boost_id?: string | null
+          driver_2_boost_id?: string | null
+          alt_driver_ids?: string[] | null
+          alt_boost_ids?: string[] | null
+          saved_setup_id?: string | null
+          setup_notes?: string | null
+          driver_1_tire_strategy?: string | null
+          driver_2_tire_strategy?: string | null
+          strategy_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      user_gp_guide_results: {
+        Row: {
+          id: string
+          gp_guide_id: string
+          track_id: string
+          results_notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          gp_guide_id: string
+          track_id: string
+          results_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          gp_guide_id?: string
+          track_id?: string
+          results_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       user_track_guide_drivers: {
         Row: {
           id: string
@@ -496,6 +622,9 @@ export type UserTrackGuide = Tables<'user_track_guides'> & {
   alternate_driver_ids?: string[]
 }
 export type UserTrackGuideDriver = Tables<'user_track_guide_drivers'>
+export type UserGpGuide = Tables<'user_gp_guides'>
+export type UserGpGuideTrack = Tables<'user_gp_guide_tracks'>
+export type UserGpGuideResult = Tables<'user_gp_guide_results'>
 
 // Business logic types
 export interface DriverView {
