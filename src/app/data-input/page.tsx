@@ -8,7 +8,24 @@ import { useAuth } from '@/components/auth/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { DriverView, CarPartView, BoostWithCustomName } from '@/types/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { calculateHighestLevel, getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils';
+import { 
+  calculateHighestLevel, 
+  getRarityBackground, 
+  getRarityDisplay, 
+  getCollectionRarityDisplay,
+  calculateCardsToNextLevel,
+  calculateCardsToMaxLevel,
+  calculateGoldCostToHighestLevel,
+  calculateLegacyCostToHighestLevel,
+  calculateGoldToNextLevel,
+  calculateGoldToMaxLevel,
+  calculateLegacyToNextLevel,
+  calculateLegacyToMaxLevel,
+  getMaxLevelForRarity,
+  formatCompactNumber,
+  DriverStatsPerLevel,
+  CarPartStatsPerLevel
+} from '@/lib/utils';
 
 // Level range validation by rarity
 const LEVEL_RANGES = {
@@ -202,28 +219,67 @@ function DriversTab() {
         <table className="table divide-y divide-gray-200">
         <thead className="bg-gray-700 sticky top-0 z-10">
           <tr>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+            <th className="px-2 py-1 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
               Name
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+            <th className="px-2 py-1 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
               Rarity
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
               Series
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
               Level
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
               Amount
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-              Highest Level
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Highest<br/>Level
+            </th>
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Gold<br/>Cost
+            </th>
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Legacy<br/>Pts
+            </th>
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Cards<br/>- Next
+            </th>
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Gold<br/>- Next
+            </th>
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Legacy<br/>- Next
+            </th>
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Cards<br/>- Max
+            </th>
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Gold<br/>- Max
+            </th>
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Legacy<br/>- Max
             </th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {sortedDrivers.map((driver) => (
+          {sortedDrivers.map((driver) => {
+            const currentLevel = driver.level || 0;
+            const cardCount = driver.card_count || 0;
+            const highestLevel = calculateHighestLevel(currentLevel, cardCount, driver.rarity);
+            const statsPerLevel = driver.stats_per_level as DriverStatsPerLevel[] | undefined;
+            
+            const goldCost = calculateGoldCostToHighestLevel(currentLevel, highestLevel, statsPerLevel);
+            const legacyCost = calculateLegacyCostToHighestLevel(currentLevel, highestLevel, statsPerLevel);
+            const cardsToNext = calculateCardsToNextLevel(currentLevel, cardCount, highestLevel, driver.rarity, statsPerLevel);
+            const goldToNext = calculateGoldToNextLevel(highestLevel, driver.rarity, statsPerLevel);
+            const legacyToNext = calculateLegacyToNextLevel(highestLevel, driver.rarity, statsPerLevel);
+            const cardsToMax = calculateCardsToMaxLevel(currentLevel, cardCount, highestLevel, driver.rarity, statsPerLevel);
+            const goldToMax = calculateGoldToMaxLevel(currentLevel, cardCount, highestLevel, driver.rarity, statsPerLevel);
+            const legacyToMax = calculateLegacyToMaxLevel(currentLevel, cardCount, highestLevel, driver.rarity, statsPerLevel);
+            
+            return (
             <tr key={driver.id} className="hover:bg-gray-50 transition-colors">
               <td className={`px-3 py-1 whitespace-nowrap ${getRarityBackground(driver.rarity)}`}>
                 <div className="flex items-center">
@@ -288,12 +344,52 @@ function DriversTab() {
                 />
               </td>
               <td className="px-3 py-1 whitespace-nowrap text-center">
-                <div className={`text-sm text-gray-900 ${calculateHighestLevel(driver.level || 0, driver.card_count || 0, driver.rarity) > (driver.level || 0) ? 'text-red-600' : ''}`}>
-                  {calculateHighestLevel(driver.level || 0, driver.card_count || 0, driver.rarity)}
+                <div className={`text-sm text-gray-900 ${highestLevel > currentLevel ? 'text-red-600' : ''}`}>
+                  {highestLevel}
+                </div>
+              </td>
+              <td className="px-3 py-1 whitespace-nowrap text-center">
+                <div className="text-sm text-gray-900">
+                  {goldCost > 0 ? formatCompactNumber(goldCost) : '—'}
+                </div>
+              </td>
+              <td className="px-3 py-1 whitespace-nowrap text-center">
+                <div className="text-sm text-gray-900">
+                  {legacyCost > 0 ? formatCompactNumber(legacyCost) : '—'}
+                </div>
+              </td>
+              <td className="px-3 py-1 whitespace-nowrap text-center">
+                <div className="text-sm text-gray-900">
+                  {cardsToNext > 0 ? cardsToNext : '—'}
+                </div>
+              </td>
+              <td className="px-3 py-1 whitespace-nowrap text-center">
+                <div className="text-sm text-gray-900">
+                  {goldToNext > 0 ? formatCompactNumber(goldToNext) : '—'}
+                </div>
+              </td>
+              <td className="px-3 py-1 whitespace-nowrap text-center">
+                <div className="text-sm text-gray-900">
+                  {legacyToNext > 0 ? formatCompactNumber(legacyToNext) : '—'}
+                </div>
+              </td>
+              <td className="px-3 py-1 whitespace-nowrap text-center">
+                <div className="text-sm text-gray-900">
+                  {cardsToMax > 0 ? cardsToMax : '—'}
+                </div>
+              </td>
+              <td className="px-3 py-1 whitespace-nowrap text-center">
+                <div className="text-sm text-gray-900">
+                  {goldToMax > 0 ? formatCompactNumber(goldToMax) : '—'}
+                </div>
+              </td>
+              <td className="px-3 py-1 whitespace-nowrap text-center">
+                <div className="text-sm text-gray-900">
+                  {legacyToMax > 0 ? formatCompactNumber(legacyToMax) : '—'}
                 </div>
               </td>
             </tr>
-          ))}
+          )})}
         </tbody>
       </table>
     </div>
@@ -376,31 +472,58 @@ function PartsTab() {
         <table className="table divide-y divide-gray-200">
         <thead className="bg-gray-700 sticky top-0 z-10">
           <tr>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+            <th className="px-2 py-1 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
               Name
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+            <th className="px-2 py-1 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
               Rarity
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-              Part Type
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Part<br/>Type
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
               Series
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
               Level
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
               Amount
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-              Highest Level
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Highest<br/>Level
+            </th>
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Gold<br/>Cost
+            </th>
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Cards<br/>- Next
+            </th>
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Gold<br/>- Next
+            </th>
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Cards<br/>- Max
+            </th>
+            <th className="px-2 py-1 text-center text-xs font-medium text-gray-200 uppercase tracking-wider leading-tight">
+              Gold<br/>- Max
             </th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {sortedParts.map((part) => (
+          {sortedParts.map((part) => {
+            const currentLevel = part.level || 0;
+            const cardCount = part.card_count || 0;
+            const highestLevel = calculateHighestLevel(currentLevel, cardCount, part.rarity);
+            const statsPerLevel = part.stats_per_level as CarPartStatsPerLevel[] | undefined;
+            
+            const goldCost = calculateGoldCostToHighestLevel(currentLevel, highestLevel, statsPerLevel);
+            const cardsToNext = calculateCardsToNextLevel(currentLevel, cardCount, highestLevel, part.rarity, statsPerLevel);
+            const goldToNext = calculateGoldToNextLevel(highestLevel, part.rarity, statsPerLevel);
+            const cardsToMax = calculateCardsToMaxLevel(currentLevel, cardCount, highestLevel, part.rarity, statsPerLevel);
+            const goldToMax = calculateGoldToMaxLevel(currentLevel, cardCount, highestLevel, part.rarity, statsPerLevel);
+            
+            return (
             <tr key={part.id} className="hover:bg-gray-50 transition-colors">
               <td className={`px-3 py-1 whitespace-nowrap ${getRarityBackground(part.rarity)}`}>
                 <div className="flex items-center">
@@ -462,12 +585,37 @@ function PartsTab() {
                 />
               </td>
               <td className="px-3 py-1 whitespace-nowrap text-center">
-                <div className={`text-sm text-gray-900 ${calculateHighestLevel(part.level || 0, part.card_count || 0, part.rarity) > (part.level || 0) ? 'text-red-600' : ''}`}>
-                  {calculateHighestLevel(part.level || 0, part.card_count || 0, part.rarity)}
+                <div className={`text-sm text-gray-900 ${highestLevel > currentLevel ? 'text-red-600' : ''}`}>
+                  {highestLevel}
+                </div>
+              </td>
+              <td className="px-3 py-1 whitespace-nowrap text-center">
+                <div className="text-sm text-gray-900">
+                  {goldCost > 0 ? formatCompactNumber(goldCost) : '—'}
+                </div>
+              </td>
+              <td className="px-3 py-1 whitespace-nowrap text-center">
+                <div className="text-sm text-gray-900">
+                  {cardsToNext > 0 ? cardsToNext : '—'}
+                </div>
+              </td>
+              <td className="px-3 py-1 whitespace-nowrap text-center">
+                <div className="text-sm text-gray-900">
+                  {goldToNext > 0 ? formatCompactNumber(goldToNext) : '—'}
+                </div>
+              </td>
+              <td className="px-3 py-1 whitespace-nowrap text-center">
+                <div className="text-sm text-gray-900">
+                  {cardsToMax > 0 ? cardsToMax : '—'}
+                </div>
+              </td>
+              <td className="px-3 py-1 whitespace-nowrap text-center">
+                <div className="text-sm text-gray-900">
+                  {goldToMax > 0 ? formatCompactNumber(goldToMax) : '—'}
                 </div>
               </td>
             </tr>
-          ))}
+          )})}
         </tbody>
       </table>
     </div>

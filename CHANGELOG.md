@@ -202,6 +202,46 @@ node scripts/unified_data_processor.js
 
 ## [Unreleased]
 
+### Added - Data Input Page Upgrade Cost Columns (2026-02-18)
+
+#### Column Order (Drivers Tab)
+1. Name, Rarity, Series, Level, Amount, Highest Level
+2. **Gold Cost**: Total gold to upgrade from current level to highest level
+3. **Legacy Pts**: Total legacy points to upgrade from current level to highest level
+4. **Cards - Next**: Additional cards needed for the next upgrade (accounts for remaining cards after upgrading to highest level)
+5. **Gold - Next**: Gold cost for the single next upgrade
+6. **Cards - Max**: Additional cards needed to reach max level from current holdings
+7. **Gold - Max**: Total gold cost to reach max level from highest level
+
+#### Column Order (Parts Tab)
+1. Name, Rarity, Part Type, Series, Level, Amount, Highest Level
+2. **Gold Cost**: Total gold to upgrade from current level to highest level
+3. **Cards - Next**: Additional cards needed for the next upgrade (accounts for remaining cards)
+4. **Gold - Next**: Gold cost for the single next upgrade
+5. **Cards - Max**: Additional cards needed to reach max level from current holdings
+6. **Gold - Max**: Total gold cost to reach max level from highest level
+
+#### Key Fixes
+- **Cards - Next Calculation**: Now properly accounts for remaining cards after upgrading to highest level
+- **Column Headers**: Changed from arrow (→) to dash (-) for cleaner display
+- **Column Order**: Reordered to show current upgrade costs first, then next/max projections
+
+#### Technical Improvements
+- **Utility Functions**: Added several new functions to `src/lib/utils.ts`:
+  - `formatCompactNumber()`: Formats large numbers with abbreviations (1.5M, 500K, etc.)
+  - `getMaxLevelForRarity()`: Returns max level for a given rarity
+  - `calculateCardsToNextLevel()`: Calculates cards needed for next upgrade, accounting for remaining cards
+  - `calculateCardsToMaxLevel()`: Calculates additional cards needed to reach max level
+  - `calculateGoldCostToHighestLevel()`: Calculates gold cost to upgrade from current to highest level
+  - `calculateLegacyCostToHighestLevel()`: Calculates legacy points cost for drivers
+  - `calculateGoldToNextLevel()`: Gold cost for the single next level upgrade
+  - `calculateGoldToMaxLevel()`: Total gold cost from highest level to max level
+  - `calculateLegacyToMaxLevel()`: Total legacy points from highest level to max level
+  - `DriverStatsPerLevel` and `CarPartStatsPerLevel` interfaces for type safety
+- **API Integration**: Both drivers and car parts APIs already include `stats_per_level` data
+- **Fallback Logic**: Uses hardcoded upgrade costs when `stats_per_level` data is unavailable
+- **Display Formatting**: Large numbers displayed with compact notation (K, M, B suffixes), dashes (—) for zero values
+
 ### Added - Car Setups Page Refactor (2026-02-18)
 
 #### New Components
