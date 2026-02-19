@@ -202,6 +202,29 @@ node scripts/unified_data_processor.js
 
 ## [Unreleased]
 
+### Added - Navigation Menu Refactor (2026-02-19)
+
+**New Feature: 2-Tier Dropdown Navigation Menu**
+- **DropdownMenu Component**: Reusable dropdown with hover/click support, keyboard accessibility (Escape to close), click-outside dismiss, smooth animations
+- **NavigationMenu Component**: Centralized menu configuration for easy maintenance
+- **Menu Structure**: 
+  - **Standalone**: Data Input
+  - **Assets Dropdown**: Drivers, Car Parts, Boosts
+  - **Research Dropdown**: Car Setups, Track Guides, GP Guides, Driver Compare, AI Drivers Compare (coming soon), Tracking (coming soon)
+  - **Reference Dropdown**: Series Info, Series Max Setups, Track Stats (all coming soon)
+  - **Admin**: Link to admin dashboard (hidden for non-admin users)
+- **Mobile Support**: Collapsible accordion-style dropdowns for mobile menu
+- **Future Items Support**: Disabled items with "Coming soon" badges
+- **Admin Visibility**: Admin link only visible to users with `is_admin = true`
+
+**Files Created:**
+- `src/components/ui/DropdownMenu.tsx` - DropdownMenu and MobileDropdown components
+- `src/components/NavigationMenu.tsx` - NavigationMenu and MobileNavigationMenu components with useAdminStatus hook
+
+**Files Modified:**
+- `src/app/client-navigation.tsx` - Updated to use new NavigationMenu components
+- `TASK.md` - Added navigation menu refactor task tracking
+
 ### Added - Data Input Page Upgrade Cost Columns (2026-02-18)
 
 #### Column Order (Drivers Tab)
