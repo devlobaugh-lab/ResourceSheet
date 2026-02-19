@@ -182,8 +182,8 @@ export default function AdminTracksPage() {
           <Card className="p-8 max-w-md mx-auto text-center">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Access Denied</h2>
             <p className="text-gray-600 mb-6">You need admin privileges to access this page.</p>
-            <Link href="/profile">
-              <Button>Back to Profile</Button>
+            <Link href="/admin">
+              <Button>Back to Admin</Button>
             </Link>
           </Card>
         </div>
@@ -202,8 +202,8 @@ export default function AdminTracksPage() {
                 <h1 className="text-3xl font-bold text-gray-900">Track Management</h1>
                 <p className="mt-2 text-gray-600">Manage race tracks and their attributes</p>
               </div>
-              <Link href="/profile">
-                <Button variant="outline">Back to Profile</Button>
+              <Link href="/admin">
+                <Button variant="outline">Back to Admin</Button>
               </Link>
             </div>
           </div>

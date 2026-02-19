@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/components/auth/AuthContext'
+import { NavigationMenu, MobileNavigationMenu, useAdminStatus } from '@/components/NavigationMenu'
 
 function AuthSection() {
   const { user } = useAuth()
@@ -68,7 +70,29 @@ function AuthSectionMobile() {
   }
 }
 
+function MobileMenuButton({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) {
+  return (
+    <button 
+      className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+      onClick={onClick}
+      aria-label="Toggle menu"
+      aria-expanded={isOpen}
+    >
+      <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {isOpen ? (
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        )}
+      </svg>
+    </button>
+  )
+}
+
 export function ClientNavigation() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const isAdmin = useAdminStatus()
+
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       {/* Logo - Left aligned, outside container */}
@@ -89,125 +113,30 @@ export function ClientNavigation() {
           <div className="w-48"></div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
-            <Link
-              href="/drivers"
-              className="px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-            >
-              Drivers
-            </Link>
-            <Link
-              href="/parts"
-              className="px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-            >
-              Car Parts
-            </Link>
-            <Link
-              href="/boosts"
-              className="px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-            >
-              Boosts
-            </Link>
-            <Link
-              href="/data-input"
-              className="px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-            >
-              Data Input
-            </Link>
-            <Link
-              href="/setups"
-              className="px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-            >
-              Setups
-            </Link>
-            <Link
-              href="/track-guides"
-              className="px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-            >
-              Track Guides
-            </Link>
-            <Link
-              href="/gp-guides"
-              className="px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-            >
-              GP Guides
-            </Link>
-            <Link
-              href="/compare/drivers"
-              className="px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-            >
-              Compare
-            </Link>
-          </nav>
+          <NavigationMenu isAdmin={isAdmin} />
 
           {/* Dynamic Auth Section */}
           <AuthSection />
 
           {/* Mobile Menu Button */}
-          <button className="md:hidden p-2 rounded-lg hover:bg-gray-100">
-            <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+          <MobileMenuButton 
+            isOpen={isMobileMenuOpen} 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+          />
         </div>
       </div>
 
       {/* Mobile Navigation */}
-      <div className="md:hidden border-t border-gray-100">
-        <div className="px-4 py-3 space-y-1">
-          <Link
-            href="/drivers"
-            className="block px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-          >
-            Drivers
-          </Link>
-          <Link
-            href="/parts"
-            className="block px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-          >
-            Car Parts
-          </Link>
-          <Link
-            href="/boosts"
-            className="block px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-          >
-            Boosts
-          </Link>
-          <Link
-            href="/data-input"
-            className="block px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-          >
-            Data Input
-          </Link>
-          <Link
-            href="/setups"
-            className="block px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-          >
-            Setups
-          </Link>
-          <Link
-            href="/track-guides"
-            className="block px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-          >
-            Track Guides
-          </Link>
-          <Link
-            href="/gp-guides"
-            className="block px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-          >
-            GP Guides
-          </Link>
-          <Link
-            href="/compare/drivers"
-            className="block px-4 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-          >
-            Compare
-          </Link>
-          <div className="pt-3 border-t border-gray-100">
-            <AuthSectionMobile />
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t border-gray-100">
+          <div className="px-4 py-3 space-y-1">
+            <MobileNavigationMenu isAdmin={isAdmin} />
+            <div className="pt-3 border-t border-gray-100">
+              <AuthSectionMobile />
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </header>
   )
 }

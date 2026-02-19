@@ -64,8 +64,8 @@ export default function AdminContentCachePage() {
           <Card className="p-8 max-w-md mx-auto text-center">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Access Denied</h2>
             <p className="text-gray-600 mb-6">You need admin privileges to access this page.</p>
-            <Link href="/profile">
-              <Button>Back to Profile</Button>
+            <Link href="/admin">
+              <Button>Back to Admin</Button>
             </Link>
           </Card>
         </div>
@@ -166,8 +166,8 @@ export default function AdminContentCachePage() {
                 <h1 className="text-3xl font-bold text-gray-900">Content Cache Management</h1>
                 <p className="mt-2 text-gray-600">Upload and process content_cache.json files</p>
               </div>
-              <Link href="/profile">
-                <Button variant="outline">Back to Profile</Button>
+              <Link href="/admin">
+                <Button variant="outline">Back to Admin</Button>
               </Link>
             </div>
           </div>

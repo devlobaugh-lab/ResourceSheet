@@ -133,6 +133,36 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 
 ## ACTIVE TASKS
 
+### Navigation Menu Refactor - ✅ COMPLETE
+
+**Goal**: Refactor the main navigation to use a 2-tier menu structure with dropdowns for better organization and scalability.
+
+#### Implementation Summary
+- [x] Create reusable DropdownMenu component with hover/click support
+- [x] Create NavigationMenu component with menu configuration
+- [x] Implement admin visibility check (hidden for non-admin users)
+- [x] Add mobile menu with collapsible accordion-style dropdowns
+- [x] Support for disabled/future items with "Coming soon" indicators
+- [x] Update client-navigation.tsx to use new components
+
+#### Menu Structure
+```
+┌─────────────┬─────────────────┬──────────────────┬─────────────┬─────────────┐
+│ Data Input  │ Assets ▾        │ Research ▾       │ Reference ▾ │ Admin       │
+│             │                 │                  │             │ (hidden for │
+│             │ • Drivers       │ • Car Setups     │ (placeholder│ non-admin)  │
+│             │ • Car Parts     │ • Track Guides   │  section)   │             │
+│             │ • Boosts        │ • GP Guides      │             │             │
+│             │                 │ • Driver Compare │             │             │
+│             │                 │ • (future items) │             │             │
+└─────────────┴─────────────────┴──────────────────┴─────────────┴─────────────┘
+```
+
+#### Files Created/Modified
+- `src/components/ui/DropdownMenu.tsx` - New dropdown menu component
+- `src/components/NavigationMenu.tsx` - New navigation menu configuration
+- `src/app/client-navigation.tsx` - Updated to use new NavigationMenu
+
 ### Unified Data Processing System - ✅ COMPLETE
 
 **Goal**: Create a two-stage data processing system that handles large external JSON files efficiently while maintaining data integrity across separate entity tables.
