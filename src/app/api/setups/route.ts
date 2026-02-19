@@ -7,7 +7,7 @@ import { UserCarSetup } from '@/types/database'
 // Validation schema for creating/updating setups
 const setupSchema = z.object({
   name: z.string().min(1, 'Setup name is required').max(100, 'Setup name too long'),
-  notes: z.string().optional(),
+  notes: z.string().nullable().optional(),
   brake_id: z.string().uuid().nullable(),
   gearbox_id: z.string().uuid().nullable(),
   rear_wing_id: z.string().uuid().nullable(),
