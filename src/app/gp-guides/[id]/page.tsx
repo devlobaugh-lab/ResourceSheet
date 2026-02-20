@@ -216,12 +216,16 @@ function TrackSlotCard({
 
   return (
     <div className={`border rounded-lg mb-2 transition-colors ${slotBg}`}>
-      {/* Slot Header Row */}
-      <div className="flex flex-wrap items-center gap-2 px-3 py-2">
+      {/* Slot Header Row - entire row clickable to expand/collapse */}
+      <div 
+        className="flex flex-wrap items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors"
+        onClick={() => setExpanded(e => !e)}
+      >
         <span className="text-xs font-bold text-gray-500 w-16 shrink-0">Race {slot.race_number}</span>
         <select
           value={slot.track_id || ''}
-          onChange={e => handleTrackChange(e.target.value)}
+          onChange={e => { e.stopPropagation(); handleTrackChange(e.target.value); }}
+          onClick={e => e.stopPropagation()}
           className="flex-1 min-w-[180px] px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
           <option value="">— Select Track —</option>
@@ -235,7 +239,7 @@ function TrackSlotCard({
           </span>
         )}
         <button
-          onClick={() => save({ is_wet: !slot.is_wet })}
+          onClick={e => { e.stopPropagation(); save({ is_wet: !slot.is_wet }); }}
           title={slot.is_wet ? 'Wet conditions' : 'Dry conditions'}
           className={`px-2 py-1 rounded text-xs font-medium border transition-colors ${
             slot.is_wet ? 'bg-blue-100 border-blue-300 text-blue-700' : 'bg-yellow-50 border-yellow-300 text-yellow-700'
@@ -245,7 +249,7 @@ function TrackSlotCard({
         </button>
         {slot.track_id && (
           <Button variant="outline" size="sm" disabled={importingSlotId === slot.id}
-            onClick={() => onImport(slot.id, slot.track_id!, slot.is_wet)} className="text-xs">
+            onClick={e => { e.stopPropagation(); onImport(slot.id, slot.track_id!, slot.is_wet); }} className="text-xs">
             {importingSlotId === slot.id ? 'Importing…' : '↓ Import Track Guide'}
           </Button>
         )}
@@ -255,11 +259,10 @@ function TrackSlotCard({
         ) : hasTrack ? (
           <span className="ml-auto mr-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{filledCount}/{totalFields}</span>
         ) : null}
-        <button onClick={() => setExpanded(e => !e)}
-          className={isComplete || hasTrack ? 'text-gray-400 hover:text-gray-600 text-sm' : 'ml-auto text-gray-400 hover:text-gray-600 text-sm'}
-          title={expanded ? 'Collapse' : 'Expand strategy'}>
+        <span className={isComplete || hasTrack ? 'text-gray-400 text-sm' : 'ml-auto text-gray-400 text-sm'}
+          title={expanded ? 'Click to collapse' : 'Click to expand strategy'}>
           {expanded ? '▲' : '▼'}
-        </button>
+        </span>
       </div>
 
       {/* Expanded Strategy */}
