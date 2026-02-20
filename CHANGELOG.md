@@ -202,6 +202,49 @@ node scripts/unified_data_processor.js
 
 ## [Unreleased]
 
+### Added - Data Backup & Restore System (2026-02-19)
+
+**Comprehensive Backup/Restore Architecture**
+- **User Data Export** (`/api/export-user-data`): Enhanced to include all user data types
+  - Drivers, car parts, boosts with levels and counts
+  - Track guides with all strategy data per GP level
+  - GP guides with tracks and results
+  - Car setups with part configurations
+  - Human-readable names included for all references (track names, boost names, driver names)
+  
+- **User Data Import** (`/api/import-user-data`): Smart merge (upsert) strategy
+  - Drivers/Parts/Boosts: Matched by user_id + item_id
+  - Track Guides: Matched by user_id + track_id + gp_level (unique constraint)
+  - GP Guides: Matched by user_id + name (upsert by name instead of always creating new)
+  - GP Guide Tracks: Matched by gp_guide_id + race_type + race_number (unique constraint)
+  - Car Setups: Matched by user_id + name
+  - Proper ID mapping for GP guide tracks when importing
+
+- **Admin Export All Users** (`/api/admin/export-all-users`): Complete user data for all users
+- **Admin Import All Users** (`/api/admin/import-all-users`): Bulk restore user data
+- **Admin Export Global Data** (`/api/admin/export-global-data`): Seasons, tracks, boost custom names, free boost flags
+- **Admin Import Global Data** (`/api/admin/import-global-data`): Restore global catalog data
+- **Admin Export Full Backup** (`/api/admin/export-full-backup`): Complete disaster recovery (global + all users)
+- **Admin Import Full Backup** (`/api/admin/import-full-backup`): Full system restore
+
+**Profile Page Updates**
+- Added "Export My Data" button for user data backup
+- Added "Import My Data" button for restore functionality
+- Professional UI with loading states and error handling
+
+**Admin Page UI Consolidation**
+- Compact 3-column grid for backup/restore cards (User Data, Global Data, Full Backup)
+- Stacked Export/Import buttons for efficient layout
+- Line-clamped descriptions for cleaner appearance
+- Consistent styling with other admin sections
+
+**Bug Fixes**
+- Fixed boost import to use correct `count` field (was checking for legacy `card_count`)
+- Fixed GP guide import to upsert by name instead of always creating duplicates
+- Fixed GP guide tracks import to check unique constraint (gp_guide_id + race_type + race_number)
+- Fixed track guide import to include gp_level in unique constraint check
+- Fixed ID mapping for GP guide tracks to link imported tracks to correct (new or existing) guide IDs
+
 ### Added - Navigation Menu Refactor (2026-02-19)
 
 **New Feature: 2-Tier Dropdown Navigation Menu**

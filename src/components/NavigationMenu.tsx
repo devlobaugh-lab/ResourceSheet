@@ -154,5 +154,6 @@ export function useAdminStatus() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 
-  return profile?.is_admin || false
+  // Check both is_admin and user_type for backward compatibility
+  return profile?.is_admin === true || profile?.user_type === 'admin'
 }
