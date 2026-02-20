@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/components/auth/AuthContext'
 import { useToast } from '@/components/ui/Toast'
 import { getAuthHeaders } from '@/hooks/useApi'
+import { useQuery } from '@tanstack/react-query'
 
 interface BoostNameEditorProps {
   boostId: string
@@ -30,8 +31,24 @@ export function BoostNameEditor({
   const [isLoading, setIsLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Check if user is admin by checking the profile (user should have is_admin set)
-  const isAdmin = user?.email === 'thomas.lobaugh@gmail.com' || false
+  // Fetch user profile to check admin status
+  const { data: profile } = useQuery({
+    queryKey: ['user-profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const response = await fetch(`/api/profiles/${user.id}`, {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      });
+      if (!response.ok) return null;
+      return response.json();
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000
+  });
+
+  // Check if user is admin via profile
+  const isAdmin = profile?.is_admin === true || profile?.user_type === 'admin';
 
   // Display name logic: custom_name || icon name || current name
   const displayName = customName || (icon ? icon.replace('BoostIcon_', '') : currentName)

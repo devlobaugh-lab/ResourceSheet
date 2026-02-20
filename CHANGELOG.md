@@ -202,6 +202,45 @@ node scripts/unified_data_processor.js
 
 ## [Unreleased]
 
+### Changed - Component Decomposition & Admin Fix (2026-02-20)
+
+**Phase 1: Data Input Page Decomposition - COMPLETE**
+- **Extracted Hooks**: Created mutation hooks for driver, car part, and boost data updates
+  - `src/app/data-input/hooks/useUpdateDriverData.ts`
+  - `src/app/data-input/hooks/useUpdateCarPartData.ts`
+  - `src/app/data-input/hooks/useUpdateBoostData.ts`
+- **Extracted Utilities**: Created sorting and constants utilities
+  - `src/app/data-input/utils/constants.ts` - LEVEL_RANGES, PART_TYPE_ORDER, PART_TYPE_NAMES
+  - `src/app/data-input/utils/sorting.ts` - sortDrivers, sortCarParts, sortBoosts functions
+- **Extracted Components**: Created tab components for drivers, parts, and boosts
+  - `src/app/data-input/components/DriversTab.tsx`
+  - `src/app/data-input/components/PartsTab.tsx`
+  - `src/app/data-input/components/BoostsTab.tsx`
+- **Refactored Main Page**: Reduced `page.tsx` from ~700 lines to ~90 lines
+- **Benefits**: Smaller focused files, clear separation of concerns, testable in isolation
+
+**Phase 2: DataGrid Component Decomposition - PARTIAL**
+- **Created Directory Structure**: `src/components/DataGrid/` with subdirectories for components, hooks, and utils
+- **Extracted Utilities**:
+  - `src/components/DataGrid/utils/colors.ts` - Color utility functions
+  - `src/components/DataGrid/utils/sorting.ts` - Sort preference localStorage utilities
+  - `src/components/DataGrid/utils/columns.ts` - Column definitions for grids
+- **Extracted Components**:
+  - `src/components/DataGrid/components/FreeBoostCheckbox.tsx` - Admin-only free boost toggle
+- **Extracted Hooks**:
+  - `src/components/DataGrid/hooks/useColumnStats.ts` - Calculate min/max/median for columns
+- **Created Types**: `src/components/DataGrid/types.ts` with GridType, FilterState, ColumnDef interfaces
+- **Moved Main Component**: Relocated `DataGrid.tsx` to new directory structure
+
+**Admin Check Bug Fix**
+- **Issue**: Free Boost checkbox and Boost Name editor were using hardcoded email for admin check
+- **Solution**: Updated both components to fetch user profile and check `is_admin === true || user_type === 'admin'`
+- **Files Fixed**:
+  - `src/components/DataGrid/components/FreeBoostCheckbox.tsx`
+  - `src/components/BoostNameEditor.tsx`
+  - `src/components/DataGrid/DataGrid.tsx` - Updated to use imported FreeBoostCheckbox
+- **Pattern**: Now matches admin page's profile-based admin check
+
 ### Changed - Documentation & Code Quality (2026-02-20)
 
 **JSDoc Enhancement**
