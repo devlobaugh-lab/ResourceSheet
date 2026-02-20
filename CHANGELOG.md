@@ -202,6 +202,57 @@ node scripts/unified_data_processor.js
 
 ## [Unreleased]
 
+### Changed - Documentation & Code Quality (2026-02-20)
+
+**JSDoc Enhancement**
+- Added comprehensive JSDoc documentation with @param/@returns tags to all utility functions in `src/lib/utils.ts`
+- Documented formatting functions (formatCurrency, formatNumber, formatCompactNumber, formatDate, formatRelativeTime)
+- Documented utility functions (cn, truncateText, generateId, debounce)
+- Documented level calculation functions (calculateHighestLevel, getMaxLevelForRarity)
+- Documented display functions (getRarityBackground, getRarityDisplay, getCollectionRarityDisplay)
+
+**Documentation Consolidation**
+- Merged `SETUP.md` and `DEVELOPER_SETUP.md` into single comprehensive setup guide
+- Moved old `DEVELOPER_SETUP.md` to `docs/archive/` for historical reference
+- Updated `docs/README.md` to reflect consolidated structure
+
+**Major Documentation Restructuring**
+- Reorganized 22+ markdown files from root directory into organized `docs/` structure
+- Created new documentation categories: `api/`, `architecture/`, `deployment/`, `development/`, `operations/`, `product/`, `archive/`
+- Created `docs/README.md` as central documentation index
+- Updated main `README.md` with links to new documentation locations
+- Created `backups/` directory for SQL backup files (moved 6 files)
+- Moved test scripts to `scripts/` directory (6 files)
+
+**Files Moved:**
+- `API.md` → `docs/api/API.md`
+- `ARCHITECTURE.md` → `docs/architecture/ARCHITECTURE.md`
+- `GeneralArchitechtureDesign.md` → `docs/architecture/GeneralArchitechtureDesign.md`
+- `ProductDesign.md` → `docs/product/ProductDesign.md`
+- `SELF_HOSTING.md` → `docs/deployment/SELF_HOSTING.md`
+- `VERCEL_HOSTING.md` → `docs/deployment/VERCEL_HOSTING.md`
+- `SETUP.md` → `docs/development/SETUP.md`
+- `DEVELOPER_SETUP.md` → `docs/development/DEVELOPER_SETUP.md`
+- `MIGRATION_GUIDE.md` → `docs/development/MIGRATION_GUIDE.md`
+- `CURRENT_SEASON_MANAGEMENT.md` → `docs/operations/CURRENT_SEASON_MANAGEMENT.md`
+- `WIPE_AND_REPOPULATE_GUIDE.md` → `docs/operations/WIPE_AND_REPOPULATE_GUIDE.md`
+- `BACKUP_RESTORE_PLAN.md` → `docs/operations/BACKUP_RESTORE_PLAN.md`
+- `BACKUP_RESTORE_README.md` → `docs/operations/BACKUP_RESTORE_README.md`
+- `BACKUP_INSTRUCTIONS.md` → `docs/operations/BACKUP_INSTRUCTIONS.md`
+- `CODE_REVIEW.md` → `docs/archive/CODE_REVIEW_2026-02-09.md`
+- `REFACTORING_SUMMARY.md` → `docs/archive/REFACTORING_SUMMARY.md`
+- `DRIVERS_RARITY_5_ISSUE_ANALYSIS.md` → `docs/archive/DRIVERS_RARITY_5_ISSUE_ANALYSIS.md`
+- `FINAL_VERIFICATION.md` → `docs/archive/FINAL_VERIFICATION.md`
+
+**New Files Created:**
+- `docs/CODE_REVIEW_2026-02-20.md` - Comprehensive code review with recommendations
+- `docs/README.md` - Documentation index
+
+**Root Directory Cleanup:**
+- Root now contains only essential files: `README.md`, `CHANGELOG.md`, `LICENSE`, `TASK.md`
+- SQL backup files moved to `backups/` directory
+- Test scripts moved to `scripts/` directory
+
 ### Added - Data Backup & Restore System (2026-02-19)
 
 **Comprehensive Backup/Restore Architecture**
