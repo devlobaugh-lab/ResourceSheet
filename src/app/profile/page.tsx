@@ -14,20 +14,20 @@ export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const toast = useToast();
   const queryClient = useQueryClient();
-  const [exportStableLoading, setExportStableLoading] = useState(false);
-  const [importStableLoading, setImportStableLoading] = useState(false);
-  const stableFileInputRef = useRef<HTMLInputElement>(null);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExportStable = async () => {
-    setExportStableLoading(true);
+  const handleExport = async () => {
+    setExportLoading(true);
     try {
-      const response = await fetch('/api/export-collection-stable', {
+      const response = await fetch('/api/export-user-data', {
         headers: await getAuthHeaders(),
         credentials: 'same-origin'
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || `Stable export failed: ${response.status}`);
+        throw new Error(errorData.error?.message || `Export failed: ${response.status}`);
       }
 
       const data = await response.json();
@@ -36,7 +36,7 @@ export default function ProfilePage() {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const dateStr = new Date().toISOString().split('T')[0];
-      const filename = `f1-stable-backup-${dateStr}.json`;
+      const filename = `f1-user-data-${dateStr}.json`;
 
       const a = document.createElement('a');
       a.href = url;
@@ -46,25 +46,25 @@ export default function ProfilePage() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.addToast('Stable collection exported successfully', 'success');
+      toast.addToast('User data exported successfully', 'success');
     } catch (error) {
-      console.error('Stable export error:', error);
-      toast.addToast(error instanceof Error ? error.message : 'Failed to export stable collection', 'error');
+      console.error('Export error:', error);
+      toast.addToast(error instanceof Error ? error.message : 'Failed to export user data', 'error');
     } finally {
-      setExportStableLoading(false);
+      setExportLoading(false);
     }
   };
 
-  const handleImportStable = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setImportStableLoading(true);
+    setImportLoading(true);
     try {
       const text = await file.text();
       const data = JSON.parse(text);
 
-      const response = await fetch('/api/import-collection-stable', {
+      const response = await fetch('/api/import-user-data', {
         method: 'POST',
         headers: {
           ...await getAuthHeaders(),
@@ -76,7 +76,7 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Stable import failed');
+        throw new Error(errorData.error?.message || 'Import failed');
       }
 
       const result = await response.json();
@@ -84,27 +84,28 @@ export default function ProfilePage() {
       // Invalidate all queries to refresh the UI with new data
       queryClient.invalidateQueries();
 
-      const successMessage = `Stable collection imported successfully! ${result.summary.imported} items imported.`;
-      toast.addToast(successMessage, 'success');
+      const totalImported = Object.values(result.results.imported).reduce((a: number, b: unknown) => a + (b as number), 0);
+      const totalUpdated = Object.values(result.results.updated).reduce((a: number, b: unknown) => a + (b as number), 0);
+      
+      toast.addToast(`Data imported: ${totalImported} new, ${totalUpdated} updated`, 'success');
 
-      if (result.results.errors.length > 0) {
+      if (result.results.errors?.length > 0) {
         console.warn('Import errors:', result.results.errors);
-        toast.addToast(`${result.results.errors.length} items could not be matched and were skipped.`, 'warning');
+        toast.addToast(`${result.results.errors.length} errors occurred during import`, 'warning');
       }
     } catch (error) {
-      console.error('Stable import error:', error);
-      toast.addToast(error instanceof Error ? error.message : 'Failed to import stable collection', 'error');
+      console.error('Import error:', error);
+      toast.addToast(error instanceof Error ? error.message : 'Failed to import user data', 'error');
     } finally {
-      setImportStableLoading(false);
-      // Reset file input
-      if (stableFileInputRef.current) {
-        stableFileInputRef.current.value = '';
+      setImportLoading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
     }
   };
 
-  const triggerImportStable = () => {
-    stableFileInputRef.current?.click();
+  const triggerImport = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -114,7 +115,7 @@ export default function ProfilePage() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
-            <p className="mt-2 text-gray-600">Manage your account and view your collection stats</p>
+            <p className="mt-2 text-gray-600">Manage your account and data</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -144,37 +145,40 @@ export default function ProfilePage() {
 
             {/* Quick Actions */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Collection Actions */}
+              {/* Data Backup */}
               <Card className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Collection Backup & Restore</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Data Backup & Restore</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Export all your data including drivers, car parts, boosts, track guides, GP guides, and car setups.
+                </p>
 
                 <div className="grid grid-cols-2 gap-4">
                   <Button
                     variant="outline"
                     className="justify-start"
-                    onClick={handleExportStable}
-                    disabled={exportStableLoading}
+                    onClick={handleExport}
+                    disabled={exportLoading}
                   >
-                    {exportStableLoading ? (
+                    {exportLoading ? (
                       <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                     ) : (
                       <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
                     )}
-                    {exportStableLoading ? 'Backing up...' : 'Backup Collection'}
+                    {exportLoading ? 'Exporting...' : 'Export My Data'}
                   </Button>
 
                   <Button
                     variant="outline"
                     className="justify-start"
-                    onClick={triggerImportStable}
-                    disabled={importStableLoading}
+                    onClick={triggerImport}
+                    disabled={importLoading}
                   >
-                    {importStableLoading ? (
+                    {importLoading ? (
                       <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -184,14 +188,7 @@ export default function ProfilePage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                       </svg>
                     )}
-                    {importStableLoading ? 'Restoring...' : 'Restore Collection'}
-                  </Button>
-
-                  <Button variant="outline" className="justify-start opacity-50 cursor-not-allowed" disabled>
-                    <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Help
+                    {importLoading ? 'Importing...' : 'Import Data'}
                   </Button>
                 </div>
               </Card>
@@ -201,11 +198,11 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Hidden file input for stable import */}
+      {/* Hidden file input */}
       <input
         type="file"
-        ref={stableFileInputRef}
-        onChange={handleImportStable}
+        ref={fileInputRef}
+        onChange={handleImport}
         accept=".json"
         style={{ display: 'none' }}
       />

@@ -9,15 +9,25 @@ import { useToast } from '@/components/ui/Toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAuthHeaders } from '@/hooks/useApi';
 import Link from 'next/link';
-import { Upload, Settings, Users, Shield, Download, FileUp } from 'lucide-react';
+import { Upload, Settings, Users, Shield, Download, FileUp, Database, Globe } from 'lucide-react';
 
 export default function AdminPage() {
   const { user } = useAuth();
   const toast = useToast();
   const queryClient = useQueryClient();
-  const [exportAdminDataLoading, setExportAdminDataLoading] = useState(false);
-  const [importAdminDataLoading, setImportAdminDataLoading] = useState(false);
-  const adminDataFileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Loading states for different operations
+  const [exportAllUsersLoading, setExportAllUsersLoading] = useState(false);
+  const [importAllUsersLoading, setImportAllUsersLoading] = useState(false);
+  const [exportGlobalLoading, setExportGlobalLoading] = useState(false);
+  const [importGlobalLoading, setImportGlobalLoading] = useState(false);
+  const [exportFullLoading, setExportFullLoading] = useState(false);
+  const [importFullLoading, setImportFullLoading] = useState(false);
+  
+  // File input refs
+  const allUsersFileInputRef = useRef<HTMLInputElement>(null);
+  const globalFileInputRef = useRef<HTMLInputElement>(null);
+  const fullFileInputRef = useRef<HTMLInputElement>(null);
 
   // Check if user is admin
   const { data: profile, isLoading: isProfileLoading } = useQuery({
@@ -35,12 +45,17 @@ export default function AdminPage() {
     staleTime: 5 * 60 * 1000
   });
 
-  const isAdmin = profile?.is_admin || false;
+  const isAdmin = profile?.is_admin === true || profile?.user_type === 'admin';
 
-  const handleExportAdminData = async () => {
-    setExportAdminDataLoading(true);
+  // Generic export handler
+  const handleExport = async (
+    endpoint: string,
+    filename: string,
+    setLoading: (loading: boolean) => void
+  ) => {
+    setLoading(true);
     try {
-      const response = await fetch('/api/export-admin-data', {
+      const response = await fetch(endpoint, {
         headers: await getAuthHeaders(),
         credentials: 'same-origin'
       });
@@ -50,39 +65,40 @@ export default function AdminPage() {
       }
       const data = await response.json();
 
-      // Create and download file
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const dateStr = new Date().toISOString().split('T')[0];
-      const filename = `f1-admin-data-backup-${dateStr}.json`;
 
       const a = document.createElement('a');
       a.href = url;
-      a.download = filename;
+      a.download = `${filename}-${dateStr}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.addToast('Admin data exported successfully', 'success');
+      toast.addToast('Export completed successfully', 'success');
     } catch (error) {
-      console.error('Export admin data error:', error);
-      toast.addToast(error instanceof Error ? error.message : 'Failed to export admin data', 'error');
+      console.error('Export error:', error);
+      toast.addToast(error instanceof Error ? error.message : 'Export failed', 'error');
     } finally {
-      setExportAdminDataLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleImportAdminData = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setImportAdminDataLoading(true);
+  // Generic import handler
+  const handleImport = async (
+    endpoint: string,
+    file: File,
+    setLoading: (loading: boolean) => void,
+    ref: React.RefObject<HTMLInputElement | null>
+  ) => {
+    setLoading(true);
     try {
       const text = await file.text();
       const data = JSON.parse(text);
 
-      const response = await fetch('/api/import-admin-data', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           ...await getAuthHeaders(),
@@ -98,26 +114,36 @@ export default function AdminPage() {
       }
 
       const result = await response.json();
+      queryClient.invalidateQueries();
 
-      // Invalidate boost queries to refresh the UI with new custom names and free flags
-      queryClient.invalidateQueries({ queryKey: ['boosts'] });
-
-      const successMessage = `Admin data imported successfully! ${result.imported.customNames} custom names and ${result.imported.freeBoosts} free boost flags imported.`;
-      toast.addToast(successMessage, 'success');
-    } catch (error) {
-      console.error('Import admin data error:', error);
-      toast.addToast(error instanceof Error ? error.message : 'Failed to import admin data', 'error');
-    } finally {
-      setImportAdminDataLoading(false);
-      // Reset file input
-      if (adminDataFileInputRef.current) {
-        adminDataFileInputRef.current.value = '';
+      toast.addToast('Import completed successfully', 'success');
+      if (result.results?.errors?.length > 0) {
+        console.warn('Import errors:', result.results.errors);
+        toast.addToast(`${result.results.errors.length} errors occurred`, 'warning');
       }
+    } catch (error) {
+      console.error('Import error:', error);
+      toast.addToast(error instanceof Error ? error.message : 'Import failed', 'error');
+    } finally {
+      setLoading(false);
+      if (ref.current) ref.current.value = '';
     }
   };
 
-  const triggerImportAdminData = () => {
-    adminDataFileInputRef.current?.click();
+  // File change handlers
+  const handleAllUsersFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleImport('/api/admin/import-all-users', file, setImportAllUsersLoading, allUsersFileInputRef);
+  };
+
+  const handleGlobalFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleImport('/api/admin/import-global-data', file, setImportGlobalLoading, globalFileInputRef);
+  };
+
+  const handleFullFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleImport('/api/admin/import-full-backup', file, setImportFullLoading, fullFileInputRef);
   };
 
   // Show loading state while checking admin status
@@ -170,8 +196,7 @@ export default function AdminPage() {
       description: 'Manage user accounts and permissions',
       icon: Users,
       href: '/admin/users',
-      color: 'text-orange-600',
-      disabled: true
+      color: 'text-orange-600'
     }
   ];
 
@@ -186,11 +211,11 @@ export default function AdminPage() {
           </div>
 
           {/* Admin Sections Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {adminSections.map((section) => {
               const Icon = section.icon;
               return (
-                <Card key={section.title} className={`p-6 hover:shadow-lg transition-shadow ${section.disabled ? 'opacity-50' : ''}`}>
+                <Card key={section.title} className="p-6 hover:shadow-lg transition-shadow">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div className={`p-3 rounded-lg bg-gray-100 ${section.color}`}>
@@ -198,69 +223,116 @@ export default function AdminPage() {
                       </div>
                       <div>
                         <h2 className="text-xl font-semibold text-gray-900">{section.title}</h2>
-                        <p className="text-gray-600 mt-1 mr-1">{section.description}</p>
+                        <p className="text-gray-600 mt-1">{section.description}</p>
                       </div>
                     </div>
-                    {section.disabled ? (
-                      <Button variant="outline" size="sm" disabled>
-                        Coming Soon
+                    <Link href={section.href}>
+                      <Button variant="outline" size="sm">
+                        Manage
                       </Button>
-                    ) : (
-                      <Link href={section.href}>
-                        <Button variant="outline" size="sm">
-                          Manage
-                        </Button>
-                      </Link>
-                    )}
+                    </Link>
                   </div>
                 </Card>
               );
             })}
           </div>
 
-          {/* Admin Data Import/Export Section */}
-          <Card className="mt-6 p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <Shield className="w-6 h-6 text-purple-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Admin Data Backup</h3>
-            </div>
-            <p className="text-gray-600 mb-4">
-              Export or import admin data including boost custom names and free boost flags.
-            </p>
-            <div className="flex gap-4">
-              <Button
-                variant="outline"
-                onClick={handleExportAdminData}
-                disabled={exportAdminDataLoading}
-              >
-                {exportAdminDataLoading ? (
-                  <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : (
-                  <Download className="w-5 h-5 mr-2" />
-                )}
-                {exportAdminDataLoading ? 'Exporting...' : 'Export Admin Data'}
-              </Button>
+          {/* Data Backup Section - Compact Grid */}
+          <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">Data Backup & Restore</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* User Data */}
+            <Card className="p-4">
+              <div className="flex items-center space-x-3 mb-2">
+                <Users className="w-5 h-5 text-blue-600" />
+                <h3 className="font-semibold text-gray-900">User Data</h3>
+              </div>
+              <p className="text-sm text-gray-500 mb-3 line-clamp-2">
+                Drivers, car parts, boosts, track guides, GP guides, setups for all users.
+              </p>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExport('/api/admin/export-all-users', 'f1-all-users', setExportAllUsersLoading)}
+                  disabled={exportAllUsersLoading}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {exportAllUsersLoading ? 'Exporting...' : 'Export'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => allUsersFileInputRef.current?.click()}
+                  disabled={importAllUsersLoading}
+                >
+                  <FileUp className="w-4 h-4 mr-2" />
+                  {importAllUsersLoading ? 'Importing...' : 'Import'}
+                </Button>
+              </div>
+            </Card>
 
-              <Button
-                variant="outline"
-                onClick={triggerImportAdminData}
-                disabled={importAdminDataLoading}
-              >
-                {importAdminDataLoading ? (
-                  <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : (
-                  <FileUp className="w-5 h-5 mr-2" />
-                )}
-                {importAdminDataLoading ? 'Importing...' : 'Import Admin Data'}
-              </Button>
-            </div>
-          </Card>
+            {/* Global Data */}
+            <Card className="p-4">
+              <div className="flex items-center space-x-3 mb-2">
+                <Globe className="w-5 h-5 text-green-600" />
+                <h3 className="font-semibold text-gray-900">Global Data</h3>
+              </div>
+              <p className="text-sm text-gray-500 mb-3 line-clamp-2">
+                Seasons, tracks, boost custom names, free boost flags.
+              </p>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExport('/api/admin/export-global-data', 'f1-global-data', setExportGlobalLoading)}
+                  disabled={exportGlobalLoading}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {exportGlobalLoading ? 'Exporting...' : 'Export'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => globalFileInputRef.current?.click()}
+                  disabled={importGlobalLoading}
+                >
+                  <FileUp className="w-4 h-4 mr-2" />
+                  {importGlobalLoading ? 'Importing...' : 'Import'}
+                </Button>
+              </div>
+            </Card>
+
+            {/* Full Backup */}
+            <Card className="p-4">
+              <div className="flex items-center space-x-3 mb-2">
+                <Database className="w-5 h-5 text-purple-600" />
+                <h3 className="font-semibold text-gray-900">Full Backup</h3>
+              </div>
+              <p className="text-sm text-gray-500 mb-3 line-clamp-2">
+                Complete disaster recovery: all global catalogs + all user data.
+              </p>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExport('/api/admin/export-full-backup', 'f1-full-backup', setExportFullLoading)}
+                  disabled={exportFullLoading}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {exportFullLoading ? 'Exporting...' : 'Export'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fullFileInputRef.current?.click()}
+                  disabled={importFullLoading}
+                >
+                  <FileUp className="w-4 h-4 mr-2" />
+                  {importFullLoading ? 'Importing...' : 'Import'}
+                </Button>
+              </div>
+            </Card>
+          </div>
 
           {/* Admin Info */}
           <Card className="mt-6 p-6">
@@ -282,14 +354,10 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Hidden file input for admin data import */}
-      <input
-        type="file"
-        ref={adminDataFileInputRef}
-        onChange={handleImportAdminData}
-        accept=".json"
-        style={{ display: 'none' }}
-      />
+      {/* Hidden file inputs */}
+      <input type="file" ref={allUsersFileInputRef} onChange={handleAllUsersFileChange} accept=".json" style={{ display: 'none' }} />
+      <input type="file" ref={globalFileInputRef} onChange={handleGlobalFileChange} accept=".json" style={{ display: 'none' }} />
+      <input type="file" ref={fullFileInputRef} onChange={handleFullFileChange} accept=".json" style={{ display: 'none' }} />
     </ProtectedRoute>
   );
 }

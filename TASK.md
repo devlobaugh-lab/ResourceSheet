@@ -133,6 +133,61 @@ F1 Resource Manager is a comprehensive asset management system for Formula 1 gam
 
 ## ACTIVE TASKS
 
+### Data Backup & Restore System - ✅ COMPLETE
+
+**Goal**: Implement comprehensive backup/restore functionality for user data and global data with proper admin tools.
+
+#### User Data Backup/Restore ✅
+- [x] **Enhanced User Export API** (`/api/export-user-data`)
+  - Include all user data: drivers, car parts, boosts
+  - Include track guides with all GP level strategies
+  - Include GP guides with tracks and results
+  - Include car setups with configurations
+  - Add human-readable names for all references
+- [x] **Enhanced User Import API** (`/api/import-user-data`)
+  - Smart merge (upsert) strategy for all data types
+  - Drivers/Parts/Boosts: Match by user_id + item_id
+  - Track Guides: Match by user_id + track_id + gp_level
+  - GP Guides: Match by user_id + name (upsert, not duplicate)
+  - GP Guide Tracks: Match by unique constraint (gp_guide_id + race_type + race_number)
+  - Car Setups: Match by user_id + name
+  - Proper ID mapping for nested data (GP guide tracks)
+- [x] **Profile Page UI**
+  - Export My Data button with loading state
+  - Import My Data button with file picker
+  - Toast notifications for success/errors
+
+#### Admin Backup/Restore Tools ✅
+- [x] **Export All Users** (`/api/admin/export-all-users`)
+  - Complete user data for all users in one file
+- [x] **Import All Users** (`/api/admin/import-all-users`)
+  - Bulk restore user data
+- [x] **Export Global Data** (`/api/admin/export-global-data`)
+  - Seasons, tracks, boost custom names, free boost flags
+- [x] **Import Global Data** (`/api/admin/import-global-data`)
+  - Restore global catalog data
+- [x] **Export Full Backup** (`/api/admin/export-full-backup`)
+  - Complete disaster recovery: global + all users
+- [x] **Import Full Backup** (`/api/admin/import-full-backup`)
+  - Full system restore from backup file
+
+#### Bug Fixes ✅
+- [x] Fixed boost import using correct `count` field (was `card_count`)
+- [x] Fixed GP guide import to upsert by name instead of always creating new
+- [x] Fixed GP guide tracks unique constraint check (gp_guide_id + race_type + race_number)
+- [x] Fixed track guide import to include gp_level in unique constraint
+- [x] Fixed ID mapping for GP guide tracks to link to correct guide
+
+#### Admin Page UI Consolidation ✅
+- [x] Compact 3-column grid for backup/restore cards
+- [x] Stacked Export/Import buttons per card
+- [x] Line-clamped descriptions for cleaner layout
+- [x] Consistent styling with other admin sections
+
+#### Documentation Updates ✅
+- [x] Updated CHANGELOG.md with all changes
+- [x] Updated TASK.md with task tracking
+
 ### Navigation Menu Refactor - ✅ COMPLETE
 
 **Goal**: Refactor the main navigation to use a 2-tier menu structure with dropdowns for better organization and scalability.
