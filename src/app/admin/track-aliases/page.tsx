@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -24,6 +24,16 @@ export default function TrackAliasesAdminPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingAlias, setEditingAlias] = useState<TrackNameAlias | null>(null)
   const [formData, setFormData] = useState({ system_name: '', display_name: '' })
+  
+  // Ref for auto-focusing the system name input
+  const systemNameInputRef = useRef<HTMLInputElement>(null)
+  
+  // Auto-focus the system name input when modal opens
+  useEffect(() => {
+    if (showModal && systemNameInputRef.current) {
+      systemNameInputRef.current.focus()
+    }
+  }, [showModal])
   
   // Fetch aliases
   const { data: aliasesData, isLoading } = useQuery({
@@ -231,6 +241,7 @@ export default function TrackAliasesAdminPage() {
                   System Name *
                 </label>
                 <Input
+                  ref={systemNameInputRef}
                   type="text"
                   value={formData.system_name}
                   onChange={(e) => setFormData(prev => ({ ...prev, system_name: e.target.value }))}
