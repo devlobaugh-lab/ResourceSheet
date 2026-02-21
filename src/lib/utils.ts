@@ -2,15 +2,28 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 /**
- * Utility function to merge Tailwind CSS classes with proper conflict resolution
- * Uses clsx for conditional classes and tailwind-merge to resolve conflicts
+ * Utility function to merge Tailwind CSS classes with proper conflict resolution.
+ * Uses clsx for conditional classes and tailwind-merge to resolve conflicts.
+ * 
+ * @param {...ClassValue[]} inputs - Variable number of class values to merge
+ * @returns {string} Merged class string with conflicts resolved
+ * 
+ * @example
+ * cn('px-4 py-2', 'px-6') // Returns 'py-2 px-6' (px-4 overridden by px-6)
+ * cn('text-red-500', isActive && 'text-blue-500') // Conditional classes
  */
-export function cn(...inputs: ClassValue[]) {
+export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
 
 /**
- * Format currency values
+ * Format a number as USD currency.
+ * 
+ * @param {number} amount - The amount to format
+ * @returns {string} Formatted currency string (e.g., "$1,234.56")
+ * 
+ * @example
+ * formatCurrency(1234.56) // Returns "$1,234.56"
  */
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -20,14 +33,29 @@ export function formatCurrency(amount: number): string {
 }
 
 /**
- * Format numbers with thousands separators
+ * Format a number with thousands separators.
+ * 
+ * @param {number} num - The number to format
+ * @returns {string} Formatted number string with commas
+ * 
+ * @example
+ * formatNumber(1234567) // Returns "1,234,567"
  */
 export function formatNumber(num: number): string {
   return new Intl.NumberFormat('en-US').format(num);
 }
 
 /**
- * Format large numbers with abbreviations (e.g., 1.5M instead of 1,500,000)
+ * Format large numbers with abbreviations for display.
+ * Converts millions to "M", billions to "B", and thousands to "K".
+ * 
+ * @param {number} num - The number to format
+ * @returns {string} Abbreviated number string
+ * 
+ * @example
+ * formatCompactNumber(1500000) // Returns "1.5M"
+ * formatCompactNumber(500) // Returns "500"
+ * formatCompactNumber(2500) // Returns "2.5K"
  */
 export function formatCompactNumber(num: number): string {
   if (num >= 1000000000) {
@@ -43,7 +71,14 @@ export function formatCompactNumber(num: number): string {
 }
 
 /**
- * Format dates
+ * Format a date as a short human-readable string.
+ * 
+ * @param {string | Date} date - The date to format (ISO string or Date object)
+ * @returns {string} Formatted date string (e.g., "Jan 15, 2024")
+ * 
+ * @example
+ * formatDate('2024-01-15') // Returns "Jan 15, 2024"
+ * formatDate(new Date()) // Returns current date formatted
  */
 export function formatDate(date: string | Date): string {
   const d = typeof date === 'string' ? new Date(date) : date;
@@ -55,7 +90,15 @@ export function formatDate(date: string | Date): string {
 }
 
 /**
- * Format relative time (e.g., "2 days ago")
+ * Format a date as relative time from now.
+ * Returns human-readable strings like "2 days ago" or "Just now".
+ * 
+ * @param {string | Date} date - The date to format (ISO string or Date object)
+ * @returns {string} Relative time string
+ * 
+ * @example
+ * formatRelativeTime('2024-01-10') // Returns "X days ago" (relative to now)
+ * formatRelativeTime(new Date()) // Returns "Just now"
  */
 export function formatRelativeTime(date: string | Date): string {
   const d = typeof date === 'string' ? new Date(date) : date;
@@ -82,7 +125,15 @@ export function formatRelativeTime(date: string | Date): string {
 }
 
 /**
- * Truncate text with ellipsis
+ * Truncate text to a maximum length with ellipsis.
+ * 
+ * @param {string} text - The text to truncate
+ * @param {number} maxLength - Maximum number of characters
+ * @returns {string} Truncated text with "..." if longer than maxLength
+ * 
+ * @example
+ * truncateText("Hello World", 5) // Returns "Hello..."
+ * truncateText("Hi", 10) // Returns "Hi" (no truncation needed)
  */
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
@@ -90,14 +141,31 @@ export function truncateText(text: string, maxLength: number): string {
 }
 
 /**
- * Generate a random ID
+ * Generate a random alphanumeric ID.
+ * 
+ * @returns {string} Random 9-character alphanumeric string
+ * 
+ * @example
+ * generateId() // Returns something like "k7x9m2p4n"
  */
 export function generateId(): string {
   return Math.random().toString(36).substr(2, 9);
 }
 
 /**
- * Debounce function
+ * Create a debounced version of a function.
+ * The returned function delays invoking the original function until after
+ * the specified wait time has elapsed since the last call.
+ * 
+ * @template T - The type of the function to debounce
+ * @param {T} func - The function to debounce
+ * @param {number} wait - Number of milliseconds to delay
+ * @returns {(...args: Parameters<T>) => void} Debounced function
+ * 
+ * @example
+ * const debouncedSave = debounce(saveData, 500);
+ * // Calling debouncedSave multiple times in quick succession
+ * // will only invoke saveData once after 500ms of no calls
  */
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
@@ -136,8 +204,18 @@ const MAX_LEVELS_BY_RARITY = {
 };
 
 /**
- * Calculate the highest level an asset can reach given current level and card count
- * Note: cardCount represents total cards available for this item
+ * Calculate the highest level an asset can reach given current level and card count.
+ * Determines how far a driver or car part can be upgraded with available cards,
+ * respecting rarity-based maximum level caps.
+ * 
+ * @param {number} currentLevel - Current level of the asset (0-11)
+ * @param {number} cardCount - Total cards available for upgrading
+ * @param {number} rarity - Rarity tier (0=Basic, 1=Common, 2=Rare, 3=Epic, 4=Legendary, 5=SE)
+ * @returns {number} The highest achievable level with given cards
+ * 
+ * @example
+ * calculateHighestLevel(5, 100, 2) // Returns max level reachable for Rare item
+ * calculateHighestLevel(0, 10, 1) // Returns level achievable from scratch
  */
 export function calculateHighestLevel(currentLevel: number, cardCount: number, rarity: number): number {
   // If already at max level for rarity, return current level
@@ -198,7 +276,15 @@ export function calculateHighestLevel(currentLevel: number, cardCount: number, r
 }
 
 /**
- * Get max level for a given rarity
+ * Get the maximum achievable level for a given rarity tier.
+ * Each rarity has a different maximum level cap.
+ * 
+ * @param {number} rarity - Rarity tier (0=Basic, 1=Common, 2=Rare, 3=Epic, 4=Legendary, 5=SE)
+ * @returns {number} Maximum level for the given rarity (7-11)
+ * 
+ * @example
+ * getMaxLevelForRarity(2) // Returns 9 (Rare max level)
+ * getMaxLevelForRarity(4) // Returns 7 (Legendary max level)
  */
 export function getMaxLevelForRarity(rarity: number): number {
   return MAX_LEVELS_BY_RARITY[rarity as keyof typeof MAX_LEVELS_BY_RARITY] || 11;
@@ -467,7 +553,15 @@ export function calculateLegacyToMaxLevel(
 }
 
 /**
- * Get rarity background color for cells
+ * Get the Tailwind CSS background color class for a rarity tier.
+ * Used for visual styling of cells based on item rarity.
+ * 
+ * @param {number} rarity - Rarity tier (0-5)
+ * @returns {string} Tailwind CSS background color class
+ * 
+ * @example
+ * getRarityBackground(4) // Returns "bg-yellow-300" (Legendary)
+ * getRarityBackground(2) // Returns "bg-orange-300" (Rare)
  */
 export function getRarityBackground(rarity: number): string {
   return rarity === 0 ? "bg-gray-200" :
@@ -479,7 +573,14 @@ export function getRarityBackground(rarity: number): string {
 }
 
 /**
- * Get rarity display name
+ * Get the human-readable display name for a rarity tier.
+ * 
+ * @param {number} rarity - Rarity tier (0-5)
+ * @returns {string} Display name (Basic, Common, Rare, Epic, Legendary, or Special Edition)
+ * 
+ * @example
+ * getRarityDisplay(3) // Returns "Epic"
+ * getRarityDisplay(5) // Returns "Special Edition"
  */
 export function getRarityDisplay(rarity: number): string {
   const rarityMap: Record<number, string> = {
@@ -495,10 +596,17 @@ export function getRarityDisplay(rarity: number): string {
 }
 
 /**
- * Get collection-based rarity display for Special Edition (rarity 5) drivers.
- * - `collectionTheme` is expected to be the `theme` from the collections table.
- * - If `collectionSubName` is present, the last character will be appended
- *   to the base theme separated by a hyphen (e.g. "Stars-2").
+ * Get collection-based display name for Special Edition (rarity 5) drivers.
+ * For SE drivers, the display name is derived from the collection theme
+ * rather than just "Special Edition".
+ * 
+ * @param {string | null} [collectionTheme] - Theme from the collections table
+ * @param {string | null} [collectionSubName] - Sub-name with variant number
+ * @returns {string} Collection-based display name (e.g., "HotProspects-2") or "Special Edition"
+ * 
+ * @example
+ * getCollectionRarityDisplay("HotProspects", "SUBTITLE_2") // Returns "HotProspects-2"
+ * getCollectionRarityDisplay(null, null) // Returns "Special Edition"
  */
 export function getCollectionRarityDisplay(collectionTheme?: string | null, collectionSubName?: string | null): string {
   if (!collectionTheme) return 'Special Edition';

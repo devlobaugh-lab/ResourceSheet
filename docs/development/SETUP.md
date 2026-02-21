@@ -1,8 +1,6 @@
 # F1 Resource Manager - Development Setup Guide
 
-## Overview
-
-This guide provides step-by-step instructions to set up the F1 Resource Manager development environment locally.
+This guide provides comprehensive instructions for setting up the F1 Resource Manager development environment, including database initialization, seeding, and development workflow.
 
 ## Prerequisites
 
@@ -12,10 +10,10 @@ This guide provides step-by-step instructions to set up the F1 Resource Manager 
 - **npm** or **pnpm**: Package manager (pnpm recommended)
 - **Docker**: For local Supabase development
 - **Supabase CLI**: For database management
+- **Git**: Version control
 
 ### Optional Tools
 
-- **Git**: Version control
 - **VS Code**: Recommended IDE with extensions
 - **PostgreSQL client**: For database exploration (TablePlus, pgAdmin, etc.)
 
@@ -87,6 +85,7 @@ Create a `.env.local` file in the project root:
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # Optional: Enable debug logging
 DEBUG=1
@@ -98,26 +97,39 @@ To get your local Supabase keys:
 supabase status
 ```
 
-This displays the local URL and keys. Copy the `anon` key to your `.env.local` file.
+This displays the local URL and keys. Copy the `anon` key and `service_role` key to your `.env.local` file.
 
 ### 5. Set Up Database
 
-#### Run Migrations
+#### Option A: Using Supabase CLI (Recommended)
 
 ```bash
+# Run migrations
 supabase db push
+
+# Seed the database
+supabase db seed --file db/seeds/01_seasons.sql
+supabase db seed --file db/seeds/02_car_parts.sql
+supabase db seed --file db/seeds/03_drivers.sql
+supabase db seed --file db/seeds/04_boosts.sql
 ```
 
-This applies all database migrations and creates the necessary tables.
-
-#### Seed Initial Data (Optional)
+#### Option B: Using Custom Scripts
 
 ```bash
-# Run the seed script
+# Initialize the database with all required data
+npm run db:init
+
+# Or run individual seed scripts
+node scripts/seed_seasons.js
 node scripts/seed_new_tables.js
 ```
 
-This populates the database with sample data for development.
+This populates the database with:
+- Seasons data (currently Season 6)
+- Car parts definitions
+- Driver data with stats per level
+- Boost configurations
 
 ### 6. Start Development Server
 
@@ -125,21 +137,54 @@ This populates the database with sample data for development.
 npm run dev
 ```
 
-or
-
-```bash
-pnpm dev
-```
-
 The application will be available at:
 - **Frontend**: http://localhost:3000
 - **Supabase Studio**: http://localhost:54323
 
-## Development Workflow
+## Database Management
 
-### Database Development
+### Database Schema
 
-#### Creating Migrations
+The database schema is defined in `supabase/migrations/`. Key tables include:
+
+| Table | Description |
+|-------|-------------|
+| `seasons` | Season definitions with active status |
+| `drivers` | Driver catalog with stats |
+| `car_parts` | Car part catalog with stats |
+| `boosts` | Boost configurations |
+| `user_drivers` | User-owned drivers with levels |
+| `user_car_parts` | User-owned car parts |
+| `user_boosts` | User-owned boosts |
+| `user_car_setups` | Saved car configurations |
+| `user_track_guides` | Racing strategies per track |
+| `profiles` | User profiles with admin flags |
+| `tracks` | Race track definitions |
+
+### Seeding Data
+
+The application includes several seed files:
+
+- `db/seeds/01_seasons.sql` - Season data
+- `db/seeds/02_car_parts.sql` - Car part definitions
+- `db/seeds/03_drivers.sql` - Driver data
+- `db/seeds/04_boosts.sql` - Boost configurations
+
+#### Complete Re-seeding
+
+To reset and re-seed all data:
+
+```bash
+# Reset database and re-seed everything
+npm run db:reset
+
+# Or manually:
+supabase db reset
+supabase db push
+node scripts/seed_new_tables.js
+```
+
+### Creating Migrations
 
 When you need to modify the database schema:
 
@@ -155,31 +200,23 @@ When you need to modify the database schema:
    supabase db push
    ```
 
-#### Database Schema Changes
-
 **Important**: Always use migrations for schema changes. Never modify the database directly in production.
 
-#### Seeding Data
+## Development Workflow
 
-For development data:
-
-```bash
-# Run specific seed files
-supabase db seed run
-
-# Or use custom scripts
-node scripts/seed_new_tables.js
-```
-
-### Code Development
-
-#### File Structure
+### File Structure
 
 ```
 src/
 ├── app/              # Next.js App Router pages
+│   ├── api/         # API route handlers
+│   ├── auth/        # Authentication pages
+│   ├── admin/       # Admin dashboard pages
+│   └── ...          # Feature pages
 ├── components/       # Reusable React components
-├── hooks/           # Custom React hooks
+│   ├── ui/          # Base UI components
+│   └── auth/        # Auth-related components
+├── hooks/           # Custom React hooks (useApi.ts)
 ├── lib/             # Utility functions and Supabase clients
 ├── types/           # TypeScript type definitions
 └── utils/           # Helper functions
@@ -190,18 +227,32 @@ supabase/
 └── config.toml     # Supabase configuration
 ```
 
-#### Adding New API Endpoints
+### Adding New API Endpoints
 
 1. **Create API route** in `src/app/api/`
 2. **Add TypeScript types** in `src/types/`
 3. **Create database migration** if needed
-4. **Add React Query hooks** in `src/hooks/`
+4. **Add React Query hooks** in `src/hooks/useApi.ts`
 
-#### Adding New Pages
+### Adding New Pages
 
 1. **Create page component** in `src/app/`
-2. **Add navigation** in `src/app/client-navigation.tsx`
+2. **Add navigation** in `src/components/NavigationMenu.tsx`
 3. **Implement data fetching** using existing hooks
+
+### Current Season Management
+
+The application tracks the current active season using the `is_active` boolean field in the `seasons` table. Only one season should be active at a time.
+
+To change the active season:
+
+```sql
+-- Deactivate current season
+UPDATE seasons SET is_active = false WHERE is_active = true;
+
+-- Activate new season
+UPDATE seasons SET is_active = true WHERE name = 'Season 7';
+```
 
 ### Authentication Development
 
@@ -235,14 +286,6 @@ node scripts/preprocess_external_data.js
 node scripts/unified_data_processor.js
 ```
 
-#### Custom Data Processing
-
-For custom data imports:
-
-1. **Create a new script** in `scripts/`
-2. **Use the existing Supabase client** pattern
-3. **Add proper error handling** and logging
-
 ## Testing
 
 ### Running Tests
@@ -272,8 +315,9 @@ npm run test:coverage
 # Test API endpoints
 node scripts/test_api_endpoints.js
 
-# Test TypeScript types
-node scripts/test_types.ts
+# Run linting and type checking
+npm run lint
+npx tsc --noEmit
 ```
 
 ## Debugging
@@ -303,116 +347,13 @@ supabase stop
 supabase start
 ```
 
-#### Environment Variables
-
-Ensure `.env.local` is properly configured and contains valid Supabase keys.
-
-### Debug Tools
-
-#### Next.js Debug Mode
-
-Add to `.env.local`:
-```env
-DEBUG=1
-NEXT_TELEMETRY_DISABLED=1
-```
-
-#### Supabase Debug Mode
-
-Add to `.env.local`:
-```env
-SUPABASE_DEBUG=1
-```
-
-#### Browser Developer Tools
-
-Use browser dev tools to:
-- Inspect network requests
-- Check console errors
-- Monitor state changes
-
-## Performance Optimization
-
-### Development Performance
-
-#### Next.js Optimizations
-
-- **Enable Fast Refresh**: Automatic in development
-- **Use Server Components**: Minimize client-side JavaScript
-- **Implement Lazy Loading**: For heavy components
-
-#### Database Performance
-
-- **Use proper indexes**: Check query performance in Supabase dashboard
-- **Avoid N+1 queries**: Use joins and includes
-- **Cache frequently accessed data**: Use Next.js caching
-
-### Production Considerations
-
-#### Build Optimization
-
-```bash
-# Build for production
-npm run build
-
-# Analyze bundle size
-npm run analyze
-```
-
-#### Environment Variables
-
-For production deployment:
-
-```env
-# Production Supabase keys
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-production-anon-key
-```
-
-## Deployment Preparation
-
-### Environment Setup
-
-#### Production Environment Variables
-
-Required for production:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-
-Optional:
-- `DEBUG` (set to 0 for production)
-- `NODE_ENV` (automatically set to production)
-
-#### Database Setup
-
-1. **Create production Supabase project**
-2. **Run migrations**: `supabase db push --project-ref your-project-id`
-3. **Seed data** if needed
-
-### Build Process
-
-```bash
-# Install dependencies
-npm install --production
-
-# Build application
-npm run build
-
-# Start production server
-npm start
-```
-
-## Troubleshooting
-
-### Supabase Issues
-
 #### Database Not Starting
 
 ```bash
 # Check Docker status
 docker ps
 
-# Restart Docker
+# Restart Docker (Linux)
 sudo systemctl restart docker
 
 # Clear Supabase data (nuclear option)
@@ -432,41 +373,101 @@ supabase db reset
 supabase db push
 ```
 
-### Next.js Issues
-
-#### Hot Reload Not Working
-
-1. **Check file structure**: Ensure files are in correct locations
-2. **Clear cache**: Delete `.next/` directory
-3. **Restart development server**
-
-#### Build Failures
-
-```bash
-# Check TypeScript errors
-npx tsc --noEmit
-
-# Check ESLint errors
-npm run lint
-
-# Clean and rebuild
-rm -rf .next/
-npm run build
-```
-
-### Authentication Issues
-
-#### Magic Links Not Working
+#### Authentication Issues
 
 1. **Check email configuration** in Supabase dashboard
 2. **Verify redirect URLs** are configured correctly
 3. **Check browser console** for errors
+4. **Ensure `NEXT_PUBLIC_SUPABASE_ANON_KEY` is correct**
 
-#### RLS Policy Issues
+### Debug Tools
 
-1. **Test policies** in Supabase SQL editor
-2. **Check auth context** with `set request.jwt.claim.sub`
-3. **Verify user exists** in auth.users table
+#### Next.js Debug Mode
+
+Add to `.env.local`:
+```env
+DEBUG=1
+NEXT_TELEMETRY_DISABLED=1
+```
+
+#### Browser Developer Tools
+
+Use browser dev tools to:
+- Inspect network requests
+- Check console errors
+- Monitor state changes
+
+## Performance Optimization
+
+### Development Performance
+
+- **Enable Fast Refresh**: Automatic in development
+- **Use Server Components**: Minimize client-side JavaScript
+- **Implement Lazy Loading**: For heavy components
+
+### Build Optimization
+
+```bash
+# Build for production
+npm run build
+
+# Analyze bundle size
+npm run analyze
+
+# Check TypeScript errors
+npx tsc --noEmit
+```
+
+## Deployment Preparation
+
+### Production Environment Variables
+
+Required for production:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (for admin operations)
+
+Optional:
+- `DEBUG` (set to 0 for production)
+- `NODE_ENV` (automatically set to production)
+
+### Database Setup for Production
+
+1. **Create production Supabase project**
+2. **Run migrations**: `supabase db push --project-ref your-project-id`
+3. **Seed essential data** using the seed scripts
+
+### Build Process
+
+```bash
+# Install dependencies
+npm install --production
+
+# Build application
+npm run build
+
+# Start production server
+npm start
+```
+
+## Resetting Development Environment
+
+If you encounter persistent issues, you can reset your development environment:
+
+```bash
+# Stop any running services
+# Remove node_modules and reinstall
+rm -rf node_modules
+npm install
+
+# Reset database (if using local Supabase)
+supabase stop
+supabase start
+
+# Re-run migrations and seeds
+supabase db push
+node scripts/seed_new_tables.js
+```
 
 ## Getting Help
 
@@ -482,13 +483,6 @@ npm run build
 - **Supabase Discord**: For Supabase-specific questions
 - **Next.js Discord**: For Next.js-related issues
 
-### Development Tips
-
-- **Use TypeScript**: Leverage type checking for better development experience
-- **Follow conventions**: Use existing patterns for consistency
-- **Test changes**: Always test locally before committing
-- **Keep dependencies updated**: Regularly update packages for security and features
-
 ## Next Steps
 
 After completing setup:
@@ -498,4 +492,6 @@ After completing setup:
 3. **Review existing features** to understand implementation patterns
 4. **Start with small changes** to get familiar with the development workflow
 
-Happy coding! 🚀
+---
+
+**Last Updated:** February 2026

@@ -202,6 +202,96 @@ node scripts/unified_data_processor.js
 
 ## [Unreleased]
 
+### Changed - Component Decomposition & Admin Fix (2026-02-20)
+
+**Phase 1: Data Input Page Decomposition - COMPLETE**
+- **Extracted Hooks**: Created mutation hooks for driver, car part, and boost data updates
+  - `src/app/data-input/hooks/useUpdateDriverData.ts`
+  - `src/app/data-input/hooks/useUpdateCarPartData.ts`
+  - `src/app/data-input/hooks/useUpdateBoostData.ts`
+- **Extracted Utilities**: Created sorting and constants utilities
+  - `src/app/data-input/utils/constants.ts` - LEVEL_RANGES, PART_TYPE_ORDER, PART_TYPE_NAMES
+  - `src/app/data-input/utils/sorting.ts` - sortDrivers, sortCarParts, sortBoosts functions
+- **Extracted Components**: Created tab components for drivers, parts, and boosts
+  - `src/app/data-input/components/DriversTab.tsx`
+  - `src/app/data-input/components/PartsTab.tsx`
+  - `src/app/data-input/components/BoostsTab.tsx`
+- **Refactored Main Page**: Reduced `page.tsx` from ~700 lines to ~90 lines
+- **Benefits**: Smaller focused files, clear separation of concerns, testable in isolation
+
+**Phase 2: DataGrid Component Decomposition - PARTIAL**
+- **Created Directory Structure**: `src/components/DataGrid/` with subdirectories for components, hooks, and utils
+- **Extracted Utilities**:
+  - `src/components/DataGrid/utils/colors.ts` - Color utility functions
+  - `src/components/DataGrid/utils/sorting.ts` - Sort preference localStorage utilities
+  - `src/components/DataGrid/utils/columns.ts` - Column definitions for grids
+- **Extracted Components**:
+  - `src/components/DataGrid/components/FreeBoostCheckbox.tsx` - Admin-only free boost toggle
+- **Extracted Hooks**:
+  - `src/components/DataGrid/hooks/useColumnStats.ts` - Calculate min/max/median for columns
+- **Created Types**: `src/components/DataGrid/types.ts` with GridType, FilterState, ColumnDef interfaces
+- **Moved Main Component**: Relocated `DataGrid.tsx` to new directory structure
+
+**Admin Check Bug Fix**
+- **Issue**: Free Boost checkbox and Boost Name editor were using hardcoded email for admin check
+- **Solution**: Updated both components to fetch user profile and check `is_admin === true || user_type === 'admin'`
+- **Files Fixed**:
+  - `src/components/DataGrid/components/FreeBoostCheckbox.tsx`
+  - `src/components/BoostNameEditor.tsx`
+  - `src/components/DataGrid/DataGrid.tsx` - Updated to use imported FreeBoostCheckbox
+- **Pattern**: Now matches admin page's profile-based admin check
+
+### Changed - Documentation & Code Quality (2026-02-20)
+
+**JSDoc Enhancement**
+- Added comprehensive JSDoc documentation with @param/@returns tags to all utility functions in `src/lib/utils.ts`
+- Documented formatting functions (formatCurrency, formatNumber, formatCompactNumber, formatDate, formatRelativeTime)
+- Documented utility functions (cn, truncateText, generateId, debounce)
+- Documented level calculation functions (calculateHighestLevel, getMaxLevelForRarity)
+- Documented display functions (getRarityBackground, getRarityDisplay, getCollectionRarityDisplay)
+
+**Documentation Consolidation**
+- Merged `SETUP.md` and `DEVELOPER_SETUP.md` into single comprehensive setup guide
+- Moved old `DEVELOPER_SETUP.md` to `docs/archive/` for historical reference
+- Updated `docs/README.md` to reflect consolidated structure
+
+**Major Documentation Restructuring**
+- Reorganized 22+ markdown files from root directory into organized `docs/` structure
+- Created new documentation categories: `api/`, `architecture/`, `deployment/`, `development/`, `operations/`, `product/`, `archive/`
+- Created `docs/README.md` as central documentation index
+- Updated main `README.md` with links to new documentation locations
+- Created `backups/` directory for SQL backup files (moved 6 files)
+- Moved test scripts to `scripts/` directory (6 files)
+
+**Files Moved:**
+- `API.md` → `docs/api/API.md`
+- `ARCHITECTURE.md` → `docs/architecture/ARCHITECTURE.md`
+- `GeneralArchitechtureDesign.md` → `docs/architecture/GeneralArchitechtureDesign.md`
+- `ProductDesign.md` → `docs/product/ProductDesign.md`
+- `SELF_HOSTING.md` → `docs/deployment/SELF_HOSTING.md`
+- `VERCEL_HOSTING.md` → `docs/deployment/VERCEL_HOSTING.md`
+- `SETUP.md` → `docs/development/SETUP.md`
+- `DEVELOPER_SETUP.md` → `docs/development/DEVELOPER_SETUP.md`
+- `MIGRATION_GUIDE.md` → `docs/development/MIGRATION_GUIDE.md`
+- `CURRENT_SEASON_MANAGEMENT.md` → `docs/operations/CURRENT_SEASON_MANAGEMENT.md`
+- `WIPE_AND_REPOPULATE_GUIDE.md` → `docs/operations/WIPE_AND_REPOPULATE_GUIDE.md`
+- `BACKUP_RESTORE_PLAN.md` → `docs/operations/BACKUP_RESTORE_PLAN.md`
+- `BACKUP_RESTORE_README.md` → `docs/operations/BACKUP_RESTORE_README.md`
+- `BACKUP_INSTRUCTIONS.md` → `docs/operations/BACKUP_INSTRUCTIONS.md`
+- `CODE_REVIEW.md` → `docs/archive/CODE_REVIEW_2026-02-09.md`
+- `REFACTORING_SUMMARY.md` → `docs/archive/REFACTORING_SUMMARY.md`
+- `DRIVERS_RARITY_5_ISSUE_ANALYSIS.md` → `docs/archive/DRIVERS_RARITY_5_ISSUE_ANALYSIS.md`
+- `FINAL_VERIFICATION.md` → `docs/archive/FINAL_VERIFICATION.md`
+
+**New Files Created:**
+- `docs/CODE_REVIEW_2026-02-20.md` - Comprehensive code review with recommendations
+- `docs/README.md` - Documentation index
+
+**Root Directory Cleanup:**
+- Root now contains only essential files: `README.md`, `CHANGELOG.md`, `LICENSE`, `TASK.md`
+- SQL backup files moved to `backups/` directory
+- Test scripts moved to `scripts/` directory
+
 ### Added - Data Backup & Restore System (2026-02-19)
 
 **Comprehensive Backup/Restore Architecture**

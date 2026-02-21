@@ -117,11 +117,17 @@ The application uses a clean separation of concerns:
 
 ## 📖 Documentation
 
-- [Architecture Design](ARCHITECTURE.md) - System architecture and design decisions
-- [API Documentation](API.md) - REST API endpoints and usage
-- [Setup Guide](SETUP.md) - Detailed development setup instructions
-- [Migration Guide](MIGRATION_GUIDE.md) - Database migration procedures
-- [Product Design](ProductDesign.md) - Product vision and user experience design
+Documentation is organized in the [`docs/`](./docs/) directory:
+
+- **[Documentation Index](./docs/README.md)** - Complete documentation overview
+- **[Architecture](./docs/architecture/ARCHITECTURE.md)** - System architecture and design decisions
+- **[API Reference](./docs/api/API.md)** - REST API endpoints and usage
+- **[Setup Guide](./docs/development/SETUP.md)** - Development environment setup
+- **[Migration Guide](./docs/development/MIGRATION_GUIDE.md)** - Database migration procedures
+- **[Deployment](./docs/deployment/)** - Hosting guides (Vercel & Self-hosted)
+- **[Operations](./docs/operations/)** - Backup, restore, and maintenance guides
+
+**Project Tracking:**
 - [CHANGELOG.md](CHANGELOG.md) - Version history and release notes
 - [TASK.md](TASK.md) - Development task tracking and progress
 
