@@ -202,6 +202,29 @@ node scripts/unified_data_processor.js
 
 ## [Unreleased]
 
+### Added
+- **AI Compare Page** (`/compare/ai`) - New feature for comparing AI driver stats across tracks and difficulty levels
+  - Track/difficulty dropdown selector (format: "Champion Bahrain")
+  - Grid display with driver stats (OVT, BLK, QLY, TYR, RST, Total)
+  - Red-to-green color coding for stat visualization
+  - Column sorting for all columns
+  - Optional car parts display toggle
+  - Custom driver creation and comparison
+  - User-specific custom driver persistence
+
+### Changed
+- Content cache upload now parses and imports `trackAILoadouts` data
+- Added 3 new database tables: `ai_track_loadouts`, `team_driver_names`, `user_custom_drivers`
+
+### Technical
+- New API routes:
+  - `GET /api/ai-loadouts` - List unique track/difficulty combinations
+  - `GET /api/ai-loadouts/track/[trackName]/[difficulty]` - Get loadout details
+  - `GET/POST/PUT/DELETE /api/custom-drivers` - CRUD for user custom drivers
+  - `GET/POST/DELETE /api/team-driver-names` - Team driver name mappings (admin)
+- New components: `AIDriverCompareGrid`, `CustomDriverForm`
+- New migration: `20260220195900_create_ai_compare_tables.sql`
+
 ### Changed - Component Decomposition & Admin Fix (2026-02-20)
 
 **Phase 1: Data Input Page Decomposition - COMPLETE**
