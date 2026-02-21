@@ -65,17 +65,20 @@ export async function GET(
     // Fetch the user's track guide for this track at this GP level
     const { data: trackGuide, error: trackGuideError } = await supabaseAdmin
       .from('user_track_guides')
-      .select(`*, track:tracks (id, name, alt_name, laps, driver_track_stat, car_track_stat)`)
+      .select(`*, track:tracks (id, name, laps, driver_track_stat, car_track_stat)`)
       .eq('user_id', user.id)
       .eq('track_id', params.trackId)
       .eq('gp_level', guide.gp_level)
       .single()
 
     if (trackGuideError || !trackGuide) {
-      return NextResponse.json(
-        { error: { code: 'NOT_FOUND', message: 'No track guide found for this track at the current GP level' } },
-        { status: 404 }
-      )
+      // Return empty data with found: false instead of 404 error
+      // Missing track guide is an expected case, not an error
+      return NextResponse.json({ 
+        data: null,
+        found: false,
+        message: 'No track guide found for this track at the current GP level'
+      })
     }
 
     // Map track guide fields to GP guide track slot fields
@@ -108,7 +111,7 @@ export async function GET(
       },
     }
 
-    return NextResponse.json({ data: mappedData })
+    return NextResponse.json({ data: mappedData, found: true })
   } catch (error) {
     console.error('GP guide import GET error:', error)
     return NextResponse.json(

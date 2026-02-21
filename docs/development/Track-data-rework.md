@@ -83,22 +83,63 @@ Updated `src/app/api/admin/content-cache/upload/route.ts` to:
    - Replaced "Track Management" with "Track Name Aliases"
    - Track aliases still need manual management
 
-### Phase 4: Testing & Verification (Pending)
+### Phase 4: Testing & Verification ✅
 
-1. Apply migration to database
-2. Upload content_cache.json
-3. Verify tracks are populated correctly
-4. Verify Track Guides and GP Guides work with new track IDs
-5. Run CI checks
+1. Applied migration to database
+2. Uploaded content_cache.json
+3. Verified tracks are populated correctly
+4. Verified Track Guides and GP Guides work with new track IDs
+5. CI checks pass
+
+### Phase 5: Track Alias Integration ✅
+
+1. **Tracks Page** (`/tracks`)
+   - Displays alias name if set: "Display Name (Original Name)"
+   - Tracks sorted alphabetically by display name (alias || name)
+
+2. **Track Guides Page** (`/track-guides`)
+   - Track dropdown shows alias name if available
+   - Tracks sorted by display name
+
+3. **Individual Track Guide Page** (`/track-guides/[id]`)
+   - Track selector shows alias name in dropdown
+   - Tracks sorted by display name
+
+4. **GP Guides Page** (`/gp-guides/[id]`)
+   - Track dropdown shows alias name if available
+   - Tracks sorted by display name
+
+### Phase 6: Bug Fixes & Polish ✅
+
+1. **Fixed `alt_name` column references**
+   - Removed `alt_name` from all API selects (track-guides, gp-guides import)
+   - Track now returns `display_name` computed from alias lookup
+
+2. **Track Aliases Admin Page**
+   - Added auto-focus to System Name field when modal opens
+
+3. **GP Guide Import Improvements**
+   - Missing track guides no longer throw 404 console errors
+   - Returns `{ found: false }` for missing guides, `{ found: true }` for found
+   - Bulk import silently skips missing guides and shows summary
 
 ## Affected Files
 
 | File | Change |
 |------|--------|
 | `supabase/migrations/20260221000000_rework_tracks_table.sql` | New migration for schema changes |
+| `supabase/migrations/20260220220000_create_track_name_aliases.sql` | Track name aliases table |
 | `src/app/api/admin/content-cache/upload/route.ts` | Added track/series processing |
+| `src/app/api/tracks/route.ts` | Returns display_name from alias lookup |
+| `src/app/api/track-guides/route.ts` | Fixed alt_name references |
+| `src/app/api/track-guides/[id]/route.ts` | Fixed alt_name references |
+| `src/app/api/gp-guides/[id]/import/[trackId]/route.ts` | Graceful missing guide handling |
 | `src/app/admin/tracks/page.tsx` | Deleted |
-| `src/app/tracks/page.tsx` | Created new reference page |
+| `src/app/tracks/page.tsx` | Created new reference page with alias support |
+| `src/app/track-guides/page.tsx` | Added alias display and sorting |
+| `src/app/track-guides/[id]/page.tsx` | Added alias support in dropdown |
+| `src/app/gp-guides/[id]/page.tsx` | Added alias support, fixed import handling |
+| `src/app/admin/track-aliases/page.tsx` | Added auto-focus to modal |
 | `src/components/NavigationMenu.tsx` | Added Tracks link |
 | `src/app/admin/page.tsx` | Updated admin sections |
 
@@ -118,8 +159,29 @@ Updated `src/app/api/admin/content-cache/upload/route.ts` to:
 
 4. **Manage track aliases** via Admin > Track Name Aliases if needed
 
+## Track Name Aliases
+
+Track aliases provide user-friendly display names for tracks. For example:
+- System name: "Americas" → Display name: "Austin"
+- System name: "GreatBritain" → Display name: "Silverstone"
+
+### How Aliases Work
+
+1. **Database Table**: `track_name_aliases` stores `system_name` → `display_name` mappings
+2. **API Response**: Tracks API returns `display_name` computed from alias lookup
+3. **UI Display**: All track selectors show the alias name when available
+4. **Sorting**: Tracks are sorted by display name (alias || original name)
+
+### Adding Aliases
+
+1. Go to Admin > Track Name Aliases
+2. Click "Add Alias"
+3. Enter system name (exact match from content_cache)
+4. Enter display name (user-friendly name)
+
 ## Notes
 
 - Track data is season-specific and will be refreshed on each content_cache upload
 - Track aliases are preserved across uploads and must be manually maintained
 - The `series_data` table is populated for future features
+- Aliases are cached for 5 minutes to improve performance

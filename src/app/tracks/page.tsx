@@ -77,16 +77,20 @@ export default function TracksReferencePage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {tracksData.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
-                          No tracks found. Upload a content_cache.json to populate tracks.
-                        </td>
-                      </tr>
-                    ) : (
-                      tracksData
-                        .sort((a: any, b: any) => a.name.localeCompare(b.name))
-                        .map((track: any) => (
+                      {tracksData.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                            No tracks found. Upload a content_cache.json to populate tracks.
+                          </td>
+                        </tr>
+                      ) : (
+                        tracksData
+                          .sort((a: any, b: any) => {
+                            const aSortKey = a.display_name || a.name
+                            const bSortKey = b.display_name || b.name
+                            return aSortKey.localeCompare(bSortKey)
+                          })
+                          .map((track: any) => (
                           <tr key={track.id} className="hover:bg-gray-50">
                             <td className="px-6 py-2 whitespace-nowrap">
                               <div className="text-base font-medium text-gray-900">

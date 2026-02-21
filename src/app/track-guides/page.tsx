@@ -87,6 +87,12 @@ export default function TrackGuidesPage() {
     return track.name
   }
 
+  // Get sort key for a track (alias name || name)
+  const getSortKey = (track: any) => track.display_name || track.name
+
+  // Sort tracks by display name
+  const sortedTracks = [...tracks].sort((a, b) => getSortKey(a).localeCompare(getSortKey(b)))
+
   if (isLoading) {
     return (
       <ProtectedRoute>
@@ -164,7 +170,7 @@ export default function TrackGuidesPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {tracks.map((track: Track) => (
+                  {sortedTracks.map((track: Track) => (
                     <tr key={track.id} className="hover:bg-gray-50">
                       <td className="px-6 py-2 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
