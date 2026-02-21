@@ -79,6 +79,20 @@ export default function TrackGuidesPage() {
     return guide ? 'complete' : 'empty'
   }
 
+  // Get display name with alias if available
+  const getDisplayName = (track: any) => {
+    if (track.display_name) {
+      return `${track.display_name} (${track.name})`
+    }
+    return track.name
+  }
+
+  // Get sort key for a track (alias name || name)
+  const getSortKey = (track: any) => track.display_name || track.name
+
+  // Sort tracks by display name
+  const sortedTracks = [...tracks].sort((a, b) => getSortKey(a).localeCompare(getSortKey(b)))
+
   if (isLoading) {
     return (
       <ProtectedRoute>
@@ -156,20 +170,11 @@ export default function TrackGuidesPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {tracks.map((track: Track) => (
+                  {sortedTracks.map((track: Track) => (
                     <tr key={track.id} className="hover:bg-gray-50">
                       <td className="px-6 py-2 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {track.name}
-                            </div>
-                            {track.alt_name && (
-                              <div className="text-sm text-gray-600">
-                                {track.alt_name}
-                              </div>
-                            )}
-                          </div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {getDisplayName(track)}
                         </div>
                       </td>
                       <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-600">

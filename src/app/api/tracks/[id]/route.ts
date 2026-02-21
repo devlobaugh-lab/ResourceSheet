@@ -84,7 +84,20 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       )
     }
 
-    return NextResponse.json(data)
+    // Also get track name alias
+    const { data: alias } = await supabaseAdmin
+      .from('track_name_aliases')
+      .select('display_name')
+      .eq('system_name', data.name)
+      .single()
+
+    // Add display_name to response
+    const trackWithAlias = {
+      ...data,
+      display_name: alias?.display_name || null
+    }
+
+    return NextResponse.json(trackWithAlias)
 
   } catch (error) {
     console.error('Tracks GET error:', error)

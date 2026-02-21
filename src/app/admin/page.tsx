@@ -9,7 +9,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAuthHeaders } from '@/hooks/useApi';
 import Link from 'next/link';
-import { Upload, Settings, Users, Shield, Download, FileUp, Database, Globe } from 'lucide-react';
+import { Upload, Users, Shield, Download, FileUp, Database, Globe, MapPin } from 'lucide-react';
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -185,10 +185,10 @@ export default function AdminPage() {
       color: 'text-blue-600'
     },
     {
-      title: 'Track Management',
-      description: 'Manage race tracks and their attributes',
-      icon: Settings,
-      href: '/admin/tracks',
+      title: 'Track Name Aliases',
+      description: 'Manage track display names (e.g., Americas → Austin)',
+      icon: MapPin,
+      href: '/admin/track-aliases',
       color: 'text-green-600'
     },
     {

@@ -21,6 +21,16 @@ export async function GET(request: NextRequest) {
       `)
       .order('name')
 
+    // Also get track name aliases
+    const { data: aliases } = await supabaseAdmin
+      .from('track_name_aliases')
+      .select('system_name, display_name')
+
+    // Create a map for quick lookup
+    const aliasMap = new Map(
+      (aliases || []).map(a => [a.system_name, a.display_name])
+    )
+
     // Filter by season if provided
     if (seasonId) {
       query = query.eq('season_id', seasonId)
@@ -36,11 +46,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Transform the data to flatten the season information
+    // Transform the data to flatten the season information and add alias
     const transformedData = data.map(track => ({
       ...track,
       season_name: track.seasons?.name || 'Unknown',
-      season_is_active: track.seasons?.is_active || false
+      season_is_active: track.seasons?.is_active || false,
+      display_name: aliasMap.get(track.name) || null
     }))
 
     return NextResponse.json(transformedData)

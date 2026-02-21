@@ -19,6 +19,8 @@ const contentCacheSchema = z.object({
     boosts: z.array(z.any()).optional(),
     collections: z.array(z.any()).optional(),
     trackAILoadouts: z.array(z.any()).optional(),
+    series: z.array(z.any()).optional(),
+    trackData: z.array(z.any()).optional(),
   }).optional(),
   // Support both wrapped and unwrapped formats
   drivers: z.array(z.any()).optional(),
@@ -26,6 +28,8 @@ const contentCacheSchema = z.object({
   boosts: z.array(z.any()).optional(),
   collections: z.array(z.any()).optional(),
   trackAILoadouts: z.array(z.any()).optional(),
+  series: z.array(z.any()).optional(),
+  trackData: z.array(z.any()).optional(),
 })
 
 // POST /api/admin/content-cache/upload - Upload and process content_cache.json (admin only)
@@ -255,7 +259,9 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
     car_parts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
     boosts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
     collections: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
-    ai_track_loadouts: { new: 0, modified: 0, unchanged: 0, deleted: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> }
+    ai_track_loadouts: { new: 0, modified: 0, unchanged: 0, deleted: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
+    series: { new: 0, modified: 0, unchanged: 0, deleted: 0 },
+    tracks: { new: 0, modified: 0, unchanged: 0 }
   }
 
   // Process collections FIRST - handle both wrapped and unwrapped formats
@@ -522,6 +528,164 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         
         results.ai_track_loadouts.new = inserted;
         console.log(`✅ AI loadouts processed: deleted=${results.ai_track_loadouts.deleted}, inserted=${inserted}`);
+      }
+    }
+  }
+
+  // Process series data - handle both wrapped and unwrapped formats
+  // This is a full refresh: delete old data and insert new data
+  let seriesData = validatedData._contentResponse?.series || validatedData.series;
+  
+  if (seriesData) {
+    console.log(`🏎️ Processing ${seriesData.length} series entries...`);
+    
+    // Build rows for series_data table
+    const seriesRows = seriesData.map((s: any) => ({
+      index: s.index,
+      entry_fee: s.entryFee || 0,
+      win_flags: s.winFlags || 0,
+      loss_flags: s.lossFlags || 0,
+      win_rep: s.winRep || 0,
+      flags_to_unlock: s.flagsToUnlock || 0,
+      max_flags: s.maxFlags || 0,
+      track_ids: s.trackIds || [],
+      bot_loadout: s.botLoadout || null,
+      ai_car_loadouts: s.aiCarLoadouts || null
+    }));
+    
+    if (seriesRows.length > 0) {
+      // Count existing rows for reporting
+      const { count: existingCount } = await supabaseAdmin
+        .from('series_data')
+        .select('*', { count: 'exact', head: true });
+      
+      // Delete all existing series data
+      const { error: deleteError } = await supabaseAdmin
+        .from('series_data')
+        .delete()
+        .neq('index', -999); // Delete all (workaround for "delete all")
+      
+      if (deleteError) {
+        console.error('❌ Failed to clear existing series data:', deleteError);
+      } else {
+        results.series.deleted = existingCount || 0;
+        
+        // Insert new rows
+        const { error: insertError } = await supabaseAdmin
+          .from('series_data')
+          .insert(seriesRows);
+        
+        if (insertError) {
+          console.error('❌ Failed to insert series data:', insertError);
+        } else {
+          results.series.new = seriesRows.length;
+          console.log(`✅ Series data processed: deleted=${results.series.deleted}, inserted=${seriesRows.length}`);
+        }
+      }
+    }
+  }
+
+  // Process trackData - handle both wrapped and unwrapped formats
+  // This uses series data to determine active tracks and deduplicate
+  let trackDataRaw = validatedData._contentResponse?.trackData || validatedData.trackData;
+  
+  if (trackDataRaw && seriesData) {
+    console.log(`🏁 Processing ${trackDataRaw.length} trackData entries...`);
+    
+    // Build a map of trackId -> highest series index where it appears (skip series 0)
+    const trackToHighestSeries: Map<string, number> = new Map();
+    for (let i = 1; i < seriesData.length; i++) {
+      const trackIds = seriesData[i].trackIds || [];
+      for (const trackId of trackIds) {
+        const current = trackToHighestSeries.get(trackId) || 0;
+        trackToHighestSeries.set(trackId, Math.max(current, i));
+      }
+    }
+    
+    // Get active season ID
+    let activeSeasonId: string | null = null;
+    const activeSeasons = Object.entries(seasonIdMap).filter(([num, id]) => {
+      // The active season should be in seasonNumbers
+      return seasonNumbers.includes(parseInt(num));
+    });
+    if (activeSeasons.length > 0) {
+      activeSeasonId = activeSeasons[0][1];
+    }
+    
+    // Filter trackData to only include tracks in series 1-11
+    const activeTrackIds = new Set(trackToHighestSeries.keys());
+    const activeTracks = trackDataRaw.filter((t: any) => activeTrackIds.has(t.id));
+    
+    console.log(`📊 Found ${activeTrackIds.size} unique track IDs in series 1-11`);
+    console.log(`📊 Found ${activeTracks.length} matching entries in trackData`);
+    
+    // Group by name to deduplicate - pick track from highest series
+    const tracksByName: Map<string, any> = new Map();
+    for (const track of activeTracks) {
+      const existing = tracksByName.get(track.name);
+      if (!existing) {
+        tracksByName.set(track.name, track);
+      } else {
+        // Keep the one from the higher series
+        const existingSeries = trackToHighestSeries.get(existing.id) || 0;
+        const currentSeries = trackToHighestSeries.get(track.id) || 0;
+        if (currentSeries > existingSeries) {
+          tracksByName.set(track.name, track);
+        }
+      }
+    }
+    
+    // Helper function to convert stat names to lowercase
+    const convertStatName = (stat: string): string => {
+      const statMap: Record<string, string> = {
+        'TyreUse': 'tyreUse',
+        'Overtaking': 'overtaking',
+        'Blocking': 'defending',  // Blocking maps to defending
+        'RaceStart': 'raceStart',
+        'Cornering': 'cornering',
+        'PowerUnit': 'powerUnit',
+        'Speed': 'speed',
+        'None': 'none'
+      };
+      return statMap[stat] || stat.toLowerCase();
+    };
+    
+    // Build track rows for database
+    const trackRows = Array.from(tracksByName.values()).map((t: any) => ({
+      id: t.id,
+      name: t.name,
+      laps: t.lapcount,
+      driver_track_stat: convertStatName(t.strongStatA),
+      car_track_stat: convertStatName(t.strongStatB),
+      track_guid: t.trackGuid,
+      season_id: activeSeasonId,
+      is_active: true
+    }));
+    
+    console.log(`📊 Deduplicated to ${trackRows.length} unique tracks`);
+    console.log('Sample tracks:', trackRows.slice(0, 3).map((t: any) => `${t.name} (${t.laps} laps, ${t.driver_track_stat}/${t.car_track_stat})`));
+    
+    if (trackRows.length > 0) {
+      // Clear existing tracks (they'll be replaced)
+      const { error: deleteError } = await supabaseAdmin
+        .from('tracks')
+        .delete()
+        .neq('id', ''); // Delete all
+      
+      if (deleteError) {
+        console.error('❌ Failed to clear existing tracks:', deleteError);
+      } else {
+        // Insert new tracks
+        const { error: insertError } = await supabaseAdmin
+          .from('tracks')
+          .insert(trackRows);
+        
+        if (insertError) {
+          console.error('❌ Failed to insert tracks:', insertError);
+        } else {
+          results.tracks.new = trackRows.length;
+          console.log(`✅ Tracks processed: inserted=${trackRows.length}`);
+        }
       }
     }
   }

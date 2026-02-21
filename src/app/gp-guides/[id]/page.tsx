@@ -47,7 +47,7 @@ const STAT_MAP: Record<string, string> = {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface TrackInfo {
-  id: string; name: string; alt_name: string | null
+  id: string; name: string; display_name: string | null
   laps: number; driver_track_stat: string; car_track_stat: string
 }
 interface SetupInfo { id: string; name: string; notes: string | null }
@@ -229,9 +229,11 @@ function TrackSlotCard({
           className="flex-1 min-w-[180px] px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
           <option value="">— Select Track —</option>
-          {allTracks.map(t => (
-            <option key={t.id} value={t.id}>{t.name}{t.alt_name ? ` (${t.alt_name})` : ''}</option>
-          ))}
+          {[...allTracks]
+            .sort((a, b) => (a.display_name || a.name).localeCompare(b.display_name || b.name))
+            .map(t => (
+              <option key={t.id} value={t.id}>{t.display_name || t.name}</option>
+            ))}
         </select>
         {track && (
           <span className="text-xs text-gray-500 hidden sm:inline">
@@ -499,10 +501,15 @@ export default function GpGuideEditorPage() {
     try {
       const headers = await getAuthHeaders()
       const res = await fetch(`/api/gp-guides/${guideId}/import/${trackId}?is_wet=${isWet}`, { headers, credentials: 'same-origin' })
-      if (!res.ok) { showToast((await res.json()).error?.message || 'No track guide found', 'error'); return }
-      const { data } = await res.json()
+      if (!res.ok) { showToast('Failed to import track guide', 'error'); return }
+      const json = await res.json()
+      // Check if track guide was found
+      if (!json.found || !json.data) {
+        showToast(json.message || 'No track guide found for this track', 'error')
+        return
+      }
       const saveRes = await fetch(`/api/gp-guides/${guideId}/tracks/${slotId}`, {
-        method: 'PUT', headers, credentials: 'same-origin', body: JSON.stringify(data),
+        method: 'PUT', headers, credentials: 'same-origin', body: JSON.stringify(json.data),
       })
       if (saveRes.ok) {
         const saved = await saveRes.json()
@@ -523,9 +530,11 @@ export default function GpGuideEditorPage() {
       try {
         const res = await fetch(`/api/gp-guides/${guideId}/import/${slot.track_id}?is_wet=${slot.is_wet}`, { headers, credentials: 'same-origin' })
         if (!res.ok) { skipped++; continue }
-        const { data } = await res.json()
+        const json = await res.json()
+        // Check if track guide was found
+        if (!json.found || !json.data) { skipped++; continue }
         const saveRes = await fetch(`/api/gp-guides/${guideId}/tracks/${slot.id}`, {
-          method: 'PUT', headers, credentials: 'same-origin', body: JSON.stringify(data),
+          method: 'PUT', headers, credentials: 'same-origin', body: JSON.stringify(json.data),
         })
         if (saveRes.ok) {
           const saved = await saveRes.json()
