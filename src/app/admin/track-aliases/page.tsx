@@ -53,6 +53,7 @@ export default function TrackAliasesAdminPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['track-name-aliases'] })
+      queryClient.invalidateQueries({ queryKey: ['tracks'] })
       addToast('Track alias created successfully', 'success')
       closeModal()
     },
@@ -74,6 +75,7 @@ export default function TrackAliasesAdminPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['track-name-aliases'] })
+      queryClient.invalidateQueries({ queryKey: ['tracks'] })
       addToast('Track alias updated successfully', 'success')
       closeModal()
     },
@@ -94,6 +96,7 @@ export default function TrackAliasesAdminPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['track-name-aliases'] })
+      queryClient.invalidateQueries({ queryKey: ['tracks'] })
       addToast('Track alias deleted successfully', 'success')
     },
     onError: (error: Error) => {
