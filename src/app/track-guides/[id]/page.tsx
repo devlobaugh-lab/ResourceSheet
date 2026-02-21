@@ -553,7 +553,7 @@ export default function TrackGuideEditorPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  {track.name} {track.alt_name && `(${track.alt_name})`}
+                  {track.display_name ? `${track.display_name} (${track.name})` : track.name}
                 </h1>
                 <span className='text-lg font-normal'>{capitalizeStat(track.driver_track_stat)} / {capitalizeStat(track.car_track_stat)}</span>
               </div>

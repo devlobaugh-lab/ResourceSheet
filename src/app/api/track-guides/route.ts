@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
         tracks (
           id,
           name,
-          alt_name,
+          laps,
           driver_track_stat,
           car_track_stat
         )
@@ -244,7 +244,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         tracks (
           id,
           name,
-          alt_name,
+          laps,
           driver_track_stat,
           car_track_stat
         )
@@ -383,7 +383,7 @@ export async function POST(request: NextRequest) {
         tracks (
           id,
           name,
-          alt_name,
+          laps,
           driver_track_stat,
           car_track_stat
         )
