@@ -592,6 +592,123 @@ export interface Database {
           updated_at?: string
         }
       }
+      ai_track_loadouts: {
+        Row: {
+          id: string
+          name: string
+          track_name: string
+          difficulty: string
+          team_name: string
+          driver_slot: number
+          overtaking: number
+          blocking: number
+          qualifying: number
+          tyre_use: number
+          race_start: number
+          car_parts: Record<string, any> | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          track_name: string
+          difficulty: string
+          team_name: string
+          driver_slot: number
+          overtaking?: number
+          blocking?: number
+          qualifying?: number
+          tyre_use?: number
+          race_start?: number
+          car_parts?: Record<string, any> | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          track_name?: string
+          difficulty?: string
+          team_name?: string
+          driver_slot?: number
+          overtaking?: number
+          blocking?: number
+          qualifying?: number
+          tyre_use?: number
+          race_start?: number
+          car_parts?: Record<string, any> | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      team_driver_names: {
+        Row: {
+          id: string
+          team_name: string
+          driver_slot: number
+          driver_name: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          team_name: string
+          driver_slot: number
+          driver_name: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          team_name?: string
+          driver_slot?: number
+          driver_name?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      user_custom_drivers: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          overtaking: number
+          blocking: number
+          qualifying: number
+          tyre_use: number
+          race_start: number
+          car_parts: Record<string, any> | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          overtaking?: number
+          blocking?: number
+          qualifying?: number
+          tyre_use?: number
+          race_start?: number
+          car_parts?: Record<string, any> | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          overtaking?: number
+          blocking?: number
+          qualifying?: number
+          tyre_use?: number
+          race_start?: number
+          car_parts?: Record<string, any> | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -631,6 +748,9 @@ export type UserTrackGuideDriver = Tables<'user_track_guide_drivers'>
 export type UserGpGuide = Tables<'user_gp_guides'>
 export type UserGpGuideTrack = Tables<'user_gp_guide_tracks'>
 export type UserGpGuideResult = Tables<'user_gp_guide_results'>
+export type AITrackLoadout = Tables<'ai_track_loadouts'>
+export type TeamDriverName = Tables<'team_driver_names'>
+export type UserCustomDriver = Tables<'user_custom_drivers'>
 
 // Business logic types
 export interface DriverView {

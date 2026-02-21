@@ -28,7 +28,7 @@ const menuConfig = {
         { label: 'Track Guides', href: '/track-guides' },
         { label: 'GP Guides', href: '/gp-guides' },
         { label: 'Driver Compare', href: '/compare/drivers' },
-        { label: 'AI Drivers Compare', href: '#', disabled: true, disabledReason: 'Coming soon' },
+        { label: 'AI Drivers Compare', href: '/compare/ai' },
         { label: 'Tracking', href: '#', disabled: true, disabledReason: 'Coming soon' },
       ] as MenuItem[],
     },

@@ -18,12 +18,14 @@ const contentCacheSchema = z.object({
     carparts: z.array(z.any()).optional(),
     boosts: z.array(z.any()).optional(),
     collections: z.array(z.any()).optional(),
+    trackAILoadouts: z.array(z.any()).optional(),
   }).optional(),
   // Support both wrapped and unwrapped formats
   drivers: z.array(z.any()).optional(),
   carparts: z.array(z.any()).optional(),
   boosts: z.array(z.any()).optional(),
   collections: z.array(z.any()).optional(),
+  trackAILoadouts: z.array(z.any()).optional(),
 })
 
 // POST /api/admin/content-cache/upload - Upload and process content_cache.json (admin only)
@@ -207,13 +209,53 @@ function parseSeasonFilter(seasonFilter: string): number[] {
   }
 }
 
+// Helper function to parse trackAILoadouts name into track_name and difficulty
+// Format: "Bahrain Champion" -> { trackName: "Bahrain", difficulty: "Champion" }
+function parseAILoadoutName(name: string): { trackName: string; difficulty: string } {
+  // Known difficulty levels (in order of precedence for matching)
+  const difficulties = [
+    'Champion', 'Contender', 'Challenger', 'Junior',
+    'Series 12', 'Series 11', 'Series 10',
+    'Easy Races'  // Special case for "2025 Easy Races"
+  ]
+  
+  // Check for "Easy Races" special case
+  if (name.includes('Easy Races')) {
+    return { trackName: name.replace('Easy Races', '').trim(), difficulty: 'Easy Races' }
+  }
+  
+  // Try to match each difficulty
+  for (const diff of difficulties) {
+    if (name.endsWith(diff)) {
+      const trackName = name.slice(0, -diff.length).trim()
+      return { trackName, difficulty: diff }
+    }
+    // Also check if difficulty is in the middle (e.g., "Americas Series 10")
+    if (name.includes(diff)) {
+      const parts = name.split(diff)
+      return { trackName: parts[0].trim(), difficulty: diff }
+    }
+  }
+  
+  // Fallback: assume last word is difficulty
+  const parts = name.split(' ')
+  if (parts.length >= 2) {
+    const difficulty = parts.pop() || ''
+    const trackName = parts.join(' ')
+    return { trackName, difficulty }
+  }
+  
+  return { trackName: name, difficulty: 'Unknown' }
+}
+
 // Helper function to process content cache with change detection
 async function processContentCache(validatedData: any, seasonNumbers: number[], allowModifications: boolean = false, seasonIdMap: Record<number, string> = {}) {
   const results = {
     drivers: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
     car_parts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
     boosts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
-    collections: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> }
+    collections: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
+    ai_track_loadouts: { new: 0, modified: 0, unchanged: 0, deleted: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> }
   }
 
   // Process collections FIRST - handle both wrapped and unwrapped formats
@@ -369,6 +411,118 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
       results.boosts.modified = boostResults.modified
       results.boosts.unchanged = boostResults.unchanged
       results.boosts.modified_items = boostResults.modified_items
+    }
+  }
+
+  // Process trackAILoadouts - handle both wrapped and unwrapped formats
+  // This is a full refresh: delete old data and insert new data
+  let trackAILoadoutsData = validatedData._contentResponse?.trackAILoadouts || validatedData.trackAILoadouts;
+  
+  if (trackAILoadoutsData) {
+    console.log(`🏎️ Processing ${trackAILoadoutsData.length} trackAILoadouts entries...`);
+    
+    // Build rows for ai_track_loadouts table
+    // Each loadout has multiple teams, each team has 2 drivers (driver_slot 1 and 2)
+    const loadoutRows: any[] = [];
+    
+    for (const loadout of trackAILoadoutsData) {
+      const { trackName, difficulty } = parseAILoadoutName(loadout.name);
+      
+      if (loadout.botLoadouts && Array.isArray(loadout.botLoadouts)) {
+        for (const team of loadout.botLoadouts) {
+          // Create row for Driver 1
+          if (team.m_driver1) {
+            loadoutRows.push({
+              name: loadout.name,
+              track_name: trackName,
+              difficulty: difficulty,
+              team_name: team.teamName,
+              driver_slot: 1,
+              overtaking: team.m_driver1.overtaking || 0,
+              blocking: team.m_driver1.blocking || 0,
+              qualifying: team.m_driver1.qualifying || 0,
+              tyre_use: team.m_driver1.tyreUse || 0,
+              race_start: team.m_driver1.raceStart || 0,
+              car_parts: {
+                frontWing: team.m_frontWing || null,
+                rearWing: team.m_rearWing || null,
+                suspension: team.m_suspension || null,
+                engine: team.m_engine || null,
+                gearbox: team.m_gearbox || null,
+                brakes: team.m_brakes || null
+              }
+            });
+          }
+          
+          // Create row for Driver 2
+          if (team.m_driver2) {
+            loadoutRows.push({
+              name: loadout.name,
+              track_name: trackName,
+              difficulty: difficulty,
+              team_name: team.teamName,
+              driver_slot: 2,
+              overtaking: team.m_driver2.overtaking || 0,
+              blocking: team.m_driver2.blocking || 0,
+              qualifying: team.m_driver2.qualifying || 0,
+              tyre_use: team.m_driver2.tyreUse || 0,
+              race_start: team.m_driver2.raceStart || 0,
+              car_parts: {
+                frontWing: team.m_frontWing || null,
+                rearWing: team.m_rearWing || null,
+                suspension: team.m_suspension || null,
+                engine: team.m_engine || null,
+                gearbox: team.m_gearbox || null,
+                brakes: team.m_brakes || null
+              }
+            });
+          }
+        }
+      }
+    }
+    
+    if (loadoutRows.length > 0) {
+      console.log(`📊 Prepared ${loadoutRows.length} AI loadout rows for import`);
+      
+      // For AI loadouts, we do a full refresh: delete all existing and insert new
+      // This is because trackAILoadouts is reference data that gets completely replaced
+      
+      // First, count existing rows for reporting
+      const { count: existingCount } = await supabaseAdmin
+        .from('ai_track_loadouts')
+        .select('*', { count: 'exact', head: true });
+      
+      // Delete all existing AI loadouts
+      const { error: deleteError } = await supabaseAdmin
+        .from('ai_track_loadouts')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all (workaround for "delete all")
+      
+      if (deleteError) {
+        console.error('❌ Failed to clear existing AI loadouts:', deleteError);
+      } else {
+        results.ai_track_loadouts.deleted = existingCount || 0;
+        
+        // Insert new rows in batches
+        const BATCH_SIZE = 100;
+        let inserted = 0;
+        
+        for (let i = 0; i < loadoutRows.length; i += BATCH_SIZE) {
+          const batch = loadoutRows.slice(i, i + BATCH_SIZE);
+          const { error: insertError } = await supabaseAdmin
+            .from('ai_track_loadouts')
+            .insert(batch);
+          
+          if (insertError) {
+            console.error(`❌ Failed to insert AI loadouts batch ${i / BATCH_SIZE + 1}:`, insertError);
+          } else {
+            inserted += batch.length;
+          }
+        }
+        
+        results.ai_track_loadouts.new = inserted;
+        console.log(`✅ AI loadouts processed: deleted=${results.ai_track_loadouts.deleted}, inserted=${inserted}`);
+      }
     }
   }
 
