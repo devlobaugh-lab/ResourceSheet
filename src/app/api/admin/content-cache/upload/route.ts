@@ -534,24 +534,76 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
 
   // Process series data - handle both wrapped and unwrapped formats
   // This is a full refresh: delete old data and insert new data
+  // We also need trackData to populate track_names and track_info
   let seriesData = validatedData._contentResponse?.series || validatedData.series;
+  let trackDataForSeries = validatedData._contentResponse?.trackData || validatedData.trackData || [];
+  
+  // Build a map of trackId -> track info for looking up track details
+  const trackIdToInfo: Map<string, { name: string; laps: number; driverStat: string; carStat: string }> = new Map();
+  
+  // Helper function to convert stat names to lowercase
+  const convertStatName = (stat: string): string => {
+    const statMap: Record<string, string> = {
+      'TyreUse': 'tyreUse',
+      'Overtaking': 'overtaking',
+      'Blocking': 'defending',
+      'RaceStart': 'raceStart',
+      'Cornering': 'cornering',
+      'PowerUnit': 'powerUnit',
+      'Speed': 'speed',
+      'None': 'none'
+    };
+    return statMap[stat] || stat.toLowerCase();
+  };
+  
+  for (const track of trackDataForSeries) {
+    trackIdToInfo.set(track.id, {
+      name: track.name,
+      laps: track.lapcount,
+      driverStat: convertStatName(track.strongStatA),
+      carStat: convertStatName(track.strongStatB)
+    });
+  }
   
   if (seriesData) {
     console.log(`🏎️ Processing ${seriesData.length} series entries...`);
     
     // Build rows for series_data table
-    const seriesRows = seriesData.map((s: any) => ({
-      index: s.index,
-      entry_fee: s.entryFee || 0,
-      win_flags: s.winFlags || 0,
-      loss_flags: s.lossFlags || 0,
-      win_rep: s.winRep || 0,
-      flags_to_unlock: s.flagsToUnlock || 0,
-      max_flags: s.maxFlags || 0,
-      track_ids: s.trackIds || [],
-      bot_loadout: s.botLoadout || null,
-      ai_car_loadouts: s.aiCarLoadouts || null
-    }));
+    const seriesRows = seriesData.map((s: any) => {
+      // Get track names and full track info from track_ids
+      const trackNames: string[] = [];
+      const trackInfo: Array<{ name: string; laps: number; driverStat: string; carStat: string }> = [];
+      
+      for (const trackId of (s.trackIds || [])) {
+        const info = trackIdToInfo.get(trackId);
+        if (info) {
+          trackNames.push(info.name);
+          trackInfo.push({
+            name: info.name,
+            laps: info.laps,
+            driverStat: info.driverStat,
+            carStat: info.carStat
+          });
+        } else {
+          trackNames.push(trackId);
+        }
+      }
+      
+      return {
+        index: s.index,
+        entry_fee: s.entryFee || 0,
+        win_flags: s.winFlags || 0,
+        loss_flags: s.lossFlags || 0,
+        win_rep: s.winRep || 0,
+        flags_to_unlock: s.flagsToUnlock || 0,
+        max_flags: s.maxFlags || 0,
+        track_ids: s.trackIds || [],
+        track_names: trackNames,
+        track_info: trackInfo,
+        bot_loadout: s.botLoadout || null,
+        ai_car_loadouts: s.aiCarLoadouts || null
+      };
+    });
     
     if (seriesRows.length > 0) {
       // Count existing rows for reporting
@@ -586,19 +638,21 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
   }
 
   // Process trackData - handle both wrapped and unwrapped formats
-  // This uses series data to determine active tracks and deduplicate
+  // This uses series data to determine active tracks and deduplicate by name
+  // Deduplication is important for track guides and tracks listing pages
   let trackDataRaw = validatedData._contentResponse?.trackData || validatedData.trackData;
   
   if (trackDataRaw && seriesData) {
     console.log(`🏁 Processing ${trackDataRaw.length} trackData entries...`);
     
-    // Build a map of trackId -> highest series index where it appears (skip series 0)
-    const trackToHighestSeries: Map<string, number> = new Map();
-    for (let i = 1; i < seriesData.length; i++) {
+    // Build a map of trackId -> series indices where it appears (for deduplication priority)
+    const trackToSeries: Map<string, number[]> = new Map();
+    for (let i = 0; i < seriesData.length; i++) {
       const trackIds = seriesData[i].trackIds || [];
       for (const trackId of trackIds) {
-        const current = trackToHighestSeries.get(trackId) || 0;
-        trackToHighestSeries.set(trackId, Math.max(current, i));
+        const existing = trackToSeries.get(trackId) || [];
+        existing.push(i);
+        trackToSeries.set(trackId, existing);
       }
     }
     
@@ -612,23 +666,23 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
       activeSeasonId = activeSeasons[0][1];
     }
     
-    // Filter trackData to only include tracks in series 1-11
-    const activeTrackIds = new Set(trackToHighestSeries.keys());
+    // Filter trackData to only include tracks that appear in any series
+    const activeTrackIds = new Set(trackToSeries.keys());
     const activeTracks = trackDataRaw.filter((t: any) => activeTrackIds.has(t.id));
     
-    console.log(`📊 Found ${activeTrackIds.size} unique track IDs in series 1-11`);
+    console.log(`📊 Found ${activeTrackIds.size} track IDs across all series`);
     console.log(`📊 Found ${activeTracks.length} matching entries in trackData`);
     
-    // Group by name to deduplicate - pick track from highest series
+    // Group by name to deduplicate - pick track from highest series (prefer later series)
     const tracksByName: Map<string, any> = new Map();
     for (const track of activeTracks) {
       const existing = tracksByName.get(track.name);
       if (!existing) {
         tracksByName.set(track.name, track);
       } else {
-        // Keep the one from the higher series
-        const existingSeries = trackToHighestSeries.get(existing.id) || 0;
-        const currentSeries = trackToHighestSeries.get(track.id) || 0;
+        // Keep the one from the higher series (later series have more relevant data)
+        const existingSeries = Math.max(...(trackToSeries.get(existing.id) || [0]));
+        const currentSeries = Math.max(...(trackToSeries.get(track.id) || [0]));
         if (currentSeries > existingSeries) {
           tracksByName.set(track.name, track);
         }
@@ -650,7 +704,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
       return statMap[stat] || stat.toLowerCase();
     };
     
-    // Build track rows for database
+    // Build track rows for database - deduplicated by name
     const trackRows = Array.from(tracksByName.values()).map((t: any) => ({
       id: t.id,
       name: t.name,
