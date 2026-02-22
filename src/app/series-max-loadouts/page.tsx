@@ -160,7 +160,7 @@ function SeriesMaxLoadoutsContent() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Series Max Loadouts</h1>
         <p className="mt-2 text-gray-600">
-          Best car setups for each series assuming max level parts. Shows the optimal parts for Speed, Cornering, and Power Unit builds.
+          Mathematically best car setups for each series assuming max level parts. Shows the optimal parts for Speed, Cornering, and Power Unit builds. Note that this does mean these are the Best loadouts, just the most optimized for a specific stat. 
         </p>
       </div>
       
