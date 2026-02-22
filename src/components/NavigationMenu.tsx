@@ -29,7 +29,6 @@ const menuConfig = {
         { label: 'GP Guides', href: '/gp-guides' },
         { label: 'Driver Compare', href: '/compare/drivers' },
         { label: 'AI Drivers Compare', href: '/compare/ai' },
-        { label: 'Tracking', href: '#', disabled: true, disabledReason: 'Coming soon' },
       ] as MenuItem[],
     },
     {
@@ -37,7 +36,7 @@ const menuConfig = {
       items: [
         { label: 'Tracks', href: '/tracks' },
         { label: 'Series Info', href: '/series' },
-        { label: 'Series Max Setups', href: '#', disabled: true, disabledReason: 'Coming soon' },
+        { label: 'Series Max Loadouts', href: '/series-max-loadouts' },
       ] as MenuItem[],
     },
   ],

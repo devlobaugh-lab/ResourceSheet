@@ -203,6 +203,23 @@ node scripts/unified_data_processor.js
 ## [Unreleased]
 
 ### Added
+- **Series Max Loadouts Page** (`/series-max-loadouts`) - New feature showing optimal car setups for each series
+  - Displays best parts for Speed, Cornering, and Power Unit builds
+  - Shows all 12 series with uniform 700px wide tables
+  - Rarity-colored part backgrounds matching Car Parts page style
+  - Dark gray headers for visual consistency
+  - Part selection algorithm based on max level stats and series availability
+  - Access via Reference menu → Series Max Loadouts
+
+### Changed
+- Removed "Tracking" menu item from Research dropdown
+- Added Series Max Loadouts documentation at `docs/Series-Max-Loadouts.md`
+
+### Fixed
+- Series Info page now correctly shows series-specific lap counts from `track_info` column
+- Fixed off-by-1 error in car parts series filter (car_parts.series uses offset numbering)
+- Series display names now show as 1-12 instead of 0-11
+
 - **AI Compare Page** (`/compare/ai`) - New feature for comparing AI driver stats across tracks and difficulty levels
   - Track/difficulty dropdown selector (format: "Champion Bahrain")
   - Grid display with driver stats (OVT, BLK, QLY, TYR, RST, Total)
