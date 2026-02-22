@@ -33,14 +33,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">F1 Resource Manager</h1>
-          <p className="mt-2 text-gray-600">Sign in to your account</p>
-        </div>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* Title section at top */}
+      <div className="pt-12 pb-6 text-center">
+        <h1 className="text-3xl font-bold text-gray-900">F1 Resource Manager</h1>
+        <p className="mt-2 text-gray-600">Sign in to your account</p>
+      </div>
 
-        <Card className="p-8">
+      {/* Card section - centered in remaining space */}
+      <div className="flex-1 flex items-start justify-center px-4 sm:px-6 lg:px-8">
+        <Card className="p-8 w-full max-w-md">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
@@ -108,12 +110,6 @@ export default function LoginPage() {
             </div>
           </form>
         </Card>
-
-        <div className="text-center">
-          <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
-            ← Back to home
-          </Link>
-        </div>
       </div>
     </div>
   );

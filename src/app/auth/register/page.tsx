@@ -7,14 +7,16 @@ import { Button } from '@/components/ui/Button';
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">F1 Resource Manager</h1>
-          <p className="mt-2 text-gray-600">Invite Only</p>
-        </div>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* Title section at top */}
+      <div className="pt-12 pb-6 text-center">
+        <h1 className="text-3xl font-bold text-gray-900">F1 Resource Manager</h1>
+        <p className="mt-2 text-gray-600">Invite Only</p>
+      </div>
 
-        <Card className="p-8">
+      {/* Card section - centered in remaining space */}
+      <div className="flex-1 flex items-start justify-center px-4 sm:px-6 lg:px-8">
+        <Card className="p-8 w-full max-w-md">
           <div className="text-center">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
               <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -35,12 +37,6 @@ export default function RegisterPage() {
             </Link>
           </div>
         </Card>
-
-        <div className="text-center">
-          <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
-            ← Back to home
-          </Link>
-        </div>
       </div>
     </div>
   );

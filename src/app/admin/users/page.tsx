@@ -281,16 +281,13 @@ export default function AdminUsersPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Users className="w-8 h-8 text-orange-600" />
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-                  <p className="mt-1 text-gray-600">Manage user accounts and permissions</p>
-                </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+                <p className="mt-2 text-gray-600">Manage user accounts and permissions</p>
               </div>
               <div className="flex items-center space-x-3">
                 <Link href="/admin">

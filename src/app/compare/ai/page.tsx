@@ -360,7 +360,7 @@ export default function AIComparePage() {
               })}
             </div>
           ) : (
-            <p className="text-gray-500 text-sm">No custom drivers yet. Click "Create Driver" to add one.</p>
+            <p className="text-gray-500 text-sm">No custom drivers yet. Click &quot;Create Driver&quot; to add one.</p>
           )}
         </Card>
         

@@ -12,6 +12,7 @@ import { CarPartView, UserCarSetup } from '@/types/database'
 import { cn, calculateHighestLevel, getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils'
 import { CarPartSelectionGrid } from '@/components/CarPartSelectionGrid'
 import { Pencil } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 
 // Part type definitions
 const PART_TYPES = [
@@ -94,6 +95,8 @@ const createEmptySlot = (): SetupSlot => ({
 })
 
 function AuthenticatedSetupsPage() {
+  const { addToast } = useToast()
+  
   const { data: carPartsResponse, isLoading: partsLoading, error: partsError } = useUserCarParts({
     page: 1,
     limit: 1000
@@ -227,7 +230,7 @@ function AuthenticatedSetupsPage() {
     const setSlot = slotKey === 'A' ? setSlotA : setSlotB
 
     if (!slot.name.trim()) {
-      alert('Please enter a setup name')
+      addToast('Please enter a setup name', 'error')
       return
     }
 
@@ -236,14 +239,14 @@ function AuthenticatedSetupsPage() {
       setup => setup.name.toLowerCase() === slot.name.trim().toLowerCase() && setup.id !== slot.id
     )
     if (existingSetup) {
-      alert('A setup with this name already exists. Please choose a different name.')
+      addToast('A setup with this name already exists. Please choose a different name.', 'error')
       return
     }
 
     // Check if all parts are selected
     const missingParts = PART_TYPES.filter(({ key }) => !slot.selectedParts[key])
     if (missingParts.length > 0) {
-      alert(`Please select: ${missingParts.map(p => p.label).join(', ')}`)
+      addToast(`Please select: ${missingParts.map(p => p.label).join(', ')}`, 'error')
       return
     }
 
@@ -265,7 +268,7 @@ function AuthenticatedSetupsPage() {
             bonus_percentage: parseFloat(slot.bonusPercentage) || 0
           }
         })
-        alert('Setup updated successfully!')
+        addToast('Setup updated successfully!', 'success')
       } else {
         // Create new setup
         const result = await createSetup.mutateAsync({
@@ -282,11 +285,11 @@ function AuthenticatedSetupsPage() {
         })
         // Update slot with new id
         setSlot(prev => ({ ...prev, id: result.data.id }))
-        alert('Setup saved successfully!')
+        addToast('Setup saved successfully!', 'success')
       }
     } catch (error) {
       console.error('Failed to save setup:', error)
-      alert('Failed to save setup')
+      addToast('Failed to save setup', 'error')
     }
   }
 
@@ -326,10 +329,10 @@ function AuthenticatedSetupsPage() {
       // Clear slots if they had this setup loaded
       if (slotA.id === setupId) setSlotA(createEmptySlot())
       if (slotB.id === setupId) setSlotB(createEmptySlot())
-      alert('Setup deleted successfully!')
+      addToast('Setup deleted successfully!', 'success')
     } catch (error) {
       console.error('Failed to delete setup:', error)
-      alert('Failed to delete setup')
+      addToast('Failed to delete setup', 'error')
     }
   }
 
@@ -589,7 +592,7 @@ function AuthenticatedSetupsPage() {
   return (
     <div className="space-y-8">
       {/* Page Title and Global Filters */}
-      <div className="flex items-center gap-6">
+      <div className="mb-8 flex items-center gap-6">
         <h1 className="text-3xl font-bold text-gray-900 mr-4">Car Setups</h1>
 
         {/* Global Series Filter */}
@@ -859,5 +862,11 @@ export default function SetupsPage() {
   }
 
   // Show authenticated setups page if user is logged in
-  return <AuthenticatedSetupsPage />
+  return (
+    <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+        <AuthenticatedSetupsPage />
+      </div>
+    </div>
+  )
 }

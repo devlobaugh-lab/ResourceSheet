@@ -116,7 +116,7 @@ function AuthenticatedBoostsPage() {
   return (
     <div className="space-y-4">
       {/* Page Title and Filters */}
-      <div className="flex items-center gap-6">
+      <div className="mb-4 flex items-center gap-6">
         <h1 className="text-3xl font-bold text-gray-900 mr-4">Boosts</h1>
 
         {/* Search Filter */}
@@ -200,5 +200,11 @@ export default function BoostsPage() {
   }
 
   // Show authenticated boosts page if user is logged in
-  return <AuthenticatedBoostsPage />
+  return (
+    <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+        <AuthenticatedBoostsPage />
+      </div>
+    </div>
+  )
 }
