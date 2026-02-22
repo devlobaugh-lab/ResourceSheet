@@ -9,7 +9,8 @@ This directory contains all documentation for the F1 Resource Manager project, o
 | [API](./api/) | API documentation | [API Reference](./api/API.md) |
 | [Architecture](./architecture/) | System architecture and design | [Architecture Overview](./architecture/ARCHITECTURE.md) |
 | [Deployment](./deployment/) | Hosting and deployment guides | [Self-Hosting](./deployment/SELF_HOSTING.md), [Vercel](./deployment/VERCEL_HOSTING.md) |
-| [Development](./development/) | Setup and development guides | [Setup Guide](./development/SETUP.md), [Migration Guide](./development/MIGRATION_GUIDE.md), [Component Decomposition Plan](./development/COMPONENT_DECOMPOSITION_PLAN.md) |
+| [Development](./development/) | Setup and development guides | [Setup Guide](./development/SETUP.md), [Migration Guide](./development/MIGRATION_GUIDE.md) |
+| [Features](.) | Feature documentation | [Series Max Loadouts](./Series-Max-Loadouts.md) |
 | [Operations](./operations/) | Backup, restore, and maintenance | [Backup & Restore](./operations/BACKUP_RESTORE_PLAN.md) |
 | [Product](./product/) | Product design and vision | [Product Design](./product/ProductDesign.md) |
 | [Archive](./archive/) | Historical documentation | Past reviews and analyses |
@@ -41,6 +42,7 @@ docs/
 │   ├── CODE_REVIEW_2026-02-09.md  # Previous code review
 │   ├── REFACTORING_SUMMARY.md     # Refactoring notes
 │   └── ...                         # Other archived docs
+├── Series-Max-Loadouts.md  # Series Max Loadouts feature docs
 └── CODE_REVIEW_2026-02-20.md  # Latest code review
 ```
 
