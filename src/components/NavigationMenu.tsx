@@ -36,7 +36,7 @@ const menuConfig = {
       label: 'Reference',
       items: [
         { label: 'Tracks', href: '/tracks' },
-        { label: 'Series Info', href: '#', disabled: true, disabledReason: 'Coming soon' },
+        { label: 'Series Info', href: '/series' },
         { label: 'Series Max Setups', href: '#', disabled: true, disabledReason: 'Coming soon' },
       ] as MenuItem[],
     },

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup, Track, CatalogItem } from '@/types/database'
+import type { Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup, Track, CatalogItem, SeriesWithTracks } from '@/types/database'
 import type { PaginationMeta } from '@/types/api'
 
 // API base URL
@@ -587,5 +587,22 @@ export function useAddUserItem() {
     onSuccess: () => {
       // No-op since we're not actually updating anything
     },
+  })
+}
+
+// Fetch series data with track information
+export function useSeries() {
+  return useQuery({
+    queryKey: ['series'],
+    queryFn: async (): Promise<{ data: SeriesWithTracks[] }> => {
+      const response = await fetch(`${API_BASE}/series`)
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch series data')
+      }
+
+      return response.json()
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }

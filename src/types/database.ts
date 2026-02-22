@@ -752,6 +752,49 @@ export type AITrackLoadout = Tables<'ai_track_loadouts'>
 export type TeamDriverName = Tables<'team_driver_names'>
 export type UserCustomDriver = Tables<'user_custom_drivers'>
 
+// Track info as stored in series_data.track_info
+export interface SeriesTrackInfo {
+  name: string
+  laps: number
+  driverStat: string
+  carStat: string
+}
+
+// Series data type (from series_data table)
+export interface SeriesData {
+  index: number
+  entry_fee: number
+  win_flags: number
+  loss_flags: number
+  win_rep: number
+  flags_to_unlock: number
+  max_flags: number
+  track_ids: string[]
+  track_names: string[]
+  track_info?: SeriesTrackInfo[]
+  bot_loadout: Record<string, any> | null
+  ai_car_loadouts: Record<string, any> | null
+  created_at: string
+  updated_at: string
+}
+
+// Series with track info for display
+export interface SeriesWithTracks extends Omit<SeriesData, 'track_ids' | 'track_names' | 'track_info'> {
+  tracks: SeriesTrack[]
+  track_names: string[]
+  track_info?: SeriesTrackInfo[]
+  common_track_stat: string | null
+}
+
+export interface SeriesTrack {
+  id: string
+  name: string
+  display_name: string | null
+  laps: number
+  driver_track_stat: string
+  car_track_stat: string
+}
+
 // Business logic types
 export interface DriverView {
   // From drivers
