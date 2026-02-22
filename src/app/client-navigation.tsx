@@ -99,7 +99,7 @@ export function ClientNavigation() {
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16">
           <div className="flex items-center">
-            <Link href="/drivers" className="text-xl font-bold text-gray-900">
+            <Link href="/dashboard" className="text-xl font-bold text-gray-900">
               F1 Resource Manager
             </Link>
           </div>

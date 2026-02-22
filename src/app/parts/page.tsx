@@ -347,7 +347,7 @@ function AuthenticatedPartsPage() {
   return (
     <div className="space-y-6">
       {/* Page Title and Filters */}
-      <div className="flex items-center gap-6">
+      <div className="mb-8 flex items-center gap-6">
         <h1 className="text-3xl font-bold text-gray-900 mr-4">Car Parts</h1>
 
         {/* Search and Max Series Filters */}
@@ -628,5 +628,11 @@ export default function PartsPage() {
   }
 
   // Show authenticated parts page if user is logged in
-  return <AuthenticatedPartsPage />
+  return (
+    <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+        <AuthenticatedPartsPage />
+      </div>
+    </div>
+  )
 }

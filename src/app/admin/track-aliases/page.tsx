@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -148,144 +149,155 @@ export default function TrackAliasesAdminPage() {
   }
   
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Track Name Aliases</h1>
-        <Button onClick={openCreateModal} className="flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Add Alias
-        </Button>
-      </div>
-      
-      <Card className="p-6">
-        <p className="text-gray-600 mb-4">
-          Track name aliases allow you to define user-friendly names for tracks.
-          For example, "Americas" can be displayed as "Austin".
-        </p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Track Name Aliases</h1>
+            <p className="mt-2 text-gray-600">Manage track display names</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link href="/admin" className="text-gray-600 hover:text-gray-900">
+              <Button variant="outline">Back to Admin</Button>
+            </Link>
+            <Button onClick={openCreateModal} className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Add Alias
+            </Button>
+          </div>
+        </div>
         
-        {isLoading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          </div>
-        ) : aliasesData?.data?.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    System Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Display Name
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {aliasesData.data.map((alias: TrackNameAlias) => (
-                  <tr key={alias.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {alias.system_name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {alias.display_name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditModal(alias)}
-                        className="mr-2"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(alias)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </td>
+        <Card className="p-6">
+          <p className="text-gray-600 mb-4">
+            Track name aliases allow you to define user-friendly names for tracks.
+            For example, &quot;Americas&quot; can be displayed as &quot;Austin&quot;.
+          </p>
+          
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            </div>
+          ) : aliasesData?.data?.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      System Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Display Name
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            No track name aliases configured. Click "Add Alias" to create one.
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {aliasesData.data.map((alias: TrackNameAlias) => (
+                    <tr key={alias.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {alias.system_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {alias.display_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditModal(alias)}
+                          className="mr-2"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(alias)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              No track name aliases configured. Click &quot;Add Alias&quot; to create one.
+            </div>
+          )}
+        </Card>
+        
+        {/* Modal */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <Card className="p-6 max-w-md w-full mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {editingAlias ? 'Edit Track Alias' : 'Add Track Alias'}
+                </h3>
+                <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    System Name *
+                  </label>
+                  <Input
+                    ref={systemNameInputRef}
+                    type="text"
+                    value={formData.system_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, system_name: e.target.value }))}
+                    placeholder="e.g., Americas"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    The track name used in the game data
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Display Name *
+                  </label>
+                  <Input
+                    type="text"
+                    value={formData.display_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, display_name: e.target.value }))}
+                    placeholder="e.g., Austin"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    The user-friendly name to display
+                  </p>
+                </div>
+                
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button type="button" variant="outline" onClick={closeModal}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={createMutation.isPending || updateMutation.isPending}
+                  >
+                    {createMutation.isPending || updateMutation.isPending 
+                      ? 'Saving...' 
+                      : editingAlias ? 'Update' : 'Create'}
+                  </Button>
+                </div>
+              </form>
+            </Card>
           </div>
         )}
-      </Card>
-      
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="p-6 max-w-md w-full mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {editingAlias ? 'Edit Track Alias' : 'Add Track Alias'}
-              </h3>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  System Name *
-                </label>
-                <Input
-                  ref={systemNameInputRef}
-                  type="text"
-                  value={formData.system_name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, system_name: e.target.value }))}
-                  placeholder="e.g., Americas"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  The track name used in the game data
-                </p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Display Name *
-                </label>
-                <Input
-                  type="text"
-                  value={formData.display_name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, display_name: e.target.value }))}
-                  placeholder="e.g., Austin"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  The user-friendly name to display
-                </p>
-              </div>
-              
-              <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={closeModal}>
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                >
-                  {createMutation.isPending || updateMutation.isPending 
-                    ? 'Saving...' 
-                    : editingAlias ? 'Update' : 'Create'}
-                </Button>
-              </div>
-            </form>
-          </Card>
-        </div>
-      )}
+      </div>
     </div>
   )
 }
