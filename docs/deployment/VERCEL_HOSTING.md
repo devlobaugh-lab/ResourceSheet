@@ -10,7 +10,7 @@ This document outlines the steps to deploy this Next.js application to Vercel wi
 
 ## Prerequisites
 
-- GitHub account with this repository
+- Git hosting account (GitHub or GitLab) with this repository
 - Email for Supabase account
 
 ---
@@ -63,18 +63,21 @@ To customize:
 
 ## Step 2: Deploy to Vercel
 
-### 2.1 Connect GitHub to Vercel
+### 2.1 Connect Your Git Provider to Vercel
 
-1. Go to [vercel.com](https://vercel.com) and sign in with GitHub
+1. Go to [vercel.com](https://vercel.com) and sign in (you can use GitHub, GitLab, or email)
 2. Click "Add New..." → "Project"
-3. Import your `ResourceSheet` repository
-4. Configure the project:
+3. If not already connected, click "Adjust Git Scope" or "Connect Git Provider" to link your GitLab account
+4. Import your `ResourceSheet` repository
+5. Configure the project:
 
 | Setting | Value |
 |---------|-------|
 | Framework Preset | Next.js |
 | Build Command | `next build` |
 | Output Directory | `.next` |
+
+> **Note for GitLab Users**: The import process is identical to GitHub. Vercel's GitLab integration supports automatic deployments and preview environments just like GitHub.
 
 ### 2.2 Add Environment Variables
 
@@ -123,7 +126,11 @@ git push origin main
 
 ### Preview Deployments
 
-Vercel automatically creates preview deployments for PRs.
+Vercel automatically creates preview deployments for:
+- **GitHub**: Pull Requests (PRs)
+- **GitLab**: Merge Requests (MRs)
+
+These preview URLs allow you to review changes before merging.
 
 ---
 
