@@ -138,10 +138,20 @@ function AuthenticatedDriversPage() {
       )
 
       if (!isAlreadyAdded) {
+        // Construct rarityValue for Rarity-5 drivers (includes collection info)
+        let rarityValue: string | undefined = undefined
+        if (driver.rarity === 5 && driver.collection_id) {
+          // Include collection_id and collection_sub_name for SE drivers
+          rarityValue = driver.collection_sub_name
+            ? `${driver.collection_id}-${driver.collection_sub_name}`
+            : driver.collection_id
+        }
+        
         // Add the driver with new data structure
         const newDriver = {
           driverName: driver.name,
           rarity: driver.rarity,
+          rarityValue: rarityValue,
           level: Math.min(driver.level, getMaxLevelForRarity(driver.rarity)),
           hasBonus: false
         }
