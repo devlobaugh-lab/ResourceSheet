@@ -54,7 +54,7 @@ interface SetupInfo { id: string; name: string; notes: string | null }
 
 interface TrackSlot {
   id: string; race_number: number; race_type: 'qualifying' | 'opening' | 'final'
-  track_id: string | null; is_wet: boolean
+  track_id: string | null; is_wet: boolean; is_ready: boolean
   driver_1_id: string | null; driver_2_id: string | null
   driver_1_boost_id: string | null; driver_2_boost_id: string | null
   alt_driver_ids: string[]; alt_boost_ids: string[]
@@ -169,6 +169,41 @@ function TrackSlotCard({
   const [expanded, setExpanded] = useState(false)
   const [driverModal, setDriverModal] = useState<null | 'driver1' | 'driver2'>(null)
   const [boostModal, setBoostModal] = useState<null | 'driver1' | 'driver2'>(null)
+  
+  // Bonus state for driver selection modal
+  const [bonusPercentage, setBonusPercentage] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return parseInt(localStorage.getItem('gp-guide-bonus-percentage') || '0', 10) || 0
+      } catch { return 0 }
+    }
+    return 0
+  })
+  const [bonusCheckedDrivers, setBonusCheckedDrivers] = useState<Set<string>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('gp-guide-bonus-drivers')
+        if (stored) return new Set(JSON.parse(stored))
+      } catch {}
+    }
+    return new Set()
+  })
+  
+  const handleBonusToggle = useCallback((driverId: string) => {
+    setBonusCheckedDrivers(prev => {
+      const next = new Set(prev)
+      if (next.has(driverId)) {
+        next.delete(driverId)
+      } else {
+        next.add(driverId)
+      }
+      // Persist to localStorage
+      try {
+        localStorage.setItem('gp-guide-bonus-drivers', JSON.stringify(Array.from(next)))
+      } catch {}
+      return next
+    })
+  }, [])
 
   const track = allTracks.find(t => t.id === slot.track_id) || null
   const driver1 = allDrivers.find(d => d.id === slot.driver_1_id) || null
@@ -179,7 +214,9 @@ function TrackSlotCard({
 
   const gpLevelConfig = GP_LEVELS[gpLevel] || GP_LEVELS[3]
 
-  // Completion status
+  // Use user-controlled is_ready flag (with fallback to calculated for display)
+  const hasTrack = !!slot.track_id
+  // Calculate completion for display purposes only
   const completedFields = [
     !!slot.track_id,
     !!slot.driver_1_id,
@@ -192,8 +229,9 @@ function TrackSlotCard({
   const filledCount = completedFields.filter(Boolean).length
   const totalFields = completedFields.length
   const isComplete = filledCount === totalFields
-  const hasTrack = !!slot.track_id
-  const slotBg = isComplete
+  // Use the user-controlled is_ready flag for the visual state
+  const isReady = slot.is_ready ?? false
+  const slotBg = isReady
     ? 'bg-green-50 border-green-300'
     : hasTrack
     ? 'bg-amber-50 border-amber-200'
@@ -255,12 +293,22 @@ function TrackSlotCard({
             {importingSlotId === slot.id ? 'Importing…' : '↓ Import Track Guide'}
           </Button>
         )}
-        {/* Completion badge */}
-        {isComplete ? (
-          <span className="ml-auto mr-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-200 text-green-800">✓ Ready</span>
-        ) : hasTrack ? (
-          <span className="ml-auto mr-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{filledCount}/{totalFields}</span>
-        ) : null}
+        {/* User-controlled Ready toggle */}
+        <button
+          onClick={e => { e.stopPropagation(); save({ is_ready: !isReady }); }}
+          title={isReady ? 'Mark as not ready' : 'Mark as ready'}
+          className={`px-2 py-1 rounded text-xs font-medium border transition-colors ${
+            isReady 
+              ? 'bg-green-100 border-green-300 text-green-700' 
+              : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-green-50'
+          }`}
+        >
+          {isReady ? '✓ Ready' : '○ Ready'}
+        </button>
+        {/* Completion progress badge */}
+        {hasTrack && !isReady && (
+          <span className="mr-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{filledCount}/{totalFields}</span>
+        )}
         <span className={isComplete || hasTrack ? 'text-gray-400 text-sm' : 'ml-auto text-gray-400 text-sm'}
           title={expanded ? 'Click to collapse' : 'Click to expand strategy'}>
           {expanded ? '▲' : '▼'}
@@ -394,6 +442,9 @@ function TrackSlotCard({
                 singleSelect={true}
                 driver1Id={slot.driver_1_id || undefined}
                 driver2Id={slot.driver_2_id || undefined}
+                bonusPercentage={bonusPercentage}
+                bonusCheckedItems={bonusCheckedDrivers}
+                onBonusToggle={handleBonusToggle}
               />
             </div>
             <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
@@ -434,7 +485,7 @@ export default function GpGuideEditorPage() {
   const [guide, setGuide] = useState<GpGuide | null>(null)
   const [allTracks, setAllTracks] = useState<TrackInfo[]>([])
   const [allDrivers, setAllDrivers] = useState<DriverView[]>([])
-  const [allBoosts, setAllBoosts] = useState<BoostView[]>([])
+  const [allBoosts, setAllBoosts] = useState<any[]>([])
   const [allSetups, setAllSetups] = useState<SetupInfo[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [importingSlotId, setImportingSlotId] = useState<string | null>(null)
@@ -455,7 +506,7 @@ export default function GpGuideEditorPage() {
         fetch(`/api/gp-guides/${guideId}`, opts),
         fetch('/api/tracks', opts),
         fetch('/api/drivers/user?limit=500', opts),
-        fetch('/api/boosts?limit=200', opts),
+        fetch('/api/user-boosts?limit=200', opts),  // Use user-boosts to get card_count
         fetch('/api/setups', opts),
       ])
       if (!guideRes.ok) { router.push('/gp-guides'); return }
@@ -568,12 +619,12 @@ export default function GpGuideEditorPage() {
   const uniqueTracksForResults = useCallback(() => {
     if (!guide) return []
     const seen = new Set<string>()
-    const result: { id: string; name: string }[] = []
+    const result: { id: string; name: string; display_name: string | null }[] = []
     guide.tracks.forEach(slot => {
       if (slot.track_id && !seen.has(slot.track_id)) {
         seen.add(slot.track_id)
         const t = allTracks.find(tr => tr.id === slot.track_id)
-        if (t) result.push({ id: t.id, name: t.name })
+        if (t) result.push({ id: t.id, name: t.name, display_name: t.display_name })
       }
     })
     return result
@@ -717,7 +768,7 @@ export default function GpGuideEditorPage() {
                       const result = guide.results.find(r => r.track_id === t.id)
                       return (
                         <div key={t.id}>
-                          <label className="block text-xs font-semibold text-gray-600 mb-1">{t.name}</label>
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">{t.display_name || t.name}</label>
                           <textarea value={result?.results_notes || ''}
                             onChange={e => handleResultsChange(t.id, e.target.value)}
                             onBlur={e => saveResults(t.id, e.target.value)}

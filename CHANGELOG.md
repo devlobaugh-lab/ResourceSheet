@@ -202,6 +202,57 @@ node scripts/unified_data_processor.js
 
 ## [Unreleased]
 
+### Fixed - Track Guides and GP Guides Bug Fixes (2026-02-23)
+
+**Bug Fixes:**
+1. **Boost Disappearance on First Save**: Fixed `/api/track-guides` POST handler to include all fields including `suggested_boosts`, `suggested_drivers`, and driver strategy fields
+2. **Boost Amounts Showing Zeros**: Changed Track Guide and GP Guide pages to use `/api/user-boosts` instead of `/api/boosts` to get correct `card_count` data
+3. **Race Results Notes Track Name**: Fixed GP Guide to use display_name instead of system track name in Race Results Notes section
+4. **Highest Level Selection Memory**: Updated `DriverSelectionGrid` to persist `showHighestLevel` state to localStorage so it persists across modal opens
+5. **Green Circle Indicator Logic**: Added `isGuideUseful()` function that checks for minimum required fields (driver, boost, dry strategy for both drivers) before showing green circle on track guides listing page
+
+### Changed - GP Guide User-Controlled Ready Toggle (2026-02-23)
+
+**New Feature: User-Controlled Ready Toggle**
+- Added `is_ready` boolean field to `user_gp_guide_tracks` type (database migration required)
+- Replaced automatic "Ready" badge with user-controlled toggle button
+- Toggle allows users to explicitly mark a race as ready regardless of field completion
+- Shows progress counter (e.g., 4/7) when not ready
+- Field completion is still tracked and displayed, but doesn't control "ready" state
+
+**Database Migration Required:**
+```sql
+ALTER TABLE user_gp_guide_tracks ADD COLUMN is_ready boolean DEFAULT false;
+```
+
+### Added - Driver Selection Modal Bonus Support (2026-02-23)
+
+**New Props for DriverSelectionGrid:**
+- `bonusPercentage`: Optional percentage value for bonus calculations
+- `bonusCheckedItems`: Set of driver IDs that have bonus applied
+- `onBonusToggle`: Callback when bonus checkbox is toggled
+- Added "Bonus" column with checkbox when bonus functionality is enabled
+- Added Bonus % input field when bonus functionality is enabled
+- Bonus % field placed before "Highest Level" checkbox for consistency with other pages
+- Bonus percentage is editable and persists to localStorage
+- Checkboxes persist to localStorage per-page (track-guide vs gp-guide)
+- Implemented in both Track Guide and GP Guide driver selection modals
+
+**Bonus Stat Calculation:**
+- When bonus checkbox is checked for a driver, their stats are increased by the bonus percentage
+- Uses `Math.ceil()` to round up stat increases (matching drivers page behavior)
+- Stats update in real-time when bonus percentage or checkbox state changes
+- Color coding recalculates based on bonus-adjusted values
+- **Re-sort triggered automatically** when bonus checkbox changes - drivers re-sort based on bonus-adjusted stats
+
+**Technical Implementation:**
+- `DriverSelectionGrid`: Added bonus column conditionally when `onBonusToggle` prop provided
+- `DriverSelectionGrid`: Added `localBonusPercentage` state with localStorage persistence
+- `DriverSelectionGrid`: Updated `getStatValue` to apply bonus calculation when driver has bonus checked
+- `src/app/track-guides/[id]/page.tsx`: Added bonus state management with localStorage persistence
+- `src/app/gp-guides/[id]/page.tsx`: Added bonus state management with localStorage persistence
+- State persists across modal opens and page refreshes
+
 ### Added
 - **Series Max Loadouts Page** (`/series-max-loadouts`) - New feature showing optimal car setups for each series
   - Displays best parts for Speed, Cornering, and Power Unit builds

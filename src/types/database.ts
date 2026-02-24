@@ -404,6 +404,10 @@ export interface Database {
           setup_notes?: string | null
           dry_strategy?: string | null
           wet_strategy?: string | null
+          driver_1_dry_strategy?: string | null
+          driver_1_wet_strategy?: string | null
+          driver_2_dry_strategy?: string | null
+          driver_2_wet_strategy?: string | null
           notes?: string | null
           driver_1_id?: string | null
           driver_2_id?: string | null
@@ -426,6 +430,10 @@ export interface Database {
           setup_notes?: string | null
           dry_strategy?: string | null
           wet_strategy?: string | null
+          driver_1_dry_strategy?: string | null
+          driver_1_wet_strategy?: string | null
+          driver_2_dry_strategy?: string | null
+          driver_2_wet_strategy?: string | null
           notes?: string | null
           driver_1_id?: string | null
           driver_2_id?: string | null
@@ -480,6 +488,7 @@ export interface Database {
           race_number: number
           race_type: 'qualifying' | 'opening' | 'final'
           is_wet: boolean
+          is_ready: boolean
           driver_1_id: string | null
           driver_2_id: string | null
           driver_1_boost_id: string | null
@@ -501,6 +510,7 @@ export interface Database {
           race_number: number
           race_type: 'qualifying' | 'opening' | 'final'
           is_wet?: boolean
+          is_ready?: boolean
           driver_1_id?: string | null
           driver_2_id?: string | null
           driver_1_boost_id?: string | null
@@ -522,6 +532,7 @@ export interface Database {
           race_number?: number
           race_type?: 'qualifying' | 'opening' | 'final'
           is_wet?: boolean
+          is_ready?: boolean
           driver_1_id?: string | null
           driver_2_id?: string | null
           driver_1_boost_id?: string | null
