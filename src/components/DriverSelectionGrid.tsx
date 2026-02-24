@@ -61,6 +61,10 @@ interface DriverSelectionGridProps {
   singleSelect?: boolean; // New prop for single select mode
   driver1Id?: string; // ID of driver selected in driver 1 slot
   driver2Id?: string; // ID of driver selected in driver 2 slot
+  // Bonus functionality
+  bonusPercentage?: number;
+  bonusCheckedItems?: Set<string>;
+  onBonusToggle?: (itemId: string) => void;
 }
 
 export function DriverSelectionGrid({
@@ -74,12 +78,52 @@ export function DriverSelectionGrid({
   singleSelect = false,
   driver1Id,
   driver2Id,
+  bonusPercentage = 0,
+  bonusCheckedItems = new Set(),
+  onBonusToggle,
 }: DriverSelectionGridProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<string>(trackStat);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [showHighestLevel, setShowHighestLevel] = useState(initialShowHighestLevel);
+  // Initialize showHighestLevel from localStorage if available, otherwise use prop
+  const [showHighestLevel, setShowHighestLevel] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('driver-selection-show-highest-level')
+        if (stored !== null) {
+          return JSON.parse(stored)
+        }
+      } catch (error) {
+        console.warn('Failed to load show highest level from localStorage:', error)
+      }
+    }
+    return initialShowHighestLevel
+  })
   const [localMaxSeries, setLocalMaxSeries] = useState(maxSeries);
+  
+  // Local state for bonus percentage (managed internally with localStorage persistence)
+  const [localBonusPercentage, setLocalBonusPercentage] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('driver-selection-bonus-percentage')
+        if (stored !== null) {
+          return parseInt(stored, 10) || 0
+        }
+      } catch (error) {
+        console.warn('Failed to load bonus percentage from localStorage:', error)
+      }
+    }
+    return bonusPercentage
+  })
+
+  // Persist showHighestLevel to localStorage when it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('driver-selection-show-highest-level', JSON.stringify(showHighestLevel))
+    } catch (error) {
+      console.warn('Failed to save show highest level to localStorage:', error)
+    }
+  }, [showHighestLevel])
 
   // Map track stat names to internal stat names
   const getInternalStatName = (statName: string): string => {
@@ -178,6 +222,34 @@ export function DriverSelectionGrid({
     return stats;
   }, [filteredDrivers, showHighestLevel]);
 
+  // Get stat value for sorting (includes bonus calculation)
+  const getStatValueForSort = useCallback((driver: DriverView, statName: string): number => {
+    let userLevel = driver.level;
+
+    if (userLevel === 0) {
+      return 0;
+    }
+
+    // If showHighestLevel is enabled, use the highest possible level instead of current level
+    if (showHighestLevel) {
+      const highestLevel = calculateHighestLevel(userLevel, driver.card_count || 0, driver.rarity);
+      userLevel = highestLevel;
+    }
+
+    let baseValue = 0;
+    if (driver.stats_per_level && driver.stats_per_level.length > userLevel - 1) {
+      baseValue = driver.stats_per_level[userLevel - 1][statName] || 0;
+    }
+
+    // Apply bonus if driver has bonus checked and bonus percentage is set
+    if (bonusCheckedItems.has(driver.id) && localBonusPercentage > 0) {
+      // All driver stats should increase and round up
+      baseValue = Math.ceil(baseValue * (1 + localBonusPercentage / 100));
+    }
+
+    return baseValue;
+  }, [showHighestLevel, bonusCheckedItems, localBonusPercentage]);
+
   // Apply sorting
   const sortedDrivers = useMemo(() => {
     if (!effectiveSortBy) return [...filteredDrivers];
@@ -214,54 +286,16 @@ export function DriverSelectionGrid({
         case 'qualifying':
         case 'raceStart':
         case 'tyreUse':
-          // Get stat value for sorting
-          const getStatValue = (driver: DriverView, statName: string): number => {
-            let userLevel = driver.level;
-
-            if (userLevel === 0) {
-              return 0;
-            }
-
-            // If showHighestLevel is enabled, use the highest possible level instead of current level
-            if (showHighestLevel) {
-              const highestLevel = calculateHighestLevel(userLevel, driver.card_count || 0, driver.rarity);
-              userLevel = highestLevel;
-            }
-
-            let baseValue = 0;
-            if (driver.stats_per_level && driver.stats_per_level.length > userLevel - 1) {
-              baseValue = driver.stats_per_level[userLevel - 1][statName] || 0;
-            }
-
-            return baseValue;
-          };
-
-          comparison = getStatValue(a, effectiveSortBy) - getStatValue(b, effectiveSortBy);
+          comparison = getStatValueForSort(a, effectiveSortBy) - getStatValueForSort(b, effectiveSortBy);
           break;
         case 'total_value':
           // Calculate total value for drivers
           const getTotalValue = (driver: DriverView): number => {
-            let userLevel = driver.level;
-
-            if (userLevel === 0) {
-              return 0;
-            }
-
-            // If showHighestLevel is enabled, use the highest possible level instead of current level
-            if (showHighestLevel) {
-              const highestLevel = calculateHighestLevel(userLevel, driver.card_count || 0, driver.rarity);
-              userLevel = highestLevel;
-            }
-
-            let total = 0;
-            if (driver.stats_per_level && driver.stats_per_level.length > userLevel - 1) {
-              const levelStats = driver.stats_per_level[userLevel - 1];
-              total = (levelStats.overtaking || 0) + (levelStats.blocking || 0) +
-                     (levelStats.qualifying || 0) + (levelStats.tyreUse || 0) +
-                     (levelStats.raceStart || 0);
-            }
-
-            return total;
+            return getStatValueForSort(driver, 'overtaking') + 
+                   getStatValueForSort(driver, 'blocking') + 
+                   getStatValueForSort(driver, 'qualifying') + 
+                   getStatValueForSort(driver, 'tyreUse') + 
+                   getStatValueForSort(driver, 'raceStart');
           };
 
           comparison = getTotalValue(a) - getTotalValue(b);
@@ -272,7 +306,7 @@ export function DriverSelectionGrid({
 
       return sortOrder === 'asc' ? comparison : -comparison;
     });
-  }, [filteredDrivers, sortBy, sortOrder, showHighestLevel]);
+  }, [filteredDrivers, sortBy, sortOrder, showHighestLevel, bonusCheckedItems, localBonusPercentage, effectiveSortBy, getStatValueForSort]);
 
   // Handle driver selection toggle
   const handleDriverToggle = (driverId: string) => {
@@ -308,19 +342,29 @@ export function DriverSelectionGrid({
 
   // Get columns for the grid
   const columns = useMemo(() => {
-    return [
+    const baseColumns = [
       { key: 'name', label: 'Name', sortable: true },
       { key: 'rarity', label: 'Rarity', sortable: true },
       { key: 'level', label: 'Level', sortable: true },
       { key: 'series', label: 'Series', sortable: true },
+    ];
+    
+    // Add bonus column if onBonusToggle is provided
+    if (onBonusToggle) {
+      baseColumns.push({ key: 'bonus', label: 'Bonus', sortable: false });
+    }
+    
+    baseColumns.push(
       { key: 'overtaking', label: 'Overtaking', sortable: true },
       { key: 'blocking', label: 'Defending', sortable: true },
       { key: 'qualifying', label: 'Qualifying', sortable: true },
       { key: 'raceStart', label: 'Race Start', sortable: true },
       { key: 'tyreUse', label: 'Tyre Use', sortable: true },
       { key: 'total_value', label: 'Total Value', sortable: true },
-    ];
-  }, []);
+    );
+    
+    return baseColumns;
+  }, [onBonusToggle]);
 
   // Get stat value for display
   const getStatValue = useCallback((driver: DriverView, statName: string): number => {
@@ -341,8 +385,14 @@ export function DriverSelectionGrid({
       baseValue = driver.stats_per_level[userLevel - 1][statName] || 0;
     }
 
+    // Apply bonus if driver has bonus checked and bonus percentage is set
+    if (bonusCheckedItems.has(driver.id) && localBonusPercentage > 0) {
+      // All driver stats should increase and round up
+      baseValue = Math.ceil(baseValue * (1 + localBonusPercentage / 100));
+    }
+
     return baseValue;
-  }, [showHighestLevel]);
+  }, [showHighestLevel, bonusCheckedItems, localBonusPercentage]);
 
   // Get driver name with prefix if selected in other slot
   const getDriverNameWithPrefix = (driver: DriverView): string => {
@@ -390,6 +440,32 @@ export function DriverSelectionGrid({
           </select>
         </div>
 
+        {/* Bonus percentage input - only show if onBonusToggle is provided */}
+        {onBonusToggle && (
+          <div className="flex items-center space-x-2">
+            <label htmlFor="bonusPercentage" className="text-sm font-medium text-gray-700">
+              Bonus %:
+            </label>
+            <input
+              id="bonusPercentage"
+              type="number"
+              min="0"
+              max="100"
+              className="rounded-lg border-gray-300 text-sm px-2 py-1 w-14"
+              value={localBonusPercentage}
+              onChange={(e) => {
+                const value = parseInt(e.target.value, 10) || 0
+                setLocalBonusPercentage(value)
+                // Store in localStorage for persistence
+                try {
+                  localStorage.setItem('driver-selection-bonus-percentage', String(value))
+                } catch {}
+              }}
+              placeholder="0"
+            />
+          </div>
+        )}
+
         <div className="flex items-center space-x-2">
           <label htmlFor="highestLevelToggle" className="text-sm font-medium text-gray-700">
             Highest Level:
@@ -402,6 +478,7 @@ export function DriverSelectionGrid({
             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
           />
         </div>
+
       </div>
 
       {/* Data Grid Table */}
@@ -486,6 +563,22 @@ export function DriverSelectionGrid({
                   <td className="px-3 py-1 whitespace-nowrap text-center">
                     <div className="text-sm text-gray-900">{driver.series}</div>
                   </td>
+
+                  {/* Bonus Column - only show if onBonusToggle is provided */}
+                  {onBonusToggle && (
+                    <td className="px-3 py-1 whitespace-nowrap text-center">
+                      <input
+                        type="checkbox"
+                        checked={bonusCheckedItems.has(driver.id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          onBonusToggle(driver.id);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                      />
+                    </td>
+                  )}
 
                   {/* Stats Columns */}
                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats['overtaking'] && getStatBackgroundColor(getStatValue(driver, 'overtaking'), columnStats['overtaking'].min, columnStats['overtaking'].max, columnStats['overtaking'].median))}>

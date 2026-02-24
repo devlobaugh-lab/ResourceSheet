@@ -72,11 +72,31 @@ export default function TrackGuidesPage() {
     guideMap.set(key, guide)
   })
 
+  // Check if a track guide has minimum required fields for usefulness
+  // A guide is considered "useful" if it has: driver1, boost1, dry strategy for driver1
+  // AND driver2, boost2, dry strategy for driver2
+  const isGuideUseful = (guide: UserTrackGuide): boolean => {
+    // Driver 1 must have: driver, boost, and dry tyre strategy
+    const driver1Complete = 
+      !!guide.driver_1_id && 
+      !!guide.driver_1_boost_id && 
+      !!guide.driver_1_dry_strategy
+    
+    // Driver 2 must have: driver, boost, and dry tyre strategy
+    const driver2Complete = 
+      !!guide.driver_2_id && 
+      !!guide.driver_2_boost_id && 
+      !!guide.driver_2_dry_strategy
+    
+    return driver1Complete && driver2Complete
+  }
+
   // Get completion status for a track and GP level
   const getCompletionStatus = (trackId: string, gpLevel: number) => {
     const key = `${trackId}-${gpLevel}`
     const guide = guideMap.get(key)
-    return guide ? 'complete' : 'empty'
+    if (!guide) return 'empty'
+    return isGuideUseful(guide) ? 'complete' : 'partial'
   }
 
   // Get display name with alias if available

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -81,6 +81,41 @@ export default function TrackGuideEditorPage() {
   const [driver_2_id, setDriver_2_id] = useState('')
   const [driver_1_boost_id, setDriver_1_boost_id] = useState<string | null>(null)
   const [driver_2_boost_id, setDriver_2_boost_id] = useState<string | null>(null)
+  
+  // Bonus state for driver selection modal
+  const [bonusPercentage, setBonusPercentage] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return parseInt(localStorage.getItem('driver-selection-bonus-percentage') || '0', 10) || 0
+      } catch { return 0 }
+    }
+    return 0
+  })
+  const [bonusCheckedDrivers, setBonusCheckedDrivers] = useState<Set<string>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('track-guide-bonus-drivers')
+        if (stored) return new Set(JSON.parse(stored))
+      } catch {}
+    }
+    return new Set()
+  })
+  
+  const handleBonusToggle = useCallback((driverId: string) => {
+    setBonusCheckedDrivers(prev => {
+      const next = new Set(prev)
+      if (next.has(driverId)) {
+        next.delete(driverId)
+      } else {
+        next.add(driverId)
+      }
+      // Persist to localStorage
+      try {
+        localStorage.setItem('track-guide-bonus-drivers', JSON.stringify(Array.from(next)))
+      } catch {}
+      return next
+    })
+  }, [])
 
   // Fetch user's saved car setups
   const { data: userSetupsResponse } = useUserCarSetups()
@@ -100,11 +135,11 @@ export default function TrackGuideEditorPage() {
     }
   })
 
-  // Fetch all boosts for the boost selection modal
+  // Fetch all boosts for the boost selection modal (using user-boosts to get card_count)
   const { data: allBoosts = [], isLoading: boostsLoading } = useQuery({
-    queryKey: ['all-boosts'],
+    queryKey: ['user-boosts-for-track-guide'],
     queryFn: async () => {
-      const response = await fetch('/api/boosts?limit=100', {
+      const response = await fetch('/api/user-boosts?limit=200', {
         headers: await getAuthHeaders(),
         credentials: 'same-origin'
       })
@@ -1134,6 +1169,9 @@ export default function TrackGuideEditorPage() {
                       singleSelect={driverSelectionMode === 'driver1' || driverSelectionMode === 'driver2'}
                       driver1Id={formData.driver_1_id || undefined}
                       driver2Id={formData.driver_2_id || undefined}
+                      bonusPercentage={bonusPercentage}
+                      bonusCheckedItems={bonusCheckedDrivers}
+                      onBonusToggle={handleBonusToggle}
                     />
                   )}
                 </div>
