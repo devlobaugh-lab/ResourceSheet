@@ -90,8 +90,8 @@ export function CustomDriverForm({ onSubmit, onCancel, isLoading, initialValues 
     { key: 'overtaking', label: 'OVT' },
     { key: 'blocking', label: 'DEF' },
     { key: 'qualifying', label: 'QLY' },
-    { key: 'tyre_use', label: 'TYR' },
-    { key: 'race_start', label: 'RST' }
+    { key: 'race_start', label: 'RST' },
+    { key: 'tyre_use', label: 'TYR' }
   ]
   
   const carPartFields = [

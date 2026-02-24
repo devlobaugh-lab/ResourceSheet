@@ -45,8 +45,8 @@ export function AIDriverCompareGrid({ data, trackName, difficulty }: AIDriverCom
     { key: 'overtaking', label: 'OVT', type: 'driver' },
     { key: 'blocking', label: 'DEF', type: 'driver' },
     { key: 'qualifying', label: 'QLY', type: 'driver' },
-    { key: 'tyre_use', label: 'TYR', type: 'driver' },
     { key: 'race_start', label: 'RST', type: 'driver' },
+    { key: 'tyre_use', label: 'TYR', type: 'driver' },
     // Qualifying total (driver + parts)
     { key: 'qualifying_total', label: 'Total QLY', type: 'combined' },
     // Car part columns (consolidated)
