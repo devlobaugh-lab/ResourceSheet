@@ -124,6 +124,32 @@ function AuthenticatedPartsPage() {
     }
   })
 
+  // State for theoretical parts comparison - stores up to 3 theoretical parts per part type
+  // Key format: `${partType}_${index}` where index is 0, 1, or 2
+  const [theoreticalParts, setTheoreticalParts] = useState<Record<string, { partId: string; level: number }>>(() => {
+    try {
+      const stored = localStorage.getItem('parts-theoretical-parts')
+      return stored ? JSON.parse(stored) : {}
+    } catch (error) {
+      console.warn('Failed to load theoretical parts from localStorage:', error)
+      return {}
+    }
+  })
+
+  // Update theoretical part selection
+  const setTheoreticalPart = (partType: number, index: number, partId: string | null, level: number | null) => {
+    const key = `${partType}_${index}`
+    setTheoreticalParts(prev => {
+      const updated = { ...prev }
+      if (partId === null || level === null) {
+        delete updated[key]
+      } else {
+        updated[key] = { partId, level }
+      }
+      return updated
+    })
+  }
+
   // Load bonus settings from localStorage on mount
   useEffect(() => {
     try {
@@ -174,6 +200,15 @@ function AuthenticatedPartsPage() {
       console.warn('Failed to save max series to localStorage:', error)
     }
   }, [maxSeries])
+
+  // Save theoretical parts to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('parts-theoretical-parts', JSON.stringify(theoreticalParts))
+    } catch (error) {
+      console.warn('Failed to save theoretical parts to localStorage:', error)
+    }
+  }, [theoreticalParts])
 
   // Handle bonus checkbox changes
   const handleBonusToggle = (itemId: string) => {
@@ -343,6 +378,55 @@ function AuthenticatedPartsPage() {
 
   // Use shared rarity helpers (for rarity 5, prefer collection-driven label)
   const rarityLabel = (item: any) => item.rarity === 5 ? getCollectionRarityDisplay(item.collection_theme ?? null, item.collection_sub_name ?? null) : getRarityDisplay(item.rarity)
+
+  // Helper to get part type number from name
+  const getPartTypeNumber = (typeName: string): number => {
+    const typeMap: Record<string, number> = {
+      'Gearbox': 0,
+      'Brakes': 1,
+      'Engine': 2,
+      'Suspension': 3,
+      'Front Wing': 4,
+      'Rear Wing': 5
+    };
+    return typeMap[typeName] ?? -1;
+  };
+
+  // Get all parts available for theoretical comparison (excluding starter parts)
+  const allPartsForComparison = useMemo(() => {
+    return mergedCarParts.filter(part => part.series > 0);
+  }, [mergedCarParts]);
+
+  // Get max level for a part based on rarity
+  const getMaxLevelForRarity = (rarity: number): number => {
+    switch (rarity) {
+      case 1: return 11; // Common
+      case 2: return 9;  // Rare
+      case 3: return 8;  // Epic
+      case 4: return 6;  // Legendary (assumed)
+      case 5: return 8;  // Collection
+      default: return 11;
+    }
+  };
+
+  // Get stats for a theoretical part
+  const getTheoreticalPartStats = (partId: string, level: number) => {
+    const part = mergedCarParts.find(p => p.id === partId);
+    if (!part || level < 1) return null;
+
+    const stats = part.stats_per_level;
+    if (!stats || !Array.isArray(stats) || stats.length < level) return null;
+
+    const levelStats = stats[level - 1];
+    return {
+      speed: levelStats.speed || 0,
+      cornering: levelStats.cornering || 0,
+      powerUnit: levelStats.powerUnit || 0,
+      qualifying: levelStats.qualifying || 0,
+      drs: levelStats.drs || 0,
+      pitStopTime: levelStats.pitStopTime || 0,
+    };
+  };
 
   return (
     <div className="space-y-6">
@@ -570,6 +654,123 @@ function AuthenticatedPartsPage() {
                             </td>
                             <td className="px-3 py-1 whitespace-nowrap text-center">
                               <div className="text-sm text-gray-900">{part.series}</div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+
+                      {/* Theoretical Parts Comparison Rows */}
+                      {[0, 1, 2].map((index) => {
+                        const partTypeNum = getPartTypeNumber(partType);
+                        const key = `${partTypeNum}_${index}`;
+                        const selection = theoreticalParts[key];
+                        const selectedPart = selection ? allPartsForComparison.find(p => p.id === selection.partId) : null;
+                        const rawStats = selection ? getTheoreticalPartStats(selection.partId, selection.level) : null;
+
+                        // Get parts available for this part type, sorted same as grid (series then rarity ascending)
+                        const availableParts = allPartsForComparison
+                          .filter(p => p.car_part_type === partTypeNum)
+                          .sort((a, b) => {
+                            if (a.series !== b.series) return a.series - b.series;
+                            return a.rarity - b.rarity;
+                          });
+
+                        // Generate a unique ID for theoretical part bonus tracking
+                        const theoreticalBonusId = `theoretical-${partTypeNum}-${index}`;
+
+                        // Apply bonus to theoretical part stats if checked
+                        const stats = rawStats && bonusCheckedItems.has(theoreticalBonusId) && parseFloat(bonusPercentage) > 0
+                          ? {
+                              speed: Math.ceil(rawStats.speed * (1 + parseFloat(bonusPercentage) / 100)),
+                              cornering: Math.ceil(rawStats.cornering * (1 + parseFloat(bonusPercentage) / 100)),
+                              powerUnit: Math.ceil(rawStats.powerUnit * (1 + parseFloat(bonusPercentage) / 100)),
+                              qualifying: Math.ceil(rawStats.qualifying * (1 + parseFloat(bonusPercentage) / 100)),
+                              drs: Math.ceil(rawStats.drs * (1 + parseFloat(bonusPercentage) / 100)),
+                              pitStopTime: Math.round((rawStats.pitStopTime * (1 - parseFloat(bonusPercentage) / 100)) * 100) / 100,
+                            }
+                          : rawStats;
+
+                        return (
+                          <tr key={`theoretical-${partType}-${index}`} className="bg-gray-100 hover:bg-gray-200 transition-colors">
+                            <td className="px-3 py-1 whitespace-nowrap bg-gray-200">
+                              <select
+                                className="text-sm bg-white border border-gray-300 rounded px-2 py-1 w-32"
+                                value={selection?.partId || ''}
+                                onChange={(e) => {
+                                  const newPartId = e.target.value;
+                                  if (newPartId) {
+                                    const part = allPartsForComparison.find(p => p.id === newPartId);
+                                    const defaultLevel = part ? 1 : 1;
+                                    setTheoreticalPart(partTypeNum, index, newPartId, selection?.level || defaultLevel);
+                                  } else {
+                                    setTheoreticalPart(partTypeNum, index, null, null);
+                                  }
+                                }}
+                              >
+                                <option value="">Select part...</option>
+                                {availableParts.map(p => (
+                                  <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap bg-gray-200">
+                              <div className="text-sm text-gray-900">
+                                {selectedPart ? rarityLabel(selectedPart) : '-'}
+                              </div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center bg-gray-200">
+                              {selectedPart ? (
+                                <select
+                                  className="text-sm bg-white border border-gray-300 rounded px-2 py-1 w-16"
+                                  value={selection?.level || 1}
+                                  onChange={(e) => {
+                                    const newLevel = parseInt(e.target.value, 10);
+                                    if (selection?.partId) {
+                                      setTheoreticalPart(partTypeNum, index, selection.partId, newLevel);
+                                    }
+                                  }}
+                                >
+                                  {Array.from({ length: getMaxLevelForRarity(selectedPart.rarity) }, (_, i) => (
+                                    <option key={i + 1} value={i + 1}>{i + 1}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-sm text-gray-400">-</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center bg-gray-200">
+                              <input
+                                type="checkbox"
+                                checked={bonusCheckedItems.has(theoreticalBonusId)}
+                                onChange={() => handleBonusToggle(theoreticalBonusId)}
+                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                              />
+                            </td>
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_speed`] && getStatBackgroundColor(stats.speed, columnStats[`${partTypeNum}_speed`].min, columnStats[`${partTypeNum}_speed`].max, columnStats[`${partTypeNum}_speed`].median))}>
+                              <div className="text-sm text-gray-900">{stats?.speed ?? '-'}</div>
+                            </td>
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_cornering`] && getStatBackgroundColor(stats.cornering, columnStats[`${partTypeNum}_cornering`].min, columnStats[`${partTypeNum}_cornering`].max, columnStats[`${partTypeNum}_cornering`].median))}>
+                              <div className="text-sm text-gray-900">{stats?.cornering ?? '-'}</div>
+                            </td>
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_powerUnit`] && getStatBackgroundColor(stats.powerUnit, columnStats[`${partTypeNum}_powerUnit`].min, columnStats[`${partTypeNum}_powerUnit`].max, columnStats[`${partTypeNum}_powerUnit`].median))}>
+                              <div className="text-sm text-gray-900">{stats?.powerUnit ?? '-'}</div>
+                            </td>
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_qualifying`] && getStatBackgroundColor(stats.qualifying, columnStats[`${partTypeNum}_qualifying`].min, columnStats[`${partTypeNum}_qualifying`].max, columnStats[`${partTypeNum}_qualifying`].median))}>
+                              <div className="text-sm text-gray-900">{stats?.qualifying ?? '-'}</div>
+                            </td>
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_drs`] && getStatBackgroundColor(stats.drs, columnStats[`${partTypeNum}_drs`].min, columnStats[`${partTypeNum}_drs`].max, columnStats[`${partTypeNum}_drs`].median))}>
+                              <div className="text-sm text-gray-900">{stats?.drs ?? '-'}</div>
+                            </td>
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_pitStopTime`] && getStatBackgroundColor(stats.pitStopTime, columnStats[`${partTypeNum}_pitStopTime`].min, columnStats[`${partTypeNum}_pitStopTime`].max, columnStats[`${partTypeNum}_pitStopTime`].median, true))}>
+                              <div className="text-sm text-gray-900">{stats?.pitStopTime ?? '-'}</div>
+                            </td>
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_total_value`] && getStatBackgroundColor(stats.speed + stats.cornering + stats.powerUnit + stats.qualifying + stats.drs, columnStats[`${partTypeNum}_total_value`].min, columnStats[`${partTypeNum}_total_value`].max, columnStats[`${partTypeNum}_total_value`].median))}>
+                              <div className="text-sm font-medium text-gray-900">
+                                {stats ? stats.speed + stats.cornering + stats.powerUnit + stats.qualifying + stats.drs : '-'}
+                              </div>
+                            </td>
+                            <td className="px-3 py-1 whitespace-nowrap text-center bg-gray-200">
+                              <div className="text-sm text-gray-900">{selectedPart?.series ?? '-'}</div>
                             </td>
                           </tr>
                         );

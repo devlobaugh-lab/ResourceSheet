@@ -202,6 +202,25 @@ node scripts/unified_data_processor.js
 
 ## [Unreleased]
 
+### Added - Theoretical Parts Comparison Feature (2026-02-23)
+
+**New Feature: Compare Theoretical Parts on Parts Page**
+- Added 3 theoretical part comparison rows at the bottom of each part type section
+- Each row has dropdown selectors for part name and level
+- Rarity is automatically displayed based on the selected part name
+- When a part and level are selected, the row shows calculated stats for that part at that level
+- Allows users to compare up to 3 theoretical parts per part type regardless of ownership
+- Stats use the same color coding as owned parts for visual comparison
+- Selections persist in localStorage between sessions
+- Blue-tinted row background distinguishes theoretical parts from owned parts
+
+**Technical Implementation:**
+- State management via `theoreticalParts` object keyed by `${partType}_${index}`
+- Helper function `getTheoreticalPartStats()` retrieves stats at specified level
+- Helper function `getMaxLevelForRarity()` returns max level based on part rarity
+- localStorage persistence key: `parts-theoretical-parts`
+- Dropdown populated with all parts of the matching type (excluding starter parts)
+
 ### Fixed - Track Guides and GP Guides Bug Fixes (2026-02-23)
 
 **Bug Fixes:**
