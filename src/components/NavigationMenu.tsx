@@ -138,21 +138,20 @@ export function MobileNavigationMenu({ isAdmin }: MobileNavigationMenuProps) {
 export function useAdminStatus() {
   const { user } = useAuth()
 
-  const { data: profile } = useQuery({
-    queryKey: ['user-profile', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null
-      const response = await fetch(`/api/profiles/${user.id}`, {
-        headers: await getAuthHeaders(),
-        credentials: 'same-origin'
-      })
-      if (!response.ok) return null
-      return response.json()
-    },
-    enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+  // For development, we'll use a simple approach
+  // Since we know the admin user ID, we can check against it directly
+  const ADMIN_USER_ID = 'bf455f21-2e53-416a-a134-8b4a81588db3'
+  
+  // Check if current user is the admin user
+  const isAdmin = user?.id === ADMIN_USER_ID
+  
+  // Debug logging
+  console.log('Admin check:', {
+    currentUserId: user?.id,
+    adminUserId: ADMIN_USER_ID,
+    isAdmin,
+    isAuthenticated: !!user
   })
 
-  // Check both is_admin and user_type for backward compatibility
-  return profile?.is_admin === true || profile?.user_type === 'admin'
+  return isAdmin
 }

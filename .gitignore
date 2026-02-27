@@ -113,3 +113,9 @@ out/
 
 # external data source files (very large)
 external_data/
+
+# backups/
+backups/
+
+# temp working
+working/
