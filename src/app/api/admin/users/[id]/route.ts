@@ -4,52 +4,38 @@ import { createServerClient } from '@supabase/ssr'
 
 // Helper to verify admin access
 async function verifyAdmin(request: NextRequest) {
-  // Try to get user from Authorization header first
-  let user = null
-  const authHeader = request.headers.get('authorization')
-
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.substring(7)
-    try {
-      const parts = token.split('.')
-      if (parts.length === 3) {
-        const payload = JSON.parse(
-          Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
-        )
-
-        if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
-          user = {
-            id: payload.sub,
-            email: payload.email,
-          }
-        }
-      }
-    } catch (error) {
-      console.warn('JWT validation failed:', error)
+  // Use server-side Supabase client that handles cookies
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value)
+          })
+        },
+      },
     }
+  )
+  
+  // Get the current session from cookies
+  const { data: { session }, error: authError } = await supabase.auth.getSession()
+
+  if (authError || !session) {
+    console.error('Auth error:', authError)
+    return { authorized: false, userId: null, error: 'UNAUTHORIZED' }
   }
 
-  // Fall back to cookie-based auth
-  if (!user) {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll() {},
-        },
-      }
-    )
+  // Get the authenticated user (more secure than using session.user directly)
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
 
-    const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !cookieUser) {
-      return { authorized: false, userId: null, error: 'UNAUTHORIZED' }
-    }
-    user = cookieUser
+  if (userError || !user) {
+    console.error('User error:', userError)
+    return { authorized: false, userId: null, error: 'UNAUTHORIZED' }
   }
 
   // Check if user is admin (with fallback for missing user_type column)

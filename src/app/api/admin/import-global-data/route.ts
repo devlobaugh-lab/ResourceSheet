@@ -1,42 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { createServerClient } from '@supabase/ssr'
 
 // POST /api/admin/import-global-data - Import global data (admin only, merge strategy)
 export async function POST(request: NextRequest) {
   console.log('📥 Admin import global data called')
   try {
-    // Verify admin
-    const authHeader = request.headers.get('authorization')
-    let userId = null
-
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.substring(7)
-      try {
-        const parts = token.split('.')
-        if (parts.length === 3) {
-          const payload = JSON.parse(
-            Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
-          )
-          if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
-            userId = payload.sub
-          }
-        }
-      } catch (e) {
-        console.warn('JWT parse failed')
+    // Use server-side Supabase client that handles cookies
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              request.cookies.set(name, value)
+            })
+          },
+        },
       }
-    }
+    )
+    
+    // Get the current session from cookies
+    const { data: { session }, error: authError } = await supabase.auth.getSession()
 
-    if (!userId) {
+    if (authError || !session) {
+      console.error('Auth error:', authError)
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Authentication required' } }, { status: 401 })
     }
 
-    const { data: profile } = await supabaseAdmin
+    // Get the authenticated user (more secure than using session.user directly)
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      console.error('User error:', userError)
+      return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Authentication required' } }, { status: 401 })
+    }
+
+    // Check if user is admin
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('user_type, is_admin')
-      .eq('id', userId)
+      .select('is_admin')
+      .eq('id', user.id)
       .single()
 
-    const isAdmin = profile?.user_type === 'admin' || profile?.is_admin === true
+    if (profileError || !profile) {
+      return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Admin access required' } }, { status: 403 })
+    }
+
+    const isAdmin = profile?.is_admin === true
     if (!isAdmin) {
       return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Admin access required' } }, { status: 403 })
     }

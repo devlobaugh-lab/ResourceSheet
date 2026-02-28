@@ -5,38 +5,69 @@ import { supabaseAdmin } from '@/lib/supabase'
 // GET /api/admin-check - Check if current user is admin
 export async function GET(request: NextRequest) {
   try {
-    // For development, we'll use a simple approach that bypasses RLS
-    // by using the admin client directly
-    console.log('Admin check called - checking for admin user in database')
+    console.log('Admin check called - checking current user authentication')
     
-    // Use the existing supabaseAdmin client which should have admin privileges
-    const { data: adminUser, error: adminError } = await supabaseAdmin
+    // Use server-side Supabase client that handles cookies
+    // Create client directly instead of using the helper function
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              request.cookies.set(name, value)
+            })
+          },
+        },
+      }
+    )
+    
+    // Get the current session from cookies
+    const { data: { session }, error: authError } = await supabase.auth.getSession()
+
+    if (authError || !session) {
+      console.error('Auth error:', authError)
+      return NextResponse.json(
+        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+        { status: 401 }
+      )
+    }
+
+    // Get the authenticated user (more secure than using session.user directly)
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      console.error('User error:', userError)
+      return NextResponse.json(
+        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+        { status: 401 }
+      )
+    }
+
+    console.log('Admin check - found user:', { userId: user.id, email: user.email })
+
+    // Check if the authenticated user is admin
+    // Use the admin client for database access since the anonymous client doesn't have permission
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('id, is_admin, user_type')
-      .eq('is_admin', true)
-      .or('user_type.eq.admin')
-      .limit(1)
+      .select('is_admin')
+      .eq('id', user.id)
       .single()
 
-    if (adminError) {
-      console.error('Database query error:', adminError)
+    if (profileError || !profile) {
+      console.log('Admin check - profile not found or error:', { profileError, profile })
       return NextResponse.json(
-        { error: { code: 'INTERNAL_ERROR', message: 'Database error' } },
-        { status: 500 }
+        { error: { code: 'FORBIDDEN', message: 'Admin access required' } },
+        { status: 403 }
       )
     }
 
-    if (!adminUser) {
-      console.log('No admin user found in database')
-      return NextResponse.json(
-        { error: { code: 'NOT_FOUND', message: 'No admin user found' } },
-        { status: 404 }
-      )
-    }
-
-    // Return admin status for the found admin user
-    const isAdmin = adminUser?.is_admin === true || adminUser?.user_type === 'admin'
-    console.log('Admin check result:', { isAdmin, userId: adminUser.id })
+    const isAdmin = profile?.is_admin === true
+    console.log('Admin check result:', { isAdmin, userId: user.id, profile })
     return NextResponse.json({ isAdmin })
 
   } catch (error) {

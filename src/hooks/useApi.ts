@@ -13,11 +13,24 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
   }
 
   try {
-    // Get the current session
-    const { data: { session }, error } = await supabase.auth.getSession()
+    // For cookie-based authentication, we don't need to manually set headers
+    // The browser will automatically send cookies with requests when credentials: 'same-origin' is used
+    // However, we can still try to get the session from the Supabase client for debugging
+    
+    if (typeof window !== 'undefined') {
+      const { data: { session }, error } = await supabase.auth.getSession()
 
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`
+      if (error) {
+        console.warn('Supabase session error:', error)
+      }
+
+      if (session?.access_token) {
+        // If we have a session token, we can include it as a header
+        // This is optional since cookies should handle authentication
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      } else {
+        console.log('No session token found - relying on cookies for authentication')
+      }
     }
   } catch (error) {
     console.warn('Failed to get auth token:', error)
