@@ -9,7 +9,7 @@ Note: Database is a local Supabase instance. (no cloud)
 
 I want to address these issues in order 1 by 1. All of these issues are most likely database issues (missing/bad structure or permissions) and not code issues. The application was working almost perfectly before the db delete, so it doesn't make sense that we should need to make any code changes to get the app back to fully working shape. We really need to focus on getting the data and access right. If you do find an instance where you are convinced a code change is needed - STOP - ask me for help and for confirmation.
 
-### Step 1 - Admin not fully working
+### ~~Step 1 - Admin not fully working (COMPLETED)~~
 
 Admin does not appear to be fully functional.
 It looks like there are 2 or more types of isAdmin variables that are in use and so while some admin features seem to work, others do not.  For example. I'm logged in as thomas.lobaugh@gmail.com. (this should be an admin user). I'm seeing the Admin menu item.  The admin check in the browser console.log says isAdmin = true. However the Admin check that show on the dev console shows isAdmin false and isAuthenticated false.  Maybe that check is old and not looking at the right data, but it has me concerned.  
