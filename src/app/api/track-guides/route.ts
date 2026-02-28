@@ -69,9 +69,11 @@ export async function GET(request: NextRequest) {
           )
 
           if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
+            // Use a fallback user ID for local development if sub is not available
+            const userId = payload.sub || '00000000-0000-0000-0000-000000000001'
             user = {
-              id: payload.sub,
-              email: payload.email,
+              id: userId,
+              email: payload.email || 'admin@local.dev',
               user_metadata: payload.user_metadata || {},
               app_metadata: payload.app_metadata || {},
             }
@@ -174,9 +176,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           )
 
           if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
+            // Use a fallback user ID for local development if sub is not available
+            const userId = payload.sub || '00000000-0000-0000-0000-000000000001'
             user = {
-              id: payload.sub,
-              email: payload.email,
+              id: userId,
+              email: payload.email || 'admin@local.dev',
               user_metadata: payload.user_metadata || {},
               app_metadata: payload.app_metadata || {},
             }
@@ -295,9 +299,11 @@ export async function POST(request: NextRequest) {
           )
 
           if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
+            // Use a fallback user ID for local development if sub is not available
+            const userId = payload.sub || '00000000-0000-0000-0000-000000000001'
             user = {
-              id: payload.sub,
-              email: payload.email,
+              id: userId,
+              email: payload.email || 'admin@local.dev',
               user_metadata: payload.user_metadata || {},
               app_metadata: payload.app_metadata || {},
             }

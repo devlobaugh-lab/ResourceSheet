@@ -30,9 +30,9 @@ Have user test all admin features and other broken areas to see if the admin fix
 I'm getting 500 errors on several APIs. I'm not sure if these are permission issues or maybe the tables don't exist.
 Here are the APIs not working (returning 500 errors):
 
-- /api/tracks
-- /api/ai-loadouts
-- /api/series
+- [ ] /api/tracks
+- [ ] /api/custom-drivers
+- [ ] /api/gp-guides
 
 ### Step 4 - other issues
 

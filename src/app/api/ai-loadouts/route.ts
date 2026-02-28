@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     // Fetch both loadouts and track name aliases in parallel
     // Use a raw query to get DISTINCT combinations efficiently
     const [loadoutsResult, aliasesResult] = await Promise.all([
-      supabaseAdmin.rpc('get_distinct_ai_loadouts'),
+      supabaseAdmin.from('ai_track_loadouts').select('name, track_name, difficulty', { count: 'exact' }).limit(1000),
       supabaseAdmin
         .from('track_name_aliases')
         .select('system_name, display_name')
