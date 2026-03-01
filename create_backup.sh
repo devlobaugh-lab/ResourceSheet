@@ -13,9 +13,9 @@ echo "Backup file: $BACKUP_FILE"
 
 # Create backup using pg_dump
 # Using the Supabase connection details from .env.local
-pg_dump "postgresql://postgres:postgres@localhost:5432/postgres" \
-  --host=localhost \
-  --port=5432 \
+PGPASSWORD=postgres pg_dump \
+  --host=127.0.0.1 \
+  --port=54322 \
   --username=postgres \
   --dbname=postgres \
   --no-password \
