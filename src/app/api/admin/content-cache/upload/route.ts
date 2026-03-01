@@ -629,9 +629,22 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         
         if (insertError) {
           console.error('❌ Failed to insert series data:', insertError);
+          console.error('❌ Series rows that failed:', seriesRows);
         } else {
           results.series.new = seriesRows.length;
           console.log(`✅ Series data processed: deleted=${results.series.deleted}, inserted=${seriesRows.length}`);
+          
+          // Verify the insert worked by checking what's actually in the database
+          const { data: verifyData, error: verifyError } = await supabaseAdmin
+            .from('series_data')
+            .select('index')
+            .order('index', { ascending: true });
+          
+          if (verifyError) {
+            console.error('❌ Failed to verify series data:', verifyError);
+          } else {
+            console.log(`📊 Series in database after insert:`, verifyData.map(s => s.index));
+          }
         }
       }
     }

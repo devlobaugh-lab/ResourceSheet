@@ -61,6 +61,8 @@ function findCommonTrackStat(tracks: SeriesTrack[]): string | null {
 // GET /api/series - Get all series data with track information
 export async function GET() {
   try {
+    console.log('Starting series API request...')
+    
     // Fetch all series data
     const { data: seriesData, error: seriesError } = await supabaseAdmin
       .from('series_data')
@@ -74,6 +76,8 @@ export async function GET() {
         { status: 500 }
       )
     }
+
+    console.log('Series data fetched:', seriesData?.length || 0, 'series')
 
     if (!seriesData || seriesData.length === 0) {
       return NextResponse.json({ data: [] })
@@ -96,6 +100,8 @@ export async function GET() {
       }
     }
 
+    console.log('Track names collected:', allTrackNames.size)
+
     // Fetch track name aliases for display names
     const { data: aliasesData } = await supabaseAdmin
       .from('track_name_aliases')
@@ -107,6 +113,8 @@ export async function GET() {
     for (const alias of (aliasesData || [])) {
       aliasMap[alias.system_name] = alias.display_name
     }
+
+    console.log('Aliases loaded:', Object.keys(aliasMap).length)
 
     // Fetch tracks from deduplicated tracks table for fallback
     const { data: tracksData } = await supabaseAdmin
@@ -124,6 +132,8 @@ export async function GET() {
         car_track_stat: track.car_track_stat
       }
     }
+
+    console.log('Tracks loaded:', Object.keys(trackMap).length)
 
     // Build series with tracks - use track_info if available (has correct lap counts)
     const seriesWithTracks: SeriesWithTracks[] = seriesData.map((series: SeriesData) => {
@@ -177,6 +187,7 @@ export async function GET() {
       }
     })
 
+    console.log('Series with tracks built:', seriesWithTracks.length)
     return NextResponse.json({ data: seriesWithTracks })
   } catch (error) {
     console.error('Unexpected error in /api/series:', error)

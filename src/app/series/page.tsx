@@ -152,9 +152,8 @@ function SeriesCard({ series }: { series: SeriesWithTracks }) {
 export default function SeriesInfoPage() {
   const { data: seriesData, isLoading, error } = useSeries()
 
-  // Show all series (0-12) - series 0 is Beginner, series 1-12 are main series
-  const displaySeries = seriesData?.data?.filter((s: SeriesWithTracks) => s.index >= 0 && s.index <= 12) || []
-
+// Show all series (0-11) - series 0 is Beginner, series 1-11 are main series
+const displaySeries = seriesData?.data?.filter((s: SeriesWithTracks) => s.index >= 0 && s.index < 12) || []
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">

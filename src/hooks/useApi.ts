@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
 import type { Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup, Track, CatalogItem, SeriesWithTracks } from '@/types/database'
 import type { PaginationMeta } from '@/types/api'
 
@@ -12,29 +11,9 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
     'Content-Type': 'application/json',
   }
 
-  try {
-    // For cookie-based authentication, we don't need to manually set headers
-    // The browser will automatically send cookies with requests when credentials: 'same-origin' is used
-    // However, we can still try to get the session from the Supabase client for debugging
-    
-    if (typeof window !== 'undefined') {
-      const { data: { session }, error } = await supabase.auth.getSession()
-
-      if (error) {
-        console.warn('Supabase session error:', error)
-      }
-
-      if (session?.access_token) {
-        // If we have a session token, we can include it as a header
-        // This is optional since cookies should handle authentication
-        headers['Authorization'] = `Bearer ${session.access_token}`
-      } else {
-        console.log('No session token found - relying on cookies for authentication')
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to get auth token:', error)
-  }
+  // For cookie-based authentication, we don't need to manually set headers
+  // The browser will automatically send cookies with requests when credentials: 'same-origin' is used
+  // We rely on cookies for authentication, so no additional headers are needed
 
   return headers
 }
@@ -302,19 +281,8 @@ export function useUserCarSetups() {
   return useQuery({
     queryKey: ['user-car-setups'],
     queryFn: async (): Promise<{ data: UserCarSetup[]; pagination: PaginationMeta }> => {
-      // Wait a bit for auth to initialize
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      const headers = await getAuthHeaders()
-
-      // If no auth header, the user might not be logged in yet
-      if (!headers.Authorization) {
-        console.log('No auth header found for setups - user may not be logged in')
-        return { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } }
-      }
-
       const response = await fetch(`${API_BASE}/setups`, {
-        headers,
+        headers: await getAuthHeaders(),
         credentials: 'same-origin'
       })
 
