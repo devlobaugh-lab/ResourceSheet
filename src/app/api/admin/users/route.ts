@@ -109,6 +109,17 @@ export async function GET(request: NextRequest) {
     console.log('Fetched users:', users?.length || 0, 'users')
     if (users && users.length > 0) {
       console.log('First user:', JSON.stringify(users[0], null, 2))
+      // Debug logging for all users to see their actual values
+      users.forEach((user: any, index: number) => {
+        console.log(`User ${index}:`, {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          user_type: user.user_type,
+          is_admin: user.is_admin,
+          is_active: user.is_active
+        });
+      });
     }
 
     return NextResponse.json({ users })

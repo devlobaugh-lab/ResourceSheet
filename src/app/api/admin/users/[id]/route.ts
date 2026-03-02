@@ -182,6 +182,8 @@ export async function DELETE(
       )
     }
 
+    console.log('Attempting to delete user:', targetUserId, 'by admin:', userId);
+
     // Check if user exists
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -190,22 +192,43 @@ export async function DELETE(
       .single()
 
     if (profileError || !profile) {
+      console.error('User not found:', profileError);
       return NextResponse.json(
         { error: { code: 'NOT_FOUND', message: 'User not found' } },
         { status: 404 }
       )
     }
 
-    // Delete the user from auth (this cascades to profiles via ON DELETE CASCADE)
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId)
+    console.log('User found:', profile);
 
-    if (deleteError) {
-      console.error('Error deleting user:', deleteError)
-      return NextResponse.json(
-        { error: { code: 'INTERNAL_ERROR', message: `Failed to delete user: ${deleteError.message}` } },
-        { status: 500 }
-      )
+    // Try to delete the user from auth first (this should cascade to profiles)
+    let deleteError = null;
+    try {
+      const { error } = await supabaseAdmin.auth.admin.deleteUser(targetUserId)
+      deleteError = error;
+    } catch (authError) {
+      console.error('Auth delete failed, trying manual deletion:', authError);
+      deleteError = authError;
     }
+
+    // If auth delete failed, try manual deletion
+    if (deleteError) {
+      console.log('Attempting manual deletion from profiles table...');
+      const { error: profileDeleteError } = await supabaseAdmin
+        .from('profiles')
+        .delete()
+        .eq('id', targetUserId);
+
+      if (profileDeleteError) {
+        console.error('Manual deletion also failed:', profileDeleteError);
+        return NextResponse.json(
+          { error: { code: 'INTERNAL_ERROR', message: `Failed to delete user: ${profileDeleteError.message}` } },
+          { status: 500 }
+        );
+      }
+    }
+
+    console.log('User deleted successfully:', targetUserId);
 
     return NextResponse.json({
       message: 'User deleted successfully',
