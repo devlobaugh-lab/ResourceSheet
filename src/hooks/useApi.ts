@@ -11,9 +11,50 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
     'Content-Type': 'application/json',
   }
 
-  // For cookie-based authentication, we don't need to manually set headers
-  // The browser will automatically send cookies with requests when credentials: 'same-origin' is used
-  // We rely on cookies for authentication, so no additional headers are needed
+  // Try to get JWT from localStorage (for client-side authentication)
+  if (typeof window !== 'undefined') {
+    try {
+      // Try to get JWT token from Supabase's session storage
+      // Supabase stores session in localStorage with a key like 'sb-[project-ref]-auth-token'
+      const supabaseKeys = Object.keys(localStorage).filter(key => 
+        key.includes('supabase') && key.includes('auth') && key.includes('token')
+      )
+      
+      for (const key of supabaseKeys) {
+        const sessionData = localStorage.getItem(key)
+        if (sessionData) {
+          const session = JSON.parse(sessionData)
+          const accessToken = session?.access_token
+          if (accessToken) {
+            headers['Authorization'] = `Bearer ${accessToken}`
+            break // Use the first valid token found
+          }
+        }
+      }
+
+      // Also try the direct supabase.auth.token key as fallback
+      if (!headers['Authorization']) {
+        const fallbackSession = localStorage.getItem('supabase.auth.token')
+        if (fallbackSession) {
+          const parsedSession = JSON.parse(fallbackSession)
+          const accessToken = parsedSession?.access_token
+          if (accessToken) {
+            headers['Authorization'] = `Bearer ${accessToken}`
+          }
+        }
+      }
+
+      // Try the hardcoded key as another fallback
+      if (!headers['Authorization']) {
+        const token = localStorage.getItem('sb-ndqzqjvqzjxjxqzjxjxj-auth-token')
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to get auth token from localStorage:', error)
+    }
+  }
 
   return headers
 }

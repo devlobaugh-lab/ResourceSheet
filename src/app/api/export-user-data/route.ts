@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, createAuthenticatedSupabaseClient } from '@/lib/supabase'
 
 // GET /api/export-user-data - Export ALL current user's data
 export async function GET(request: NextRequest) {
@@ -181,11 +181,13 @@ export async function GET(request: NextRequest) {
     data.userBoosts = userBoosts
     console.log(`  ✅ user_boosts: ${userBoosts.length} records`)
 
+    // Use authenticated client for RLS enforcement on user-specific tables
+    const supabase = createAuthenticatedSupabaseClient(request)
+
     // 4. User Track Guides
-    const { data: userTrackGuides, error: trackGuidesError } = await supabaseAdmin
+    const { data: userTrackGuides, error: trackGuidesError } = await supabase
       .from('user_track_guides')
       .select('*')
-      .eq('user_id', userId)
 
     if (trackGuidesError) console.warn('Error exporting user_track_guides:', trackGuidesError)
     data.userTrackGuides = userTrackGuides || []
@@ -194,7 +196,7 @@ export async function GET(request: NextRequest) {
     // 5. User Track Guide Drivers
     if (userTrackGuides && userTrackGuides.length > 0) {
       const trackGuideIds = userTrackGuides.map(g => g.id)
-      const { data: userTrackGuideDrivers, error: guideDriversError } = await supabaseAdmin
+      const { data: userTrackGuideDrivers, error: guideDriversError } = await supabase
         .from('user_track_guide_drivers')
         .select('*')
         .in('track_guide_id', trackGuideIds)
@@ -207,10 +209,9 @@ export async function GET(request: NextRequest) {
     }
 
     // 6. User GP Guides - need to include id for mapping tracks during import
-    const { data: userGpGuides, error: gpGuidesError } = await supabaseAdmin
+    const { data: userGpGuides, error: gpGuidesError } = await supabase
       .from('user_gp_guides')
       .select('*')
-      .eq('user_id', userId)
 
     if (gpGuidesError) console.warn('Error exporting user_gp_guides:', gpGuidesError)
     data.userGpGuides = userGpGuides || []
@@ -219,7 +220,7 @@ export async function GET(request: NextRequest) {
     // 7. User GP Guide Tracks
     if (userGpGuides && userGpGuides.length > 0) {
       const gpGuideIds = userGpGuides.map(g => g.id)
-      const { data: userGpGuideTracks, error: gpTracksError } = await supabaseAdmin
+      const { data: userGpGuideTracks, error: gpTracksError } = await supabase
         .from('user_gp_guide_tracks')
         .select('*')
         .in('gp_guide_id', gpGuideIds)
@@ -229,7 +230,7 @@ export async function GET(request: NextRequest) {
       console.log(`  ✅ user_gp_guide_tracks: ${userGpGuideTracks?.length || 0} records`)
 
       // 8. User GP Guide Results
-      const { data: userGpGuideResults, error: gpResultsError } = await supabaseAdmin
+      const { data: userGpGuideResults, error: gpResultsError } = await supabase
         .from('user_gp_guide_results')
         .select('*')
         .in('gp_guide_id', gpGuideIds)
@@ -243,10 +244,9 @@ export async function GET(request: NextRequest) {
     }
 
     // 9. User Car Setups
-    const { data: userCarSetups, error: setupsError } = await supabaseAdmin
+    const { data: userCarSetups, error: setupsError } = await supabase
       .from('user_car_setups')
       .select('*')
-      .eq('user_id', userId)
 
     if (setupsError) console.warn('Error exporting user_car_setups:', setupsError)
     data.userCarSetups = userCarSetups || []

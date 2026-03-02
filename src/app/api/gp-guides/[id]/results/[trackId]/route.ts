@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin, createServerSupabaseClient, createAuthenticatedSupabaseClient } from '@/lib/supabase'
 
 const upsertResultsSchema = z.object({
   results_notes: z.string().nullable().optional(),
@@ -50,28 +50,11 @@ export async function PUT(
     const body = await request.json()
     const validated = upsertResultsSchema.parse(body)
 
-    // Verify GP guide ownership
-    const { data: guide } = await supabaseAdmin
-      .from('user_gp_guides')
-      .select('id, user_id')
-      .eq('id', params.id)
-      .single()
+    // Use authenticated client for RLS enforcement
+    const supabase = createAuthenticatedSupabaseClient(request)
 
-    if (!guide) {
-      return NextResponse.json(
-        { error: { code: 'NOT_FOUND', message: 'GP guide not found' } },
-        { status: 404 }
-      )
-    }
-
-    if (guide.user_id !== user.id) {
-      return NextResponse.json(
-        { error: { code: 'FORBIDDEN', message: 'Access denied' } },
-        { status: 403 }
-      )
-    }
-
-    const { data, error } = await supabaseAdmin
+    // Upsert the results (RLS will enforce ownership)
+    const { data, error } = await supabase
       .from('user_gp_guide_results')
       .upsert(
         {

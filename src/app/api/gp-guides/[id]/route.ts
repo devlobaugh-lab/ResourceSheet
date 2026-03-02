@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin, createServerSupabaseClient, createAuthenticatedSupabaseClient } from '@/lib/supabase'
 
 const updateGpGuideSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -45,12 +45,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       )
     }
 
-    // Fetch guide header
-    const { data: guide, error: guideError } = await supabaseAdmin
+    // Use authenticated client for RLS enforcement
+    const supabase = createAuthenticatedSupabaseClient(request)
+
+    // Fetch guide header (RLS will enforce ownership)
+    const { data: guide, error: guideError } = await supabase
       .from('user_gp_guides')
       .select('*')
       .eq('id', params.id)
-      .eq('user_id', user.id)
       .single()
 
     if (guideError || !guide) {
@@ -60,8 +62,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       )
     }
 
-    // Fetch track slots
-    const { data: tracks, error: tracksError } = await supabaseAdmin
+    // Fetch track slots (RLS will enforce ownership)
+    const { data: tracks, error: tracksError } = await supabase
       .from('user_gp_guide_tracks')
       .select('*')
       .eq('gp_guide_id', params.id)
@@ -72,8 +74,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       console.error('Error fetching GP guide tracks:', tracksError)
     }
 
-    // Fetch results notes
-    const { data: results, error: resultsError } = await supabaseAdmin
+    // Fetch results notes (RLS will enforce ownership)
+    const { data: results, error: resultsError } = await supabase
       .from('user_gp_guide_results')
       .select('*')
       .eq('gp_guide_id', params.id)
@@ -108,30 +110,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const body = await request.json()
     const validated = updateGpGuideSchema.parse(body)
 
-    // Verify ownership
-    const { data: existing } = await supabaseAdmin
-      .from('user_gp_guides')
-      .select('id, user_id')
-      .eq('id', params.id)
-      .single()
-
-    if (!existing) {
-      return NextResponse.json(
-        { error: { code: 'NOT_FOUND', message: 'GP guide not found' } },
-        { status: 404 }
-      )
-    }
-
-    if (existing.user_id !== user.id) {
-      return NextResponse.json(
-        { error: { code: 'FORBIDDEN', message: 'Access denied' } },
-        { status: 403 }
-      )
-    }
+    // Use authenticated client for RLS enforcement
+    const supabase = createAuthenticatedSupabaseClient(request)
 
     // Handle weekend_strategy_same toggle: if turning OFF, create final round slots
     if (validated.weekend_strategy_same === false) {
-      const { data: existingFinalSlots } = await supabaseAdmin
+      const { data: existingFinalSlots } = await supabase
         .from('user_gp_guide_tracks')
         .select('id')
         .eq('gp_guide_id', params.id)
@@ -139,7 +123,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         .limit(1)
 
       if (!existingFinalSlots || existingFinalSlots.length === 0) {
-        const { data: openingSlots } = await supabaseAdmin
+        const { data: openingSlots } = await supabase
           .from('user_gp_guide_tracks')
           .select('*')
           .eq('gp_guide_id', params.id)
@@ -165,7 +149,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
             driver_2_tire_strategy: slot.driver_2_tire_strategy,
             strategy_notes: slot.strategy_notes,
           }))
-          await supabaseAdmin.from('user_gp_guide_tracks').insert(finalSlots)
+          await supabase.from('user_gp_guide_tracks').insert(finalSlots)
         } else {
           const blankFinalSlots = Array.from({ length: 8 }, (_, i) => ({
             gp_guide_id: params.id,
@@ -175,12 +159,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
             alt_driver_ids: [],
             alt_boost_ids: [],
           }))
-          await supabaseAdmin.from('user_gp_guide_tracks').insert(blankFinalSlots)
+          await supabase.from('user_gp_guide_tracks').insert(blankFinalSlots)
         }
       }
     }
 
-    const { data, error } = await supabaseAdmin
+    // Update the guide (RLS will enforce ownership)
+    const { data, error } = await supabase
       .from('user_gp_guides')
       .update(validated)
       .eq('id', params.id)
@@ -221,27 +206,11 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       )
     }
 
-    const { data: existing } = await supabaseAdmin
-      .from('user_gp_guides')
-      .select('id, user_id')
-      .eq('id', params.id)
-      .single()
+    // Use authenticated client for RLS enforcement
+    const supabase = createAuthenticatedSupabaseClient(request)
 
-    if (!existing) {
-      return NextResponse.json(
-        { error: { code: 'NOT_FOUND', message: 'GP guide not found' } },
-        { status: 404 }
-      )
-    }
-
-    if (existing.user_id !== user.id) {
-      return NextResponse.json(
-        { error: { code: 'FORBIDDEN', message: 'Access denied' } },
-        { status: 403 }
-      )
-    }
-
-    const { error } = await supabaseAdmin
+    // Delete the guide (RLS will enforce ownership)
+    const { error } = await supabase
       .from('user_gp_guides')
       .delete()
       .eq('id', params.id)
