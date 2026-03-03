@@ -667,21 +667,11 @@ export default function GpGuideEditorPage() {
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">{guide.name}</h1>
                 <div className="flex items-center gap-3 mt-1">
-                      {guide.start_date && (() => {
-                        const rawDate = guide.start_date
-                        const displayDate = guide.start_date.split('T')[0]
-                        console.log('GP Guide Date Debug:', {
-                          rawDate,
-                          displayDate,
-                          type: typeof guide.start_date,
-                          length: guide.start_date.length
-                        })
-                        return (
-                          <span className="text-lg text-gray-600">
-                            {displayDate}
-                          </span>
-                        )
-                      })()}
+                      {guide.start_date && (
+                        <span className="text-lg text-gray-600">
+                          {guide.start_date.split('T')[0]}
+                        </span>
+                      )}
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-base font-medium ${gpLevel.color}`}>
                     {gpLevel.name}
                   </span>
