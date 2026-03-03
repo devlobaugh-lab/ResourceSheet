@@ -667,11 +667,21 @@ export default function GpGuideEditorPage() {
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">{guide.name}</h1>
                 <div className="flex items-center gap-3 mt-1">
-                  {guide.start_date && (
-                    <span className="text-lg text-gray-600">
-                      {new Date(guide.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
-                  )}
+                      {guide.start_date && (() => {
+                        const rawDate = guide.start_date
+                        const displayDate = guide.start_date.split('T')[0]
+                        console.log('GP Guide Date Debug:', {
+                          rawDate,
+                          displayDate,
+                          type: typeof guide.start_date,
+                          length: guide.start_date.length
+                        })
+                        return (
+                          <span className="text-lg text-gray-600">
+                            {displayDate}
+                          </span>
+                        )
+                      })()}
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-base font-medium ${gpLevel.color}`}>
                     {gpLevel.name}
                   </span>
@@ -706,8 +716,9 @@ export default function GpGuideEditorPage() {
                     </div>
                     <div className="min-w-[140px]">
                       <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Start Date</label>
-                      <input type="date" defaultValue={guide.start_date || ''}
-                        onBlur={e => saveHeader({ start_date: e.target.value || null })}
+                      <input type="date" defaultValue={guide.start_date ? guide.start_date.split('T')[0] : ''}
+                        onChange={e => saveHeader({ start_date: e.target.value ? e.target.value : null })}
+                        onBlur={e => saveHeader({ start_date: e.target.value ? e.target.value : null })}
                         className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
                     <div className="min-w-[160px]">

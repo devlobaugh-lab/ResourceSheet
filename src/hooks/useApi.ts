@@ -17,7 +17,7 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
       // Try to get JWT token from Supabase's session storage
       // Supabase stores session in localStorage with a key like 'sb-[project-ref]-auth-token'
       const supabaseKeys = Object.keys(localStorage).filter(key => 
-        key.includes('supabase') && key.includes('auth') && key.includes('token')
+        key.startsWith('sb-') && key.includes('-auth-token')
       )
       
       for (const key of supabaseKeys) {
@@ -44,7 +44,7 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
         }
       }
 
-      // Try the hardcoded key as another fallback
+      // Try the hardcoded key as another fallback (for backward compatibility)
       if (!headers['Authorization']) {
         const token = localStorage.getItem('sb-ndqzqjvqzjxjxqzjxjxj-auth-token')
         if (token) {

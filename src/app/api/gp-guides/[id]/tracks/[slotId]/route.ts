@@ -5,6 +5,7 @@ import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
 const updateTrackSlotSchema = z.object({
   track_id: z.string().uuid().nullable().optional(),
   is_wet: z.boolean().optional(),
+  is_ready: z.boolean().optional(),
   driver_1_id: z.string().uuid().nullable().optional(),
   driver_2_id: z.string().uuid().nullable().optional(),
   driver_1_boost_id: z.string().uuid().nullable().optional(),
