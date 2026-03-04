@@ -1,22 +1,16 @@
--- Simple script to create the missing user_gp_guide_results table
--- This is the minimal version to fix the immediate issue
-
--- Create the user_gp_guide_results table
-CREATE TABLE user_gp_guide_results (
+-- Create the user_gp_guide_results table if it doesn't exist
+CREATE TABLE IF NOT EXISTS user_gp_guide_results (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   gp_guide_id UUID NOT NULL REFERENCES user_gp_guides(id) ON DELETE CASCADE,
   track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
-  results_notes TEXT,
+  results_notes TEXT, -- Quali position, PvP or bot, boosts used, final result, safety car, etc.
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(gp_guide_id, track_id)
 );
 
 -- Create index for performance
-CREATE INDEX idx_user_gp_guide_results_gp_guide_id ON user_gp_guide_results(gp_guide_id);
-
--- Enable row level security
-ALTER TABLE user_gp_guide_results ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_user_gp_guide_results_gp_guide_id ON user_gp_guide_results(gp_guide_id);
 
 -- Enable row level security
 ALTER TABLE user_gp_guide_results ENABLE ROW LEVEL SECURITY;
