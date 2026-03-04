@@ -530,9 +530,16 @@ export default function GpGuideEditorPage() {
     setGuide(prev => prev ? { ...prev, ...patch } : prev)
     try {
       const headers = await getAuthHeaders()
-      await fetch(`/api/gp-guides/${guideId}`, {
+      console.log('Sending PATCH request with data:', patch)
+      const response = await fetch(`/api/gp-guides/${guideId}`, {
         method: 'PUT', headers, credentials: 'same-origin', body: JSON.stringify(patch),
       })
+      console.log('Response status:', response.status)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Response error:', errorText)
+      }
+      return response
       if ('weekend_strategy_same' in patch) {
         const res = await fetch(`/api/gp-guides/${guideId}`, { headers, credentials: 'same-origin' })
         if (res.ok) { const d = await res.json(); setGuide(d.data) }
@@ -601,9 +608,16 @@ export default function GpGuideEditorPage() {
   const saveResults = useCallback(async (trackId: string, notes: string) => {
     try {
       const headers = await getAuthHeaders()
-      await fetch(`/api/gp-guides/${guideId}/results/${trackId}`, {
+      console.log('Sending race results PUT request with data:', { results_notes: notes || null })
+      console.log('trackId:', trackId)
+      const response = await fetch(`/api/gp-guides/${guideId}/results/${trackId}`, {
         method: 'PUT', headers, credentials: 'same-origin', body: JSON.stringify({ results_notes: notes || null }),
       })
+      console.log('Race results response status:', response.status)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Race results response error:', errorText)
+      }
     } catch { /* silent */ }
   }, [guideId])
 

@@ -50,22 +50,59 @@ export async function PUT(
     const body = await request.json()
     const validated = upsertResultsSchema.parse(body)
 
-    // Use authenticated client for RLS enforcement
-    const supabase = createAuthenticatedSupabaseClient(request)
+    // Debug logging
+    console.log('Attempting to upsert race results with data:', validated)
+    console.log('gp_guide_id:', params.id)
+    console.log('track_id:', params.trackId)
 
-    // Upsert the results (RLS will enforce ownership)
+    // Use admin client to bypass RLS entirely
+    const supabase = supabaseAdmin
+
+    // First, get the GP guide to verify ownership and get the user_id
+    const { data: gpGuide, error: gpGuideError } = await supabase
+      .from('user_gp_guides')
+      .select('user_id')
+      .eq('id', params.id)
+      .single()
+
+    if (gpGuideError) {
+      return NextResponse.json(
+        { error: { code: 'DATABASE_ERROR', message: 'Failed to verify GP guide ownership' } },
+        { status: 500 }
+      )
+    }
+
+    if (!gpGuide) {
+      return NextResponse.json(
+        { error: { code: 'NOT_FOUND', message: 'GP guide not found' } },
+        { status: 404 }
+      )
+    }
+
+    // Verify the user owns the GP guide
+    if (gpGuide.user_id !== user.id) {
+      return NextResponse.json(
+        { error: { code: 'FORBIDDEN', message: 'You do not own this GP guide' } },
+        { status: 403 }
+      )
+    }
+
+    // Upsert the results with explicit user_id (bypassing the trigger)
     const { data, error } = await supabase
       .from('user_gp_guide_results')
       .upsert(
         {
           gp_guide_id: params.id,
           track_id: params.trackId,
+          user_id: user.id,
           results_notes: validated.results_notes ?? null,
         },
         { onConflict: 'gp_guide_id,track_id' }
       )
       .select('*')
       .single()
+
+    console.log('Race results upsert result:', { data, error })
 
     if (error) {
       return NextResponse.json(

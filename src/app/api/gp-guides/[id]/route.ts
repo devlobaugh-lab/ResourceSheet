@@ -8,6 +8,7 @@ const updateGpGuideSchema = z.object({
   gp_level: z.number().int().min(0).max(3).optional(),
   notes: z.string().nullable().optional(),
   weekend_strategy_same: z.boolean().optional(),
+  is_ready: z.boolean().optional(),
 }).partial()
 
 async function getAuthUser(request: NextRequest) {
@@ -164,6 +165,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       }
     }
 
+    // Debug logging
+    console.log('Attempting to update GP guide with data:', validated)
+    console.log('is_ready value:', validated.is_ready)
+
     // Update the guide (RLS will enforce ownership)
     const { data, error } = await supabase
       .from('user_gp_guides')
@@ -171,6 +176,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       .eq('id', params.id)
       .select('*')
       .single()
+
+    console.log('Update result:', { data, error })
 
     if (error) {
       return NextResponse.json(

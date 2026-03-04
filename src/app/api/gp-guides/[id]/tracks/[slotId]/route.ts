@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin, createServerSupabaseClient, createAuthenticatedSupabaseClient } from '@/lib/supabase'
 
 const updateTrackSlotSchema = z.object({
   track_id: z.string().uuid().nullable().optional(),
@@ -60,8 +60,11 @@ export async function PUT(
     const body = await request.json()
     const validated = updateTrackSlotSchema.parse(body)
 
-    // Verify the track slot belongs to the user's GP guide
-    const { data: slot } = await supabaseAdmin
+    // Use authenticated client for RLS enforcement
+    const supabase = createAuthenticatedSupabaseClient(request)
+
+    // Verify the track slot belongs to the user's GP guide (RLS will enforce ownership)
+    const { data: slot } = await supabase
       .from('user_gp_guide_tracks')
       .select('id, gp_guide_id')
       .eq('id', params.slotId)
@@ -75,21 +78,8 @@ export async function PUT(
       )
     }
 
-    // Verify guide ownership
-    const { data: guide } = await supabaseAdmin
-      .from('user_gp_guides')
-      .select('user_id')
-      .eq('id', params.id)
-      .single()
-
-    if (!guide || guide.user_id !== user.id) {
-      return NextResponse.json(
-        { error: { code: 'FORBIDDEN', message: 'Access denied' } },
-        { status: 403 }
-      )
-    }
-
-    const { data, error } = await supabaseAdmin
+    // Update the track slot (RLS will enforce ownership)
+    const { data, error } = await supabase
       .from('user_gp_guide_tracks')
       .update(validated)
       .eq('id', params.slotId)
