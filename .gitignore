@@ -119,3 +119,5 @@ backups/
 
 # temp working
 working/
+
+docs/sensitive/DATABASE_BACKUP_SESSION_2026-02-27.md
