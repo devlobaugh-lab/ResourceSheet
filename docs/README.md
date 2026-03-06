@@ -61,7 +61,7 @@ docs/
 
 ## Historical Documents
 
-The [archive/](./archive/) directory contains documents from previous development phases. These are kept for historical reference but may contain outdated information.
+The [archive/](./archive/) directory contains documents from previous development phases. These are kept for historical reference but likely contain outdated information.
 
 ---
 
