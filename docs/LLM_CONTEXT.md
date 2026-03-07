@@ -1,0 +1,304 @@
+# Codebase Context — F1 Resource Manager
+
+> Token-optimized reference for LLM assistants. Prefer this over reading multiple source files.
+
+---
+
+## Key File Map
+
+```
+src/types/database.ts          canonical types — import ALL types from here
+src/types/api.ts               API response types (PaginationMeta, etc.)
+src/lib/supabase.ts            supabaseAdmin, supabase, createServerSupabaseClient(), createAuthenticatedSupabaseClient()
+src/lib/validation.ts          Zod schemas for all API inputs
+src/hooks/useApi.ts            all TanStack Query hooks (getAuthHeaders exported here too)
+src/components/auth/AuthContext.tsx   useAuth() hook — user, session, signIn, signOut
+src/app/api/                   all API route handlers
+supabase/migrations/           SQL migration files (source of truth for DB schema)
+scripts/database/              seeding scripts (not production code)
+external_data/                 raw game data files for import
+```
+
+---
+
+## Database Schema (compact)
+
+All tables have `id uuid PK`, `created_at timestamptz`, `updated_at timestamptz` unless noted.
+
+### Catalog tables (global, no RLS)
+
+```
+drivers          name text, rarity int, series int, season_id uuid?, icon text?,
+                 cc_price int?, num_duplicates_after_unlock int?, collection_id text?,
+                 visual_override text?, collection_sub_name text?, min_gp_tier int?,
+                 tag_name text?, ordinal int?, stats_per_level jsonb?
+
+car_parts        name text, rarity int, series int, season_id uuid?, icon text?,
+                 cc_price int?, num_duplicates_after_unlock int?, collection_id text?,
+                 visual_override text?, collection_sub_name text?, car_part_type int,
+                 stats_per_level jsonb?
+
+boosts           name text, icon text?, boost_stats jsonb?, is_free bool
+
+seasons          name text, is_active bool
+
+tracks           name text, alt_name text?, laps int, driver_track_stat text,
+                 car_track_stat text, season_id uuid NOT NULL
+
+collections      (referenced by drivers/car_parts via collection_id)
+
+boost_custom_names   boost_id uuid FK boosts, custom_name text
+
+ai_track_loadouts    track_name text, difficulty text, team_name text, driver_slot int,
+                     overtaking int, blocking int, qualifying int, tyre_use int,
+                     race_start int, car_parts jsonb?
+
+team_driver_names    team_name text, driver_slot int, driver_name text
+```
+
+### User tables (RLS: user_id = auth.uid())
+
+```
+user_drivers     user_id uuid, driver_id uuid FK drivers, level int, card_count int
+                 UNIQUE(user_id, driver_id)
+
+user_car_parts   user_id uuid, car_part_id uuid FK car_parts, level int, card_count int
+                 UNIQUE(user_id, car_part_id)
+
+user_boosts      user_id uuid, boost_id uuid FK boosts, level int, count int
+                 UNIQUE(user_id, boost_id)
+
+user_car_setups  user_id uuid, name text, notes text?, series_filter int,
+                 bonus_percentage int, brake_id uuid?, gearbox_id uuid?,
+                 rear_wing_id uuid?, front_wing_id uuid?, suspension_id uuid?,
+                 engine_id uuid?   [all FK car_parts]
+
+user_track_guides   user_id uuid, track_id uuid FK tracks, gp_level int,
+                    driver_1_id uuid?, driver_2_id uuid?, driver_1_boost_id uuid?,
+                    driver_2_boost_id uuid?, alt_driver_ids uuid[]?, alt_boost_ids uuid[]?,
+                    suggested_drivers uuid[]?, suggested_boosts uuid[]?, free_boost_id uuid?,
+                    saved_setup_id uuid?, setup_notes text?, dry_strategy text?,
+                    wet_strategy text?, driver_1_dry_strategy text?, driver_1_wet_strategy text?,
+                    driver_2_dry_strategy text?, driver_2_wet_strategy text?, notes text?
+                    UNIQUE(user_id, track_id, gp_level)
+
+user_track_guide_drivers   track_guide_id uuid FK user_track_guides, driver_id uuid,
+                           recommended_boost_id uuid?, track_strategy text?
+
+user_gp_guides   user_id uuid, name text, start_date date?, gp_level int,
+                 notes text?, weekend_strategy_same bool
+
+user_gp_guide_tracks   gp_guide_id uuid FK user_gp_guides, track_id uuid?, race_number int,
+                       race_type 'qualifying'|'opening'|'final', is_wet bool, is_ready bool,
+                       driver_1_id uuid?, driver_2_id uuid?, driver_1_boost_id uuid?,
+                       driver_2_boost_id uuid?, alt_driver_ids uuid[]?, alt_boost_ids uuid[]?,
+                       saved_setup_id uuid?, setup_notes text?, driver_1_tire_strategy text?,
+                       driver_2_tire_strategy text?, strategy_notes text?
+
+user_gp_guide_results  gp_guide_id uuid, track_id uuid, results_notes text?
+
+user_custom_drivers   user_id uuid, name text, overtaking int, blocking int,
+                      qualifying int, tyre_use int, race_start int, car_parts jsonb?
+```
+
+### System table
+
+```
+profiles   id uuid (= auth.users.id), email text?, username text?,
+           is_admin bool, user_type text, is_active bool
+```
+
+---
+
+## Type Imports
+
+Always import from `@/types/database`. Key named exports:
+
+```typescript
+// Table row types
+Season, Profile, Boost, BoostCustomName, UserBoost
+Driver, CarPart, UserDriver, UserCarPart
+Track, UserTrackGuide, UserTrackGuideDriver
+UserGpGuide, UserGpGuideTrack, UserGpGuideResult
+AITrackLoadout, TeamDriverName, UserCustomDriver
+
+// View types (catalog + user data merged)
+DriverView, CarPartView, BoostView, BoostWithCustomName
+UserCarSetup, UserCarSetupWithParts
+
+// Utility
+Tables<'table_name'>   // Row type
+Inserts<'table_name'>  // Insert type
+Updates<'table_name'>  // Update type
+StatsPerLevel, BoostStats, SeriesWithTracks, SeriesData
+```
+
+---
+
+## Supabase Client Selection
+
+```typescript
+import { supabaseAdmin, createServerSupabaseClient, createAuthenticatedSupabaseClient } from '@/lib/supabase'
+
+supabaseAdmin                          // catalog reads, admin ops — any API route
+createServerSupabaseClient()           // user auth check via cookie — server-only
+createAuthenticatedSupabaseClient(req) // user RLS queries in API routes
+```
+
+**Rule:** `supabaseAdmin` bypasses RLS. Use it only in API routes, never expose to browser.
+
+---
+
+## API Route Patterns
+
+### Catalog read (no auth required)
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import { supabaseAdmin } from '@/lib/supabase'
+import { myFiltersSchema } from '@/lib/validation'
+
+export async function GET(request: NextRequest) {
+  try {
+    const filters = myFiltersSchema.parse(Object.fromEntries(new URL(request.url).searchParams))
+    let query = supabaseAdmin.from('table').select('*').order('name')
+    // apply filters...
+    const { data, error } = await query
+    if (error) return NextResponse.json({ error: { code: 'DATABASE_ERROR', message: error.message } }, { status: 500 })
+    return NextResponse.json(data)
+  } catch (error) {
+    if (error instanceof z.ZodError)
+      return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: 'Invalid params', details: error.errors } }, { status: 400 })
+    return NextResponse.json({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } }, { status: 500 })
+  }
+}
+```
+
+### Auth check (user session)
+
+```typescript
+import { createServerSupabaseClient } from '@/lib/supabase'
+
+const supabase = createServerSupabaseClient()
+const { data: { user }, error } = await supabase.auth.getUser()
+if (error || !user)
+  return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Authentication required' } }, { status: 401 })
+```
+
+### Admin check (after auth check)
+
+```typescript
+const { data: profile } = await supabaseAdmin.from('profiles').select('is_admin').eq('id', user.id).single()
+if (!profile?.is_admin)
+  return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Admin access required' } }, { status: 403 })
+```
+
+### User data write (RLS via supabaseAdmin with explicit user_id)
+
+```typescript
+const { data, error } = await supabaseAdmin
+  .from('user_drivers')
+  .upsert({ user_id: user.id, driver_id: body.driver_id, level: body.level }, { onConflict: 'user_id,driver_id' })
+  .select()
+  .single()
+```
+
+---
+
+## Error Response Shape
+
+All API errors follow this exact shape:
+
+```typescript
+{ error: { code: string, message: string, details?: unknown } }
+```
+
+Standard codes: `UNAUTHORIZED` (401), `FORBIDDEN` (403), `NOT_FOUND` (404), `VALIDATION_ERROR` (400), `DATABASE_ERROR` (500), `INTERNAL_ERROR` (500)
+
+---
+
+## Validation (Zod)
+
+Schemas live in `src/lib/validation.ts`. Key exports:
+
+```
+driversFiltersSchema      carPartsFiltersSchema     boostsFiltersSchema
+createBoostSchema         updateBoostSchema
+createSeasonSchema        updateSeasonSchema
+createUserBoostSchema     updateUserBoostSchema
+userAssetsFiltersSchema   paginationSchema          uuidSchema
+```
+
+Pattern: parse query params as `schema.parse(Object.fromEntries(searchParams))`, parse request body as `schema.parse(await request.json())`. Zod coerces string query params to numbers where needed.
+
+---
+
+## Frontend Hook Pattern
+
+All hooks in `src/hooks/useApi.ts`. Pattern:
+
+```typescript
+export function useDrivers(filters?: DriversFilters) {
+  return useQuery({
+    queryKey: ['drivers', filters],
+    queryFn: async () => {
+      const headers = await getAuthHeaders()
+      const params = new URLSearchParams(/* filters */)
+      const res = await fetch(`/api/drivers?${params}`, { headers })
+      if (!res.ok) throw new Error('Failed to fetch drivers')
+      return res.json() as Promise<{ data: DriverView[], pagination: PaginationMeta }>
+    },
+    staleTime: 10 * 60 * 1000, // 10 min for catalog data
+  })
+}
+```
+
+Mutation pattern:
+
+```typescript
+export function useUpdateUserDriver() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload) => {
+      const headers = await getAuthHeaders()
+      const res = await fetch(`/api/drivers/user`, { method: 'POST', headers, body: JSON.stringify(payload) })
+      if (!res.ok) throw new Error('Update failed')
+      return res.json()
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['user_drivers'] }),
+  })
+}
+```
+
+---
+
+## Pagination Response Shape
+
+List endpoints that paginate return:
+
+```typescript
+{ data: T[], pagination: { page: number, limit: number, total: number, totalPages: number } }
+```
+
+---
+
+## Auth Context (client components)
+
+```typescript
+import { useAuth } from '@/components/auth/AuthContext'
+const { user, session, signIn, signOut, loading } = useAuth()
+```
+
+Admin check in client code: `user` alone is not enough — fetch `/api/admin-check` which returns `{ isAdmin: boolean }`.
+
+---
+
+## Adding a New Feature — Checklist
+
+1. **DB**: add migration in `supabase/migrations/YYYYMMDDHHMMSS_name.sql`
+2. **Types**: add row type to `src/types/database.ts` `Database` interface + named export
+3. **Validation**: add Zod schema to `src/lib/validation.ts`
+4. **API route**: `src/app/api/your-route/route.ts` — use patterns above
+5. **Hook**: add to `src/hooks/useApi.ts`
+6. **Page**: `src/app/your-page/page.tsx` — wrap with `<ProtectedRoute>` if auth required
