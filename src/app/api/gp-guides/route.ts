@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin, createServerSupabaseClient, createAuthenticatedSupabaseClient } from '@/lib/supabase'
 
 // Validation schemas
 const createGpGuideSchema = z.object({
@@ -54,10 +54,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { data, error } = await supabaseAdmin
+    // Use authenticated client for RLS enforcement
+    const supabase = createAuthenticatedSupabaseClient(request)
+
+    const { data, error } = await supabase
       .from('user_gp_guides')
       .select('*')
-      .eq('user_id', user.id)
       .order('start_date', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
 

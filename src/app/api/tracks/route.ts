@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient, supabaseAdmin } from '@/lib/supabase'
+import { createServerClient } from '@supabase/ssr'
 import { Track, Inserts, Updates } from '@/types/database'
 
 // GET /api/tracks - List all tracks with optional season filtering
@@ -78,10 +79,40 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.substring(7) // Remove 'Bearer ' prefix
 
-    // Verify the JWT token and get user
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+    // Use server-side Supabase client that handles cookies
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              request.cookies.set(name, value)
+            })
+          },
+        },
+      }
+    )
+    
+    // Get the current session from cookies
+    const { data: { session }, error: authError } = await supabase.auth.getSession()
 
-    if (authError || !user) {
+    if (authError || !session) {
+      console.error('Auth error:', authError)
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Get the authenticated user (more secure than using session.user directly)
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      console.error('User error:', userError)
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

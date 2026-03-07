@@ -18,6 +18,8 @@ export async function middleware(request) {
 
     return response
   } catch (error) {
+    return NextResponse.next()
+  }
 }
 
 export const config = {

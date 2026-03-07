@@ -629,9 +629,22 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         
         if (insertError) {
           console.error('❌ Failed to insert series data:', insertError);
+          console.error('❌ Series rows that failed:', seriesRows);
         } else {
           results.series.new = seriesRows.length;
           console.log(`✅ Series data processed: deleted=${results.series.deleted}, inserted=${seriesRows.length}`);
+          
+          // Verify the insert worked by checking what's actually in the database
+          const { data: verifyData, error: verifyError } = await supabaseAdmin
+            .from('series_data')
+            .select('index')
+            .order('index', { ascending: true });
+          
+          if (verifyError) {
+            console.error('❌ Failed to verify series data:', verifyError);
+          } else {
+            console.log(`📊 Series in database after insert:`, verifyData.map(s => s.index));
+          }
         }
       }
     }
@@ -706,25 +719,24 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
     
     // Build track rows for database - deduplicated by name
     const trackRows = Array.from(tracksByName.values()).map((t: any) => ({
-      id: t.id,
+      id: t.id || null,
       name: t.name,
       laps: t.lapcount,
       driver_track_stat: convertStatName(t.strongStatA),
       car_track_stat: convertStatName(t.strongStatB),
-      track_guid: t.trackGuid,
-      season_id: activeSeasonId,
-      is_active: true
-    }));
+      season_id: activeSeasonId
+    })).filter(track => track.id !== null && track.id !== ''); // Filter out invalid IDs
     
     console.log(`📊 Deduplicated to ${trackRows.length} unique tracks`);
     console.log('Sample tracks:', trackRows.slice(0, 3).map((t: any) => `${t.name} (${t.laps} laps, ${t.driver_track_stat}/${t.car_track_stat})`));
     
     if (trackRows.length > 0) {
       // Clear existing tracks (they'll be replaced)
+      // Use a more robust approach to delete all tracks
       const { error: deleteError } = await supabaseAdmin
         .from('tracks')
         .delete()
-        .neq('id', ''); // Delete all
+        .gt('id', '00000000-0000-0000-0000-000000000000'); // Delete all valid UUIDs
       
       if (deleteError) {
         console.error('❌ Failed to clear existing tracks:', deleteError);

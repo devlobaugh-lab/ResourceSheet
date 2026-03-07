@@ -4,52 +4,38 @@ import { createServerClient } from '@supabase/ssr'
 
 // Helper to verify admin access
 async function verifyAdmin(request: NextRequest) {
-  // Try to get user from Authorization header first
-  let user = null
-  const authHeader = request.headers.get('authorization')
-
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.substring(7)
-    try {
-      const parts = token.split('.')
-      if (parts.length === 3) {
-        const payload = JSON.parse(
-          Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
-        )
-
-        if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
-          user = {
-            id: payload.sub,
-            email: payload.email,
-          }
-        }
-      }
-    } catch (error) {
-      console.warn('JWT validation failed:', error)
+  // Use server-side Supabase client that handles cookies
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value)
+          })
+        },
+      },
     }
+  )
+  
+  // Get the current session from cookies
+  const { data: { session }, error: authError } = await supabase.auth.getSession()
+
+  if (authError || !session) {
+    console.error('Auth error:', authError)
+    return { authorized: false, userId: null, error: 'UNAUTHORIZED' }
   }
 
-  // Fall back to cookie-based auth
-  if (!user) {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll() {},
-        },
-      }
-    )
+  // Get the authenticated user (more secure than using session.user directly)
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
 
-    const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !cookieUser) {
-      return { authorized: false, userId: null, error: 'UNAUTHORIZED' }
-    }
-    user = cookieUser
+  if (userError || !user) {
+    console.error('User error:', userError)
+    return { authorized: false, userId: null, error: 'UNAUTHORIZED' }
   }
 
   // Check if user is admin (with fallback for missing user_type column)
@@ -196,6 +182,8 @@ export async function DELETE(
       )
     }
 
+    console.log('Attempting to delete user:', targetUserId, 'by admin:', userId);
+
     // Check if user exists
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -204,22 +192,43 @@ export async function DELETE(
       .single()
 
     if (profileError || !profile) {
+      console.error('User not found:', profileError);
       return NextResponse.json(
         { error: { code: 'NOT_FOUND', message: 'User not found' } },
         { status: 404 }
       )
     }
 
-    // Delete the user from auth (this cascades to profiles via ON DELETE CASCADE)
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId)
+    console.log('User found:', profile);
 
-    if (deleteError) {
-      console.error('Error deleting user:', deleteError)
-      return NextResponse.json(
-        { error: { code: 'INTERNAL_ERROR', message: `Failed to delete user: ${deleteError.message}` } },
-        { status: 500 }
-      )
+    // Try to delete the user from auth first (this should cascade to profiles)
+    let deleteError = null;
+    try {
+      const { error } = await supabaseAdmin.auth.admin.deleteUser(targetUserId)
+      deleteError = error;
+    } catch (authError) {
+      console.error('Auth delete failed, trying manual deletion:', authError);
+      deleteError = authError;
     }
+
+    // If auth delete failed, try manual deletion
+    if (deleteError) {
+      console.log('Attempting manual deletion from profiles table...');
+      const { error: profileDeleteError } = await supabaseAdmin
+        .from('profiles')
+        .delete()
+        .eq('id', targetUserId);
+
+      if (profileDeleteError) {
+        console.error('Manual deletion also failed:', profileDeleteError);
+        return NextResponse.json(
+          { error: { code: 'INTERNAL_ERROR', message: `Failed to delete user: ${profileDeleteError.message}` } },
+          { status: 500 }
+        );
+      }
+    }
+
+    console.log('User deleted successfully:', targetUserId);
 
     return NextResponse.json({
       message: 'User deleted successfully',

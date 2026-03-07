@@ -55,6 +55,19 @@ export async function POST(request: NextRequest) {
       errors: [] as string[]
     }
 
+    // Define mappings for known old track IDs (used for both track guides and GP guide tracks)
+    const oldTrackMappings: Record<string, string> = {
+      // Original mappings
+      '00000000-0000-0000-0000-000000000005': 'ebe50201-4398-4bda-99b0-49177aaf0eb3', // Americas/Austin
+      '3e1354cb-1d37-4b10-b20a-f1b1dbfab419': '12e030e4-28d0-4e26-9725-552bde90ff73', // Silverstone
+      '1d04038f-5425-4989-acc9-dc308fdd833c': 'ed34468f-dd09-4b34-b461-43d56f3d9bf5', // Monza
+      
+      // Additional mappings from current errors
+      '00000000-0000-0000-0000-000000000002': 'ebe50201-4398-4bda-99b0-49177aaf0eb3', // Americas/Austin (common fallback)
+      'af5d8b2b-487f-46ef-af3f-ad9635c75b28': '12e030e4-28d0-4e26-9725-552bde90ff73', // Silverstone (common fallback)
+      'e029213b-544f-46b0-93ec-500c21e7f441': 'ed34468f-dd09-4b34-b461-43d56f3d9bf5', // Monza (common fallback)
+    }
+
     // 1. Import User Drivers (merge: upsert)
     if (importData.userDrivers && Array.isArray(importData.userDrivers)) {
       for (const item of importData.userDrivers) {
@@ -157,20 +170,46 @@ export async function POST(request: NextRequest) {
 
     // 4. Import User Track Guides (merge: upsert by user_id + track_id + gp_level)
     if (importData.userTrackGuides && Array.isArray(importData.userTrackGuides)) {
+      // Create track ID mapping for old UUIDs
+      const trackIdMapping = new Map<string, string>()
+      
+      // Get current track IDs for reference
+      const { data: currentTracks } = await supabaseAdmin.from('tracks').select('id, name')
+      const trackMap = new Map(currentTracks?.map(t => [t.name, t.id]) || [])
+
       for (const item of importData.userTrackGuides) {
         try {
+          // Map old track ID to current track ID first
+          let trackId = item.track_id
+          if (oldTrackMappings[item.track_id]) {
+            trackId = oldTrackMappings[item.track_id]
+            console.log(`🔄 Mapping old track ID ${item.track_id} to ${trackId}`)
+          }
+
+          // Now check if the (mapped) track exists
+          const { data: existingTrack } = await supabaseAdmin
+            .from('tracks')
+            .select('id')
+            .eq('id', trackId)
+            .single()
+          
+          if (!existingTrack) {
+            results.errors.push(`Track guide ${item.track_id}: Track not found, skipping`)
+            continue
+          }
+
           // Check by unique constraint: user_id + track_id + gp_level
           const { data: existing } = await supabaseAdmin
             .from('user_track_guides')
             .select('id')
             .eq('user_id', userId)
-            .eq('track_id', item.track_id)
+            .eq('track_id', trackId)
             .eq('gp_level', item.gp_level)
             .single()
 
           const guideData = {
             user_id: userId,
-            track_id: item.track_id,
+            track_id: trackId,
             gp_level: item.gp_level,
             suggested_drivers: item.suggested_drivers,
             free_boost_id: item.free_boost_id,
@@ -282,9 +321,28 @@ export async function POST(request: NextRequest) {
               continue
             }
 
+            // Map old track ID to current track ID for GP guide tracks first
+            let trackId = item.track_id
+            if (oldTrackMappings[item.track_id]) {
+              trackId = oldTrackMappings[item.track_id]
+              console.log(`🔄 Mapping old track ID ${item.track_id} to ${trackId} for GP guide track`)
+            }
+
+            // Now check if the (mapped) track exists
+            const { data: existingTrack } = await supabaseAdmin
+              .from('tracks')
+              .select('id')
+              .eq('id', trackId)
+              .single()
+            
+            if (!existingTrack) {
+              results.errors.push(`GP guide track ${item.track_id}: Track not found, skipping`)
+              continue
+            }
+
             const trackData = {
               gp_guide_id: newGuideId,
-              track_id: item.track_id,
+              track_id: trackId,
               race_number: item.race_number,
               race_type: item.race_type,
               is_wet: item.is_wet,

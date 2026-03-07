@@ -13,8 +13,9 @@ F1 Resource Manager is a modern web application built with Next.js and Supabase,
 
 ### 2. Security First
 - **Row-Level Security (RLS)**: All user data is automatically isolated
-- **Authentication**: Supabase Auth with email magic links
+- **Authentication**: Supabase Auth with email magic links and dual-client architecture
 - **Data Validation**: Comprehensive input validation and sanitization
+- **Admin System**: Secure admin operations with proper privilege detection
 
 ### 3. Performance Optimized
 - **Caching Strategy**: Aggressive caching for global data, fresh fetches for user data

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@supabase/supabase-js'
-import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
+import { createServerClient } from '@supabase/ssr'
+import { supabaseAdmin } from '@/lib/supabase'
 
 const updateUserBoostSchema = z.object({
   card_count: z.number().min(0),
@@ -51,7 +52,23 @@ export async function PUT(
 
     // If JWT didn't work, try cookie-based auth
     if (!user) {
-      const supabase = createServerSupabaseClient()
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll()
+            },
+            setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                request.cookies.set(name, value)
+              })
+            },
+          },
+        }
+      )
+      
       const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
       if (authError || !cookieUser) {
@@ -160,10 +177,40 @@ export async function PATCH(
 
     const token = authHeader.substring(7) // Remove 'Bearer ' prefix
 
-    // Verify the JWT token and get user
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+    // Use server-side Supabase client that handles cookies
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              request.cookies.set(name, value)
+            })
+          },
+        },
+      }
+    )
+    
+    // Get the current session from cookies
+    const { data: { session }, error: authError } = await supabase.auth.getSession()
 
-    if (authError || !user) {
+    if (authError || !session) {
+      console.error('Auth error:', authError)
+      return NextResponse.json(
+        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+        { status: 401 }
+      )
+    }
+
+    // Get the authenticated user (more secure than using session.user directly)
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      console.error('User error:', userError)
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }

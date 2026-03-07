@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
 import type { Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup, Track, CatalogItem, SeriesWithTracks } from '@/types/database'
 import type { PaginationMeta } from '@/types/api'
 
@@ -12,15 +11,49 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
     'Content-Type': 'application/json',
   }
 
-  try {
-    // Get the current session
-    const { data: { session }, error } = await supabase.auth.getSession()
+  // Try to get JWT from localStorage (for client-side authentication)
+  if (typeof window !== 'undefined') {
+    try {
+      // Try to get JWT token from Supabase's session storage
+      // Supabase stores session in localStorage with a key like 'sb-[project-ref]-auth-token'
+      const supabaseKeys = Object.keys(localStorage).filter(key => 
+        key.startsWith('sb-') && key.includes('-auth-token')
+      )
+      
+      for (const key of supabaseKeys) {
+        const sessionData = localStorage.getItem(key)
+        if (sessionData) {
+          const session = JSON.parse(sessionData)
+          const accessToken = session?.access_token
+          if (accessToken) {
+            headers['Authorization'] = `Bearer ${accessToken}`
+            break // Use the first valid token found
+          }
+        }
+      }
 
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`
+      // Also try the direct supabase.auth.token key as fallback
+      if (!headers['Authorization']) {
+        const fallbackSession = localStorage.getItem('supabase.auth.token')
+        if (fallbackSession) {
+          const parsedSession = JSON.parse(fallbackSession)
+          const accessToken = parsedSession?.access_token
+          if (accessToken) {
+            headers['Authorization'] = `Bearer ${accessToken}`
+          }
+        }
+      }
+
+      // Try the hardcoded key as another fallback (for backward compatibility)
+      if (!headers['Authorization']) {
+        const token = localStorage.getItem('sb-ndqzqjvqzjxjxqzjxjxj-auth-token')
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to get auth token from localStorage:', error)
     }
-  } catch (error) {
-    console.warn('Failed to get auth token:', error)
   }
 
   return headers
@@ -289,19 +322,8 @@ export function useUserCarSetups() {
   return useQuery({
     queryKey: ['user-car-setups'],
     queryFn: async (): Promise<{ data: UserCarSetup[]; pagination: PaginationMeta }> => {
-      // Wait a bit for auth to initialize
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      const headers = await getAuthHeaders()
-
-      // If no auth header, the user might not be logged in yet
-      if (!headers.Authorization) {
-        console.log('No auth header found for setups - user may not be logged in')
-        return { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } }
-      }
-
       const response = await fetch(`${API_BASE}/setups`, {
-        headers,
+        headers: await getAuthHeaders(),
         credentials: 'same-origin'
       })
 

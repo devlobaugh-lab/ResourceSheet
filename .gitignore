@@ -113,3 +113,11 @@ out/
 
 # external data source files (very large)
 external_data/
+
+# backups/
+backups/
+
+# temp working
+working/
+
+docs/sensitive/DATABASE_BACKUP_SESSION_2026-02-27.md
