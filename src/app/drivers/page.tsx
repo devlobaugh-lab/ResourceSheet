@@ -214,6 +214,7 @@ function AuthenticatedDriversPage() {
               placeholder="Search drivers..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onClear={() => setSearchTerm('')}
             />
           </div>
           <div className="flex items-center space-x-2">

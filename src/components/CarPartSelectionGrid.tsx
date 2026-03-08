@@ -194,6 +194,7 @@ export function CarPartSelectionGrid({
             placeholder="Search parts..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm('')}
           />
         </div>
         <div className="flex items-center gap-2">

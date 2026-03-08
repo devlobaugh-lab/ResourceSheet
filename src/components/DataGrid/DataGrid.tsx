@@ -833,6 +833,7 @@ export function DataGrid({
                 placeholder="Search..."
                 value={filters.search}
                 onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                onClear={() => setFilters(prev => ({ ...prev, search: '' }))}
               />
             </div>
           )}

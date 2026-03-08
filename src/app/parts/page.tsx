@@ -441,6 +441,7 @@ function AuthenticatedPartsPage() {
               placeholder="Search parts..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onClear={() => setSearchTerm('')}
             />
           </div>
           <div className="flex items-center space-x-2">
