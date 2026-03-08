@@ -114,9 +114,12 @@ export default function AdminContentCachePage() {
       formData.append('season_filter', seasonFilter.trim());
       formData.append('allow_modifications', allowModifications.toString());
 
+      const authHeaders = await getAuthHeaders();
+      const { 'Content-Type': _, ...uploadHeaders } = authHeaders;
+
       const response = await fetch('/api/admin/content-cache/upload', {
         method: 'POST',
-        headers: await getAuthHeaders(),
+        headers: uploadHeaders,
         body: formData
       });
 
