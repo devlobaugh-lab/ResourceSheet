@@ -10,12 +10,10 @@ const importDataSchema = z.object({
   type: z.enum(['boosts', 'seasons']),
   data: z.array(z.object({
     name: z.string(),
-    rarity: z.number(),
     series: z.number(),
     season_id: z.string().optional(),
     icon: z.string().optional(),
     // Boost-specific fields
-    boost_type: z.string().optional(),
     boost_stats: z.any().optional(),
     is_free: z.boolean().optional(),
     // Season-specific fields

@@ -357,10 +357,7 @@ export function DataGrid({
           }
           break;
         case 'rarity':
-          // Boosts don't have rarity, so skip sorting for boosts
-          if ('is_boost' in a && 'is_boost' in b && a.is_boost && b.is_boost) {
-            comparison = 0; // No sorting for boosts by rarity
-          } else {
+          {
             const aRarity = (a as DriverView | CarPartView).rarity;
             const bRarity = (b as DriverView | CarPartView).rarity;
             comparison = aRarity - bRarity;

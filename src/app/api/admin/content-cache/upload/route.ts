@@ -794,6 +794,8 @@ async function processItems(items: any[], tableName: string, idField: string, al
 
       if (!error) {
         results.new++
+      } else {
+        console.error(`❌ Failed to insert ${tableName} item: ${newItem[idField]}`, error)
       }
     } else {
       // Existing item - check for changes

@@ -70,17 +70,12 @@ export async function GET(request: NextRequest) {
 
     // Apply filters
     const seasonId = searchParams.get('season_id')
-    const rarity = searchParams.get('rarity')
     const series = searchParams.get('series')
     const search = searchParams.get('search')
     const isFree = searchParams.get('is_free')
 
     if (seasonId) {
       query = query.eq('season_id', seasonId)
-    }
-
-    if (rarity) {
-      query = query.eq('rarity', parseInt(rarity))
     }
 
     if (series) {
