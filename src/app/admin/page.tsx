@@ -45,7 +45,7 @@ export default function AdminPage() {
     staleTime: 5 * 60 * 1000
   });
 
-  const isAdmin = profile?.is_admin === true || profile?.user_type === 'admin';
+  const isAdmin = profile?.is_admin === true;
 
   // Generic export handler
   const handleExport = async (

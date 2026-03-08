@@ -45,45 +45,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Check if user is admin
-    console.log('Checking admin status for user:', user.id, user.email)
-    
-    // First try with user_type column (new schema)
-    let profile = null
-    let profileError = null
-    
-    try {
-      const result = await supabaseAdmin
-        .from('profiles')
-        .select('user_type, is_admin')
-        .eq('id', user.id)
-        .single()
-      profile = result.data
-      profileError = result.error
-    } catch (e) {
-      console.log('First query failed, trying without user_type')
-    }
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
 
-    // If user_type column doesn't exist, fall back to just checking is_admin
-    if (profileError?.code === '42703' || profileError?.message?.includes('user_type')) {
-      console.log('user_type column not found, falling back to is_admin only')
-      const fallbackResult = await supabaseAdmin
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single()
-      profile = fallbackResult.data
-      profileError = fallbackResult.error
-    }
-
-    console.log('Profile lookup result:', { profile, error: profileError })
-
-    if (profileError) {
-      console.error('Profile lookup error:', profileError)
-    }
-
-    const isAdmin = (profile as any)?.user_type === 'admin' || (profile as any)?.is_admin === true
-    console.log('Is admin check:', isAdmin, { userType: (profile as any)?.user_type, isAdminFlag: (profile as any)?.is_admin })
+    const isAdmin = profile?.is_admin === true
 
     if (profileError || !isAdmin) {
       return NextResponse.json(
@@ -104,22 +72,6 @@ export async function GET(request: NextRequest) {
         { error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch users' } },
         { status: 500 }
       )
-    }
-
-    console.log('Fetched users:', users?.length || 0, 'users')
-    if (users && users.length > 0) {
-      console.log('First user:', JSON.stringify(users[0], null, 2))
-      // Debug logging for all users to see their actual values
-      users.forEach((user: any, index: number) => {
-        console.log(`User ${index}:`, {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          user_type: user.user_type,
-          is_admin: user.is_admin,
-          is_active: user.is_active
-        });
-      });
     }
 
     return NextResponse.json({ users })
@@ -176,34 +128,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user is admin (with fallback for missing user_type column)
-    let adminProfile = null
-    let profileError = null
-    
-    try {
-      const result = await supabaseAdmin
-        .from('profiles')
-        .select('user_type, is_admin')
-        .eq('id', user.id)
-        .single()
-      adminProfile = result.data
-      profileError = result.error
-    } catch (e) {
-      console.log('First query failed')
-    }
+    const { data: adminProfile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
 
-    // If user_type column doesn't exist, fall back to just checking is_admin
-    if (profileError?.code === '42703' || profileError?.message?.includes('user_type')) {
-      const fallbackResult = await supabaseAdmin
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single()
-      adminProfile = fallbackResult.data
-      profileError = fallbackResult.error
-    }
-
-    const isAdmin = (adminProfile as any)?.user_type === 'admin' || (adminProfile as any)?.is_admin === true
+    const isAdmin = adminProfile?.is_admin === true
 
     if (profileError || !isAdmin) {
       return NextResponse.json(
@@ -214,7 +145,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json()
-    const { email, username, user_type } = body
+    const { email, username, is_admin: makeAdmin } = body
 
     if (!email) {
       return NextResponse.json(
@@ -222,9 +153,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    // Validate user_type
-    const validUserType = user_type === 'admin' ? 'admin' : 'normal'
 
     // Check if user already exists
     const { data: existingUsers, error: checkError } = await supabaseAdmin.auth.admin.listUsers()
@@ -274,11 +202,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update the profile with user_type
+    // Update the profile with admin status
     const { error: updateProfileError } = await supabaseAdmin
       .from('profiles')
       .update({
-        user_type: validUserType,
+        is_admin: makeAdmin === true,
         username: username || null,
       })
       .eq('id', newUser.user.id)
@@ -308,7 +236,7 @@ export async function POST(request: NextRequest) {
         id: newUser.user.id,
         email: newUser.user.email,
         username: username || null,
-        user_type: validUserType,
+        is_admin: makeAdmin === true,
         is_active: true,
         created_at: newUser.user.created_at,
       },

@@ -49,122 +49,76 @@ F1 Resource Manager is a modern web application built with Next.js and Supabase,
 
 ## Database Design
 
-### Core Tables
+### Schema Overview (14 tables)
 
-#### Global Catalog Tables
+#### Catalog Tables (global, shared across users)
+
+| Table | Key fields |
+|-------|-----------|
+| `drivers` | `name`, `rarity`, `series`, `season_id`, `collection_id`, `collection_sub_name`, `visual_override`, `stats_per_level` |
+| `car_parts` | `name`, `rarity`, `series`, `season_id`, `car_part_type`, `stats_per_level` |
+| `boosts` | `name`, `icon`, `boost_stats`, `is_free` |
+| `seasons` | `name`, `is_active` |
+| `tracks` | `name`, `alt_name`, `laps`, `driver_track_stat`, `car_track_stat`, `season_id` |
+| `collections` | `name`, `season_id` |
+
+#### User Data Tables (RLS-protected, isolated per user)
+
+| Table | Key fields |
+|-------|-----------|
+| `user_drivers` | `user_id`, `driver_id`, `level`, `card_count`, `bonus_percent` |
+| `user_car_parts` | `user_id`, `car_part_id`, `level`, `card_count`, `bonus_percent` |
+| `user_boosts` | `user_id`, `boost_id`, `level` |
+| `user_car_setups` | `user_id`, `name`, `notes`, `max_series`, `bonus_percent`, six `*_id` FK columns to `car_parts` |
+| `user_track_guides` | `user_id`, `track_id`, `gp_level`, `boost_recommendations`, `car_setup_id`, tire strategy fields, `notes` |
+| `user_track_guide_drivers` | `user_track_guide_id`, `driver_id`, `slot_order` |
+
+#### System Tables
+
+| Table | Key fields |
+|-------|-----------|
+| `profiles` | `id` (= `auth.users.id`), `email`, `username`, `is_admin` |
+| `boost_custom_names` | `boost_id`, `custom_name` |
+
+### Row-Level Security (RLS)
+
+All user-specific tables implement RLS policies:
+
 ```sql
--- Drivers catalog
-CREATE TABLE drivers (
-  id UUID PRIMARY KEY,
-  name TEXT NOT NULL,
-  rarity INTEGER NOT NULL,
-  series INTEGER NOT NULL,
-  season_id UUID REFERENCES seasons(id),
-  stats_per_level JSONB NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- Enable RLS
+ALTER TABLE user_drivers ENABLE ROW LEVEL SECURITY;
 
--- Car parts catalog  
-CREATE TABLE car_parts (
-  id UUID PRIMARY KEY,
-  name TEXT NOT NULL,
-  rarity INTEGER NOT NULL,
-  series INTEGER NOT NULL,
-  season_id UUID REFERENCES seasons(id),
-  car_part_type INTEGER NOT NULL,
-  stats_per_level JSONB NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- Read policy
+CREATE POLICY "Users can read their own drivers" ON user_drivers
+FOR SELECT USING (auth.uid() = user_id);
 
--- Boosts catalog
-CREATE TABLE boosts (
-  id UUID PRIMARY KEY,
-  name TEXT NOT NULL,
-  icon TEXT,
-  boost_stats JSONB NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- Insert policy
+CREATE POLICY "Users can insert their own drivers" ON user_drivers
+FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Update policy
+CREATE POLICY "Users can update their own drivers" ON user_drivers
+FOR UPDATE USING (auth.uid() = user_id);
+
+-- Delete policy
+CREATE POLICY "Users can delete their own drivers" ON user_drivers
+FOR DELETE USING (auth.uid() = user_id);
 ```
 
-#### User-Specific Tables
+### Indexing Strategy
+
 ```sql
--- User drivers collection
-CREATE TABLE user_drivers (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES auth.users(id),
-  driver_id UUID NOT NULL REFERENCES drivers(id),
-  level INTEGER NOT NULL DEFAULT 1,
-  card_count INTEGER NOT NULL DEFAULT 0,
-  bonus_percent INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, driver_id)
-);
+-- User data indexes
+CREATE INDEX idx_user_drivers_user_id ON user_drivers(user_id);
+CREATE INDEX idx_user_drivers_driver_id ON user_drivers(driver_id);
+CREATE INDEX idx_user_car_parts_user_id ON user_car_parts(user_id);
+CREATE INDEX idx_user_boosts_user_id ON user_boosts(user_id);
 
--- User car parts collection
-CREATE TABLE user_car_parts (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES auth.users(id),
-  car_part_id UUID NOT NULL REFERENCES car_parts(id),
-  level INTEGER NOT NULL DEFAULT 1,
-  card_count INTEGER NOT NULL DEFAULT 0,
-  bonus_percent INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, car_part_id)
-);
-
--- User boosts collection
-CREATE TABLE user_boosts (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES auth.users(id),
-  boost_id UUID NOT NULL REFERENCES boosts(id),
-  count INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, boost_id)
-);
-```
-
-#### Advanced Feature Tables
-```sql
--- Car setups
-CREATE TABLE user_car_setups (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES auth.users(id),
-  name TEXT NOT NULL,
-  notes TEXT,
-  max_series INTEGER NOT NULL,
-  bonus_percent INTEGER DEFAULT 0,
-  brake_id UUID REFERENCES car_parts(id),
-  gearbox_id UUID REFERENCES car_parts(id),
-  rear_wing_id UUID REFERENCES car_parts(id),
-  front_wing_id UUID REFERENCES car_parts(id),
-  suspension_id UUID REFERENCES car_parts(id),
-  engine_id UUID REFERENCES car_parts(id),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Track guides
-CREATE TABLE user_track_guides (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES auth.users(id),
-  track_id UUID NOT NULL REFERENCES tracks(id),
-  gp_level INTEGER NOT NULL,
-  driver_ids UUID[] NOT NULL,
-  boost_recommendations JSONB,
-  car_setup_id UUID REFERENCES user_car_setups(id),
-  dry_tire_strategy TEXT,
-  wet_tire_strategy TEXT,
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, track_id, gp_level)
-);
+-- Catalog data indexes
+CREATE INDEX idx_drivers_rarity ON drivers(rarity);
+CREATE INDEX idx_drivers_series ON drivers(series);
+CREATE INDEX idx_car_parts_type ON car_parts(car_part_type);
+CREATE INDEX idx_car_parts_series ON car_parts(series);
 ```
 
 ### Row-Level Security (RLS)
@@ -214,56 +168,52 @@ CREATE INDEX idx_car_parts_series ON car_parts(series);
 
 ```
 /app
-├── /(auth)              # Public routes (auth)
+├── /auth                # Auth pages (public)
 │   ├── /login
-│   ├── /signup
-│   └── /callback
-├── /(app)               # Protected routes
-│   ├── /dashboard
-│   ├── /drivers
-│   ├── /parts
-│   ├── /boosts
-│   ├── /setups
-│   ├── /track-guides
-│   ├── /compare
-│   └── /profile
-├── /api                 # API routes
-│   ├── /drivers
-│   ├── /car-parts
-│   ├── /boosts
-│   ├── /setups
-│   ├── /track-guides
-│   └── /export-import
-└── /layout.tsx          # Root layout
+│   ├── /register
+│   ├── /reset-password
+│   └── /update-password
+├── /dashboard           # Main overview (protected)
+├── /drivers             # Driver collection management
+├── /parts               # Car parts management
+├── /boosts              # Boost inventory
+├── /setups              # Saved car setups
+├── /track-guides        # Per-track GP strategies
+│   └── /[id]            # Individual track guide detail
+├── /gp-guides           # GP guide creation and management
+│   └── /[id]            # Individual GP guide detail
+├── /compare             # Comparison hub
+│   ├── /drivers         # Side-by-side driver comparison
+│   └── /ai              # AI loadout comparison
+├── /data-input          # Spreadsheet-style bulk data entry (Drivers/Parts/Boosts tabs)
+├── /series              # Series overview
+├── /series-max-loadouts # Series optimization / max loadout calculator
+├── /tracks              # Track list
+├── /assets/add          # Asset submission form
+├── /profile             # User profile settings
+├── /admin               # Admin panel (requires is_admin)
+│   ├── /users           # User management
+│   ├── /content-cache   # Content cache upload
+│   └── /track-aliases   # Track name alias management
+└── /api                 # API routes (see API.md for full inventory)
 ```
 
 ### Key Components
 
 #### Supabase Client Setup
-```typescript
-// lib/supabase/server.ts - Server-side client
-export function createClient() {
-  const cookieStore = cookies();
-  
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: (cookies) => cookies.forEach(({ name, value, options }) =>
-          cookieStore.set(name, value, options)
-        ),
-      },
-    }
-  );
-}
 
-// lib/supabase/browser.ts - Browser client
-export const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+Three clients are defined in `src/lib/supabase.ts`:
+
+```typescript
+// Service role client — full DB access, API routes only
+export const supabaseAdmin = createClient(url, serviceRoleKey)
+
+// Anon client — RLS enforced, for browser use
+export const supabase = createClient(url, anonKey)
+
+// Cookie-based server clients for authenticated API routes
+export function createServerSupabaseClient(): SupabaseClient
+export function createAuthenticatedSupabaseClient(request: NextRequest): SupabaseClient
 ```
 
 #### API Layer

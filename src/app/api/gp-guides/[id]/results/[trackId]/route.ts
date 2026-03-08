@@ -87,14 +87,12 @@ export async function PUT(
       )
     }
 
-    // Upsert the results with explicit user_id (bypassing the trigger)
     const { data, error } = await supabase
       .from('user_gp_guide_results')
       .upsert(
         {
           gp_guide_id: params.id,
           track_id: params.trackId,
-          user_id: user.id,
           results_notes: validated.results_notes ?? null,
         },
         { onConflict: 'gp_guide_id,track_id' }

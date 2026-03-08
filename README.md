@@ -161,17 +161,14 @@ Documentation is organized in the [`docs/`](./docs/) directory:
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
 ### Development Workflow
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes
-4. Run tests: `npm test`
-5. Commit changes: `git commit -m 'Add feature'`
-6. Push to branch: `git push origin feature-name`
-7. Submit a pull request
+1. Create a feature branch: `git checkout -b feature-name`
+2. Make your changes
+3. Run tests: `npm test`
+4. Commit changes: `git commit -m 'Add feature'`
+5. Push to branch: `git push origin feature-name`
+6. Submit a pull request
 
 ## 📄 License
 

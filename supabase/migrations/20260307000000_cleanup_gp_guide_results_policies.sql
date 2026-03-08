@@ -1,12 +1,12 @@
--- Fix RLS policies for user_gp_guide_results table to support upsert operations
-
--- Drop existing policies that might not handle upsert correctly
+-- Drop all previous policy versions (safe with IF EXISTS)
 DROP POLICY IF EXISTS "Users can create their own GP guide results" ON user_gp_guide_results;
 DROP POLICY IF EXISTS "Users can update their own GP guide results" ON user_gp_guide_results;
+DROP POLICY IF EXISTS "Users can view their own GP guide results" ON user_gp_guide_results;
+DROP POLICY IF EXISTS "Users can delete their own GP guide results" ON user_gp_guide_results;
+DROP POLICY IF EXISTS "Users can upsert their own GP guide results" ON user_gp_guide_results;
 
--- Create proper RLS policies for upsert operations
--- For upsert, we need policies that handle both INSERT and UPDATE in a single operation
-CREATE POLICY "Users can upsert their own GP guide results"
+-- Single clean policy for all operations
+CREATE POLICY "Users can manage their own GP guide results"
   ON user_gp_guide_results FOR ALL
   USING (
     EXISTS (
@@ -22,8 +22,3 @@ CREATE POLICY "Users can upsert their own GP guide results"
       AND user_id = auth.uid()
     )
   );
-
--- Verify the policies are in place
-SELECT policyname, cmd, qual, with_check 
-FROM pg_policy 
-WHERE tablename = 'user_gp_guide_results';

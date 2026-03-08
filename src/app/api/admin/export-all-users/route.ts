@@ -3,7 +3,6 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 // GET /api/admin/export-all-users - Export ALL user data across all users (admin only)
 export async function GET(request: NextRequest) {
-  console.log('📤 Admin export all users called')
   try {
     // Verify admin - check Authorization header
     const authHeader = request.headers.get('authorization')
@@ -33,11 +32,11 @@ export async function GET(request: NextRequest) {
     // Check admin status
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('user_type, is_admin')
+      .select('is_admin')
       .eq('id', userId)
       .single()
 
-    const isAdmin = profile?.user_type === 'admin' || profile?.is_admin === true
+    const isAdmin = profile?.is_admin === true
     if (!isAdmin) {
       return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Admin access required' } }, { status: 403 })
     }
@@ -48,47 +47,38 @@ export async function GET(request: NextRequest) {
     // All user_drivers
     const { data: userDrivers } = await supabaseAdmin.from('user_drivers').select('*')
     data.userDrivers = userDrivers || []
-    console.log(`  ✅ user_drivers: ${userDrivers?.length || 0}`)
 
     // All user_car_parts
     const { data: userCarParts } = await supabaseAdmin.from('user_car_parts').select('*')
     data.userCarParts = userCarParts || []
-    console.log(`  ✅ user_car_parts: ${userCarParts?.length || 0}`)
 
     // All user_boosts
     const { data: userBoosts } = await supabaseAdmin.from('user_boosts').select('*')
     data.userBoosts = userBoosts || []
-    console.log(`  ✅ user_boosts: ${userBoosts?.length || 0}`)
 
     // All user_track_guides
     const { data: userTrackGuides } = await supabaseAdmin.from('user_track_guides').select('*')
     data.userTrackGuides = userTrackGuides || []
-    console.log(`  ✅ user_track_guides: ${userTrackGuides?.length || 0}`)
 
     // All user_track_guide_drivers
     const { data: userTrackGuideDrivers } = await supabaseAdmin.from('user_track_guide_drivers').select('*')
     data.userTrackGuideDrivers = userTrackGuideDrivers || []
-    console.log(`  ✅ user_track_guide_drivers: ${userTrackGuideDrivers?.length || 0}`)
 
     // All user_gp_guides
     const { data: userGpGuides } = await supabaseAdmin.from('user_gp_guides').select('*')
     data.userGpGuides = userGpGuides || []
-    console.log(`  ✅ user_gp_guides: ${userGpGuides?.length || 0}`)
 
     // All user_gp_guide_tracks
     const { data: userGpGuideTracks } = await supabaseAdmin.from('user_gp_guide_tracks').select('*')
     data.userGpGuideTracks = userGpGuideTracks || []
-    console.log(`  ✅ user_gp_guide_tracks: ${userGpGuideTracks?.length || 0}`)
 
     // All user_gp_guide_results
     const { data: userGpGuideResults } = await supabaseAdmin.from('user_gp_guide_results').select('*')
     data.userGpGuideResults = userGpGuideResults || []
-    console.log(`  ✅ user_gp_guide_results: ${userGpGuideResults?.length || 0}`)
 
     // All user_car_setups
     const { data: userCarSetups } = await supabaseAdmin.from('user_car_setups').select('*')
     data.userCarSetups = userCarSetups || []
-    console.log(`  ✅ user_car_setups: ${userCarSetups?.length || 0}`)
 
     return NextResponse.json({
       version: '1.0',

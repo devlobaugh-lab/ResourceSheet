@@ -38,7 +38,7 @@ export function FreeBoostCheckbox({ boostId, isFree }: FreeBoostCheckboxProps) {
   });
 
   // Check if user is admin via profile
-  const isAdmin = profile?.is_admin === true || profile?.user_type === 'admin';
+  const isAdmin = profile?.is_admin === true;
 
   const handleToggle = async () => {
     if (!isAdmin) {

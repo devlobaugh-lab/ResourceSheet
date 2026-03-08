@@ -18,7 +18,6 @@ interface User {
   email: string | null;
   username: string | null;
   is_admin: boolean;
-  user_type: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -27,13 +26,13 @@ interface User {
 interface FormData {
   email: string;
   username: string;
-  user_type: string;
+  is_admin: boolean;
 }
 
 const initialFormData: FormData = {
   email: '',
   username: '',
-  user_type: 'normal',
+  is_admin: false,
 };
 
 export default function AdminUsersPage() {
@@ -64,7 +63,7 @@ export default function AdminUsersPage() {
     staleTime: 5 * 60 * 1000
   });
 
-  const isAdmin = profile?.user_type === 'admin' || profile?.is_admin === true;
+  const isAdmin = profile?.is_admin === true;
 
   // Fetch all users
   const { data: usersData, isLoading: isUsersLoading, error: usersError, refetch: refetchUsers } = useQuery({
@@ -95,7 +94,7 @@ export default function AdminUsersPage() {
     setFormData({
       email: user.email || '',
       username: user.username || '',
-      user_type: user.user_type || 'normal',
+      is_admin: user.is_admin || false,
     });
     setShowEditModal(true);
   };
@@ -125,7 +124,7 @@ export default function AdminUsersPage() {
           'Content-Type': 'application/json',
         },
         credentials: 'same-origin',
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ email: formData.email, username: formData.username, is_admin: formData.is_admin }),
       });
 
       const data = await response.json();
@@ -160,7 +159,7 @@ export default function AdminUsersPage() {
         credentials: 'same-origin',
         body: JSON.stringify({
           username: formData.username || null,
-          user_type: formData.user_type,
+          is_admin: formData.is_admin,
         }),
       });
 
@@ -377,8 +376,8 @@ export default function AdminUsersPage() {
                           {user.email}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge variant={user.user_type === 'admin' ? 'warning' : 'default'}>
-                            {user.user_type === 'admin' ? 'Admin' : 'Normal'}
+                          <Badge variant={user.is_admin ? 'warning' : 'default'}>
+                            {user.is_admin ? 'Admin' : 'Normal'}
                           </Badge>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -494,8 +493,8 @@ export default function AdminUsersPage() {
                     User Type
                   </label>
                   <select
-                    value={formData.user_type}
-                    onChange={(e) => setFormData({ ...formData, user_type: e.target.value })}
+                    value={formData.is_admin ? 'admin' : 'normal'}
+                    onChange={(e) => setFormData({ ...formData, is_admin: e.target.value === 'admin' })}
                     className="w-full rounded-lg border-gray-300 px-3 py-2 bg-white"
                   >
                     <option value="normal">Normal</option>
@@ -552,13 +551,13 @@ export default function AdminUsersPage() {
                   </label>
                   {selectedUser.id === currentUser?.id ? (
                     <div className="px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-600">
-                      {selectedUser.user_type === 'admin' ? 'Admin' : 'Normal'} 
-                      <span className="text-xs block text-gray-400 mt-1">You cannot change your own user type</span>
+                      {selectedUser.is_admin ? 'Admin' : 'Normal'}
+                      <span className="text-xs block text-gray-400 mt-1">You cannot change your own admin status</span>
                     </div>
                   ) : (
                     <select
-                      value={formData.user_type}
-                      onChange={(e) => setFormData({ ...formData, user_type: e.target.value })}
+                      value={formData.is_admin ? 'admin' : 'normal'}
+                      onChange={(e) => setFormData({ ...formData, is_admin: e.target.value === 'admin' })}
                       className="w-full rounded-lg border-gray-300 px-3 py-2 bg-white"
                     >
                       <option value="normal">Normal</option>
