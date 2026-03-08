@@ -471,13 +471,27 @@ export function DataGrid({
             else comparison = 0; // Both same, no change
           }
           break;
+        case 'bonus':
+          if ('is_driver' in a && 'is_driver' in b && a.is_driver && b.is_driver) {
+            const aHasBonus = bonusCheckedItems.has(a.id);
+            const bHasBonus = bonusCheckedItems.has(b.id);
+            if (aHasBonus && !bHasBonus) comparison = -1;
+            else if (!aHasBonus && bHasBonus) comparison = 1;
+            else {
+              // Secondary sort by driver name when bonus values are equal
+              const aName = formatDriverNameForDisplay((a as any).name);
+              const bName = formatDriverNameForDisplay((b as any).name);
+              comparison = aName.localeCompare(bName);
+            }
+          }
+          break;
         default:
           comparison = 0;
       }
 
       return filters.sortOrder === 'asc' ? comparison : -comparison;
     });
-  }, [filteredItems, filters.sortBy, filters.sortOrder, getStatValueForSort, getBoostTierValueForSort]);
+  }, [filteredItems, filters.sortBy, filters.sortOrder, getStatValueForSort, getBoostTierValueForSort, bonusCheckedItems]);
 
   // Get rarity background color for cells
   const getRarityBackground = (rarity: number): string => {
@@ -511,7 +525,7 @@ export function DataGrid({
       baseColumns.push(
         { key: 'rarity', label: 'Rarity', sortable: true },
         { key: 'user_level', label: 'Level', sortable: true },
-        { key: 'bonus', label: 'Bonus', sortable: false }
+        { key: 'bonus', label: 'Bonus', sortable: true }
       );
     } else if (gridType === 'parts') {
       baseColumns.push(
