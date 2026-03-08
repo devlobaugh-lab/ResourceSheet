@@ -1,42 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, createAuthenticatedSupabaseClient } from '@/lib/supabase'
 
 // GET /api/admin/export - Export admin backup (all user data + admin-managed system config)
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    let userId = null
+    const supabase = createAuthenticatedSupabaseClient(request)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.substring(7)
-      try {
-        const parts = token.split('.')
-        if (parts.length === 3) {
-          const payload = JSON.parse(
-            Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
-          )
-          if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
-            userId = payload.sub
-          }
-        }
-      } catch (e) {
-        console.warn('JWT parse failed')
-      }
-    }
-
-    if (!userId) {
+    if (authError || !user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Authentication required' } }, { status: 401 })
     }
 
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('is_admin')
-      .eq('id', userId)
+      .eq('id', user.id)
       .single()
 
     if (profile?.is_admin !== true) {
       return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Admin access required' } }, { status: 403 })
     }
+
+    const userId = user.id
 
     const data: Record<string, unknown> = {}
 

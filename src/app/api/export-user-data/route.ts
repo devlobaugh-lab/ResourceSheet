@@ -1,58 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
 import { supabaseAdmin, createAuthenticatedSupabaseClient } from '@/lib/supabase'
 
 // GET /api/export-user-data - Export ALL current user's data
 export async function GET(request: NextRequest) {
   console.log('📤 Export user data API called')
   try {
-    // Try to get user from Authorization header first, then fall back to cookies
-    let user = null
-    const authHeader = request.headers.get('authorization')
+    const supabase = createAuthenticatedSupabaseClient(request)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.substring(7)
-      try {
-        const parts = token.split('.')
-        if (parts.length === 3) {
-          const payload = JSON.parse(
-            Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
-          )
-
-          if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
-            user = {
-              id: payload.sub,
-              email: payload.email,
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('JWT validation failed:', error)
-      }
-    }
-
-    if (!user) {
-      const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            getAll() {
-              return request.cookies.getAll()
-            },
-            setAll() {},
-          },
-        }
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+        { status: 401 }
       )
-      const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
-
-      if (authError || !cookieUser) {
-        return NextResponse.json(
-          { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-          { status: 401 }
-        )
-      }
-      user = cookieUser
     }
 
     const userId = user.id
@@ -180,9 +140,6 @@ export async function GET(request: NextRequest) {
     if (boostsError) console.warn('Error exporting user_boosts:', boostsError)
     data.userBoosts = userBoosts
     console.log(`  ✅ user_boosts: ${userBoosts.length} records`)
-
-    // Use authenticated client for RLS enforcement on user-specific tables
-    const supabase = createAuthenticatedSupabaseClient(request)
 
     // 4. User Track Guides
     const { data: userTrackGuides, error: trackGuidesError } = await supabase

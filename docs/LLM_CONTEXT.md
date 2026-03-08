@@ -175,16 +175,20 @@ export async function GET(request: NextRequest) {
 }
 ```
 
-### Auth check (user session)
+### Auth check (user session — supports both cookies and Bearer token)
 
 ```typescript
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createAuthenticatedSupabaseClient } from '@/lib/supabase'
 
-const supabase = createServerSupabaseClient()
+const supabase = createAuthenticatedSupabaseClient(request)
 const { data: { user }, error } = await supabase.auth.getUser()
 if (error || !user)
   return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Authentication required' } }, { status: 401 })
 ```
+
+Use `createAuthenticatedSupabaseClient(request)` in all API routes. It handles both cookie-based sessions and `Authorization: Bearer <token>` headers, and delegates signature verification to Supabase server-side. Do **not** manually decode or trust JWT payloads.
+
+Use `createServerSupabaseClient()` (no `request` arg) only in server components / actions where no `NextRequest` is available.
 
 ### Admin check (after auth check)
 
