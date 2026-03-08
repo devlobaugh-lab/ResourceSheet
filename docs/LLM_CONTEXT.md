@@ -105,7 +105,7 @@ user_custom_drivers   user_id uuid, name text, overtaking int, blocking int,
 
 ```
 profiles   id uuid (= auth.users.id), email text?, username text?,
-           is_admin bool, user_type text, is_active bool
+           is_admin bool, is_active bool
 ```
 
 ---

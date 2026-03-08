@@ -81,8 +81,7 @@ auth.users
 profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id),
   username TEXT,
-  user_type TEXT,  -- 'admin' or 'normal'
-  is_admin BOOLEAN, -- Legacy admin flag
+  is_admin BOOLEAN DEFAULT false, -- sole admin flag
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP
 )
@@ -134,9 +133,9 @@ FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Admins can access all data" ON user_drivers
 FOR ALL USING (
   EXISTS (
-    SELECT 1 FROM profiles 
-    WHERE profiles.id = auth.uid() 
-    AND (profiles.user_type = 'admin' OR profiles.is_admin = true)
+    SELECT 1 FROM profiles
+    WHERE profiles.id = auth.uid()
+    AND profiles.is_admin = true
   )
 );
 ```
@@ -145,19 +144,9 @@ FOR ALL USING (
 
 ### Admin Privilege Detection
 
-The system supports two methods for detecting admin privileges:
+Admin status is determined solely by the `is_admin` boolean column on the `profiles` table:
 
 ```typescript
-// Method 1: user_type column (recommended)
-const { data: profile } = await supabaseAdmin
-  .from('profiles')
-  .select('user_type')
-  .eq('id', user.id)
-  .single()
-
-const isAdmin = profile?.user_type === 'admin'
-
-// Method 2: is_admin column (legacy support)
 const { data: profile } = await supabaseAdmin
   .from('profiles')
   .select('is_admin')
@@ -199,12 +188,11 @@ export async function POST(request: NextRequest) {
     // 2. Check admin privileges
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('user_type, is_admin')
+      .select('is_admin')
       .eq('id', user.id)
       .single()
 
-    const isAdmin = profile?.user_type === 'admin' || profile?.is_admin === true
-    if (!isAdmin) {
+    if (!profile?.is_admin) {
       return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
     }
 
@@ -328,11 +316,11 @@ export async function POST(request: NextRequest) {
   // Check admin privileges
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('user_type')
+    .select('is_admin')
     .eq('id', user.id)
     .single()
-  
-  if (profile?.user_type !== 'admin') {
+
+  if (!profile?.is_admin) {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
   }
   
@@ -367,12 +355,11 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
           // Check admin status
           const { data: profile } = await supabase
             .from('profiles')
-            .select('user_type, is_admin')
+            .select('is_admin')
             .eq('id', user.id)
             .single()
-          
-          const admin = profile?.user_type === 'admin' || profile?.is_admin === true
-          setIsAdmin(admin)
+
+          setIsAdmin(profile?.is_admin === true)
         }
         
         setLoading(false)
@@ -446,9 +433,9 @@ FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Admins can access all data" ON user_drivers
 FOR ALL USING (
   EXISTS (
-    SELECT 1 FROM profiles 
-    WHERE profiles.id = auth.uid() 
-    AND (profiles.user_type = 'admin' OR profiles.is_admin = true)
+    SELECT 1 FROM profiles
+    WHERE profiles.id = auth.uid()
+    AND profiles.is_admin = true
   )
 );
 ```
@@ -545,47 +532,36 @@ const user = session.user
 
 ### Issue 5: Admin Privilege Detection
 
-**Problem**: Admin checks fail due to missing or incorrect database columns.
+**Problem**: Admin checks fail unexpectedly.
 
-**Root Cause**: Database schema evolution without proper migration.
+**Root Cause**: The schema previously had a `user_type` column alongside `is_admin`. That column has been dropped. Any code still checking `user_type` will silently fail.
 
-**Solution**: Support both old and new admin detection methods:
+**Solution**: Use only `is_admin`:
 
 ```typescript
-// Try new method first
-let profile = null
-try {
-  profile = await supabaseAdmin.from('profiles').select('user_type').eq('id', user.id).single()
-} catch (e) {
-  // Fall back to old method
-  profile = await supabaseAdmin.from('profiles').select('is_admin').eq('id', user.id).single()
-}
+const { data: profile } = await supabaseAdmin
+  .from('profiles')
+  .select('is_admin')
+  .eq('id', user.id)
+  .single()
 
-const isAdmin = profile?.user_type === 'admin' || profile?.is_admin === true
+const isAdmin = profile?.is_admin === true
 ```
 
 ## Migration Notes
 
-### Legacy Support
+### Schema History
 
-The system maintains backward compatibility with the legacy `is_admin` boolean column while supporting the new `user_type` string column:
+The `profiles` table previously had a `user_type TEXT` column (values `'admin'` / `'normal'`) alongside `is_admin BOOLEAN`. Migration `20260307000002` dropped `user_type` entirely. `is_admin` is now the sole mechanism for admin privilege — there is no fallback column and no dual-check needed.
 
-```sql
--- Legacy column
-ALTER TABLE profiles ADD COLUMN is_admin BOOLEAN DEFAULT false;
+### `/api/admin-check` Dual-Auth Approach
 
--- New column
-ALTER TABLE profiles ADD COLUMN user_type TEXT DEFAULT 'normal';
-```
+The admin-check endpoint supports two authentication methods to accommodate different callers:
 
-### Database Cleanup
+1. **JWT from `Authorization` header** — tried first; used by scripts or non-browser clients that pass a bearer token
+2. **Cookie-based auth** — fallback; used by the browser frontend via `credentials: 'same-origin'`
 
-When migrating to production, consider:
-
-1. **Consolidate admin detection**: Choose one method and migrate all code
-2. **Remove legacy columns**: Drop `is_admin` after migration
-3. **Update RLS policies**: Ensure policies work with new schema
-4. **Test thoroughly**: Verify all admin functionality works
+In both cases the privilege check is identical: `is_admin = true` on the `profiles` table.
 
 ## Security Checklist
 

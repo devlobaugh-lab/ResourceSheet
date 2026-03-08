@@ -19,6 +19,7 @@ supabase start       # Start local Supabase (Docker required)
 supabase stop        # Stop local Supabase
 npm run db:push      # Apply migrations to local DB
 npm run db:reset     # Reset DB and re-run all migrations
+npm run db:setup     # Reset DB and create admin user in one step
 npm run db:generate  # Regenerate TypeScript types from local schema -> src/types/database.types.ts
 
 # Seeding
