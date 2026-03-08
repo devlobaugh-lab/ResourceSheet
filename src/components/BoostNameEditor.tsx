@@ -48,7 +48,7 @@ export function BoostNameEditor({
   });
 
   // Check if user is admin via profile
-  const isAdmin = profile?.is_admin === true || profile?.user_type === 'admin';
+  const isAdmin = profile?.is_admin === true;
 
   // Display name logic: custom_name || icon name || current name
   const displayName = customName || (icon ? icon.replace('BoostIcon_', '') : currentName)

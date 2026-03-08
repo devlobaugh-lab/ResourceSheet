@@ -38,34 +38,13 @@ async function verifyAdmin(request: NextRequest) {
     return { authorized: false, userId: null, error: 'UNAUTHORIZED' }
   }
 
-  // Check if user is admin (with fallback for missing user_type column)
-  let profile = null
-  let profileError = null
-  
-  try {
-    const result = await supabaseAdmin
-      .from('profiles')
-      .select('user_type, is_admin, id')
-      .eq('id', user.id)
-      .single()
-    profile = result.data
-    profileError = result.error
-  } catch (e) {
-    console.log('First query failed')
-  }
+  const { data: profile, error: profileError } = await supabaseAdmin
+    .from('profiles')
+    .select('is_admin, id')
+    .eq('id', user.id)
+    .single()
 
-  // If user_type column doesn't exist, fall back to just checking is_admin
-  if (profileError?.code === '42703' || profileError?.message?.includes('user_type')) {
-    const fallbackResult = await supabaseAdmin
-      .from('profiles')
-      .select('is_admin, id')
-      .eq('id', user.id)
-      .single()
-    profile = fallbackResult.data
-    profileError = fallbackResult.error
-  }
-
-  const isAdmin = (profile as any)?.user_type === 'admin' || (profile as any)?.is_admin === true
+  const isAdmin = profile?.is_admin === true
 
   if (profileError || !isAdmin) {
     return { authorized: false, userId: null, error: 'FORBIDDEN' }
@@ -91,29 +70,20 @@ export async function PATCH(
 
     const targetUserId = params.id
     const body = await request.json()
-    const { username, user_type, is_active } = body
+    const { username, is_admin: makeAdmin, is_active } = body
 
-    // Prevent admin from changing their own user_type
-    if (targetUserId === userId && user_type !== undefined) {
-      const { data: currentProfile } = await supabaseAdmin
-        .from('profiles')
-        .select('user_type, is_admin')
-        .eq('id', userId)
-        .single()
-
-      const isAdmin = (currentProfile as any)?.user_type === 'admin' || (currentProfile as any)?.is_admin === true
-      if (isAdmin && user_type !== 'admin') {
-        return NextResponse.json(
-          { error: { code: 'FORBIDDEN', message: 'You cannot change your own admin status' } },
-          { status: 403 }
-        )
-      }
+    // Prevent admin from removing their own admin status
+    if (targetUserId === userId && makeAdmin === false) {
+      return NextResponse.json(
+        { error: { code: 'FORBIDDEN', message: 'You cannot remove your own admin status' } },
+        { status: 403 }
+      )
     }
 
     // Build update object
     const updates: Record<string, unknown> = {}
     if (username !== undefined) updates.username = username || null
-    if (user_type !== undefined) updates.user_type = user_type === 'admin' ? 'admin' : 'normal'
+    if (makeAdmin !== undefined) updates.is_admin = makeAdmin === true
     if (is_active !== undefined) updates.is_active = is_active
 
     if (Object.keys(updates).length === 0) {
@@ -182,8 +152,6 @@ export async function DELETE(
       )
     }
 
-    console.log('Attempting to delete user:', targetUserId, 'by admin:', userId);
-
     // Check if user exists
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -192,14 +160,11 @@ export async function DELETE(
       .single()
 
     if (profileError || !profile) {
-      console.error('User not found:', profileError);
       return NextResponse.json(
         { error: { code: 'NOT_FOUND', message: 'User not found' } },
         { status: 404 }
       )
     }
-
-    console.log('User found:', profile);
 
     // Try to delete the user from auth first (this should cascade to profiles)
     let deleteError = null;
@@ -211,24 +176,20 @@ export async function DELETE(
       deleteError = authError;
     }
 
-    // If auth delete failed, try manual deletion
+    // If auth delete failed, try manual deletion from profiles
     if (deleteError) {
-      console.log('Attempting manual deletion from profiles table...');
       const { error: profileDeleteError } = await supabaseAdmin
         .from('profiles')
         .delete()
         .eq('id', targetUserId);
 
       if (profileDeleteError) {
-        console.error('Manual deletion also failed:', profileDeleteError);
         return NextResponse.json(
           { error: { code: 'INTERNAL_ERROR', message: `Failed to delete user: ${profileDeleteError.message}` } },
           { status: 500 }
         );
       }
     }
-
-    console.log('User deleted successfully:', targetUserId);
 
     return NextResponse.json({
       message: 'User deleted successfully',

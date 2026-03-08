@@ -22,8 +22,3 @@ CREATE POLICY "Users can upsert their own GP guide results"
       AND user_id = auth.uid()
     )
   );
-
--- Verify the policies are in place
-SELECT policyname, cmd, qual, with_check 
-FROM pg_policy 
-WHERE tablename = 'user_gp_guide_results';

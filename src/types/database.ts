@@ -53,7 +53,6 @@ export interface Database {
           email: string | null
           username: string | null
           is_admin: boolean
-          user_type: string
           is_active: boolean
           created_at: string
           updated_at: string
@@ -63,7 +62,6 @@ export interface Database {
           email?: string | null
           username?: string | null
           is_admin?: boolean
-          user_type?: string
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -73,7 +71,6 @@ export interface Database {
           email?: string | null
           username?: string | null
           is_admin?: boolean
-          user_type?: string
           is_active?: boolean
           created_at?: string
           updated_at?: string

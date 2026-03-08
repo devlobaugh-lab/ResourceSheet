@@ -12,6 +12,7 @@
     "db:generate": "supabase gen types typescript --local > src/types/database.types.ts",
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
+    "db:setup": "supabase db reset && node scripts/database/create_admin_user.js",
     "db:seed": "supabase db seed",
     "db:migrate": "supabase migration up",
     "db:init": "node scripts/database/init_database.js",
