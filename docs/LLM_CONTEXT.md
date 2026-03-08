@@ -292,6 +292,15 @@ const { user, session, signIn, signOut, loading } = useAuth()
 
 Admin check in client code: `user` alone is not enough — fetch `/api/admin-check` which returns `{ isAdmin: boolean }`.
 
+### Providers Hierarchy
+
+```text
+QueryClientProvider
+  └── AuthProvider
+        └── ToastProvider
+              └── CollectionsProvider
+```
+
 ---
 
 ## Adding a New Feature — Checklist
