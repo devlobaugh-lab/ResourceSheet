@@ -114,12 +114,9 @@ export default function AdminContentCachePage() {
       formData.append('season_filter', seasonFilter.trim());
       formData.append('allow_modifications', allowModifications.toString());
 
-      // Use authorization header for local development
       const response = await fetch('/api/admin/content-cache/upload', {
         method: 'POST',
-        headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJsb2NhbC1hZG1pbi11c2VyIiwiaWF0IjoxNjQyNjMwNDAwLCJleHAiOjE5NTc5OTA0MDB9.mock-token-for-local-dev'
-        },
+        headers: await getAuthHeaders(),
         body: formData
       });
 

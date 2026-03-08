@@ -6,12 +6,20 @@
  */
 
 async function getRarity5Drivers() {
+  // Requires local Supabase running. Get the anon key from: supabase status
+  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!anonKey) {
+    console.error('Error: SUPABASE_ANON_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY env var is required.');
+    console.error('Run `supabase status` to get the anon key, then set it in .env.local');
+    process.exit(1);
+  }
+
   try {
     const response = await fetch('http://localhost:54321/rest/v1/drivers?rarity=eq.5', {
       method: 'GET',
       headers: {
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+        'apikey': anonKey,
+        'Authorization': `Bearer ${anonKey}`,
         'Content-Type': 'application/json',
         'Prefer': 'count=exact'
       }
