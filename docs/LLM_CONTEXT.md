@@ -11,6 +11,9 @@ src/types/database.ts          canonical types — import ALL types from here
 src/types/api.ts               API response types (PaginationMeta, etc.)
 src/lib/supabase.ts            supabaseAdmin, supabase, createServerSupabaseClient(), createAuthenticatedSupabaseClient()
 src/lib/validation.ts          Zod schemas for all API inputs
+src/lib/logger.ts              Logger class + global logger instance; call logger.overrideConsole() to suppress bare console.* in prod
+src/lib/console-init.ts        side-effect module — imports logger and calls overrideConsole() (imported by layout.tsx for client)
+src/instrumentation.ts         Next.js server instrumentation — calls logger.overrideConsole() at server startup
 src/hooks/useApi.ts            all TanStack Query hooks (getAuthHeaders exported here too)
 src/components/auth/AuthContext.tsx   useAuth() hook — user, session, signIn, signOut
 src/app/api/                   all API route handlers
@@ -341,6 +344,25 @@ Props beyond standard `<input>` attributes:
 | `leftIcon` | `ReactNode` | Icon inside left edge (`pl-10` applied automatically) |
 | `rightIcon` | `ReactNode` | Icon inside right edge (`pr-10` applied automatically); hidden when clear button is active |
 | `onClear` | `() => void` | When provided and `value` is non-empty, renders a clickable ✕ button on the right that calls this handler. Use on all search fields. |
+
+---
+
+## Logging & Console Suppression
+
+All `console.*` output is suppressed in production via a global console override.
+
+**Env var:** `NEXT_PUBLIC_LOG_LEVEL`
+- Values: `debug` | `info` | `warn` | `error` | `off`
+- Default in production (not set): `off` — all output suppressed
+- Default in development (not set): `debug` — full output
+- Set in `.env.local` as `NEXT_PUBLIC_LOG_LEVEL=debug` for local dev
+
+**How it works:**
+- `src/instrumentation.ts` overrides `globalThis.console` at server startup (covers API routes, server components)
+- `src/lib/console-init.ts` is imported in `src/app/layout.tsx` and overrides console for the client bundle
+- `logger` methods (`logger.debug`, `logger.info`, etc.) always use the captured native console — they are not affected by the override
+
+**Use `logger` for new structured log calls; existing bare `console.*` calls are automatically filtered.**
 
 ---
 
