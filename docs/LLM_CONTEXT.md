@@ -11,6 +11,9 @@ src/types/database.ts          canonical types — import ALL types from here
 src/types/api.ts               API response types (PaginationMeta, etc.)
 src/lib/supabase.ts            supabaseAdmin, supabase, createServerSupabaseClient(), createAuthenticatedSupabaseClient()
 src/lib/validation.ts          Zod schemas for all API inputs
+src/lib/logger.ts              Logger class + global logger instance; call logger.overrideConsole() to suppress bare console.* in prod
+src/lib/console-init.ts        side-effect module — imports logger and calls overrideConsole() (imported by layout.tsx for client)
+src/instrumentation.ts         Next.js server instrumentation — calls logger.overrideConsole() at server startup
 src/hooks/useApi.ts            all TanStack Query hooks (getAuthHeaders exported here too)
 src/components/auth/AuthContext.tsx   useAuth() hook — user, session, signIn, signOut
 src/app/api/                   all API route handlers
@@ -294,7 +297,27 @@ import { useAuth } from '@/components/auth/AuthContext'
 const { user, session, signIn, signOut, loading } = useAuth()
 ```
 
+`loading` is `true` until the initial session check (including `detectSessionInUrl` resolution) completes. Gate UI on `loading`, not on `!session`, to avoid prematurely blocking pages that receive hash tokens from email links.
+
 Admin check in client code: `user` alone is not enough — fetch `/api/admin-check` which returns `{ isAdmin: boolean }`.
+
+---
+
+## New-User Invite Email Flow
+
+`supabaseAdmin` uses `createClient` from `@supabase/supabase-js`, which uses **implicit flow** (hash tokens). `resetPasswordForEmail` therefore delivers `#access_token=...` in the URL — not a `?code=` query param.
+
+- `redirectTo` must point to a **client-side page** (e.g. `/auth/update-password`), not a server route handler, because servers never see URL fragments.
+- The client-side Supabase instance has `detectSessionInUrl: true`, which automatically exchanges the hash token on page load.
+- `/auth/callback` (PKCE, server-side) is for OAuth and magic-link flows only — do not use it as the `redirectTo` for `resetPasswordForEmail`.
+- `supabase/config.toml` must include an `[auth]` section with `additional_redirect_urls` that allows the full path (e.g. `http://localhost:3000/**`); without this Supabase strips the path from the redirect URL.
+
+### Sequence
+
+1. Admin POSTs to `/api/admin/users` → user created → `resetPasswordForEmail` called with `redirectTo: .../auth/update-password`
+2. New user clicks email link → lands on `/auth/update-password` with `#access_token=...` in hash
+3. `detectSessionInUrl` runs → session established → `loading` becomes `false`
+4. Password form renders → user sets password → redirected to `/dashboard`
 
 ### Providers Hierarchy
 
@@ -324,6 +347,25 @@ Props beyond standard `<input>` attributes:
 
 ---
 
+## Logging & Console Suppression
+
+All `console.*` output is suppressed in production via a global console override.
+
+**Env var:** `NEXT_PUBLIC_LOG_LEVEL`
+- Values: `debug` | `info` | `warn` | `error` | `off`
+- Default in production (not set): `off` — all output suppressed
+- Default in development (not set): `debug` — full output
+- Set in `.env.local` as `NEXT_PUBLIC_LOG_LEVEL=debug` for local dev
+
+**How it works:**
+- `src/instrumentation.ts` overrides `globalThis.console` at server startup (covers API routes, server components)
+- `src/lib/console-init.ts` is imported in `src/app/layout.tsx` and overrides console for the client bundle
+- `logger` methods (`logger.debug`, `logger.info`, etc.) always use the captured native console — they are not affected by the override
+
+**Use `logger` for new structured log calls; existing bare `console.*` calls are automatically filtered.**
+
+---
+
 ## Adding a New Feature — Checklist
 
 1. **DB**: add migration in `supabase/migrations/YYYYMMDDHHMMSS_name.sql`
@@ -331,4 +373,24 @@ Props beyond standard `<input>` attributes:
 3. **Validation**: add Zod schema to `src/lib/validation.ts`
 4. **API route**: `src/app/api/your-route/route.ts` — use patterns above
 5. **Hook**: add to `src/hooks/useApi.ts`
-6. **Page**: `src/app/your-page/page.tsx` — wrap with `<ProtectedRoute>` if auth required
+6. **Page**: `src/app/your-page/page.tsx` — wrap with `<ProtectedRoute>` if auth required. Do **not** add a `min-h-screen bg-gray-50` outer wrapper — the root layout (`layout.tsx`) already provides both. Pages should return their inner container directly:
+
+```tsx
+// Correct
+return (
+  <ProtectedRoute>
+    <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+      <Content />
+    </div>
+  </ProtectedRoute>
+)
+
+// Wrong — redundant, causes scrollbar issues
+return (
+  <div className="min-h-screen bg-gray-50">
+    <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+      <Content />
+    </div>
+  </div>
+)
+```

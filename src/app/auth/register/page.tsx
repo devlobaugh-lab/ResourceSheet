@@ -7,15 +7,15 @@ import { Button } from '@/components/ui/Button';
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <>
       {/* Title section at top */}
-      <div className="pt-12 pb-6 text-center">
+      <div className="pb-6 text-center">
         <h1 className="text-3xl font-bold text-gray-900">F1 Resource Manager</h1>
         <p className="mt-2 text-gray-600">Invite Only</p>
       </div>
 
-      {/* Card section - centered in remaining space */}
-      <div className="flex-1 flex items-start justify-center px-4 sm:px-6 lg:px-8">
+      {/* Card section */}
+      <div className="flex justify-center px-4 sm:px-6 lg:px-8">
         <Card className="p-8 w-full max-w-md">
           <div className="text-center">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
@@ -38,6 +38,6 @@ export default function RegisterPage() {
           </div>
         </Card>
       </div>
-    </div>
+    </>
   );
 }

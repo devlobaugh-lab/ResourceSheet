@@ -33,15 +33,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <>
       {/* Title section at top */}
-      <div className="pt-12 pb-6 text-center">
+      <div className="pb-6 text-center">
         <h1 className="text-3xl font-bold text-gray-900">F1 Resource Manager</h1>
         <p className="mt-2 text-gray-600">Sign in to your account</p>
       </div>
 
-      {/* Card section - centered in remaining space */}
-      <div className="flex-1 flex items-start justify-center px-4 sm:px-6 lg:px-8">
+      {/* Card section */}
+      <div className="flex justify-center px-4 sm:px-6 lg:px-8">
         <Card className="p-8 w-full max-w-md">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
@@ -111,6 +111,6 @@ export default function LoginPage() {
           </form>
         </Card>
       </div>
-    </div>
+    </>
   );
 }

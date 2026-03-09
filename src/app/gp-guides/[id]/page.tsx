@@ -653,7 +653,7 @@ export default function GpGuideEditorPage() {
   if (isLoading || !guide) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center justify-center py-16">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
         </div>
       </ProtectedRoute>
@@ -667,8 +667,7 @@ export default function GpGuideEditorPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-0 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-0 px-4 sm:px-6 lg:px-8">
           {toast && (
             <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium ${toast.type === 'error' ? 'bg-red-600' : 'bg-green-600'}`}>
               {toast.msg}
@@ -799,7 +798,6 @@ export default function GpGuideEditorPage() {
             </>
           )}
         </div>
-      </div>
     </ProtectedRoute>
   )
 }
