@@ -238,10 +238,8 @@ function SeriesMaxLoadoutsContent() {
 export default function SeriesMaxLoadoutsPage() {
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
-          <SeriesMaxLoadoutsContent />
-        </div>
+      <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+        <SeriesMaxLoadoutsContent />
       </div>
     </ProtectedRoute>
   )

@@ -551,11 +551,9 @@ export default function TrackGuideEditorPage() {
   if (isLoading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50">
-          <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
+        <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         </div>
       </ProtectedRoute>
@@ -565,14 +563,12 @@ export default function TrackGuideEditorPage() {
   if (!track) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50">
-          <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            <div className="text-center py-12">
-              <div className="text-gray-500 text-lg mb-2">Track not found</div>
-              <Link href="/track-guides">
-                <Button variant="outline">Back to Track Guides</Button>
-              </Link>
-            </div>
+        <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          <div className="text-center py-12">
+            <div className="text-gray-500 text-lg mb-2">Track not found</div>
+            <Link href="/track-guides">
+              <Button variant="outline">Back to Track Guides</Button>
+            </Link>
           </div>
         </div>
       </ProtectedRoute>
@@ -581,8 +577,7 @@ export default function TrackGuideEditorPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-0 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-0 px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-4">
             <div className="flex items-center justify-between">
@@ -1986,7 +1981,6 @@ export default function TrackGuideEditorPage() {
           )}
 
         </div>
-      </div>
     </ProtectedRoute>
   )
 }

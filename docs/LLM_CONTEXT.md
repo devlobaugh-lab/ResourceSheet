@@ -351,4 +351,24 @@ Props beyond standard `<input>` attributes:
 3. **Validation**: add Zod schema to `src/lib/validation.ts`
 4. **API route**: `src/app/api/your-route/route.ts` — use patterns above
 5. **Hook**: add to `src/hooks/useApi.ts`
-6. **Page**: `src/app/your-page/page.tsx` — wrap with `<ProtectedRoute>` if auth required
+6. **Page**: `src/app/your-page/page.tsx` — wrap with `<ProtectedRoute>` if auth required. Do **not** add a `min-h-screen bg-gray-50` outer wrapper — the root layout (`layout.tsx`) already provides both. Pages should return their inner container directly:
+
+```tsx
+// Correct
+return (
+  <ProtectedRoute>
+    <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+      <Content />
+    </div>
+  </ProtectedRoute>
+)
+
+// Wrong — redundant, causes scrollbar issues
+return (
+  <div className="min-h-screen bg-gray-50">
+    <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+      <Content />
+    </div>
+  </div>
+)
+```
