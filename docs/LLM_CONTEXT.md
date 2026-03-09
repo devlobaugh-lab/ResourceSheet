@@ -14,6 +14,8 @@ src/lib/validation.ts          Zod schemas for all API inputs
 src/lib/logger.ts              Logger class + global logger instance; call logger.overrideConsole() to suppress bare console.* in prod
 src/lib/console-init.ts        side-effect module — imports logger and calls overrideConsole() (imported by layout.tsx for client)
 src/instrumentation.ts         Next.js server instrumentation — calls logger.overrideConsole() at server startup
+src/lib/utils.ts               shared utilities incl. getRarityDisplay, getCollectionRarityDisplay, getRarityBackground
+src/lib/rarityUtils.ts         additional rarity helpers (getRarityStyles, getRarityOptions)
 src/hooks/useApi.ts            all TanStack Query hooks (getAuthHeaders exported here too)
 src/components/auth/AuthContext.tsx   useAuth() hook — user, session, signIn, signOut
 src/app/api/                   all API route handlers
@@ -40,6 +42,7 @@ car_parts        name text, rarity int, series int, season_id uuid?, icon text?,
                  cc_price int?, num_duplicates_after_unlock int?, collection_id text?,
                  visual_override text?, collection_sub_name text?, car_part_type int,
                  stats_per_level jsonb?
+                 [API also attaches collection_theme from collections table, same as drivers]
 
 boosts           name text, icon text?, boost_stats jsonb?, is_free bool
 
@@ -129,12 +132,43 @@ AITrackLoadout, TeamDriverName, UserCustomDriver
 DriverView, CarPartView, BoostView, BoostWithCustomName
 UserCarSetup, UserCarSetupWithParts
 
+// DriverView and CarPartView include collection fields attached by the API:
+//   collection_theme?: string | null   (from collections.theme)
+//   collection_ordinal?: number | null (DriverView only)
+// Use collection_theme + collection_sub_name for SE rarity display.
+
 // Utility
 Tables<'table_name'>   // Row type
 Inserts<'table_name'>  // Insert type
 Updates<'table_name'>  // Update type
 StatsPerLevel, BoostStats, SeriesWithTracks, SeriesData
 ```
+
+---
+
+## Rarity Display Utilities
+
+`src/lib/utils.ts` — import from here for all rarity display in components:
+
+```typescript
+import { getRarityDisplay, getCollectionRarityDisplay, getRarityBackground } from '@/lib/utils'
+
+// Non-SE drivers (rarity 1–4)
+getRarityDisplay(driver.rarity)              // → "Common" | "Rare" | "Epic" | "Legendary"
+
+// SE drivers (rarity 5) — pass collection fields
+getCollectionRarityDisplay(
+  driver.collection_theme ?? null,
+  driver.collection_sub_name ?? null
+)
+// → "HotProspects-2" | "PodiumStars" | "Special Edition" (fallback)
+```
+
+**Rule:** Always branch on `rarity === 5`:
+- rarity 1–4: `getRarityDisplay(rarity)`
+- rarity 5: `getCollectionRarityDisplay(collection_theme, collection_sub_name)`
+
+`src/lib/rarityUtils.ts` — provides `getRarityStyles(rarity)` (CSS classes) and `getRarityOptions()` (fetches `/api/rarity-options`). Do not use its `getRarityDisplay` — it has different rarity label names.
 
 ---
 
