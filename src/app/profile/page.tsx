@@ -3,7 +3,9 @@
 import React, { useRef, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/auth/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useToast } from '@/components/ui/Toast';
@@ -17,6 +19,10 @@ export default function ProfilePage() {
   const [exportLoading, setExportLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   const handleExport = async () => {
     setExportLoading(true);
@@ -108,6 +114,34 @@ export default function ProfilePage() {
     fileInputRef.current?.click();
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess(false);
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('Passwords do not match');
+      return;
+    }
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: passwordForm.newPassword });
+      if (error) {
+        setPasswordError(error.message);
+      } else {
+        setPasswordSuccess(true);
+        setPasswordForm({ newPassword: '', confirmPassword: '' });
+      }
+    } catch {
+      setPasswordError('Failed to update password. Please try again.');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
@@ -191,6 +225,44 @@ export default function ProfilePage() {
                     {importLoading ? 'Importing...' : 'Import Data'}
                   </Button>
                 </div>
+              </Card>
+
+              {/* Change Password */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Change Password</h3>
+                <form className="space-y-4" onSubmit={handleChangePassword}>
+                  {passwordError && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                      {passwordError}
+                    </div>
+                  )}
+                  {passwordSuccess && (
+                    <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+                      Password updated successfully.
+                    </div>
+                  )}
+                  <Input
+                    label="New password"
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm(f => ({ ...f, newPassword: e.target.value }))}
+                    placeholder="Enter new password"
+                    required
+                    autoComplete="new-password"
+                  />
+                  <Input
+                    label="Confirm password"
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm(f => ({ ...f, confirmPassword: e.target.value }))}
+                    placeholder="Confirm new password"
+                    required
+                    autoComplete="new-password"
+                  />
+                  <Button type="submit" isLoading={passwordLoading} disabled={passwordLoading}>
+                    {passwordLoading ? 'Updating...' : 'Update Password'}
+                  </Button>
+                </form>
               </Card>
 
             </div>

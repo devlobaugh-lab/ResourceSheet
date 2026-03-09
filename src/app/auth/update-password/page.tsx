@@ -11,7 +11,7 @@ import { useAuth } from '@/components/auth/AuthContext';
 export default function UpdatePasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { session } = useAuth();
+  const { session, loading: authLoading } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -61,7 +61,7 @@ export default function UpdatePasswordPage() {
         setSuccess(true);
         // Redirect to login after 3 seconds
         setTimeout(() => {
-          router.push('/auth/login');
+          router.push('/dashboard');
         }, 3000);
       }
     } catch (err) {
@@ -82,13 +82,13 @@ export default function UpdatePasswordPage() {
             </div>
             <h1 className="mt-4 text-3xl font-bold text-gray-900">Password updated!</h1>
             <p className="mt-2 text-gray-600">
-              Your password has been successfully updated. Redirecting to login...
+              Your password has been successfully updated. Redirecting to your dashboard...
             </p>
           </div>
 
           <div className="text-center">
-            <Link href="/auth/login" className="text-blue-600 hover:text-blue-500">
-              Go to login now →
+            <Link href="/dashboard" className="text-blue-600 hover:text-blue-500">
+              Go to dashboard now →
             </Link>
           </div>
         </div>
@@ -96,8 +96,8 @@ export default function UpdatePasswordPage() {
     );
   }
 
-  // If no session and no error, show loading
-  if (!session && !error) {
+  // Show loading while auth initializes (detectSessionInUrl may still be resolving)
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
