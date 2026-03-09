@@ -126,6 +126,7 @@ function AuthenticatedBoostsPage() {
               placeholder="Search boosts..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onClear={() => setSearchTerm('')}
             />
           </div>
         </div>

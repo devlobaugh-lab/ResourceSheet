@@ -307,6 +307,23 @@ QueryClientProvider
 
 ---
 
+## UI Components
+
+### `Input` (`src/components/ui/Input.tsx`)
+
+Props beyond standard `<input>` attributes:
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `label` | `string` | Renders a `<label>` above the input |
+| `error` | `string` | Red error message below, red border |
+| `helperText` | `string` | Gray helper text below (hidden when `error` set) |
+| `leftIcon` | `ReactNode` | Icon inside left edge (`pl-10` applied automatically) |
+| `rightIcon` | `ReactNode` | Icon inside right edge (`pr-10` applied automatically); hidden when clear button is active |
+| `onClear` | `() => void` | When provided and `value` is non-empty, renders a clickable ✕ button on the right that calls this handler. Use on all search fields. |
+
+---
+
 ## Adding a New Feature — Checklist
 
 1. **DB**: add migration in `supabase/migrations/YYYYMMDDHHMMSS_name.sql`

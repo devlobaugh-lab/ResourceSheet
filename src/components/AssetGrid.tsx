@@ -202,6 +202,7 @@ export function AssetGrid({
                   placeholder="Search assets..."
                   value={filters.search}
                   onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                  onClear={() => setFilters(prev => ({ ...prev, search: '' }))}
                 />
               </div>
             )}
