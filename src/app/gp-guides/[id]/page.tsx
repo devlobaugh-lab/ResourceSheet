@@ -840,7 +840,7 @@ function CondensedView({ guide, allTracks, allDrivers, allBoosts, allSetups }: {
     return (
       <div key={slot.id} className="mb-4 print:mb-2 border-b border-gray-100 pb-2 last:border-0">
         <div className="font-semibold text-base print:text-sm text-gray-900">
-          {i + 1}. {track?.name || '?'} — {track?.laps || '?'} Laps
+          {i + 1}. {track ? (track.display_name || track.name) : '?'} — {track?.laps || '?'} Laps
           {track ? ` · ${capitalizeStat(track.driver_track_stat)} / ${capitalizeStat(track.car_track_stat)}` : ''}
           {' '}{slot.is_wet ? '🌧️' : '☀️'}
         </div>
