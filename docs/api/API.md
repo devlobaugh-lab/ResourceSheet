@@ -24,7 +24,7 @@ Read-only catalog data shared across all users.
 | GET | `/api/car-parts` | No | List all car parts; supports `season_id`, `rarity`, `series`, `car_part_type`, `search`, `owned_only`, `sort_by`, `sort_order`, `page`, `limit` |
 | GET | `/api/car-parts/[id]` | No | Get a single car part by ID |
 | GET | `/api/car-parts/user` | Yes | List car parts with user ownership data merged in |
-| GET | `/api/boosts` | No | List all boosts; supports `season_id`, `rarity`, `series`, `search`, `owned_only`, `sort_by`, `sort_order`, `page`, `limit` |
+| GET | `/api/boosts` | No | List all boosts; supports `season_id`, `series`, `search`, `owned_only`, `sort_by`, `sort_order`, `page`, `limit` |
 | GET | `/api/boosts/[id]` | No | Get a single boost by ID |
 | GET | `/api/boosts/custom-names` | No | List all admin-assigned custom boost names |
 | PUT | `/api/boosts/[id]/custom-name` | Yes (admin) | Set or update the custom name for a boost; body: `{ custom_name: string }` |
@@ -76,16 +76,17 @@ Per-user data — all routes require authentication; RLS enforces data isolation
 
 ## Import / Export
 
+There are two export/import pairs:
+
+- **User export** — a single user backs up and restores their own data only.
+- **Admin backup** — backs up all users' data plus admin-managed config. A restore from an admin backup covers everything; a separate user import is not needed.
+
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/api/export-collection` | Yes | Export user's driver + car-part collection as JSON |
-| POST | `/api/import-collection` | Yes | Import user's driver + car-part collection from JSON |
-| GET | `/api/export-collection-stable` | Yes | Export collection in a stable ID-keyed format |
-| POST | `/api/import-collection-stable` | Yes | Import collection from stable ID-keyed format |
-| GET | `/api/export-user-data` | Yes | Export all user data (collection + boosts + setups + guides) |
-| POST | `/api/import-user-data` | Yes | Import all user data from a full export blob |
-| GET | `/api/export-admin-data` | Yes (admin) | Export admin-managed data (custom boost names, `is_free` flags) |
-| POST | `/api/import-admin-data` | Yes (admin) | Import admin-managed data |
+| GET | `/api/export-user-data` | Yes | Export the current user's data (collection, boosts, setups, guides) |
+| POST | `/api/import-user-data` | Yes | Import the current user's data from a user export blob |
+| GET | `/api/admin/export` | Yes (admin) | Export all users' data + admin-managed config (seasons, track name aliases, boost custom names, `is_free` flags); excludes content-cache tables |
+| POST | `/api/admin/import` | Yes (admin) | Import an admin backup; upserts all user tables (including previously missing child tables) and admin config |
 
 ---
 
@@ -98,13 +99,6 @@ All routes require `profiles.is_admin = true`.
 | GET | `/api/admin/users` | Yes (admin) | List all user accounts |
 | GET | `/api/admin/users/[id]` | Yes (admin) | Get a single user account |
 | PUT | `/api/admin/users/[id]` | Yes (admin) | Update a user account |
-| POST | `/api/admin/import` | Yes (admin) | Bulk insert `boosts` or `seasons`; body: `{ type: "boosts"\|"seasons", data: [...], truncate?: boolean }` |
-| POST | `/api/admin/import-global-data` | Yes (admin) | Merge-import global catalog data (seasons, tracks, boostCustomNames, boosts.is_free) |
-| GET | `/api/admin/export-global-data` | Yes (admin) | Export all global catalog data as JSON |
-| POST | `/api/admin/import-all-users` | Yes (admin) | Import all users' data from a bulk export |
-| GET | `/api/admin/export-all-users` | Yes (admin) | Export all users' data as JSON |
-| POST | `/api/admin/import-full-backup` | Yes (admin) | Restore a full backup (global + all users) |
-| GET | `/api/admin/export-full-backup` | Yes (admin) | Create a full backup (global + all users) |
 | POST | `/api/admin/run-migration` | Yes (admin) | Execute a named database migration |
 | POST | `/api/admin/content-cache/upload` | Yes (admin) | Upload a content-cache file (drivers, car parts, boosts) to populate catalog tables |
 

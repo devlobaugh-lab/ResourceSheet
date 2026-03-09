@@ -147,11 +147,10 @@ export const carPartsFiltersSchema = z.object({
 // Boosts schemas
 export const boostsFiltersSchema = z.object({
   season_id: uuidSchema.optional(),
-  rarity: z.number().int().optional(),
   series: z.number().int().optional(),
   search: z.string().optional(),
   owned_only: z.boolean().default(false),
-  sort_by: z.enum(['name', 'rarity', 'series', 'level', 'boost_type']).default('name'),
+  sort_by: z.enum(['name', 'series', 'level']).default('name'),
   sort_order: z.enum(['asc', 'desc']).default('asc'),
   ...paginationSchema.shape,
 })
