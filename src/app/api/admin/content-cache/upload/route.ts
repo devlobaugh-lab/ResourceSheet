@@ -241,9 +241,8 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
   if (collectionsData) {
     const collections = collectionsData.map((c: any) => ({
       id: c.id,
-      name: c.name ?? null,                    // Use c.name (display name like "SERVLOC_TXT_PODIUM_STARS_COLLECTION_TITLE")
-      theme: c.theme ?? null,                  // Use c.theme (theme name like "PodiumStars")
-      description: c.description ?? null,
+      name: c.name ?? null,
+      theme: c.theme ?? null,
       ordinal: c.ordinal ?? null,
     }))
 

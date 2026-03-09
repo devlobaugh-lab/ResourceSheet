@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
         mergedData.forEach((d: any) => {
           if (d.collection_id) {
             const c = collectionMap.get(d.collection_id)
-            d.collection_theme = c?.theme ?? c?.description ?? c?.name ?? null
+            d.collection_theme = c?.theme ?? null
             d.collection_ordinal = c?.ordinal ?? null
           } else {
             d.collection_theme = null

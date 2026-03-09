@@ -131,21 +131,24 @@ function AuthenticatedDriversPage() {
       const stored = localStorage.getItem('compare-drivers-settings')
       const existingDrivers: any[] = stored ? JSON.parse(stored) : []
 
-      // Check if driver with same name AND rarity is already in the compare list
-      // Allow duplicates if they have different rarities
-      const isAlreadyAdded = existingDrivers.some((d: any) =>
-        d.driverName === driver.name && d.rarity === driver.rarity
-      )
+      // Construct rarityValue for Rarity-5 drivers (includes collection info)
+      let rarityValue: string | undefined = undefined
+      if (driver.rarity === 5 && driver.collection_id) {
+        rarityValue = driver.collection_sub_name
+          ? `${driver.collection_id}-${driver.collection_sub_name}`
+          : driver.collection_id
+      }
+
+      // Check if driver with same name AND rarity is already in the compare list.
+      // For rarity-5, also require the same rarityValue (collection variant) to allow
+      // adding different SE versions of the same driver.
+      const isAlreadyAdded = existingDrivers.some((d: any) => {
+        if (d.driverName !== driver.name || d.rarity !== driver.rarity) return false
+        if (driver.rarity === 5) return d.rarityValue === rarityValue
+        return true
+      })
 
       if (!isAlreadyAdded) {
-        // Construct rarityValue for Rarity-5 drivers (includes collection info)
-        let rarityValue: string | undefined = undefined
-        if (driver.rarity === 5 && driver.collection_id) {
-          // Include collection_id and collection_sub_name for SE drivers
-          rarityValue = driver.collection_sub_name
-            ? `${driver.collection_id}-${driver.collection_sub_name}`
-            : driver.collection_id
-        }
         
         // Add the driver with new data structure
         const newDriver = {

@@ -61,7 +61,9 @@ export async function GET(request: NextRequest) {
         }
         
         // Create a unique value for the dropdown (use collectionId + subName if available, otherwise use display name)
-        const uniqueValue = driver.collection_id ? `${driver.collection_id}-${subName}` : variantKey
+        const uniqueValue = driver.collection_id
+          ? (subName ? `${driver.collection_id}-${subName}` : driver.collection_id)
+          : variantKey
         
         // Only add if we haven't seen this variant yet
         if (!rarity5Variants.has(variantKey)) {
