@@ -294,7 +294,27 @@ import { useAuth } from '@/components/auth/AuthContext'
 const { user, session, signIn, signOut, loading } = useAuth()
 ```
 
+`loading` is `true` until the initial session check (including `detectSessionInUrl` resolution) completes. Gate UI on `loading`, not on `!session`, to avoid prematurely blocking pages that receive hash tokens from email links.
+
 Admin check in client code: `user` alone is not enough — fetch `/api/admin-check` which returns `{ isAdmin: boolean }`.
+
+---
+
+## New-User Invite Email Flow
+
+`supabaseAdmin` uses `createClient` from `@supabase/supabase-js`, which uses **implicit flow** (hash tokens). `resetPasswordForEmail` therefore delivers `#access_token=...` in the URL — not a `?code=` query param.
+
+- `redirectTo` must point to a **client-side page** (e.g. `/auth/update-password`), not a server route handler, because servers never see URL fragments.
+- The client-side Supabase instance has `detectSessionInUrl: true`, which automatically exchanges the hash token on page load.
+- `/auth/callback` (PKCE, server-side) is for OAuth and magic-link flows only — do not use it as the `redirectTo` for `resetPasswordForEmail`.
+- `supabase/config.toml` must include an `[auth]` section with `additional_redirect_urls` that allows the full path (e.g. `http://localhost:3000/**`); without this Supabase strips the path from the redirect URL.
+
+### Sequence
+
+1. Admin POSTs to `/api/admin/users` → user created → `resetPasswordForEmail` called with `redirectTo: .../auth/update-password`
+2. New user clicks email link → lands on `/auth/update-password` with `#access_token=...` in hash
+3. `detectSessionInUrl` runs → session established → `loading` becomes `false`
+4. Password form renders → user sets password → redirected to `/dashboard`
 
 ### Providers Hierarchy
 
