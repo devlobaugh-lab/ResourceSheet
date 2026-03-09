@@ -110,7 +110,7 @@ function BoostSelectModal({
           <table className="w-full divide-y divide-gray-200">
             <thead className="bg-gray-700 sticky top-0 z-10">
               <tr>
-                {['Name','Amt','Defend','Overtake','Corners','Tyre','Power Unit','Speed','Pit Stop','Race Start'].map(h => (
+                {['Name','Amt','Overtake','Defend','Race Start','Tyre','Speed','Corners','Power Unit','Pit Stop'].map(h => (
                   <th key={h} className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase">{h}</th>
                 ))}
               </tr>
@@ -131,7 +131,7 @@ function BoostSelectModal({
                       </div>
                     </td>
                     <td className="px-3 py-1 text-sm text-center">{boost.card_count || 0}</td>
-                    {['block','overtake','corners','tyre_use','power_unit','speed','pit_stop','race_start'].map(k => (
+                    {['overtake','block','race_start','tyre_use','speed','corners','power_unit','pit_stop'].map(k => (
                       <td key={k} className={cn('px-3 py-1 text-sm text-center', bs[k] > 0 && getBoostValueColor(bs[k]))}>
                         {bs[k] ? bs[k] * 5 : ''}
                       </td>

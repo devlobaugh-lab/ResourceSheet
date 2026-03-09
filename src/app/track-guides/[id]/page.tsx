@@ -826,28 +826,28 @@ export default function TrackGuideEditorPage() {
                             <div className="flex items-center">Amount</div>
                           </th>
                           <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                            <div className="flex items-center">Defend</div>
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                             <div className="flex items-center">Overtake</div>
                           </th>
                           <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                            <div className="flex items-center">Corners</div>
+                            <div className="flex items-center">Defend</div>
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                            <div className="flex items-center">Race Start</div>
                           </th>
                           <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                             <div className="flex items-center">Tyre Use</div>
                           </th>
                           <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                            <div className="flex items-center">Power Unit</div>
-                          </th>
-                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                             <div className="flex items-center">Speed</div>
                           </th>
                           <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                            <div className="flex items-center">Pit Stop</div>
+                            <div className="flex items-center">Corners</div>
                           </th>
                           <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                            <div className="flex items-center">Race Start</div>
+                            <div className="flex items-center">Power Unit</div>
+                          </th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                            <div className="flex items-center">Pit Stop</div>
                           </th>
                         </tr>
                       </thead>
@@ -868,29 +868,29 @@ export default function TrackGuideEditorPage() {
                               <td className="px-3 py-1 whitespace-nowrap text-center">
                                 <div className="text-sm text-gray-900">{boost.card_count || 0}</div>
                               </td>
-                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.block > 0 && getBoostValueColor(boostStats.block))}>
-                                <div className="text-sm font-medium">{boostStats.block ? boostStats.block * 5 : ''}</div>
-                              </td>
                               <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.overtake > 0 && getBoostValueColor(boostStats.overtake))}>
                                 <div className="text-sm font-medium">{boostStats.overtake ? boostStats.overtake * 5 : ''}</div>
                               </td>
-                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.corners > 0 && getBoostValueColor(boostStats.corners))}>
-                                <div className="text-sm font-medium">{boostStats.corners ? boostStats.corners * 5 : ''}</div>
+                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.block > 0 && getBoostValueColor(boostStats.block))}>
+                                <div className="text-sm font-medium">{boostStats.block ? boostStats.block * 5 : ''}</div>
+                              </td>
+                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.race_start > 0 && getBoostValueColor(boostStats.race_start))}>
+                                <div className="text-sm font-medium">{boostStats.race_start ? boostStats.race_start * 5 : ''}</div>
                               </td>
                               <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.tyre_use > 0 && getBoostValueColor(boostStats.tyre_use))}>
                                 <div className="text-sm font-medium">{boostStats.tyre_use ? boostStats.tyre_use * 5 : ''}</div>
                               </td>
-                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.power_unit > 0 && getBoostValueColor(boostStats.power_unit))}>
-                                <div className="text-sm font-medium">{boostStats.power_unit ? boostStats.power_unit * 5 : ''}</div>
-                              </td>
                               <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.speed > 0 && getBoostValueColor(boostStats.speed))}>
                                 <div className="text-sm font-medium">{boostStats.speed ? boostStats.speed * 5 : ''}</div>
                               </td>
+                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.corners > 0 && getBoostValueColor(boostStats.corners))}>
+                                <div className="text-sm font-medium">{boostStats.corners ? boostStats.corners * 5 : ''}</div>
+                              </td>
+                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.power_unit > 0 && getBoostValueColor(boostStats.power_unit))}>
+                                <div className="text-sm font-medium">{boostStats.power_unit ? boostStats.power_unit * 5 : ''}</div>
+                              </td>
                               <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.pit_stop > 0 && getBoostValueColor(boostStats.pit_stop))}>
                                 <div className="text-sm font-medium">{boostStats.pit_stop ? boostStats.pit_stop * 5 : ''}</div>
-                              </td>
-                              <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.race_start > 0 && getBoostValueColor(boostStats.race_start))}>
-                                <div className="text-sm font-medium">{boostStats.race_start ? boostStats.race_start * 5 : ''}</div>
                               </td>
                             </tr>
                           )
@@ -1249,28 +1249,28 @@ export default function TrackGuideEditorPage() {
                               <div className="flex items-center">Amount</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Defend</div>
-                            </th>
-                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                               <div className="flex items-center">Overtake</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Corners</div>
+                              <div className="flex items-center">Defend</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Race Start</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                               <div className="flex items-center">Tyre Use</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Power Unit</div>
-                            </th>
-                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                               <div className="flex items-center">Speed</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Pit Stop</div>
+                              <div className="flex items-center">Corners</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Race Start</div>
+                              <div className="flex items-center">Power Unit</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Pit Stop</div>
                             </th>
                           </tr>
                         </thead>
@@ -1407,29 +1407,29 @@ export default function TrackGuideEditorPage() {
                                   </td>
 
                                   {/* Stat Columns with color coding */}
-                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.block > 0 && getBoostValueColor(boostStats.block))}>
-                                    <div className="text-sm font-medium">{boostStats.block ? boostStats.block * 5 : ''}</div>
-                                  </td>
                                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.overtake > 0 && getBoostValueColor(boostStats.overtake))}>
                                     <div className="text-sm font-medium">{boostStats.overtake ? boostStats.overtake * 5 : ''}</div>
                                   </td>
-                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.corners > 0 && getBoostValueColor(boostStats.corners))}>
-                                    <div className="text-sm font-medium">{boostStats.corners ? boostStats.corners * 5 : ''}</div>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.block > 0 && getBoostValueColor(boostStats.block))}>
+                                    <div className="text-sm font-medium">{boostStats.block ? boostStats.block * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.race_start > 0 && getBoostValueColor(boostStats.race_start))}>
+                                    <div className="text-sm font-medium">{boostStats.race_start ? boostStats.race_start * 5 : ''}</div>
                                   </td>
                                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.tyre_use > 0 && getBoostValueColor(boostStats.tyre_use))}>
                                     <div className="text-sm font-medium">{boostStats.tyre_use ? boostStats.tyre_use * 5 : ''}</div>
                                   </td>
-                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.power_unit > 0 && getBoostValueColor(boostStats.power_unit))}>
-                                    <div className="text-sm font-medium">{boostStats.power_unit ? boostStats.power_unit * 5 : ''}</div>
-                                  </td>
                                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.speed > 0 && getBoostValueColor(boostStats.speed))}>
                                     <div className="text-sm font-medium">{boostStats.speed ? boostStats.speed * 5 : ''}</div>
                                   </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.corners > 0 && getBoostValueColor(boostStats.corners))}>
+                                    <div className="text-sm font-medium">{boostStats.corners ? boostStats.corners * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.power_unit > 0 && getBoostValueColor(boostStats.power_unit))}>
+                                    <div className="text-sm font-medium">{boostStats.power_unit ? boostStats.power_unit * 5 : ''}</div>
+                                  </td>
                                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.pit_stop > 0 && getBoostValueColor(boostStats.pit_stop))}>
                                     <div className="text-sm font-medium">{boostStats.pit_stop ? boostStats.pit_stop * 5 : ''}</div>
-                                  </td>
-                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.race_start > 0 && getBoostValueColor(boostStats.race_start))}>
-                                    <div className="text-sm font-medium">{boostStats.race_start ? boostStats.race_start * 5 : ''}</div>
                                   </td>
                                 </tr>
                               )
@@ -1513,28 +1513,28 @@ export default function TrackGuideEditorPage() {
                               <div className="flex items-center">Amount</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Defend</div>
-                            </th>
-                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                               <div className="flex items-center">Overtake</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Corners</div>
+                              <div className="flex items-center">Defend</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Race Start</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                               <div className="flex items-center">Tyre Use</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Power Unit</div>
-                            </th>
-                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                               <div className="flex items-center">Speed</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Pit Stop</div>
+                              <div className="flex items-center">Corners</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Race Start</div>
+                              <div className="flex items-center">Power Unit</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Pit Stop</div>
                             </th>
                           </tr>
                         </thead>
@@ -1657,29 +1657,29 @@ export default function TrackGuideEditorPage() {
                                   </td>
 
                                   {/* Stat Columns with color coding */}
-                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.block > 0 && getBoostValueColor(boostStats.block))}>
-                                    <div className="text-sm font-medium">{boostStats.block ? boostStats.block * 5 : ''}</div>
-                                  </td>
                                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.overtake > 0 && getBoostValueColor(boostStats.overtake))}>
                                     <div className="text-sm font-medium">{boostStats.overtake ? boostStats.overtake * 5 : ''}</div>
                                   </td>
-                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.corners > 0 && getBoostValueColor(boostStats.corners))}>
-                                    <div className="text-sm font-medium">{boostStats.corners ? boostStats.corners * 5 : ''}</div>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.block > 0 && getBoostValueColor(boostStats.block))}>
+                                    <div className="text-sm font-medium">{boostStats.block ? boostStats.block * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.race_start > 0 && getBoostValueColor(boostStats.race_start))}>
+                                    <div className="text-sm font-medium">{boostStats.race_start ? boostStats.race_start * 5 : ''}</div>
                                   </td>
                                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.tyre_use > 0 && getBoostValueColor(boostStats.tyre_use))}>
                                     <div className="text-sm font-medium">{boostStats.tyre_use ? boostStats.tyre_use * 5 : ''}</div>
                                   </td>
-                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.power_unit > 0 && getBoostValueColor(boostStats.power_unit))}>
-                                    <div className="text-sm font-medium">{boostStats.power_unit ? boostStats.power_unit * 5 : ''}</div>
-                                  </td>
                                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.speed > 0 && getBoostValueColor(boostStats.speed))}>
                                     <div className="text-sm font-medium">{boostStats.speed ? boostStats.speed * 5 : ''}</div>
                                   </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.corners > 0 && getBoostValueColor(boostStats.corners))}>
+                                    <div className="text-sm font-medium">{boostStats.corners ? boostStats.corners * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.power_unit > 0 && getBoostValueColor(boostStats.power_unit))}>
+                                    <div className="text-sm font-medium">{boostStats.power_unit ? boostStats.power_unit * 5 : ''}</div>
+                                  </td>
                                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.pit_stop > 0 && getBoostValueColor(boostStats.pit_stop))}>
                                     <div className="text-sm font-medium">{boostStats.pit_stop ? boostStats.pit_stop * 5 : ''}</div>
-                                  </td>
-                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.race_start > 0 && getBoostValueColor(boostStats.race_start))}>
-                                    <div className="text-sm font-medium">{boostStats.race_start ? boostStats.race_start * 5 : ''}</div>
                                   </td>
                                 </tr>
                               )
@@ -1764,28 +1764,28 @@ export default function TrackGuideEditorPage() {
                               <div className="flex items-center">Amount</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Defend</div>
-                            </th>
-                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                               <div className="flex items-center">Overtake</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Corners</div>
+                              <div className="flex items-center">Defend</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Race Start</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                               <div className="flex items-center">Tyre Use</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Power Unit</div>
-                            </th>
-                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                               <div className="flex items-center">Speed</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Pit Stop</div>
+                              <div className="flex items-center">Corners</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Race Start</div>
+                              <div className="flex items-center">Power Unit</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">Pit Stop</div>
                             </th>
                           </tr>
                         </thead>
@@ -1908,29 +1908,29 @@ export default function TrackGuideEditorPage() {
                                   </td>
 
                                   {/* Stat Columns with color coding */}
-                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.block > 0 && getBoostValueColor(boostStats.block))}>
-                                    <div className="text-sm font-medium">{boostStats.block ? boostStats.block * 5 : ''}</div>
-                                  </td>
                                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.overtake > 0 && getBoostValueColor(boostStats.overtake))}>
                                     <div className="text-sm font-medium">{boostStats.overtake ? boostStats.overtake * 5 : ''}</div>
                                   </td>
-                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.corners > 0 && getBoostValueColor(boostStats.corners))}>
-                                    <div className="text-sm font-medium">{boostStats.corners ? boostStats.corners * 5 : ''}</div>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.block > 0 && getBoostValueColor(boostStats.block))}>
+                                    <div className="text-sm font-medium">{boostStats.block ? boostStats.block * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.race_start > 0 && getBoostValueColor(boostStats.race_start))}>
+                                    <div className="text-sm font-medium">{boostStats.race_start ? boostStats.race_start * 5 : ''}</div>
                                   </td>
                                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.tyre_use > 0 && getBoostValueColor(boostStats.tyre_use))}>
                                     <div className="text-sm font-medium">{boostStats.tyre_use ? boostStats.tyre_use * 5 : ''}</div>
                                   </td>
-                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.power_unit > 0 && getBoostValueColor(boostStats.power_unit))}>
-                                    <div className="text-sm font-medium">{boostStats.power_unit ? boostStats.power_unit * 5 : ''}</div>
-                                  </td>
                                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.speed > 0 && getBoostValueColor(boostStats.speed))}>
                                     <div className="text-sm font-medium">{boostStats.speed ? boostStats.speed * 5 : ''}</div>
                                   </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.corners > 0 && getBoostValueColor(boostStats.corners))}>
+                                    <div className="text-sm font-medium">{boostStats.corners ? boostStats.corners * 5 : ''}</div>
+                                  </td>
+                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.power_unit > 0 && getBoostValueColor(boostStats.power_unit))}>
+                                    <div className="text-sm font-medium">{boostStats.power_unit ? boostStats.power_unit * 5 : ''}</div>
+                                  </td>
                                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.pit_stop > 0 && getBoostValueColor(boostStats.pit_stop))}>
                                     <div className="text-sm font-medium">{boostStats.pit_stop ? boostStats.pit_stop * 5 : ''}</div>
-                                  </td>
-                                  <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.race_start > 0 && getBoostValueColor(boostStats.race_start))}>
-                                    <div className="text-sm font-medium">{boostStats.race_start ? boostStats.race_start * 5 : ''}</div>
                                   </td>
                                 </tr>
                               )
