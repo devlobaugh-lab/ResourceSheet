@@ -18,9 +18,17 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   }
 })
 
+const adminEmail = process.env.ADMIN_EMAIL
+const adminPassword = process.env.ADMIN_PASSWORD
+
+if (!adminEmail || !adminPassword) {
+  console.error('Missing ADMIN_EMAIL or ADMIN_PASSWORD environment variables')
+  process.exit(1)
+}
+
 async function createAdminUser() {
   try {
-    console.log('Setting up admin user: thomas.lobaugh@gmail.com')
+    console.log(`Setting up admin user: ${adminEmail}`)
 
     // First, try to find the existing user
     const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers({
@@ -33,15 +41,15 @@ async function createAdminUser() {
       return
     }
 
-    const adminUser = existingUsers.users.find(user => user.email === 'thomas.lobaugh@gmail.com')
+    const adminUser = existingUsers.users.find(user => user.email === adminEmail)
 
     if (!adminUser) {
       console.log('Creating new admin user...')
 
       // Create the user in auth.users
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: 'thomas.lobaugh@gmail.com',
-        password: 'password123', // Simple password for testing
+        email: adminEmail,
+        password: adminPassword,
         email_confirm: true, // Auto-confirm email
         user_metadata: {
           full_name: 'Test Admin User'
@@ -60,7 +68,7 @@ async function createAdminUser() {
         .from('profiles')
         .upsert({
           id: authData.user.id,
-          email: 'thomas.lobaugh@gmail.com',
+          email: adminEmail,
           username: 'test_admin',
           is_admin: true
         }, {
@@ -81,7 +89,7 @@ async function createAdminUser() {
         .from('profiles')
         .upsert({
           id: adminUser.id,
-          email: 'thomas.lobaugh@gmail.com',
+          email: adminEmail,
           username: 'test_admin',
           is_admin: true
         }, {
@@ -98,8 +106,8 @@ async function createAdminUser() {
 
     console.log('Admin user setup complete!')
     console.log('Login credentials:')
-    console.log('Email: thomas.lobaugh@gmail.com')
-    console.log('Password: password123')
+    console.log(`Email: ${adminEmail}`)
+    console.log('Password: (from ADMIN_PASSWORD env var)')
 
   } catch (error) {
     console.error('Unexpected error:', error)
