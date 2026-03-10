@@ -39,8 +39,7 @@ export default function DataInputPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
           <div className="space-y-4">
           {/* Page Title and Tabs */}
           <div className="mb-8 flex items-center gap-6">
@@ -88,7 +87,6 @@ export default function DataInputPage() {
 
           </div>
         </div>
-      </div>
     </ProtectedRoute>
   );
 }

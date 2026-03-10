@@ -318,11 +318,14 @@ export function useSeasons(filters?: {
 }
 
 // Fetch user car setups
-export function useUserCarSetups() {
+export function useUserCarSetups(filters?: { season_id?: string }) {
   return useQuery({
-    queryKey: ['user-car-setups'],
+    queryKey: ['user-car-setups', filters],
     queryFn: async (): Promise<{ data: UserCarSetup[]; pagination: PaginationMeta }> => {
-      const response = await fetch(`${API_BASE}/setups`, {
+      const params = new URLSearchParams()
+      if (filters?.season_id) params.append('season_id', filters.season_id)
+
+      const response = await fetch(`${API_BASE}/setups?${params}`, {
         headers: await getAuthHeaders(),
         credentials: 'same-origin'
       })
@@ -334,6 +337,29 @@ export function useUserCarSetups() {
       return response.json()
     },
     staleTime: 30 * 1000, // 30 seconds
+  })
+}
+
+// Fetch GP guides
+export function useGpGuides(filters?: { season_id?: string }) {
+  return useQuery({
+    queryKey: ['gp-guides', filters],
+    queryFn: async (): Promise<{ data: import('@/types/database').UserGpGuide[] }> => {
+      const params = new URLSearchParams()
+      if (filters?.season_id) params.append('season_id', filters.season_id)
+
+      const response = await fetch(`${API_BASE}/gp-guides?${params}`, {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch GP guides')
+      }
+
+      return response.json()
+    },
+    staleTime: 30 * 1000,
   })
 }
 
@@ -353,6 +379,7 @@ export function useCreateSetup() {
       engine_id?: string | null
       series_filter?: number
       bonus_percentage?: number
+      season_id?: string | null
     }) => {
       const response = await fetch(`${API_BASE}/setups`, {
         method: 'POST',

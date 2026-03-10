@@ -194,6 +194,7 @@ export function CarPartSelectionGrid({
             placeholder="Search parts..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm('')}
           />
         </div>
         <div className="flex items-center gap-2">
@@ -282,7 +283,7 @@ export function CarPartSelectionGrid({
                   <td className={cn('px-3 py-1 whitespace-nowrap', getRarityBackground(part.rarity))}>
                     <span className="text-sm font-medium text-gray-900">
                       {part.rarity === 5
-                        ? getCollectionRarityDisplay(part.collection_id ?? null, part.collection_sub_name ?? null)
+                        ? getCollectionRarityDisplay(part.collection_theme ?? null, part.collection_sub_name ?? null)
                         : getRarityDisplay(part.rarity)}
                     </span>
                   </td>

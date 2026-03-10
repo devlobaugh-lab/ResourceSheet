@@ -1,2 +1,0 @@
--- Profile record creation removed - AuthContext handles local dev authentication
--- thomas.lobaugh@gmail.com is treated as admin in BoostNameEditor component

@@ -3,20 +3,30 @@
 import React, { useRef, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/auth/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useToast } from '@/components/ui/Toast';
 import { getAuthHeaders } from '@/hooks/useApi';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSeason } from '@/contexts/SeasonContext';
+import { useSeasons } from '@/hooks/useApi';
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const { activeSeasonId, setActiveSeason } = useSeason();
+  const { data: seasonsData } = useSeasons();
   const [exportLoading, setExportLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   const handleExport = async () => {
     setExportLoading(true);
@@ -108,10 +118,37 @@ export default function ProfilePage() {
     fileInputRef.current?.click();
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess(false);
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('Passwords do not match');
+      return;
+    }
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: passwordForm.newPassword });
+      if (error) {
+        setPasswordError(error.message);
+      } else {
+        setPasswordSuccess(true);
+        setPasswordForm({ newPassword: '', confirmPassword: '' });
+      }
+    } catch {
+      setPasswordError('Failed to update password. Please try again.');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
@@ -193,10 +230,88 @@ export default function ProfilePage() {
                 </div>
               </Card>
 
+              {/* Active Season */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Active Season</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Select which season&apos;s data you want to work with. &quot;Current&quot; marks the admin-designated active season.
+                </p>
+                {seasonsData && (() => {
+                  const seasons = (seasonsData as any)?.data ?? seasonsData ?? []
+                  if (!seasons.length) {
+                    return <p className="text-sm text-gray-400">No seasons available.</p>
+                  }
+                  return (
+                    <div className="space-y-2">
+                      {seasons.map((season: any) => (
+                        <button
+                          key={season.id}
+                          onClick={() => setActiveSeason(season.id)}
+                          className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-left transition-colors ${
+                            activeSeasonId === season.id
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className={`font-medium text-sm ${activeSeasonId === season.id ? 'text-blue-700' : 'text-gray-900'}`}>
+                            {season.name}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {season.is_active && (
+                              <Badge variant="success">Current</Badge>
+                            )}
+                            {activeSeasonId === season.id && (
+                              <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )
+                })()}
+              </Card>
+
+              {/* Change Password */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Change Password</h3>
+                <form className="space-y-4" onSubmit={handleChangePassword}>
+                  {passwordError && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                      {passwordError}
+                    </div>
+                  )}
+                  {passwordSuccess && (
+                    <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+                      Password updated successfully.
+                    </div>
+                  )}
+                  <Input
+                    label="New password"
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm(f => ({ ...f, newPassword: e.target.value }))}
+                    placeholder="Enter new password"
+                    required
+                    autoComplete="new-password"
+                  />
+                  <Input
+                    label="Confirm password"
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm(f => ({ ...f, confirmPassword: e.target.value }))}
+                    placeholder="Confirm new password"
+                    required
+                    autoComplete="new-password"
+                  />
+                  <Button type="submit" isLoading={passwordLoading} disabled={passwordLoading}>
+                    {passwordLoading ? 'Updating...' : 'Update Password'}
+                  </Button>
+                </form>
+              </Card>
+
             </div>
           </div>
         </div>
-      </div>
 
       {/* Hidden file input */}
       <input

@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useUserDrivers, useDrivers } from '@/hooks/useApi'
+import { useSeason } from '@/contexts/SeasonContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useAuth } from '@/components/auth/AuthContext'
 import { useToast } from '@/components/ui/Toast'
@@ -14,9 +15,11 @@ import Link from 'next/link'
 import { getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils'
 
 function AuthenticatedDriversPage() {
+  const { activeSeasonId } = useSeason()
   const { data: driversResponse, isLoading, error } = useUserDrivers({
     page: 1,
-    limit: 100
+    limit: 100,
+    ...(activeSeasonId ? { season_id: activeSeasonId } : {}),
   })
 
   const { addToast } = useToast()
@@ -131,21 +134,24 @@ function AuthenticatedDriversPage() {
       const stored = localStorage.getItem('compare-drivers-settings')
       const existingDrivers: any[] = stored ? JSON.parse(stored) : []
 
-      // Check if driver with same name AND rarity is already in the compare list
-      // Allow duplicates if they have different rarities
-      const isAlreadyAdded = existingDrivers.some((d: any) =>
-        d.driverName === driver.name && d.rarity === driver.rarity
-      )
+      // Construct rarityValue for Rarity-5 drivers (includes collection info)
+      let rarityValue: string | undefined = undefined
+      if (driver.rarity === 5 && driver.collection_id) {
+        rarityValue = driver.collection_sub_name
+          ? `${driver.collection_id}-${driver.collection_sub_name}`
+          : driver.collection_id
+      }
+
+      // Check if driver with same name AND rarity is already in the compare list.
+      // For rarity-5, also require the same rarityValue (collection variant) to allow
+      // adding different SE versions of the same driver.
+      const isAlreadyAdded = existingDrivers.some((d: any) => {
+        if (d.driverName !== driver.name || d.rarity !== driver.rarity) return false
+        if (driver.rarity === 5) return d.rarityValue === rarityValue
+        return true
+      })
 
       if (!isAlreadyAdded) {
-        // Construct rarityValue for Rarity-5 drivers (includes collection info)
-        let rarityValue: string | undefined = undefined
-        if (driver.rarity === 5 && driver.collection_id) {
-          // Include collection_id and collection_sub_name for SE drivers
-          rarityValue = driver.collection_sub_name
-            ? `${driver.collection_id}-${driver.collection_sub_name}`
-            : driver.collection_id
-        }
         
         // Add the driver with new data structure
         const newDriver = {
@@ -214,6 +220,7 @@ function AuthenticatedDriversPage() {
               placeholder="Search drivers..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onClear={() => setSearchTerm('')}
             />
           </div>
           <div className="flex items-center space-x-2">
@@ -336,10 +343,8 @@ export default function DriversPage() {
 
   // Show authenticated drivers page if user is logged in
   return (
-    <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
-        <AuthenticatedDriversPage />
-      </div>
+    <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+      <AuthenticatedDriversPage />
     </div>
   )
 }

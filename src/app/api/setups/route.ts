@@ -15,7 +15,8 @@ const setupSchema = z.object({
   suspension_id: z.string().uuid().nullable(),
   engine_id: z.string().uuid().nullable(),
   series_filter: z.number().min(1).max(12).default(12),
-  bonus_percentage: z.number().min(0).max(100).default(0)
+  bonus_percentage: z.number().min(0).max(100).default(0),
+  season_id: z.string().uuid().nullable().optional(),
 })
 
 // GET /api/setups - Get all user's setups
@@ -76,11 +77,18 @@ export async function GET(request: NextRequest) {
     console.log('Setups API final authenticated user:', user.id)
 
     // Get user's setups
-    const { data: setups, error: setupsError } = await supabaseAdmin
+    const url = new URL(request.url)
+    const season_id = url.searchParams.get('season_id')
+
+    let setupsQuery = supabaseAdmin
       .from('user_car_setups')
       .select('*')
       .eq('user_id', user.id)
       .order('updated_at', { ascending: false })
+
+    if (season_id) setupsQuery = setupsQuery.eq('season_id', season_id)
+
+    const { data: setups, error: setupsError } = await setupsQuery
 
     if (setupsError) {
       console.error('Setups database error:', setupsError)

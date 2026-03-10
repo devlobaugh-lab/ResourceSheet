@@ -4,6 +4,7 @@ import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { useTracks } from '@/hooks/useApi';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { useSeason } from '@/contexts/SeasonContext';
 
 // Stat display configuration
 const driverStats: Record<string, string> = {
@@ -22,7 +23,8 @@ const carStats: Record<string, string> = {
 };
 
 export default function TracksReferencePage() {
-  const { data: tracksData, isLoading, error } = useTracks();
+  const { activeSeasonId } = useSeason()
+  const { data: tracksData, isLoading, error } = useTracks(activeSeasonId ? { season_id: activeSeasonId } : undefined);
 
   // Get display name with alias if available
   const getDisplayName = (track: any) => {
@@ -34,8 +36,7 @@ export default function TracksReferencePage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Tracks</h1>
@@ -121,7 +122,6 @@ export default function TracksReferencePage() {
             </Card>
           )}
         </div>
-      </div>
     </ProtectedRoute>
   );
 }

@@ -47,7 +47,7 @@ export default function AdminContentCachePage() {
   if (isProfileLoading && user?.id) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center justify-center py-16">
           <Card className="p-8 max-w-md mx-auto text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
             <p className="text-gray-600">Checking permissions...</p>
@@ -60,7 +60,7 @@ export default function AdminContentCachePage() {
   if (!isAdmin) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center justify-center py-16">
           <Card className="p-8 max-w-md mx-auto text-center">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Access Denied</h2>
             <p className="text-gray-600 mb-6">You need admin privileges to access this page.</p>
@@ -114,12 +114,12 @@ export default function AdminContentCachePage() {
       formData.append('season_filter', seasonFilter.trim());
       formData.append('allow_modifications', allowModifications.toString());
 
-      // Use authorization header for local development
+      const authHeaders = await getAuthHeaders();
+      const { 'Content-Type': _, ...uploadHeaders } = authHeaders;
+
       const response = await fetch('/api/admin/content-cache/upload', {
         method: 'POST',
-        headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJsb2NhbC1hZG1pbi11c2VyIiwiaWF0IjoxNjQyNjMwNDAwLCJleHAiOjE5NTc5OTA0MDB9.mock-token-for-local-dev'
-        },
+        headers: uploadHeaders,
         body: formData
       });
 
@@ -157,8 +157,7 @@ export default function AdminContentCachePage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center justify-between">
@@ -389,6 +388,21 @@ export default function AdminContentCachePage() {
                     </div>
                   </div>
 
+                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="bg-white rounded p-3">
+                      <div className="font-medium text-gray-700 mb-2">🏎️ Series</div>
+                      <div className="text-gray-600">
+                        Imported: {uploadResult.summary.series?.new ?? 0} | Deleted: {uploadResult.summary.series?.deleted ?? 0}
+                      </div>
+                    </div>
+                    <div className="bg-white rounded p-3">
+                      <div className="font-medium text-gray-700 mb-2">🏁 Tracks</div>
+                      <div className="text-gray-600">
+                        Imported: {uploadResult.summary.tracks?.new ?? 0}
+                      </div>
+                    </div>
+                  </div>
+
                   {uploadResult.summary.total_modified > 0 && (
                     <div className="mt-4">
                       <details className="bg-white rounded p-3">
@@ -497,7 +511,6 @@ export default function AdminContentCachePage() {
             )}
           </div>
         </div>
-      </div>
     </ProtectedRoute>
   );
 }

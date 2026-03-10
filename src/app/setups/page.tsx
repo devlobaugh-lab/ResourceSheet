@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useUserCarParts, useUserCarSetups, useCreateSetup, useUpdateSetup, useDeleteSetup } from '@/hooks/useApi'
+import { useSeason } from '@/contexts/SeasonContext'
 import { useAuth } from '@/components/auth/AuthContext'
 import Link from 'next/link'
 import { CarPartView, UserCarSetup } from '@/types/database'
@@ -96,13 +97,17 @@ const createEmptySlot = (): SetupSlot => ({
 
 function AuthenticatedSetupsPage() {
   const { addToast } = useToast()
-  
+  const { activeSeasonId } = useSeason()
+
   const { data: carPartsResponse, isLoading: partsLoading, error: partsError } = useUserCarParts({
     page: 1,
-    limit: 1000
+    limit: 1000,
+    ...(activeSeasonId ? { season_id: activeSeasonId } : {}),
   })
 
-  const { data: setupsResponse, isLoading: setupsLoading, error: setupsError } = useUserCarSetups()
+  const { data: setupsResponse, isLoading: setupsLoading, error: setupsError } = useUserCarSetups(
+    activeSeasonId ? { season_id: activeSeasonId } : undefined
+  )
   const createSetup = useCreateSetup()
   const updateSetup = useUpdateSetup()
   const deleteSetup = useDeleteSetup()
@@ -281,7 +286,8 @@ function AuthenticatedSetupsPage() {
           suspension_id: slot.selectedParts.suspension || null,
           engine_id: slot.selectedParts.engine || null,
           series_filter: slot.seriesFilter,
-          bonus_percentage: parseFloat(slot.bonusPercentage) || 0
+          bonus_percentage: parseFloat(slot.bonusPercentage) || 0,
+          season_id: activeSeasonId ?? null,
         })
         // Update slot with new id
         setSlot(prev => ({ ...prev, id: result.data.id }))
@@ -863,10 +869,8 @@ export default function SetupsPage() {
 
   // Show authenticated setups page if user is logged in
   return (
-    <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
-        <AuthenticatedSetupsPage />
-      </div>
+    <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+      <AuthenticatedSetupsPage />
     </div>
   )
 }

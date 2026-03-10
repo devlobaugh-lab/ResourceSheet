@@ -53,8 +53,8 @@ export interface Database {
           email: string | null
           username: string | null
           is_admin: boolean
-          user_type: string
           is_active: boolean
+          active_season_id: string | null
           created_at: string
           updated_at: string
         }
@@ -63,8 +63,8 @@ export interface Database {
           email?: string | null
           username?: string | null
           is_admin?: boolean
-          user_type?: string
           is_active?: boolean
+          active_season_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -73,8 +73,8 @@ export interface Database {
           email?: string | null
           username?: string | null
           is_admin?: boolean
-          user_type?: string
           is_active?: boolean
+          active_season_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -454,6 +454,7 @@ export interface Database {
           gp_level: number
           notes: string | null
           weekend_strategy_same: boolean
+          season_id: string | null
           created_at: string
           updated_at: string
         }
@@ -465,6 +466,7 @@ export interface Database {
           gp_level: number
           notes?: string | null
           weekend_strategy_same?: boolean
+          season_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -476,6 +478,7 @@ export interface Database {
           gp_level?: number
           notes?: string | null
           weekend_strategy_same?: boolean
+          season_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -845,6 +848,7 @@ export interface CarPartView {
   collection_id: string | null
   visual_override: string | null
   collection_sub_name: string | null
+  collection_theme?: string | null
   car_part_type: number
   stats_per_level: any | null
 
@@ -893,6 +897,7 @@ export interface UserCarSetup {
   engine_id: string | null
   series_filter: number
   bonus_percentage: number
+  season_id: string | null
   created_at: string
   updated_at: string
 }

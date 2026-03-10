@@ -1,867 +1,127 @@
-# F1 Resource Manager - API Documentation
+# F1 Resource Manager — API Route Inventory
+
+All routes live under `/api/`. Auth-required routes expect the Supabase session cookie (set automatically by the browser client) or an `Authorization: Bearer <jwt>` header. Error responses follow `{ error: { code: string, message: string } }`.
+
+---
+
+## Auth
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/auth/callback` | No | OAuth/magic-link callback handler |
+
+---
+
+## Catalog
+
+Read-only catalog data shared across all users.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/drivers` | No | List all drivers; supports `season_id`, `rarity`, `series`, `search`, `owned_only`, `sort_by`, `sort_order`, `page`, `limit` |
+| GET | `/api/drivers/[id]` | No | Get a single driver by ID |
+| GET | `/api/drivers/user` | Yes | List drivers with user ownership data merged in |
+| GET | `/api/car-parts` | No | List all car parts; supports `season_id`, `rarity`, `series`, `car_part_type`, `search`, `owned_only`, `sort_by`, `sort_order`, `page`, `limit` |
+| GET | `/api/car-parts/[id]` | No | Get a single car part by ID |
+| GET | `/api/car-parts/user` | Yes | List car parts with user ownership data merged in |
+| GET | `/api/boosts` | No | List all boosts; supports `season_id`, `series`, `search`, `owned_only`, `sort_by`, `sort_order`, `page`, `limit` |
+| GET | `/api/boosts/[id]` | No | Get a single boost by ID |
+| GET | `/api/boosts/custom-names` | No | List all admin-assigned custom boost names |
+| PUT | `/api/boosts/[id]/custom-name` | Yes (admin) | Set or update the custom name for a boost; body: `{ custom_name: string }` |
+| GET | `/api/seasons` | No | List all seasons |
+| GET | `/api/seasons/[id]` | No | Get a single season by ID |
+| GET | `/api/tracks` | No | List all tracks |
+| GET | `/api/tracks/[id]` | No | Get a single track by ID |
+| GET | `/api/series` | No | List all series |
+| GET | `/api/rarity-options` | No | List available rarity values (for filter dropdowns) |
+| GET | `/api/team-driver-names` | No | List driver names grouped by team (for autocomplete) |
+
+---
+
+## User Data
+
+Per-user data — all routes require authentication; RLS enforces data isolation.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/setups` | Yes | List user's saved car setups |
+| POST | `/api/setups` | Yes | Create a car setup; body: `{ name, notes?, max_series, bonus_percent?, brake_id?, gearbox_id?, rear_wing_id?, front_wing_id?, suspension_id?, engine_id? }` |
+| GET | `/api/setups/[id]` | Yes | Get a single setup |
+| PUT | `/api/setups/[id]` | Yes | Update a setup |
+| DELETE | `/api/setups/[id]` | Yes | Delete a setup |
+| GET | `/api/track-guides` | Yes | List user's track guides; supports `track_id`, `gp_level` filters |
+| POST | `/api/track-guides` | Yes | Create a track guide |
+| GET | `/api/track-guides/[id]` | Yes | Get a single track guide |
+| PUT | `/api/track-guides/[id]` | Yes | Update a track guide |
+| DELETE | `/api/track-guides/[id]` | Yes | Delete a track guide |
+| GET | `/api/gp-guides` | Yes | List user's GP guides |
+| POST | `/api/gp-guides` | Yes | Create a GP guide |
+| GET | `/api/gp-guides/[id]` | Yes | Get a single GP guide with all track slots |
+| PUT | `/api/gp-guides/[id]` | Yes | Update a GP guide |
+| DELETE | `/api/gp-guides/[id]` | Yes | Delete a GP guide |
+| GET | `/api/gp-guides/[id]/tracks/[slotId]` | Yes | Get a track slot within a GP guide |
+| PUT | `/api/gp-guides/[id]/tracks/[slotId]` | Yes | Update a track slot (drivers, setup, strategy) |
+| DELETE | `/api/gp-guides/[id]/tracks/[slotId]` | Yes | Remove a track slot |
+| GET | `/api/gp-guides/[id]/results/[trackId]` | Yes | Get saved results for a track in a GP guide |
+| POST | `/api/gp-guides/[id]/results/[trackId]` | Yes | Save results for a track |
+| POST | `/api/gp-guides/[id]/import/[trackId]` | Yes | Import an existing track guide into a GP guide slot |
+| GET | `/api/user-boosts` | Yes | List user's boost inventory |
+| POST | `/api/user-boosts` | Yes | Add or update a boost in inventory; body: `{ boost_id, level }` |
+| GET | `/api/custom-drivers` | Yes | List user's custom (manually added) drivers |
+| POST | `/api/custom-drivers` | Yes | Create a custom driver |
+| GET | `/api/profiles/[id]` | Yes | Get a user profile |
+| PUT | `/api/profiles/[id]` | Yes (admin) | Update a user profile (e.g. `is_admin`) |
+
+---
+
+## Import / Export
+
+There are two export/import pairs:
+
+- **User export** — a single user backs up and restores their own data only.
+- **Admin backup** — backs up all users' data plus admin-managed config. A restore from an admin backup covers everything; a separate user import is not needed.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/export-user-data` | Yes | Export the current user's data (collection, boosts, setups, guides) |
+| POST | `/api/import-user-data` | Yes | Import the current user's data from a user export blob |
+| GET | `/api/admin/export` | Yes (admin) | Export all users' data + admin-managed config (seasons, track name aliases, boost custom names, `is_free` flags); excludes content-cache tables |
+| POST | `/api/admin/import` | Yes (admin) | Import an admin backup; upserts all user tables (including previously missing child tables) and admin config |
+
+---
+
+## Admin
+
+All routes require `profiles.is_admin = true`.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/admin/users` | Yes (admin) | List all user accounts |
+| GET | `/api/admin/users/[id]` | Yes (admin) | Get a single user account |
+| PUT | `/api/admin/users/[id]` | Yes (admin) | Update a user account |
+| POST | `/api/admin/run-migration` | Yes (admin) | Execute a named database migration |
+| POST | `/api/admin/content-cache/upload` | Yes (admin) | Upload a content-cache file (drivers, car parts, boosts) to populate catalog tables |
 
-## Overview
+---
 
-This document describes the REST API endpoints for the F1 Resource Manager application. All endpoints require proper authentication and authorization through Supabase Auth.
+## Utility
 
-## Authentication
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/track-name-aliases` | No | List track name alias mappings (for fuzzy matching) |
+| GET | `/api/ai-loadouts` | Yes | Get AI-suggested loadouts |
+| GET | `/api/ai-loadouts/track/[trackName]/[difficulty]` | Yes | Get AI-suggested loadout for a specific track and difficulty |
+| GET | `/api/admin-check` | Yes | Returns `{ isAdmin: boolean }` for the current user |
+| POST | `/api/migrate` | Yes (admin) | Trigger a data migration task |
 
-All API endpoints require authentication via Supabase Auth. Users must be logged in to access protected endpoints.
+---
 
-### Authentication Headers
+## Debug
 
-```http
-Authorization: Bearer <your-jwt-token>
-```
+Development/maintenance endpoints — not intended for production use.
 
-### Error Responses
-
-All endpoints return standard HTTP status codes:
-
-- `200` - Success
-- `401` - Unauthorized (not logged in)
-- `403` - Forbidden (insufficient permissions)
-- `404` - Not found
-- `500` - Server error
-
-## Catalog Endpoints
-
-### Drivers
-
-#### GET /api/drivers
-
-Retrieve all drivers from the catalog.
-
-**Response:**
-```json
-[
-  {
-    "id": "uuid",
-    "name": "Driver Name",
-    "rarity": 3,
-    "series": 6,
-    "season_id": "uuid",
-    "stats_per_level": [
-      {
-        "speed": 10,
-        "cornering": 8,
-        "powerUnit": 9,
-        "qualifying": 7,
-        "drs": 5,
-        "pitStopTime": 15,
-        "cardsToUpgrade": 10,
-        "softCurrencyToUpgrade": 500
-      }
-    ],
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
-]
-```
-
-#### GET /api/drivers/[id]
-
-Retrieve a specific driver by ID.
-
-**Response:**
-```json
-{
-  "id": "uuid",
-  "name": "Driver Name",
-  "rarity": 3,
-  "series": 6,
-  "season_id": "uuid",
-  "stats_per_level": [...],
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:00:00Z"
-}
-```
-
-#### GET /api/drivers/user
-
-Retrieve user's driver collection with ownership data.
-
-**Response:**
-```json
-[
-  {
-    "id": "uuid",
-    "name": "Driver Name",
-    "rarity": 3,
-    "series": 6,
-    "season_id": "uuid",
-    "stats_per_level": [...],
-    "user_driver": {
-      "level": 5,
-      "card_count": 10,
-      "bonus_percent": 10
-    }
-  }
-]
-```
-
-### Car Parts
-
-#### GET /api/car-parts
-
-Retrieve all car parts from the catalog.
-
-**Response:**
-```json
-[
-  {
-    "id": "uuid",
-    "name": "Engine Name",
-    "rarity": 2,
-    "series": 6,
-    "season_id": "uuid",
-    "car_part_type": 5,
-    "stats_per_level": [
-      {
-        "speed": 8,
-        "cornering": 9,
-        "powerUnit": 10,
-        "qualifying": 6,
-        "drs": 4,
-        "pitStopTime": 12,
-        "cardsToUpgrade": 8,
-        "softCurrencyToUpgrade": 300
-      }
-    ],
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
-]
-```
-
-#### GET /api/car-parts/[id]
-
-Retrieve a specific car part by ID.
-
-**Response:**
-```json
-{
-  "id": "uuid",
-  "name": "Engine Name",
-  "rarity": 2,
-  "series": 6,
-  "season_id": "uuid",
-  "car_part_type": 5,
-  "stats_per_level": [...],
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:00:00Z"
-}
-```
-
-#### GET /api/car-parts/user
-
-Retrieve user's car parts collection with ownership data.
-
-**Response:**
-```json
-[
-  {
-    "id": "uuid",
-    "name": "Engine Name",
-    "rarity": 2,
-    "series": 6,
-    "season_id": "uuid",
-    "car_part_type": 5,
-    "stats_per_level": [...],
-    "user_car_part": {
-      "level": 3,
-      "card_count": 5,
-      "bonus_percent": 5
-    }
-  }
-]
-```
-
-### Boosts
-
-#### GET /api/boosts
-
-Retrieve all boosts from the catalog.
-
-**Response:**
-```json
-[
-  {
-    "id": "uuid",
-    "name": "Boost Name",
-    "icon": "boost_icon_name",
-    "boost_stats": {
-      "overtake": 1,
-      "block": 2,
-      "corners": 1,
-      "tyreUse": 1,
-      "powerUnit": 1,
-      "speed": 1,
-      "pitStop": 1,
-      "raceStart": 1
-    },
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
-]
-```
-
-#### GET /api/boosts/[id]
-
-Retrieve a specific boost by ID.
-
-**Response:**
-```json
-{
-  "id": "uuid",
-  "name": "Boost Name",
-  "icon": "boost_icon_name",
-  "boost_stats": {...},
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:00:00Z"
-}
-```
-
-#### GET /api/boosts/custom-names
-
-Retrieve custom boost names (admin only).
-
-**Response:**
-```json
-[
-  {
-    "boost_id": "uuid",
-    "custom_name": "Custom Boost Name",
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
-]
-```
-
-#### PUT /api/boosts/[id]/custom-name
-
-Update custom boost name (admin only).
-
-**Request Body:**
-```json
-{
-  "custom_name": "New Custom Name"
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Custom name updated successfully"
-}
-```
-
-### Seasons
-
-#### GET /api/seasons
-
-Retrieve all seasons.
-
-**Response:**
-```json
-[
-  {
-    "id": "uuid",
-    "name": "Season 6",
-    "start_date": "2024-01-01",
-    "end_date": "2024-12-31",
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
-]
-```
-
-#### GET /api/seasons/[id]
-
-Retrieve a specific season by ID.
-
-**Response:**
-```json
-{
-  "id": "uuid",
-  "name": "Season 6",
-  "start_date": "2024-01-01",
-  "end_date": "2024-12-31",
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:00:00Z"
-}
-```
-
-## User Data Endpoints
-
-### User Assets
-
-#### GET /api/user-assets
-
-Retrieve all user assets (catalog items with user ownership data).
-
-**Query Parameters:**
-- `season_id` (optional): Filter by season
-- `rarity` (optional): Filter by rarity
-- `card_type` (optional): Filter by card type
-- `owned` (optional): Filter by ownership status
-- `search` (optional): Search by name
-- `page` (optional): Page number (default: 1)
-- `limit` (optional): Items per page (default: 100)
-
-**Response:**
-```json
-{
-  "data": [
-    {
-      "id": "uuid",
-      "name": "Item Name",
-      "rarity": 3,
-      "series": 6,
-      "season_id": "uuid",
-      "user_level": 5,
-      "user_card_count": 10,
-      "user_bonus_percent": 10
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 100,
-    "total": 50,
-    "total_pages": 1
-  }
-}
-```
-
-### User Items
-
-#### GET /api/user-items
-
-Retrieve user's owned items.
-
-**Response:**
-```json
-[
-  {
-    "id": "uuid",
-    "user_id": "uuid",
-    "catalog_item_id": "uuid",
-    "level": 5,
-    "card_count": 10,
-    "bonus_percent": 10,
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
-]
-```
-
-#### POST /api/user-items
-
-Add an item to user's collection.
-
-**Request Body:**
-```json
-{
-  "catalog_item_id": "uuid",
-  "level": 5,
-  "card_count": 10,
-  "bonus_percent": 10
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Item added to collection successfully"
-}
-```
-
-#### PUT /api/user-items/[id]
-
-Update user's item data.
-
-**Request Body:**
-```json
-{
-  "level": 6,
-  "card_count": 5,
-  "bonus_percent": 15
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Item updated successfully"
-}
-```
-
-#### DELETE /api/user-items/[id]
-
-Remove item from user's collection.
-
-**Response:**
-```json
-{
-  "message": "Item removed from collection successfully"
-}
-```
-
-### User Boosts
-
-#### GET /api/user-boosts
-
-Retrieve user's owned boosts.
-
-**Response:**
-```json
-[
-  {
-    "id": "uuid",
-    "user_id": "uuid",
-    "boost_id": "uuid",
-    "count": 5,
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
-]
-```
-
-#### POST /api/user-boosts
-
-Add boost to user's collection.
-
-**Request Body:**
-```json
-{
-  "boost_id": "uuid",
-  "count": 5
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Boost added to collection successfully"
-}
-```
-
-#### PUT /api/user-boosts/[id]
-
-Update user's boost count.
-
-**Request Body:**
-```json
-{
-  "count": 10
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Boost count updated successfully"
-}
-```
-
-#### DELETE /api/user-boosts/[id]
-
-Remove boost from user's collection.
-
-**Response:**
-```json
-{
-  "message": "Boost removed from collection successfully"
-}
-```
-
-## Advanced Feature Endpoints
-
-### Car Setups
-
-#### GET /api/setups
-
-Retrieve user's saved car setups.
-
-**Response:**
-```json
-[
-  {
-    "id": "uuid",
-    "user_id": "uuid",
-    "name": "Race Setup",
-    "notes": "Optimal setup for race conditions",
-    "max_series": 6,
-    "bonus_percent": 10,
-    "brake_id": "uuid",
-    "gearbox_id": "uuid",
-    "rear_wing_id": "uuid",
-    "front_wing_id": "uuid",
-    "suspension_id": "uuid",
-    "engine_id": "uuid",
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
-]
-```
-
-#### POST /api/setups
-
-Create a new car setup.
-
-**Request Body:**
-```json
-{
-  "name": "Race Setup",
-  "notes": "Optimal setup for race conditions",
-  "max_series": 6,
-  "bonus_percent": 10,
-  "brake_id": "uuid",
-  "gearbox_id": "uuid",
-  "rear_wing_id": "uuid",
-  "front_wing_id": "uuid",
-  "suspension_id": "uuid",
-  "engine_id": "uuid"
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Setup created successfully",
-  "setup_id": "uuid"
-}
-```
-
-#### PUT /api/setups/[id]
-
-Update a car setup.
-
-**Request Body:**
-```json
-{
-  "name": "Updated Race Setup",
-  "notes": "Updated optimal setup",
-  "max_series": 7,
-  "bonus_percent": 15
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Setup updated successfully"
-}
-```
-
-#### DELETE /api/setups/[id]
-
-Delete a car setup.
-
-**Response:**
-```json
-{
-  "message": "Setup deleted successfully"
-}
-```
-
-### Track Guides
-
-#### GET /api/track-guides
-
-Retrieve user's track guides.
-
-**Query Parameters:**
-- `track_id` (optional): Filter by track
-- `gp_level` (optional): Filter by GP level
-
-**Response:**
-```json
-[
-  {
-    "id": "uuid",
-    "user_id": "uuid",
-    "track_id": "uuid",
-    "gp_level": 1,
-    "driver_ids": ["uuid", "uuid"],
-    "boost_recommendations": {
-      "primary_boost": "uuid",
-      "alternate_boosts": ["uuid", "uuid"]
-    },
-    "car_setup_id": "uuid",
-    "dry_tire_strategy": "3m3m2s",
-    "wet_tire_strategy": "10w",
-    "notes": "Track strategy notes",
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
-]
-```
-
-#### POST /api/track-guides
-
-Create a new track guide.
-
-**Request Body:**
-```json
-{
-  "track_id": "uuid",
-  "gp_level": 1,
-  "driver_ids": ["uuid", "uuid"],
-  "boost_recommendations": {
-    "primary_boost": "uuid",
-    "alternate_boosts": ["uuid", "uuid"]
-  },
-  "car_setup_id": "uuid",
-  "dry_tire_strategy": "3m3m2s",
-  "wet_tire_strategy": "10w",
-  "notes": "Track strategy notes"
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Track guide created successfully",
-  "guide_id": "uuid"
-}
-```
-
-#### PUT /api/track-guides/[id]
-
-Update a track guide.
-
-**Request Body:**
-```json
-{
-  "driver_ids": ["uuid", "uuid", "uuid"],
-  "dry_tire_strategy": "4m2m2s",
-  "notes": "Updated strategy"
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Track guide updated successfully"
-}
-```
-
-#### DELETE /api/track-guides/[id]
-
-Delete a track guide.
-
-**Response:**
-```json
-{
-  "message": "Track guide deleted successfully"
-}
-```
-
-### Tracks
-
-#### GET /api/tracks
-
-Retrieve all tracks.
-
-**Response:**
-```json
-[
-  {
-    "id": "uuid",
-    "name": "Monza",
-    "alt_name": "Temple of Speed",
-    "laps": 53,
-    "driver_track_stat": "defending",
-    "car_track_stat": "speed",
-    "season_id": "uuid",
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
-]
-```
-
-#### GET /api/tracks/[id]
-
-Retrieve a specific track by ID.
-
-**Response:**
-```json
-{
-  "id": "uuid",
-  "name": "Monza",
-  "alt_name": "Temple of Speed",
-  "laps": 53,
-  "driver_track_stat": "defending",
-  "car_track_stat": "speed",
-  "season_id": "uuid",
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:00:00Z"
-}
-```
-
-## Admin Endpoints
-
-### Data Import/Export
-
-#### POST /api/admin/import
-
-Import data from external sources (admin only).
-
-**Request Body:**
-```json
-{
-  "data_type": "drivers|car_parts|boosts",
-  "data": [...]
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Data imported successfully",
-  "imported_count": 50
-}
-```
-
-#### GET /api/export-collection
-
-Export user's collection data.
-
-**Response:**
-```json
-{
-  "exportedAt": "2024-01-01T00:00:00Z",
-  "userItems": [
-    {
-      "catalog_item_id": "uuid",
-      "level": 5,
-      "card_count": 10,
-      "bonus_percent": 10
-    }
-  ],
-  "userBoosts": [
-    {
-      "boost_id": "uuid",
-      "count": 5
-    }
-  ]
-}
-```
-
-#### POST /api/import-collection
-
-Import collection data.
-
-**Request Body:**
-```json
-{
-  "userItems": [...],
-  "userBoosts": [...]
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Collection imported successfully"
-}
-```
-
-#### GET /api/export-admin-data
-
-Export admin data (custom boost names, free boost flags).
-
-**Response:**
-```json
-{
-  "exportedAt": "2024-01-01T00:00:00Z",
-  "boostCustomNames": [
-    {
-      "boost_id": "uuid",
-      "custom_name": "Custom Name"
-    }
-  ]
-}
-```
-
-#### POST /api/import-admin-data
-
-Import admin data (admin only).
-
-**Request Body:**
-```json
-{
-  "boostCustomNames": [...]
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Admin data imported successfully"
-}
-```
-
-## Error Handling
-
-### Common Error Responses
-
-#### 401 Unauthorized
-```json
-{
-  "error": "Authentication required"
-}
-```
-
-#### 403 Forbidden
-```json
-{
-  "error": "Insufficient permissions"
-}
-```
-
-#### 404 Not Found
-```json
-{
-  "error": "Resource not found"
-}
-```
-
-#### 500 Server Error
-```json
-{
-  "error": "Internal server error"
-}
-```
-
-### Validation Errors
-
-```json
-{
-  "error": "Validation failed",
-  "details": {
-    "field_name": "Error message"
-  }
-}
-```
-
-## Rate Limiting
-
-All endpoints are subject to rate limiting:
-
-- **Standard endpoints**: 100 requests per minute
-- **Admin endpoints**: 50 requests per minute
-- **Import/Export endpoints**: 10 requests per minute
-
-## CORS
-
-All API endpoints support CORS for the following origins:
-- `https://your-app.vercel.app`
-- `http://localhost:3000`
-
-## Versioning
-
-This API follows semantic versioning. Breaking changes will result in a new major version.
-
-Current version: `v1`
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/debug` | Yes (admin) | General debug info and DB diagnostics |
+| GET | `/api/debug/track-aliases` | Yes (admin) | Inspect current track alias data |
+| POST | `/api/debug/create-track-aliases-table` | Yes (admin) | Create the track_name_aliases table if missing |

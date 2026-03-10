@@ -11,7 +11,7 @@ import { useAuth } from '@/components/auth/AuthContext';
 export default function UpdatePasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { session } = useAuth();
+  const { session, loading: authLoading } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -61,7 +61,7 @@ export default function UpdatePasswordPage() {
         setSuccess(true);
         // Redirect to login after 3 seconds
         setTimeout(() => {
-          router.push('/auth/login');
+          router.push('/dashboard');
         }, 3000);
       }
     } catch (err) {
@@ -72,7 +72,7 @@ export default function UpdatePasswordPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="flex justify-center px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
@@ -82,13 +82,13 @@ export default function UpdatePasswordPage() {
             </div>
             <h1 className="mt-4 text-3xl font-bold text-gray-900">Password updated!</h1>
             <p className="mt-2 text-gray-600">
-              Your password has been successfully updated. Redirecting to login...
+              Your password has been successfully updated. Redirecting to your dashboard...
             </p>
           </div>
 
           <div className="text-center">
-            <Link href="/auth/login" className="text-blue-600 hover:text-blue-500">
-              Go to login now →
+            <Link href="/dashboard" className="text-blue-600 hover:text-blue-500">
+              Go to dashboard now →
             </Link>
           </div>
         </div>
@@ -96,10 +96,10 @@ export default function UpdatePasswordPage() {
     );
   }
 
-  // If no session and no error, show loading
-  if (!session && !error) {
+  // Show loading while auth initializes (detectSessionInUrl may still be resolving)
+  if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex justify-center py-16">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Verifying reset link...</p>
@@ -109,7 +109,7 @@ export default function UpdatePasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="flex justify-center px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900">Set your password</h1>

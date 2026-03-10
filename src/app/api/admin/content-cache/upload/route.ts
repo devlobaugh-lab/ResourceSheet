@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 import { z } from 'zod'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, createAuthenticatedSupabaseClient } from '@/lib/supabase'
 import { createCatalogItemSchema, createBoostSchema, createSeasonSchema } from '@/lib/validation'
 import { preprocessDrivers } from '@/lib/preprocessing'
 
@@ -35,55 +33,28 @@ const contentCacheSchema = z.object({
 // POST /api/admin/content-cache/upload - Upload and process content_cache.json (admin only)
 export async function POST(request: NextRequest) {
   try {
-    // For local development, use a simpler authentication approach
-    // Check if user is authenticated by checking for a valid session
-    const authHeader = request.headers.get('authorization')
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const supabase = createAuthenticatedSupabaseClient(request)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
       )
     }
 
-    // For local development, we'll trust the JWT token if it's present
-    // In production, this would use proper Supabase authentication
-    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
-    
-    // Validate JWT format (basic check)
-    const parts = token.split('.')
-    if (parts.length !== 3) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Invalid authentication token' } },
-        { status: 401 }
-      )
-    }
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
 
-    // Create a mock user for local development
-    const mockUser = {
-      id: 'local-admin-user',
-      email: 'admin@local.dev',
-      user_metadata: {},
-      app_metadata: { role: 'authenticated' },
-      aud: 'authenticated',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-
-    // Check if user is admin (for local dev, we'll check if they have admin access)
-    // In a real setup, this would query the database
-    const isAdmin = true // For local development, assume admin access
-    
-    if (!isAdmin) {
+    if (!profile?.is_admin) {
       return NextResponse.json(
         { error: { code: 'FORBIDDEN', message: 'Admin access required' } },
         { status: 403 }
       )
     }
-    
-    // For local development, we'll skip the admin check since we're assuming admin access
-    // In production, this would query the database to verify admin status
-    console.log('✅ Local development: Assuming admin access for user:', mockUser.id)
     
     // Parse form data
     const formData = await request.formData()
@@ -174,7 +145,9 @@ export async function POST(request: NextRequest) {
         total_unchanged: results.drivers.unchanged + results.car_parts.unchanged + results.boosts.unchanged,
         drivers: results.drivers,
         car_parts: results.car_parts,
-        boosts: results.boosts
+        boosts: results.boosts,
+        series: results.series,
+        tracks: results.tracks
       }
     }, { status: 201 })
     
@@ -270,9 +243,8 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
   if (collectionsData) {
     const collections = collectionsData.map((c: any) => ({
       id: c.id,
-      name: c.name ?? null,                    // Use c.name (display name like "SERVLOC_TXT_PODIUM_STARS_COLLECTION_TITLE")
-      theme: c.theme ?? null,                  // Use c.theme (theme name like "PodiumStars")
-      description: c.description ?? null,
+      name: c.name ?? null,
+      theme: c.theme ?? null,
       ordinal: c.ordinal ?? null,
     }))
 
@@ -794,6 +766,8 @@ async function processItems(items: any[], tableName: string, idField: string, al
 
       if (!error) {
         results.new++
+      } else {
+        console.error(`❌ Failed to insert ${tableName} item: ${newItem[idField]}`, error)
       }
     } else {
       // Existing item - check for changes

@@ -5,70 +5,70 @@ import { supabaseAdmin } from '@/lib/supabase'
 // GET /api/admin-check - Check if current user is admin
 export async function GET(request: NextRequest) {
   try {
-    console.log('Admin check called - checking current user authentication')
-    
-    // Use server-side Supabase client that handles cookies
-    // Create client directly instead of using the helper function
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              request.cookies.set(name, value)
-            })
-          },
-        },
+    let userId: string | null = null
+
+    // Try JWT auth first (app uses localStorage-based JWT)
+    const authHeader = request.headers.get('authorization')
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7)
+      try {
+        const parts = token.split('.')
+        if (parts.length === 3) {
+          const payload = JSON.parse(
+            Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
+          )
+          if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
+            userId = payload.sub
+          }
+        }
+      } catch {
+        // JWT parse failed, fall through to cookie auth
       }
-    )
-    
-    // Get the current session from cookies
-    const { data: { session }, error: authError } = await supabase.auth.getSession()
+    }
 
-    if (authError || !session) {
-      console.error('Auth error:', authError)
+    // Fall back to cookie-based auth
+    if (!userId) {
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll()
+            },
+            setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
+              cookiesToSet.forEach(({ name, value }) => {
+                request.cookies.set(name, value)
+              })
+            },
+          },
+        }
+      )
+      const { data: { user } } = await supabase.auth.getUser()
+      userId = user?.id ?? null
+    }
+
+    if (!userId) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
       )
     }
 
-    // Get the authenticated user (more secure than using session.user directly)
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-
-    if (userError || !user) {
-      console.error('User error:', userError)
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      )
-    }
-
-    console.log('Admin check - found user:', { userId: user.id, email: user.email })
-
-    // Check if the authenticated user is admin
-    // Use the admin client for database access since the anonymous client doesn't have permission
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('is_admin')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single()
 
     if (profileError || !profile) {
-      console.log('Admin check - profile not found or error:', { profileError, profile })
       return NextResponse.json(
         { error: { code: 'FORBIDDEN', message: 'Admin access required' } },
         { status: 403 }
       )
     }
 
-    const isAdmin = profile?.is_admin === true
-    console.log('Admin check result:', { isAdmin, userId: user.id, profile })
-    return NextResponse.json({ isAdmin })
+    return NextResponse.json({ isAdmin: profile.is_admin === true })
 
   } catch (error) {
     console.error('Admin check error:', error)

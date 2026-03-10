@@ -47,6 +47,21 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Attach collection_theme via collections JOIN (same pattern as /api/drivers)
+    const collectionIds = Array.from(new Set((carParts || []).map((p: any) => p.collection_id).filter(Boolean)))
+    if (collectionIds.length > 0) {
+      const { data: collections } = await supabaseAdmin
+        .from('collections')
+        .select('id, theme, ordinal')
+        .in('id', collectionIds)
+      const collectionMap = new Map((collections || []).map((c: any) => [c.id, c]))
+      ;(carParts || []).forEach((p: any) => {
+        p.collection_theme = p.collection_id ? (collectionMap.get(p.collection_id)?.theme ?? null) : null
+      })
+    } else {
+      ;(carParts || []).forEach((p: any) => { p.collection_theme = null })
+    }
+
     // Apply pagination
     const page = validatedFilters.page || 1
     const limit = validatedFilters.limit || 20

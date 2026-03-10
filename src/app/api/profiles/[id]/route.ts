@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { supabaseAdmin } from '@/lib/supabase'
+import { z } from 'zod'
+import { supabaseAdmin, createAuthenticatedSupabaseClient } from '@/lib/supabase'
+
+const updateProfileSchema = z.object({
+  active_season_id: z.string().uuid().nullable().optional(),
+})
 
 // GET /api/profiles/[id] - Get user profile
 export async function GET(
@@ -8,62 +12,14 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Try to get user from Authorization header first, then fall back to cookies
-    let user = null
-    const authHeader = request.headers.get('authorization')
+    const supabase = createAuthenticatedSupabaseClient(request)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (authHeader?.startsWith('Bearer ')) {
-      // Try to validate JWT token directly
-      const token = authHeader.substring(7)
-      try {
-        // For local development, trust the JWT and extract user info
-        const parts = token.split('.')
-        if (parts.length === 3) {
-          const payload = JSON.parse(
-            Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
-          )
-
-          if (payload.exp && payload.exp > Math.floor(Date.now() / 1000)) {
-            user = {
-              id: payload.sub,
-              email: payload.email,
-              user_metadata: payload.user_metadata || {},
-              app_metadata: payload.app_metadata || {},
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('JWT validation failed:', error)
-      }
-    }
-
-    // If JWT didn't work, try cookie-based auth
-    if (!user) {
-      const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            getAll() {
-              return request.cookies.getAll()
-            },
-            setAll(cookiesToSet: any[]) {
-              cookiesToSet.forEach(({ name, value, options }: any) => {
-                request.cookies.set(name, value)
-              })
-            },
-          },
-        }
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+        { status: 401 }
       )
-      const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
-
-      if (authError || !cookieUser) {
-        return NextResponse.json(
-          { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-          { status: 401 }
-        )
-      }
-      user = cookieUser
     }
 
     // Users can only access their own profile
@@ -92,6 +48,64 @@ export async function GET(
 
   } catch (error) {
     console.error('Get profile error:', error)
+    return NextResponse.json(
+      { error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT /api/profiles/[id] - Update user profile
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const supabase = createAuthenticatedSupabaseClient(request)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+        { status: 401 }
+      )
+    }
+
+    // Users can only update their own profile
+    if (user.id !== params.id) {
+      return NextResponse.json(
+        { error: { code: 'FORBIDDEN', message: 'Access denied' } },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const validatedData = updateProfileSchema.parse(body)
+
+    const { data: profile, error: updateError } = await supabaseAdmin
+      .from('profiles')
+      .update(validatedData)
+      .eq('id', params.id)
+      .select()
+      .single()
+
+    if (updateError) {
+      return NextResponse.json(
+        { error: { code: 'DATABASE_ERROR', message: updateError.message } },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json(profile)
+
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Invalid request data', details: error.errors } },
+        { status: 400 }
+      )
+    }
+    console.error('Update profile error:', error)
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
       { status: 500 }

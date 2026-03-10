@@ -45,12 +45,12 @@ export const getBoostsColumns = (): ColumnDef[] => [
   { key: 'is_free', label: 'Free', sortable: true },
   { key: 'overtake', label: 'Overtake', sortable: true },
   { key: 'block', label: 'Defend', sortable: true },
-  { key: 'corners', label: 'Corners', sortable: true },
-  { key: 'tyre_use', label: 'Tyre Use', sortable: true },
-  { key: 'power_unit', label: 'Power Unit', sortable: true },
-  { key: 'speed', label: 'Speed', sortable: true },
-  { key: 'pit_stop', label: 'Pit Stop', sortable: true },
   { key: 'race_start', label: 'Race Start', sortable: true },
+  { key: 'tyre_use', label: 'Tyre Use', sortable: true },
+  { key: 'speed', label: 'Speed', sortable: true },
+  { key: 'corners', label: 'Corners', sortable: true },
+  { key: 'power_unit', label: 'Power Unit', sortable: true },
+  { key: 'pit_stop', label: 'Pit Stop', sortable: true },
 ];
 
 /**

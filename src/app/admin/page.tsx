@@ -9,25 +9,19 @@ import { useToast } from '@/components/ui/Toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAuthHeaders } from '@/hooks/useApi';
 import Link from 'next/link';
-import { Upload, Users, Shield, Download, FileUp, Database, Globe, MapPin } from 'lucide-react';
+import { Upload, Users, Shield, Download, FileUp, Database, MapPin, Calendar } from 'lucide-react';
 
 export default function AdminPage() {
   const { user } = useAuth();
   const toast = useToast();
   const queryClient = useQueryClient();
   
-  // Loading states for different operations
-  const [exportAllUsersLoading, setExportAllUsersLoading] = useState(false);
-  const [importAllUsersLoading, setImportAllUsersLoading] = useState(false);
-  const [exportGlobalLoading, setExportGlobalLoading] = useState(false);
-  const [importGlobalLoading, setImportGlobalLoading] = useState(false);
-  const [exportFullLoading, setExportFullLoading] = useState(false);
-  const [importFullLoading, setImportFullLoading] = useState(false);
-  
-  // File input refs
-  const allUsersFileInputRef = useRef<HTMLInputElement>(null);
-  const globalFileInputRef = useRef<HTMLInputElement>(null);
-  const fullFileInputRef = useRef<HTMLInputElement>(null);
+  // Loading states for backup operations
+  const [exportBackupLoading, setExportBackupLoading] = useState(false);
+  const [importBackupLoading, setImportBackupLoading] = useState(false);
+
+  // File input ref
+  const backupFileInputRef = useRef<HTMLInputElement>(null);
 
   // Check if user is admin
   const { data: profile, isLoading: isProfileLoading } = useQuery({
@@ -45,7 +39,7 @@ export default function AdminPage() {
     staleTime: 5 * 60 * 1000
   });
 
-  const isAdmin = profile?.is_admin === true || profile?.user_type === 'admin';
+  const isAdmin = profile?.is_admin === true;
 
   // Generic export handler
   const handleExport = async (
@@ -130,27 +124,16 @@ export default function AdminPage() {
     }
   };
 
-  // File change handlers
-  const handleAllUsersFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBackupFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) handleImport('/api/admin/import-all-users', file, setImportAllUsersLoading, allUsersFileInputRef);
-  };
-
-  const handleGlobalFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleImport('/api/admin/import-global-data', file, setImportGlobalLoading, globalFileInputRef);
-  };
-
-  const handleFullFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleImport('/api/admin/import-full-backup', file, setImportFullLoading, fullFileInputRef);
+    if (file) handleImport('/api/admin/import', file, setImportBackupLoading, backupFileInputRef);
   };
 
   // Show loading state while checking admin status
   if (isProfileLoading && user?.id) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="mt-32 bg-gray-50 flex items-center justify-center">
           <Card className="p-8 max-w-md mx-auto text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
             <p className="text-gray-600">Checking permissions...</p>
@@ -163,7 +146,7 @@ export default function AdminPage() {
   if (!isAdmin) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="mt-32 bg-gray-50 flex items-center justify-center">
           <Card className="p-8 max-w-md mx-auto text-center">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Access Denied</h2>
             <p className="text-gray-600 mb-6">You need admin privileges to access this page.</p>
@@ -197,13 +180,19 @@ export default function AdminPage() {
       icon: Users,
       href: '/admin/users',
       color: 'text-orange-600'
+    },
+    {
+      title: 'Season Management',
+      description: 'Add seasons and set the current active season',
+      icon: Calendar,
+      href: '/admin/seasons',
+      color: 'text-purple-600'
     }
   ];
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
@@ -237,98 +226,36 @@ export default function AdminPage() {
             })}
           </div>
 
-          {/* Data Backup Section - Compact Grid */}
+          {/* Data Backup Section */}
           <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">Data Backup & Restore</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* User Data */}
-            <Card className="p-4">
-              <div className="flex items-center space-x-3 mb-2">
-                <Users className="w-5 h-5 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">User Data</h3>
-              </div>
-              <p className="text-sm text-gray-500 mb-3 line-clamp-2">
-                Drivers, car parts, boosts, track guides, GP guides, setups for all users.
-              </p>
-              <div className="flex flex-col gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleExport('/api/admin/export-all-users', 'f1-all-users', setExportAllUsersLoading)}
-                  disabled={exportAllUsersLoading}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  {exportAllUsersLoading ? 'Exporting...' : 'Export'}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => allUsersFileInputRef.current?.click()}
-                  disabled={importAllUsersLoading}
-                >
-                  <FileUp className="w-4 h-4 mr-2" />
-                  {importAllUsersLoading ? 'Importing...' : 'Import'}
-                </Button>
-              </div>
-            </Card>
-
-            {/* Global Data */}
-            <Card className="p-4">
-              <div className="flex items-center space-x-3 mb-2">
-                <Globe className="w-5 h-5 text-green-600" />
-                <h3 className="font-semibold text-gray-900">Global Data</h3>
-              </div>
-              <p className="text-sm text-gray-500 mb-3 line-clamp-2">
-                Seasons, tracks, boost custom names, free boost flags.
-              </p>
-              <div className="flex flex-col gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleExport('/api/admin/export-global-data', 'f1-global-data', setExportGlobalLoading)}
-                  disabled={exportGlobalLoading}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  {exportGlobalLoading ? 'Exporting...' : 'Export'}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => globalFileInputRef.current?.click()}
-                  disabled={importGlobalLoading}
-                >
-                  <FileUp className="w-4 h-4 mr-2" />
-                  {importGlobalLoading ? 'Importing...' : 'Import'}
-                </Button>
-              </div>
-            </Card>
-
-            {/* Full Backup */}
+            {/* Admin Backup */}
             <Card className="p-4">
               <div className="flex items-center space-x-3 mb-2">
                 <Database className="w-5 h-5 text-purple-600" />
-                <h3 className="font-semibold text-gray-900">Full Backup</h3>
+                <h3 className="font-semibold text-gray-900">Admin Backup</h3>
               </div>
               <p className="text-sm text-gray-500 mb-3 line-clamp-2">
-                Complete disaster recovery: all global catalogs + all user data.
+                All user data + admin-configured seasons, track aliases, and boost settings.
               </p>
               <div className="flex flex-col gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleExport('/api/admin/export-full-backup', 'f1-full-backup', setExportFullLoading)}
-                  disabled={exportFullLoading}
+                  onClick={() => handleExport('/api/admin/export', 'f1-admin-backup', setExportBackupLoading)}
+                  disabled={exportBackupLoading}
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  {exportFullLoading ? 'Exporting...' : 'Export'}
+                  {exportBackupLoading ? 'Exporting...' : 'Export'}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => fullFileInputRef.current?.click()}
-                  disabled={importFullLoading}
+                  onClick={() => backupFileInputRef.current?.click()}
+                  disabled={importBackupLoading}
                 >
                   <FileUp className="w-4 h-4 mr-2" />
-                  {importFullLoading ? 'Importing...' : 'Import'}
+                  {importBackupLoading ? 'Importing...' : 'Import'}
                 </Button>
               </div>
             </Card>
@@ -352,12 +279,9 @@ export default function AdminPage() {
             </div>
           </Card>
         </div>
-      </div>
 
-      {/* Hidden file inputs */}
-      <input type="file" ref={allUsersFileInputRef} onChange={handleAllUsersFileChange} accept=".json" style={{ display: 'none' }} />
-      <input type="file" ref={globalFileInputRef} onChange={handleGlobalFileChange} accept=".json" style={{ display: 'none' }} />
-      <input type="file" ref={fullFileInputRef} onChange={handleFullFileChange} accept=".json" style={{ display: 'none' }} />
+      {/* Hidden file input */}
+      <input type="file" ref={backupFileInputRef} onChange={handleBackupFileChange} accept=".json" style={{ display: 'none' }} />
     </ProtectedRoute>
   );
 }

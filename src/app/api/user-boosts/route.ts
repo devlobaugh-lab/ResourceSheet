@@ -59,16 +59,11 @@ export async function GET(request: NextRequest) {
 
     // Apply filters
     const seasonId = searchParams.get('season_id')
-    const rarity = searchParams.get('rarity')
     const series = searchParams.get('series')
     const search = searchParams.get('search')
 
     if (seasonId) {
       boostsQuery = boostsQuery.eq('season_id', seasonId)
-    }
-
-    if (rarity) {
-      boostsQuery = boostsQuery.eq('rarity', parseInt(rarity))
     }
 
     if (series) {
@@ -121,6 +116,23 @@ export async function GET(request: NextRequest) {
         is_owned: userData.card_count > 0
       }
     })
+
+    // Fetch custom names and merge into results
+    const { data: customNames } = await supabaseAdmin
+      .from('boost_custom_names')
+      .select('boost_id, custom_name')
+
+    if (customNames && customNames.length > 0) {
+      const customNamesMap = new Map<string, string>()
+      customNames.forEach(cn => customNamesMap.set(cn.boost_id, cn.custom_name))
+
+      mergedData = mergedData.map(boost => ({
+        ...boost,
+        boost_custom_names: {
+          custom_name: customNamesMap.get(boost.id) || null
+        }
+      }))
+    }
 
     // Apply owned_only filter if requested
     const ownedOnly = searchParams.get('owned_only')

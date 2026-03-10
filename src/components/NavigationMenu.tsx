@@ -138,32 +138,19 @@ export function MobileNavigationMenu({ isAdmin }: MobileNavigationMenuProps) {
 export function useAdminStatus() {
   const { user } = useAuth()
 
-  // Use the admin check API to verify admin status
-  const { data: adminCheck, isLoading } = useQuery({
+  const { data: adminCheck } = useQuery({
     queryKey: ['admin-check'],
     queryFn: async () => {
       const response = await fetch('/api/admin-check', {
-        credentials: 'same-origin'
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
       })
-      if (!response.ok) {
-        throw new Error('Failed to check admin status')
-      }
+      if (!response.ok) return { isAdmin: false }
       return response.json()
     },
     enabled: !!user,
-    staleTime: 5 * 60 * 1000 // 5 minutes
+    staleTime: 5 * 60 * 1000,
   })
 
-  const isAdmin = adminCheck?.isAdmin === true
-  
-  // Debug logging
-  console.log('Admin check:', {
-    currentUserId: user?.id,
-    isAdmin,
-    isAuthenticated: !!user,
-    adminCheck
-  })
-
-  // Return false if user is not authenticated or admin check failed
-  return !!user && isAdmin
+  return !!user && adminCheck?.isAdmin === true
 }

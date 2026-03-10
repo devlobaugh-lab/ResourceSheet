@@ -102,7 +102,21 @@ export async function PUT(
     
     const body = await request.json()
     const validatedData = updateSeasonSchema.parse(body)
-    
+
+    // If setting as active, clear all other seasons first
+    if (validatedData.is_active === true) {
+      const { error: clearError } = await supabaseAdmin
+        .from('seasons')
+        .update({ is_active: false })
+        .neq('id', id)
+      if (clearError) {
+        return NextResponse.json(
+          { error: { code: 'DATABASE_ERROR', message: clearError.message } },
+          { status: 500 }
+        )
+      }
+    }
+
     const { data, error } = await supabaseAdmin
       .from('seasons')
       .update(validatedData)

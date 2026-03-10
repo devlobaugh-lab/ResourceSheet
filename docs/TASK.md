@@ -589,6 +589,7 @@ The Rarity-5 variants implementation is now complete and production-ready. The s
 - [x] Driver Sorting Bug - sorting by stat columns only considered base values, not bonus calculations. Fixed to include bonus percentage increases.
 - [x] Fixed data-input page layout issues - reduced excessive whitespace above headings and optimized table container heights
 - [x] Drivers Page Sorting with Highest Level Toggle - Fixed sorting logic to use displayed values instead of original level values when "Highest Level" toggle is enabled. Updated getStatValueForSort function to include calculateHighestLevel logic when showHighestLevel is true, and fixed column statistics calculation to also use highest level values for proper color coding.
+- [x] Bonus Column Sorting for Drivers - Enabled sorting on the Bonus column in the drivers DataGrid. Checked drivers appear first (asc), unchecked last; secondary sort is alphabetical by driver name within each group. Re-sorts immediately when a checkbox is toggled. Parts page Bonus column remains non-sortable.
 
 ### Bugs and issues
 

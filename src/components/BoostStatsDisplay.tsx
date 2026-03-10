@@ -40,14 +40,14 @@ export function BoostStatsDisplay({ boostStats, className = '' }: BoostStatsDisp
   if (!boostStats) return null
 
   const stats = [
-    { key: 'block', label: 'Defend' },
     { key: 'overtake', label: 'Overtake' },
-    { key: 'corners', label: 'Corners' },
+    { key: 'block', label: 'Defend' },
+    { key: 'race_start', label: 'Race Start' },
     { key: 'tyre_use', label: 'Tyre Use' },
-    { key: 'power_unit', label: 'Power Unit' },
     { key: 'speed', label: 'Speed' },
+    { key: 'corners', label: 'Corners' },
+    { key: 'power_unit', label: 'Power Unit' },
     { key: 'pit_stop', label: 'Pit Stop' },
-    { key: 'race_start', label: 'Race Start' }
   ]
 
   const displayStats = stats
