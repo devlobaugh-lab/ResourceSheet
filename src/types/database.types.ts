@@ -9,36 +9,87 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_track_loadouts: {
+        Row: {
+          blocking: number | null
+          car_parts: Json | null
+          created_at: string | null
+          difficulty: string
+          driver_slot: number
+          id: string
+          name: string
+          overtaking: number | null
+          qualifying: number | null
+          race_start: number | null
+          team_name: string
+          track_name: string
+          tyre_use: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          blocking?: number | null
+          car_parts?: Json | null
+          created_at?: string | null
+          difficulty: string
+          driver_slot: number
+          id?: string
+          name: string
+          overtaking?: number | null
+          qualifying?: number | null
+          race_start?: number | null
+          team_name: string
+          track_name: string
+          tyre_use?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          blocking?: number | null
+          car_parts?: Json | null
+          created_at?: string | null
+          difficulty?: string
+          driver_slot?: number
+          id?: string
+          name?: string
+          overtaking?: number | null
+          qualifying?: number | null
+          race_start?: number | null
+          team_name?: string
+          track_name?: string
+          tyre_use?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       boost_custom_names: {
         Row: {
           boost_id: string
-          created_at: string | null
+          created_at: string
           custom_name: string
           id: string
-          updated_at: string | null
-          user_id: string | null
+          updated_at: string
+          user_id: string
         }
         Insert: {
           boost_id: string
-          created_at?: string | null
+          created_at?: string
           custom_name: string
           id?: string
-          updated_at?: string | null
-          user_id?: string | null
+          updated_at?: string
+          user_id: string
         }
         Update: {
           boost_id?: string
-          created_at?: string | null
+          created_at?: string
           custom_name?: string
           id?: string
-          updated_at?: string | null
-          user_id?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "boost_custom_names_boost_id_fkey"
             columns: ["boost_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "boosts"
             referencedColumns: ["id"]
           },
@@ -50,8 +101,10 @@ export type Database = {
           created_at: string
           icon: string | null
           id: string
-          is_free: boolean
+          is_free: boolean | null
           name: string
+          season_id: string | null
+          series: number | null
           updated_at: string
         }
         Insert: {
@@ -59,8 +112,10 @@ export type Database = {
           created_at?: string
           icon?: string | null
           id?: string
-          is_free?: boolean
+          is_free?: boolean | null
           name: string
+          season_id?: string | null
+          series?: number | null
           updated_at?: string
         }
         Update: {
@@ -68,11 +123,21 @@ export type Database = {
           created_at?: string
           icon?: string | null
           id?: string
-          is_free?: boolean
+          is_free?: boolean | null
           name?: string
+          season_id?: string | null
+          series?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "boosts_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       car_parts: {
         Row: {
@@ -136,79 +201,41 @@ export type Database = {
           },
         ]
       }
-      catalog_items: {
+      collections: {
         Row: {
-          car_part_type: number | null
-          card_type: number
-          cc_price: number | null
-          collection_id: string | null
-          collection_sub_name: string | null
           created_at: string
-          icon: string | null
           id: string
-          min_gp_tier: number | null
-          name: string
-          num_duplicates_after_unlock: number | null
+          internal_name: string | null
+          metadata: Json | null
+          name: string | null
           ordinal: number | null
-          rarity: number
-          season_id: string | null
-          series: number
-          stats_per_level: Json | null
-          tag_name: string | null
+          season: number | null
+          theme: string | null
           updated_at: string
-          visual_override: string | null
         }
         Insert: {
-          car_part_type?: number | null
-          card_type: number
-          cc_price?: number | null
-          collection_id?: string | null
-          collection_sub_name?: string | null
           created_at?: string
-          icon?: string | null
-          id?: string
-          min_gp_tier?: number | null
-          name: string
-          num_duplicates_after_unlock?: number | null
+          id: string
+          internal_name?: string | null
+          metadata?: Json | null
+          name?: string | null
           ordinal?: number | null
-          rarity: number
-          season_id?: string | null
-          series: number
-          stats_per_level?: Json | null
-          tag_name?: string | null
+          season?: number | null
+          theme?: string | null
           updated_at?: string
-          visual_override?: string | null
         }
         Update: {
-          car_part_type?: number | null
-          card_type?: number
-          cc_price?: number | null
-          collection_id?: string | null
-          collection_sub_name?: string | null
           created_at?: string
-          icon?: string | null
           id?: string
-          min_gp_tier?: number | null
-          name?: string
-          num_duplicates_after_unlock?: number | null
+          internal_name?: string | null
+          metadata?: Json | null
+          name?: string | null
           ordinal?: number | null
-          rarity?: number
-          season_id?: string | null
-          series?: number
-          stats_per_level?: Json | null
-          tag_name?: string | null
+          season?: number | null
+          theme?: string | null
           updated_at?: string
-          visual_override?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "catalog_items_season_id_fkey"
-            columns: ["season_id"]
-            isOneToOne: false
-            referencedRelation: "seasons"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       drivers: {
         Row: {
@@ -280,30 +307,44 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_season_id: string | null
           created_at: string
           email: string | null
           id: string
+          is_active: boolean | null
           is_admin: boolean | null
           updated_at: string
           username: string | null
         }
         Insert: {
+          active_season_id?: string | null
           created_at?: string
           email?: string | null
           id: string
+          is_active?: boolean | null
           is_admin?: boolean | null
           updated_at?: string
           username?: string | null
         }
         Update: {
+          active_season_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          is_active?: boolean | null
           is_admin?: boolean | null
           updated_at?: string
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_active_season_id_fkey"
+            columns: ["active_season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       seasons: {
         Row: {
@@ -329,39 +370,144 @@ export type Database = {
         }
         Relationships: []
       }
-      tracks: {
+      series_data: {
         Row: {
-          alt_name: string | null
-          car_track_stat: string
+          ai_car_loadouts: Json | null
+          bot_loadout: Json | null
           created_at: string | null
-          driver_track_stat: string
+          entry_fee: number | null
+          flags_to_unlock: number | null
+          index: number
+          loss_flags: number | null
+          max_flags: number | null
+          track_ids: string[] | null
+          track_info: Json | null
+          track_names: string[] | null
+          updated_at: string | null
+          win_flags: number | null
+          win_rep: number | null
+        }
+        Insert: {
+          ai_car_loadouts?: Json | null
+          bot_loadout?: Json | null
+          created_at?: string | null
+          entry_fee?: number | null
+          flags_to_unlock?: number | null
+          index: number
+          loss_flags?: number | null
+          max_flags?: number | null
+          track_ids?: string[] | null
+          track_info?: Json | null
+          track_names?: string[] | null
+          updated_at?: string | null
+          win_flags?: number | null
+          win_rep?: number | null
+        }
+        Update: {
+          ai_car_loadouts?: Json | null
+          bot_loadout?: Json | null
+          created_at?: string | null
+          entry_fee?: number | null
+          flags_to_unlock?: number | null
+          index?: number
+          loss_flags?: number | null
+          max_flags?: number | null
+          track_ids?: string[] | null
+          track_info?: Json | null
+          track_names?: string[] | null
+          updated_at?: string | null
+          win_flags?: number | null
+          win_rep?: number | null
+        }
+        Relationships: []
+      }
+      team_driver_names: {
+        Row: {
+          created_at: string | null
+          driver_name: string
+          driver_slot: number
           id: string
-          laps: number
-          name: string
-          season_id: string
+          team_name: string
           updated_at: string | null
         }
         Insert: {
-          alt_name?: string | null
-          car_track_stat: string
           created_at?: string | null
-          driver_track_stat: string
+          driver_name: string
+          driver_slot: number
           id?: string
-          laps: number
-          name: string
-          season_id: string
+          team_name: string
           updated_at?: string | null
         }
         Update: {
-          alt_name?: string | null
-          car_track_stat?: string
           created_at?: string | null
+          driver_name?: string
+          driver_slot?: number
+          id?: string
+          team_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      track_name_aliases: {
+        Row: {
+          created_at: string | null
+          display_name: string
+          id: string
+          system_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_name: string
+          id?: string
+          system_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string
+          id?: string
+          system_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tracks: {
+        Row: {
+          car_track_stat: string
+          created_at: string
+          driver_track_stat: string
+          id: string
+          is_active: boolean | null
+          laps: number
+          name: string
+          season_id: string
+          track_guid: string | null
+          updated_at: string
+        }
+        Insert: {
+          car_track_stat: string
+          created_at?: string
+          driver_track_stat: string
+          id?: string
+          is_active?: boolean | null
+          laps: number
+          name: string
+          season_id: string
+          track_guid?: string | null
+          updated_at?: string
+        }
+        Update: {
+          car_track_stat?: string
+          created_at?: string
           driver_track_stat?: string
           id?: string
+          is_active?: boolean | null
           laps?: number
           name?: string
           season_id?: string
-          updated_at?: string | null
+          track_guid?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -372,6 +518,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tracks_backup: {
+        Row: {
+          alt_name: string | null
+          car_track_stat: string | null
+          created_at: string | null
+          driver_track_stat: string | null
+          id: string | null
+          laps: number | null
+          name: string | null
+          season_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          alt_name?: string | null
+          car_track_stat?: string | null
+          created_at?: string | null
+          driver_track_stat?: string | null
+          id?: string | null
+          laps?: number | null
+          name?: string | null
+          season_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          alt_name?: string | null
+          car_track_stat?: string | null
+          created_at?: string | null
+          driver_track_stat?: string | null
+          id?: string | null
+          laps?: number | null
+          name?: string | null
+          season_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       user_boosts: {
         Row: {
@@ -461,6 +643,7 @@ export type Database = {
           name: string
           notes: string | null
           rear_wing_id: string | null
+          season_id: string | null
           series_filter: number | null
           suspension_id: string | null
           updated_at: string
@@ -477,6 +660,7 @@ export type Database = {
           name: string
           notes?: string | null
           rear_wing_id?: string | null
+          season_id?: string | null
           series_filter?: number | null
           suspension_id?: string | null
           updated_at?: string
@@ -493,6 +677,7 @@ export type Database = {
           name?: string
           notes?: string | null
           rear_wing_id?: string | null
+          season_id?: string | null
           series_filter?: number | null
           suspension_id?: string | null
           updated_at?: string
@@ -535,20 +720,62 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "user_car_setups_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "user_car_setups_suspension_id_fkey"
             columns: ["suspension_id"]
             isOneToOne: false
             referencedRelation: "car_parts"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "user_car_setups_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
+      }
+      user_custom_drivers: {
+        Row: {
+          blocking: number | null
+          car_parts: Json | null
+          created_at: string | null
+          id: string
+          name: string
+          overtaking: number | null
+          qualifying: number | null
+          race_start: number | null
+          tyre_use: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          blocking?: number | null
+          car_parts?: Json | null
+          created_at?: string | null
+          id?: string
+          name: string
+          overtaking?: number | null
+          qualifying?: number | null
+          race_start?: number | null
+          tyre_use?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          blocking?: number | null
+          car_parts?: Json | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          overtaking?: number | null
+          qualifying?: number | null
+          race_start?: number | null
+          tyre_use?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       user_drivers: {
         Row: {
@@ -588,71 +815,251 @@ export type Database = {
           },
         ]
       }
-      user_items: {
+      user_gp_guide_results: {
         Row: {
-          card_count: number | null
-          catalog_item_id: string
-          created_at: string
+          created_at: string | null
+          gp_guide_id: string
           id: string
-          level: number | null
-          updated_at: string
-          user_id: string
+          results_notes: string | null
+          track_id: string
+          updated_at: string | null
         }
         Insert: {
-          card_count?: number | null
-          catalog_item_id: string
-          created_at?: string
+          created_at?: string | null
+          gp_guide_id: string
           id?: string
-          level?: number | null
-          updated_at?: string
-          user_id: string
+          results_notes?: string | null
+          track_id: string
+          updated_at?: string | null
         }
         Update: {
-          card_count?: number | null
-          catalog_item_id?: string
-          created_at?: string
+          created_at?: string | null
+          gp_guide_id?: string
           id?: string
-          level?: number | null
-          updated_at?: string
-          user_id?: string
+          results_notes?: string | null
+          track_id?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "user_items_catalog_item_id_fkey"
-            columns: ["catalog_item_id"]
+            foreignKeyName: "user_gp_guide_results_gp_guide_id_fkey"
+            columns: ["gp_guide_id"]
             isOneToOne: false
-            referencedRelation: "catalog_items"
+            referencedRelation: "user_gp_guides"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_gp_guide_results_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_gp_guide_tracks: {
+        Row: {
+          alt_boost_ids: Json | null
+          alt_driver_ids: Json | null
+          created_at: string | null
+          driver_1_boost_id: string | null
+          driver_1_id: string | null
+          driver_1_tire_strategy: string | null
+          driver_2_boost_id: string | null
+          driver_2_id: string | null
+          driver_2_tire_strategy: string | null
+          gp_guide_id: string
+          id: string
+          is_ready: boolean
+          is_wet: boolean
+          race_number: number
+          race_type: string
+          saved_setup_id: string | null
+          setup_notes: string | null
+          strategy_notes: string | null
+          track_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          alt_boost_ids?: Json | null
+          alt_driver_ids?: Json | null
+          created_at?: string | null
+          driver_1_boost_id?: string | null
+          driver_1_id?: string | null
+          driver_1_tire_strategy?: string | null
+          driver_2_boost_id?: string | null
+          driver_2_id?: string | null
+          driver_2_tire_strategy?: string | null
+          gp_guide_id: string
+          id?: string
+          is_ready?: boolean
+          is_wet?: boolean
+          race_number: number
+          race_type: string
+          saved_setup_id?: string | null
+          setup_notes?: string | null
+          strategy_notes?: string | null
+          track_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          alt_boost_ids?: Json | null
+          alt_driver_ids?: Json | null
+          created_at?: string | null
+          driver_1_boost_id?: string | null
+          driver_1_id?: string | null
+          driver_1_tire_strategy?: string | null
+          driver_2_boost_id?: string | null
+          driver_2_id?: string | null
+          driver_2_tire_strategy?: string | null
+          gp_guide_id?: string
+          id?: string
+          is_ready?: boolean
+          is_wet?: boolean
+          race_number?: number
+          race_type?: string
+          saved_setup_id?: string | null
+          setup_notes?: string | null
+          strategy_notes?: string | null
+          track_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_gp_guide_tracks_driver_1_boost_id_fkey"
+            columns: ["driver_1_boost_id"]
+            isOneToOne: false
+            referencedRelation: "boosts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_gp_guide_tracks_driver_1_id_fkey"
+            columns: ["driver_1_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_gp_guide_tracks_driver_2_boost_id_fkey"
+            columns: ["driver_2_boost_id"]
+            isOneToOne: false
+            referencedRelation: "boosts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_gp_guide_tracks_driver_2_id_fkey"
+            columns: ["driver_2_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_gp_guide_tracks_gp_guide_id_fkey"
+            columns: ["gp_guide_id"]
+            isOneToOne: false
+            referencedRelation: "user_gp_guides"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_gp_guide_tracks_saved_setup_id_fkey"
+            columns: ["saved_setup_id"]
+            isOneToOne: false
+            referencedRelation: "user_car_setups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_gp_guide_tracks_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_gp_guides: {
+        Row: {
+          created_at: string | null
+          gp_level: number
+          id: string
+          is_ready: boolean
+          name: string
+          notes: string | null
+          season_id: string | null
+          start_date: string | null
+          updated_at: string | null
+          user_id: string
+          weekend_strategy_same: boolean
+        }
+        Insert: {
+          created_at?: string | null
+          gp_level: number
+          id?: string
+          is_ready?: boolean
+          name: string
+          notes?: string | null
+          season_id?: string | null
+          start_date?: string | null
+          updated_at?: string | null
+          user_id: string
+          weekend_strategy_same?: boolean
+        }
+        Update: {
+          created_at?: string | null
+          gp_level?: number
+          id?: string
+          is_ready?: boolean
+          name?: string
+          notes?: string | null
+          season_id?: string | null
+          start_date?: string | null
+          updated_at?: string | null
+          user_id?: string
+          weekend_strategy_same?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_gp_guides_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_gp_guides_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
       }
       user_track_guide_drivers: {
         Row: {
-          created_at: string | null
+          created_at: string
           driver_id: string
           id: string
           recommended_boost_id: string | null
           track_guide_id: string
           track_strategy: string | null
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           driver_id: string
           id?: string
           recommended_boost_id?: string | null
           track_guide_id: string
           track_strategy?: string | null
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           driver_id?: string
           id?: string
           recommended_boost_id?: string | null
           track_guide_id?: string
           track_strategy?: string | null
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -680,7 +1087,17 @@ export type Database = {
       }
       user_track_guides: {
         Row: {
-          created_at: string | null
+          alt_boost_ids: Json | null
+          alt_driver_ids: Json | null
+          created_at: string
+          driver_1_boost_id: string | null
+          driver_1_dry_strategy: string | null
+          driver_1_id: string | null
+          driver_1_wet_strategy: string | null
+          driver_2_boost_id: string | null
+          driver_2_dry_strategy: string | null
+          driver_2_id: string | null
+          driver_2_wet_strategy: string | null
           dry_strategy: string | null
           free_boost_id: string | null
           gp_level: number
@@ -691,12 +1108,22 @@ export type Database = {
           suggested_boosts: Json | null
           suggested_drivers: Json | null
           track_id: string
-          updated_at: string | null
+          updated_at: string
           user_id: string
           wet_strategy: string | null
         }
         Insert: {
-          created_at?: string | null
+          alt_boost_ids?: Json | null
+          alt_driver_ids?: Json | null
+          created_at?: string
+          driver_1_boost_id?: string | null
+          driver_1_dry_strategy?: string | null
+          driver_1_id?: string | null
+          driver_1_wet_strategy?: string | null
+          driver_2_boost_id?: string | null
+          driver_2_dry_strategy?: string | null
+          driver_2_id?: string | null
+          driver_2_wet_strategy?: string | null
           dry_strategy?: string | null
           free_boost_id?: string | null
           gp_level: number
@@ -707,12 +1134,22 @@ export type Database = {
           suggested_boosts?: Json | null
           suggested_drivers?: Json | null
           track_id: string
-          updated_at?: string | null
+          updated_at?: string
           user_id: string
           wet_strategy?: string | null
         }
         Update: {
-          created_at?: string | null
+          alt_boost_ids?: Json | null
+          alt_driver_ids?: Json | null
+          created_at?: string
+          driver_1_boost_id?: string | null
+          driver_1_dry_strategy?: string | null
+          driver_1_id?: string | null
+          driver_1_wet_strategy?: string | null
+          driver_2_boost_id?: string | null
+          driver_2_dry_strategy?: string | null
+          driver_2_id?: string | null
+          driver_2_wet_strategy?: string | null
           dry_strategy?: string | null
           free_boost_id?: string | null
           gp_level?: number
@@ -723,11 +1160,39 @@ export type Database = {
           suggested_boosts?: Json | null
           suggested_drivers?: Json | null
           track_id?: string
-          updated_at?: string | null
+          updated_at?: string
           user_id?: string
           wet_strategy?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "user_track_guides_driver_1_boost_id_fkey"
+            columns: ["driver_1_boost_id"]
+            isOneToOne: false
+            referencedRelation: "boosts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_track_guides_driver_1_id_fkey"
+            columns: ["driver_1_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_track_guides_driver_2_boost_id_fkey"
+            columns: ["driver_2_boost_id"]
+            isOneToOne: false
+            referencedRelation: "boosts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_track_guides_driver_2_id_fkey"
+            columns: ["driver_2_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_track_guides_free_boost_id_fkey"
             columns: ["free_boost_id"]
@@ -747,13 +1212,6 @@ export type Database = {
             columns: ["track_id"]
             isOneToOne: false
             referencedRelation: "tracks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_track_guides_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useCarParts, useUserCarParts } from '@/hooks/useApi'
+import { useSeason } from '@/contexts/SeasonContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useAuth } from '@/components/auth/AuthContext'
 import Link from 'next/link'
@@ -62,13 +63,16 @@ const getStatBackgroundColor = (value: number, min: number, max: number, median:
 };
 
 function AuthenticatedPartsPage() {
+  const { activeSeasonId } = useSeason()
   const { data: carPartsResponse, isLoading: carPartsLoading, error: carPartsError } = useCarParts({
     page: 1,
-    limit: 100
+    limit: 100,
+    ...(activeSeasonId ? { season_id: activeSeasonId } : {}),
   })
   const { data: userCarPartsResponse, isLoading: userCarPartsLoading, error: userCarPartsError } = useUserCarParts({
     page: 1,
-    limit: 100
+    limit: 100,
+    ...(activeSeasonId ? { season_id: activeSeasonId } : {}),
   })
 
   const isLoading = carPartsLoading || userCarPartsLoading

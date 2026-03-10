@@ -11,11 +11,15 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useToast } from '@/components/ui/Toast';
 import { getAuthHeaders } from '@/hooks/useApi';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSeason } from '@/contexts/SeasonContext';
+import { useSeasons } from '@/hooks/useApi';
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const { activeSeasonId, setActiveSeason } = useSeason();
+  const { data: seasonsData } = useSeasons();
   const [exportLoading, setExportLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -224,6 +228,47 @@ export default function ProfilePage() {
                     {importLoading ? 'Importing...' : 'Import Data'}
                   </Button>
                 </div>
+              </Card>
+
+              {/* Active Season */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Active Season</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Select which season&apos;s data you want to work with. &quot;Current&quot; marks the admin-designated active season.
+                </p>
+                {seasonsData && (() => {
+                  const seasons = (seasonsData as any)?.data ?? seasonsData ?? []
+                  if (!seasons.length) {
+                    return <p className="text-sm text-gray-400">No seasons available.</p>
+                  }
+                  return (
+                    <div className="space-y-2">
+                      {seasons.map((season: any) => (
+                        <button
+                          key={season.id}
+                          onClick={() => setActiveSeason(season.id)}
+                          className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-left transition-colors ${
+                            activeSeasonId === season.id
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className={`font-medium text-sm ${activeSeasonId === season.id ? 'text-blue-700' : 'text-gray-900'}`}>
+                            {season.name}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {season.is_active && (
+                              <Badge variant="success">Current</Badge>
+                            )}
+                            {activeSeasonId === season.id && (
+                              <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )
+                })()}
               </Card>
 
               {/* Change Password */}

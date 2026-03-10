@@ -4,6 +4,7 @@ import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { useTracks } from '@/hooks/useApi';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { useSeason } from '@/contexts/SeasonContext';
 
 // Stat display configuration
 const driverStats: Record<string, string> = {
@@ -22,7 +23,8 @@ const carStats: Record<string, string> = {
 };
 
 export default function TracksReferencePage() {
-  const { data: tracksData, isLoading, error } = useTracks();
+  const { activeSeasonId } = useSeason()
+  const { data: tracksData, isLoading, error } = useTracks(activeSeasonId ? { season_id: activeSeasonId } : undefined);
 
   // Get display name with alias if available
   const getDisplayName = (track: any) => {

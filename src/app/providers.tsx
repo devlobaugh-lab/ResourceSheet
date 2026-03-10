@@ -5,6 +5,7 @@ import { ReactNode, useState } from 'react'
 import { AuthProvider } from '@/components/auth/AuthContext'
 import { ToastProvider } from '@/components/ui/Toast'
 import { CollectionsProvider } from '@/lib/collectionsContext'
+import { SeasonProvider } from '@/contexts/SeasonContext'
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -24,7 +25,9 @@ export function Providers({ children }: { children: ReactNode }) {
       <AuthProvider>
         <ToastProvider>
           <CollectionsProvider>
-            {children}
+            <SeasonProvider>
+              {children}
+            </SeasonProvider>
           </CollectionsProvider>
         </ToastProvider>
       </AuthProvider>

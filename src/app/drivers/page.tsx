@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useUserDrivers, useDrivers } from '@/hooks/useApi'
+import { useSeason } from '@/contexts/SeasonContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useAuth } from '@/components/auth/AuthContext'
 import { useToast } from '@/components/ui/Toast'
@@ -14,9 +15,11 @@ import Link from 'next/link'
 import { getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils'
 
 function AuthenticatedDriversPage() {
+  const { activeSeasonId } = useSeason()
   const { data: driversResponse, isLoading, error } = useUserDrivers({
     page: 1,
-    limit: 100
+    limit: 100,
+    ...(activeSeasonId ? { season_id: activeSeasonId } : {}),
   })
 
   const { addToast } = useToast()

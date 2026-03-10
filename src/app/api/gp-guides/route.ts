@@ -9,6 +9,7 @@ const createGpGuideSchema = z.object({
   gp_level: z.number().int().min(0).max(3),
   notes: z.string().nullable().optional(),
   weekend_strategy_same: z.boolean().optional().default(true),
+  season_id: z.string().uuid().nullable().optional(),
 })
 
 // Helper: extract authenticated user from request
@@ -57,11 +58,18 @@ export async function GET(request: NextRequest) {
     // Use authenticated client for RLS enforcement
     const supabase = createAuthenticatedSupabaseClient(request)
 
-    const { data, error } = await supabase
+    const url = new URL(request.url)
+    const season_id = url.searchParams.get('season_id')
+
+    let query = supabase
       .from('user_gp_guides')
       .select('*')
       .order('start_date', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
+
+    if (season_id) query = query.eq('season_id', season_id)
+
+    const { data, error } = await query
 
     if (error) {
       return NextResponse.json(
@@ -104,6 +112,7 @@ export async function POST(request: NextRequest) {
         gp_level: validated.gp_level,
         notes: validated.notes ?? null,
         weekend_strategy_same: validated.weekend_strategy_same ?? true,
+        season_id: validated.season_id ?? null,
       })
       .select('*')
       .single()
