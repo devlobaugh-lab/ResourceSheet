@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+
+export const dynamic = 'force-dynamic'
 import type { SeriesData, SeriesWithTracks, SeriesTrack, SeriesTrackInfo } from '@/types/database'
 
 // Stat display names mapping
