@@ -11,7 +11,7 @@ import { DriverView, BoostView } from '@/types/database'
 import { DriverSelectionGrid } from '@/components/DriverSelectionGrid'
 import { DriverDisplay } from '@/components/DriverDisplay'
 import { BoostDisplay } from '@/components/BoostDisplay'
-import { getRarityBackground } from '@/lib/utils'
+import { getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -25,9 +25,6 @@ const GP_LEVELS = [
   { id: 3, name: 'Champion', color: 'bg-red-100 text-red-800', seriesMax: 12 },
 ]
 
-const RARITY_NAMES: Record<number, string> = {
-  1: 'Basic', 2: 'Common', 3: 'Rare', 4: 'Epic', 5: 'Legendary', 6: 'SE Turbo',
-}
 
 const getBoostValueColor = (v: number) =>
   v === 1 ? 'bg-blue-200' : v === 2 ? 'bg-green-200' : v === 3 ? 'bg-yellow-200' :
@@ -113,7 +110,7 @@ function BoostSelectModal({
           <table className="w-full divide-y divide-gray-200">
             <thead className="bg-gray-700 sticky top-0 z-10">
               <tr>
-                {['Name','Amt','Defend','Overtake','Corners','Tyre','Power Unit','Speed','Pit Stop','Race Start'].map(h => (
+                {['Name','Amt','Overtake','Defend','Race Start','Tyre','Speed','Corners','Power Unit','Pit Stop'].map(h => (
                   <th key={h} className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase">{h}</th>
                 ))}
               </tr>
@@ -134,7 +131,7 @@ function BoostSelectModal({
                       </div>
                     </td>
                     <td className="px-3 py-1 text-sm text-center">{boost.card_count || 0}</td>
-                    {['block','overtake','corners','tyre_use','power_unit','speed','pit_stop','race_start'].map(k => (
+                    {['overtake','block','race_start','tyre_use','speed','corners','power_unit','pit_stop'].map(k => (
                       <td key={k} className={cn('px-3 py-1 text-sm text-center', bs[k] > 0 && getBoostValueColor(bs[k]))}>
                         {bs[k] ? bs[k] * 5 : ''}
                       </td>
@@ -843,13 +840,13 @@ function CondensedView({ guide, allTracks, allDrivers, allBoosts, allSetups }: {
     return (
       <div key={slot.id} className="mb-4 print:mb-2 border-b border-gray-100 pb-2 last:border-0">
         <div className="font-semibold text-base print:text-sm text-gray-900">
-          {i + 1}. {track?.name || '?'} — {track?.laps || '?'} Laps
+          {i + 1}. {track ? (track.display_name || track.name) : '?'} — {track?.laps || '?'} Laps
           {track ? ` · ${capitalizeStat(track.driver_track_stat)} / ${capitalizeStat(track.car_track_stat)}` : ''}
           {' '}{slot.is_wet ? '🌧️' : '☀️'}
         </div>
         {setup && <div className="ml-4 text-sm print:text-xs text-gray-600"><strong>Setup:</strong> {setup.name}{slot.setup_notes ? ` — ${slot.setup_notes}` : ''}</div>}
-        {d1 && <div className="ml-4 text-sm print:text-xs text-gray-700"><strong>D1:</strong> {d1.name} ({RARITY_NAMES[d1.rarity] || `R${d1.rarity}`}){b1 ? ` — ${boostDisplayName(b1)}` : ''}{slot.driver_1_tire_strategy ? ` — ${slot.driver_1_tire_strategy}` : ''}</div>}
-        {d2 && <div className="ml-4 text-sm print:text-xs text-gray-700"><strong>D2:</strong> {d2.name} ({RARITY_NAMES[d2.rarity] || `R${d2.rarity}`}){b2 ? ` — ${boostDisplayName(b2)}` : ''}{slot.driver_2_tire_strategy ? ` — ${slot.driver_2_tire_strategy}` : ''}</div>}
+        {d1 && <div className="ml-4 text-sm print:text-xs text-gray-700"><strong>D1:</strong> {d1.name} ({d1.rarity === 5 ? getCollectionRarityDisplay(d1.collection_theme ?? null, d1.collection_sub_name ?? null) : getRarityDisplay(d1.rarity)}){b1 ? ` — ${boostDisplayName(b1)}` : ''}{slot.driver_1_tire_strategy ? ` — ${slot.driver_1_tire_strategy}` : ''}</div>}
+        {d2 && <div className="ml-4 text-sm print:text-xs text-gray-700"><strong>D2:</strong> {d2.name} ({d2.rarity === 5 ? getCollectionRarityDisplay(d2.collection_theme ?? null, d2.collection_sub_name ?? null) : getRarityDisplay(d2.rarity)}){b2 ? ` — ${boostDisplayName(b2)}` : ''}{slot.driver_2_tire_strategy ? ` — ${slot.driver_2_tire_strategy}` : ''}</div>}
         {slot.strategy_notes && <div className="ml-4 text-sm print:text-xs text-gray-500 italic">{slot.strategy_notes}</div>}
       </div>
     )

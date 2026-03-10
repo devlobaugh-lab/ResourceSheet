@@ -842,6 +842,7 @@ export interface CarPartView {
   collection_id: string | null
   visual_override: string | null
   collection_sub_name: string | null
+  collection_theme?: string | null
   car_part_type: number
   stats_per_level: any | null
 
