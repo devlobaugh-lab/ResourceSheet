@@ -32,9 +32,3 @@ CREATE TRIGGER update_track_name_aliases_updated_at
 -- Grant permissions
 GRANT SELECT ON track_name_aliases TO authenticated;
 
--- Insert some common aliases
-INSERT INTO track_name_aliases (system_name, display_name) VALUES
-  ('Americas', 'Austin'),
-  ('Great Britain', 'Silverstone'),
-  ('United States', 'Austin')
-ON CONFLICT (system_name) DO NOTHING;

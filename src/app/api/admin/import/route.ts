@@ -119,19 +119,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // user_track_guides: upsert by (user_id, track_id)
+    // user_track_guides: upsert by (user_id, track_id, gp_level)
     if (importData.userTrackGuides?.length) {
       for (const item of importData.userTrackGuides) {
         try {
           const { data: existing } = await supabaseAdmin
             .from('user_track_guides').select('id')
-            .eq('user_id', item.user_id).eq('track_id', item.track_id).single()
+            .eq('user_id', item.user_id).eq('track_id', item.track_id).eq('gp_level', item.gp_level).single()
           if (existing) {
             const { id, created_at, ...updateData } = item
             await supabaseAdmin.from('user_track_guides').update(updateData).eq('id', existing.id)
             results.userTrackGuides.updated++
           } else {
-            const { id, ...insertData } = item
+            const { created_at, ...insertData } = item
             await supabaseAdmin.from('user_track_guides').insert(insertData)
             results.userTrackGuides.imported++
           }
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
     if (importData.userGpGuides?.length) {
       for (const item of importData.userGpGuides) {
         try {
-          const { id, ...insertData } = item
+          const { created_at, ...insertData } = item
           await supabaseAdmin.from('user_gp_guides').insert(insertData)
           results.userGpGuides.imported++
         } catch (e) { results.errors.push(`user_gp_guides: ${String(e)}`) }
