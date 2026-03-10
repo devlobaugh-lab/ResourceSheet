@@ -54,6 +54,7 @@ export interface Database {
           username: string | null
           is_admin: boolean
           is_active: boolean
+          active_season_id: string | null
           created_at: string
           updated_at: string
         }
@@ -63,6 +64,7 @@ export interface Database {
           username?: string | null
           is_admin?: boolean
           is_active?: boolean
+          active_season_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -72,6 +74,7 @@ export interface Database {
           username?: string | null
           is_admin?: boolean
           is_active?: boolean
+          active_season_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -451,6 +454,7 @@ export interface Database {
           gp_level: number
           notes: string | null
           weekend_strategy_same: boolean
+          season_id: string | null
           created_at: string
           updated_at: string
         }
@@ -462,6 +466,7 @@ export interface Database {
           gp_level: number
           notes?: string | null
           weekend_strategy_same?: boolean
+          season_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -473,6 +478,7 @@ export interface Database {
           gp_level?: number
           notes?: string | null
           weekend_strategy_same?: boolean
+          season_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -891,6 +897,7 @@ export interface UserCarSetup {
   engine_id: string | null
   series_filter: number
   bonus_percentage: number
+  season_id: string | null
   created_at: string
   updated_at: string
 }

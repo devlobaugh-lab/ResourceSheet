@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getAuthHeaders } from '@/hooks/useApi'
 import { UserGpGuide } from '@/types/database'
+import { useSeason } from '@/contexts/SeasonContext'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +30,7 @@ const formatDate = (dateStr: string | null) => {
 
 export default function GpGuidesPage() {
   const router = useRouter()
+  const { activeSeasonId } = useSeason()
   const [guides, setGuides] = useState<UserGpGuide[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
@@ -44,7 +46,9 @@ export default function GpGuidesPage() {
 
   const fetchGuides = useCallback(async () => {
     try {
-      const response = await fetch('/api/gp-guides', {
+      const params = new URLSearchParams()
+      if (activeSeasonId) params.append('season_id', activeSeasonId)
+      const response = await fetch(`/api/gp-guides?${params}`, {
         headers: await getAuthHeaders(),
         credentials: 'same-origin',
       })
@@ -55,7 +59,7 @@ export default function GpGuidesPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [activeSeasonId])
 
   useEffect(() => {
     fetchGuides()
@@ -76,6 +80,7 @@ export default function GpGuidesPage() {
           name: newName.trim(),
           start_date: newStartDate || null,
           gp_level: newGpLevel,
+          season_id: activeSeasonId ?? null,
         }),
       })
 

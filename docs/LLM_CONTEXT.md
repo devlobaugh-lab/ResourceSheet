@@ -15,6 +15,7 @@ src/lib/logger.ts              Logger class + global logger instance; call logge
 src/lib/console-init.ts        side-effect module — imports logger and calls overrideConsole() (imported by layout.tsx for client)
 src/instrumentation.ts         Next.js server instrumentation — calls logger.overrideConsole() at server startup
 src/hooks/useApi.ts            all TanStack Query hooks (getAuthHeaders exported here too)
+src/contexts/SeasonContext.tsx useSeasonContext — activeSeasonId, activeSeason, seasons, setActiveSeason
 src/components/auth/AuthContext.tsx   useAuth() hook — user, session, signIn, signOut
 src/app/api/                   all API route handlers
 supabase/migrations/           SQL migration files (source of truth for DB schema)
@@ -74,7 +75,8 @@ user_boosts      user_id uuid, boost_id uuid FK boosts, level int, count int
 user_car_setups  user_id uuid, name text, notes text?, series_filter int,
                  bonus_percentage int, brake_id uuid?, gearbox_id uuid?,
                  rear_wing_id uuid?, front_wing_id uuid?, suspension_id uuid?,
-                 engine_id uuid?   [all FK car_parts]
+                 engine_id uuid?,  [all FK car_parts]
+                 season_id uuid? FK seasons
 
 user_track_guides   user_id uuid, track_id uuid FK tracks, gp_level int,
                     driver_1_id uuid?, driver_2_id uuid?, driver_1_boost_id uuid?,
@@ -89,7 +91,7 @@ user_track_guide_drivers   track_guide_id uuid FK user_track_guides, driver_id u
                            recommended_boost_id uuid?, track_strategy text?
 
 user_gp_guides   user_id uuid, name text, start_date date?, gp_level int,
-                 notes text?, weekend_strategy_same bool
+                 notes text?, weekend_strategy_same bool, season_id uuid? FK seasons
 
 user_gp_guide_tracks   gp_guide_id uuid FK user_gp_guides, track_id uuid?, race_number int,
                        race_type 'qualifying'|'opening'|'final', is_wet bool, is_ready bool,
@@ -108,7 +110,7 @@ user_custom_drivers   user_id uuid, name text, overtaking int, blocking int,
 
 ```
 profiles   id uuid (= auth.users.id), email text?, username text?,
-           is_admin bool, is_active bool
+           is_admin bool, is_active bool, active_season_id uuid? FK seasons
 ```
 
 ---
@@ -303,6 +305,44 @@ Admin check in client code: `user` alone is not enough — fetch `/api/admin-che
 
 ---
 
+## Season Context (client components)
+
+```typescript
+import { useSeason } from '@/contexts/SeasonContext'
+const { activeSeasonId, activeSeason, seasons, isLoading, setActiveSeason } = useSeason()
+```
+
+- `activeSeasonId` — the resolved working season (user preference → globally `is_active` → null)
+- `activeSeason` — full `Season` object for the active season, or null
+- `seasons` — all seasons
+- `setActiveSeason(id)` — persists to `profiles.active_season_id` via `PUT /api/profiles/[id]` and updates local state optimistically
+
+**Convention:** page components read `activeSeasonId` from context and pass it as a filter to hooks. Do **not** bake context reads into `useApi.ts` hooks.
+
+### Season-aware hooks
+
+| Hook | Filter param |
+|------|-------------|
+| `useUserDrivers(filters)` | `season_id` |
+| `useUserCarParts(filters)` | `season_id` |
+| `useCarParts(filters)` | `season_id` |
+| `useTracks(filters)` | `season_id` |
+| `useUserCarSetups(filters)` | `season_id` |
+| `useGpGuides(filters)` | `season_id` |
+
+### Season-aware API endpoints
+
+| Endpoint | season_id support |
+|----------|-------------------|
+| `GET /api/gp-guides` | query param |
+| `POST /api/gp-guides` | request body |
+| `GET /api/setups` | query param |
+| `POST /api/setups` | request body |
+| `PUT /api/seasons/[id]` | atomically clears others when `is_active: true` |
+| `PUT /api/profiles/[id]` | updates `active_season_id` |
+
+---
+
 ## New-User Invite Email Flow
 
 `supabaseAdmin` uses `createClient` from `@supabase/supabase-js`, which uses **implicit flow** (hash tokens). `resetPasswordForEmail` therefore delivers `#access_token=...` in the URL — not a `?code=` query param.
@@ -326,6 +366,7 @@ QueryClientProvider
   └── AuthProvider
         └── ToastProvider
               └── CollectionsProvider
+                    └── SeasonProvider
 ```
 
 ---

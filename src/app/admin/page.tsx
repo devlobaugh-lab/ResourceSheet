@@ -9,7 +9,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAuthHeaders } from '@/hooks/useApi';
 import Link from 'next/link';
-import { Upload, Users, Shield, Download, FileUp, Database, MapPin } from 'lucide-react';
+import { Upload, Users, Shield, Download, FileUp, Database, MapPin, Calendar } from 'lucide-react';
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -180,6 +180,13 @@ export default function AdminPage() {
       icon: Users,
       href: '/admin/users',
       color: 'text-orange-600'
+    },
+    {
+      title: 'Season Management',
+      description: 'Add seasons and set the current active season',
+      icon: Calendar,
+      href: '/admin/seasons',
+      color: 'text-purple-600'
     }
   ];
 
