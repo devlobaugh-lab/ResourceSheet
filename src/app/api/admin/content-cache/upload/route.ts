@@ -145,7 +145,9 @@ export async function POST(request: NextRequest) {
         total_unchanged: results.drivers.unchanged + results.car_parts.unchanged + results.boosts.unchanged,
         drivers: results.drivers,
         car_parts: results.car_parts,
-        boosts: results.boosts
+        boosts: results.boosts,
+        series: results.series,
+        tracks: results.tracks
       }
     }, { status: 201 })
     

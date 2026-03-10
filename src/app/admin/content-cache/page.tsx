@@ -388,6 +388,21 @@ export default function AdminContentCachePage() {
                     </div>
                   </div>
 
+                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="bg-white rounded p-3">
+                      <div className="font-medium text-gray-700 mb-2">🏎️ Series</div>
+                      <div className="text-gray-600">
+                        Imported: {uploadResult.summary.series?.new ?? 0} | Deleted: {uploadResult.summary.series?.deleted ?? 0}
+                      </div>
+                    </div>
+                    <div className="bg-white rounded p-3">
+                      <div className="font-medium text-gray-700 mb-2">🏁 Tracks</div>
+                      <div className="text-gray-600">
+                        Imported: {uploadResult.summary.tracks?.new ?? 0}
+                      </div>
+                    </div>
+                  </div>
+
                   {uploadResult.summary.total_modified > 0 && (
                     <div className="mt-4">
                       <details className="bg-white rounded p-3">
