@@ -25,6 +25,9 @@ export async function GET(request: NextRequest) {
       .from('profiles')
       .select('id, username, active_season_id')
 
+    const { data: authUsersData } = await supabaseAdmin.auth.admin.listUsers()
+    const authUserMap = new Map(authUsersData?.users.map(u => [u.id, u.email]) ?? [])
+
     const users = []
 
     for (const userProfile of allProfiles || []) {
@@ -69,6 +72,7 @@ export async function GET(request: NextRequest) {
 
       users.push({
         userId,
+        email: authUserMap.get(userId) ?? null,
         username: userProfile.username,
         active_season_id: userProfile.active_season_id,
         data: {
@@ -87,7 +91,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      version: '1.0',
+      version: '1.1',
       exportType: 'allUsersData',
       exportedAt: new Date().toISOString(),
       users,

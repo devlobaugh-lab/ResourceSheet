@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const usersArray = body.users as Array<{
       userId: string
+      email?: string | null
       username?: string
       active_season_id?: string | null
       data: Record<string, unknown[]>
@@ -54,13 +55,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: { code: 'INVALID_FORMAT', message: 'Expected a users array' } }, { status: 400 })
     }
 
+    const { data: authUsersData } = await supabaseAdmin.auth.admin.listUsers()
+    const emailToCurrentId = new Map(
+      (authUsersData?.users ?? []).map(u => [u.email, u.id])
+    )
+
     const totals = {
       usersProcessed: 0,
       errors: [] as string[]
     }
 
     for (const userEntry of usersArray) {
-      const userId = userEntry.userId
+      const backedUpUserId = userEntry.userId
+      const email = userEntry.email
+      const userId = (email && emailToCurrentId.get(email)) ?? null
+
+      if (!userId) {
+        totals.errors.push(`user ${backedUpUserId}: could not resolve current user ID (email not found)`)
+        continue
+      }
+
       const importData = userEntry.data || {}
 
       // Update profile metadata (username, active_season_id only — never touch is_admin/is_active)

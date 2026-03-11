@@ -407,6 +407,35 @@ All `console.*` output is suppressed in production via a global console override
 
 ---
 
+## Admin Import / Export
+
+### User Data Backup (`GET /api/admin/export/users` → `POST /api/admin/import/users`)
+
+Export format (version `1.1`):
+
+```json
+{
+  "version": "1.1",
+  "exportType": "allUsersData",
+  "exportedAt": "<ISO timestamp>",
+  "users": [
+    {
+      "userId": "<uuid at export time>",
+      "email": "<auth email>",
+      "username": "...",
+      "active_season_id": null,
+      "data": { "userDrivers": [...], "userCarParts": [...], ... }
+    }
+  ]
+}
+```
+
+**UUID resolution on import:** After a DB reset, `auth.users` gets new UUIDs. The import route resolves the correct current UUID by `email` — it does **not** trust the backed-up `userId`. If `email` is missing or doesn't match any current auth user, that user entry is skipped and an error is recorded. All inserts/updates use the resolved current UUID.
+
+**Backward compatibility:** Version `1.0` exports (no `email` field) will fail to resolve and skip all users. Re-export with the current code before resetting if you need a usable backup.
+
+---
+
 ## Adding a New Feature — Checklist
 
 1. **DB**: add migration in `supabase/migrations/YYYYMMDDHHMMSS_name.sql`
