@@ -21,6 +21,7 @@ export default function AdminPage() {
   const [importSystemLoading, setImportSystemLoading] = useState(false);
   const [exportUsersLoading, setExportUsersLoading] = useState(false);
   const [importUsersLoading, setImportUsersLoading] = useState(false);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
 
   // File input refs
   const systemFileInputRef = useRef<HTMLInputElement>(null);
@@ -113,10 +114,12 @@ export default function AdminPage() {
       const result = await response.json();
       queryClient.invalidateQueries();
 
-      toast.addToast('Import completed successfully', 'success');
-      if (result.results?.errors?.length > 0) {
-        console.warn('Import errors:', result.results.errors);
-        toast.addToast(`${result.results.errors.length} errors occurred`, 'warning');
+      const errors: string[] = result.results?.errors ?? [];
+      setImportErrors(errors);
+      if (errors.length > 0) {
+        toast.addToast(`Import completed with ${errors.length} error${errors.length === 1 ? '' : 's'}`, 'warning');
+      } else {
+        toast.addToast('Import completed successfully', 'success');
       }
     } catch (error) {
       console.error('Import error:', error);
@@ -299,6 +302,26 @@ export default function AdminPage() {
               </div>
             </Card>
           </div>
+
+          {/* Import Errors */}
+          {importErrors.length > 0 && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-yellow-800">Import errors ({importErrors.length})</h3>
+                <button
+                  onClick={() => setImportErrors([])}
+                  className="text-xs text-yellow-600 hover:text-yellow-800 underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+              <ul className="text-xs text-yellow-700 space-y-1 max-h-40 overflow-y-auto font-mono">
+                {importErrors.map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Admin Info */}
           <Card className="mt-6 p-6">

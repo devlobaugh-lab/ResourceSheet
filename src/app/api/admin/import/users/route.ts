@@ -163,8 +163,8 @@ export async function POST(request: NextRequest) {
               .from('user_track_guides').select('id')
               .eq('user_id', userId).eq('track_id', item.track_id as string).eq('gp_level', item.gp_level as string).single()
             if (existing) {
-              const { id, created_at, ...updateData } = item
-              await supabaseAdmin.from('user_track_guides').update(updateData).eq('id', existing.id)
+              const { id, created_at, user_id: _oldUserId, ...updateData } = item
+              await supabaseAdmin.from('user_track_guides').update({ ...updateData, user_id: userId }).eq('id', existing.id)
             } else {
               const { created_at, ...insertData } = item
               await supabaseAdmin.from('user_track_guides').insert({ ...insertData, user_id: userId })
@@ -205,6 +205,8 @@ export async function POST(request: NextRequest) {
               gp_level: item.gp_level,
               notes: item.notes,
               weekend_strategy_same: item.weekend_strategy_same,
+              is_ready: item.is_ready ?? false,
+              season_id: (item.season_id as string | null) ?? null,
             }
             if (existing) {
               await supabaseAdmin.from('user_gp_guides').update(guideData).eq('id', existing.id)

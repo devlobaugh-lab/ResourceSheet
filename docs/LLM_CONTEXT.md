@@ -409,6 +409,31 @@ All `console.*` output is suppressed in production via a global console override
 
 ## Admin Import / Export
 
+### System Backup (`GET /api/admin/export/system` → `POST /api/admin/import/system`)
+
+Export format (version `1.1`):
+
+```json
+{
+  "version": "1.1",
+  "exportType": "systemData",
+  "exportedAt": "<ISO timestamp>",
+  "data": {
+    "seasons": [...],
+    "trackNameAliases": [...],
+    "boostOverrides": [...],
+    "boostCustomNames": [...],
+    "users": [
+      { "email": "...", "username": "...", "is_admin": false, "is_active": true }
+    ]
+  }
+}
+```
+
+**User accounts on import:** The system import creates missing auth users via `auth.admin.createUser` with `email_confirm: true` and no password (users must use "forgot password" to set one). Existing users (matched by email) have their profiles upserted. This means a full restore workflow after `db:reset` is:
+1. Import system backup → recreates auth users + profiles
+2. Import user data backup → resolves UUIDs by email (now guaranteed to find them)
+
 ### User Data Backup (`GET /api/admin/export/users` → `POST /api/admin/import/users`)
 
 Export format (version `1.1`):
@@ -432,7 +457,15 @@ Export format (version `1.1`):
 
 **UUID resolution on import:** After a DB reset, `auth.users` gets new UUIDs. The import route resolves the correct current UUID by `email` — it does **not** trust the backed-up `userId`. If `email` is missing or doesn't match any current auth user, that user entry is skipped and an error is recorded. All inserts/updates use the resolved current UUID.
 
+**GP guide fields:** `guideData` includes `season_id` and `is_ready`. Guides missing `season_id` are invisible on the GP Guides page when the user has an active season set.
+
+**Track guide update path:** On UPDATE (guide already exists), the old `user_id` from the backup is stripped and replaced with the resolved current `userId` to prevent UUID corruption on repeated imports.
+
 **Backward compatibility:** Version `1.0` exports (no `email` field) will fail to resolve and skip all users. Re-export with the current code before resetting if you need a usable backup.
+
+### Import Error Visibility
+
+Import errors are returned in `results.errors[]` and rendered in the admin page (`src/app/admin/page.tsx`) as a dismissible yellow panel below the backup cards. Previously only a count toast was shown.
 
 ---
 

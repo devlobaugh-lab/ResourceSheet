@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
       trackNameAliases: { imported: 0, updated: 0 },
       boostCustomNames: { imported: 0, updated: 0 },
       boosts: { updated: 0 },
+      users: { imported: 0, updated: 0 },
       errors: [] as string[]
     }
 
@@ -117,6 +118,40 @@ export async function POST(request: NextRequest) {
             results.boosts.updated++
           }
         } catch (e) { results.errors.push(`boosts: ${String(e)}`) }
+      }
+    }
+
+    // users: create auth user if not exists, upsert profile
+    if (importData.users?.length) {
+      const { data: authUsersData } = await supabaseAdmin.auth.admin.listUsers()
+      const existingByEmail = new Map((authUsersData?.users ?? []).map(u => [u.email, u]))
+      for (const item of importData.users as Array<{ email: string; username: string; is_admin: boolean; is_active: boolean }>) {
+        try {
+          let userId: string
+          const existingUser = existingByEmail.get(item.email)
+          if (existingUser) {
+            userId = existingUser.id
+            results.users.updated++
+          } else {
+            const { data: newUser, error } = await supabaseAdmin.auth.admin.createUser({
+              email: item.email,
+              email_confirm: true,
+            })
+            if (error || !newUser.user) {
+              results.errors.push(`users (${item.email}): ${error?.message ?? 'failed to create'}`)
+              continue
+            }
+            userId = newUser.user.id
+            results.users.imported++
+          }
+          await supabaseAdmin.from('profiles').upsert({
+            id: userId,
+            email: item.email,
+            username: item.username,
+            is_admin: item.is_admin ?? false,
+            is_active: item.is_active ?? true,
+          }, { onConflict: 'id' })
+        } catch (e) { results.errors.push(`users (${item.email}): ${String(e)}`) }
       }
     }
 
