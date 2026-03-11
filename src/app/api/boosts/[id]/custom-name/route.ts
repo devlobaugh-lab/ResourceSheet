@@ -170,10 +170,9 @@ export async function PUT(
       .from('boost_custom_names')
       .upsert({
         boost_id: boostId,
-        user_id: user.id,
         custom_name: trimmedName
       }, {
-        onConflict: 'boost_id, user_id'
+        onConflict: 'boost_id'
       })
 
     if (upsertError) {
@@ -270,7 +269,6 @@ export async function DELETE(
       .from('boost_custom_names')
       .delete()
       .eq('boost_id', boostId)
-      .eq('user_id', user.id)
 
     if (deleteError) {
       console.error('Error deleting boost custom name:', deleteError)

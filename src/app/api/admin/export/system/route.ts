@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const { data: seasons } = await supabaseAdmin.from('seasons').select('*').order('created_at')
     const { data: trackNameAliases } = await supabaseAdmin.from('track_name_aliases').select('id, system_name, display_name')
     const { data: boostOverrides } = await supabaseAdmin.from('boosts').select('id, is_free')
-    const { data: boostCustomNames } = await supabaseAdmin.from('boost_custom_names').select('*')
+    const { data: boostCustomNames } = await supabaseAdmin.from('boost_custom_names').select('id, boost_id, custom_name, created_at, updated_at')
 
     return NextResponse.json({
       version: '1.0',
