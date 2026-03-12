@@ -138,18 +138,23 @@ export async function POST(request: NextRequest) {
       }
 
       // user_car_setups: upsert by (user_id, name)
+      const setupIdMap = new Map<string, string>() // old backup UUID → current DB UUID
       if (importData.userCarSetups?.length) {
         for (const item of importData.userCarSetups as Record<string, unknown>[]) {
           try {
+            const oldId = item.id as string
             const { data: existing } = await supabaseAdmin
               .from('user_car_setups').select('id')
               .eq('user_id', userId).eq('name', item.name as string).single()
             if (existing) {
+              setupIdMap.set(oldId, existing.id)
               const { id, created_at, ...updateData } = item
               await supabaseAdmin.from('user_car_setups').update(updateData).eq('id', existing.id)
             } else {
               const { id, ...insertData } = item
-              await supabaseAdmin.from('user_car_setups').insert({ ...insertData, user_id: userId })
+              const { data: newSetup } = await supabaseAdmin
+                .from('user_car_setups').insert({ ...insertData, user_id: userId }).select('id').single()
+              if (newSetup) setupIdMap.set(oldId, newSetup.id)
             }
           } catch (e) { totals.errors.push(`user_car_setups (${userId}): ${String(e)}`) }
         }
@@ -159,15 +164,18 @@ export async function POST(request: NextRequest) {
       if (importData.userTrackGuides?.length) {
         for (const item of importData.userTrackGuides as Record<string, unknown>[]) {
           try {
+            const remappedSavedSetupId = item.saved_setup_id
+              ? (setupIdMap.get(item.saved_setup_id as string) ?? null)
+              : null
             const { data: existing } = await supabaseAdmin
               .from('user_track_guides').select('id')
               .eq('user_id', userId).eq('track_id', item.track_id as string).eq('gp_level', item.gp_level as string).single()
             if (existing) {
               const { id, created_at, user_id: _oldUserId, ...updateData } = item
-              await supabaseAdmin.from('user_track_guides').update({ ...updateData, user_id: userId }).eq('id', existing.id)
+              await supabaseAdmin.from('user_track_guides').update({ ...updateData, user_id: userId, saved_setup_id: remappedSavedSetupId }).eq('id', existing.id)
             } else {
               const { created_at, ...insertData } = item
-              await supabaseAdmin.from('user_track_guides').insert({ ...insertData, user_id: userId })
+              await supabaseAdmin.from('user_track_guides').insert({ ...insertData, user_id: userId, saved_setup_id: remappedSavedSetupId })
             }
           } catch (e) { totals.errors.push(`user_track_guides (${userId}): ${String(e)}`) }
         }
@@ -227,12 +235,15 @@ export async function POST(request: NextRequest) {
               const { data: existing } = await supabaseAdmin
                 .from('user_gp_guide_tracks').select('id')
                 .eq('gp_guide_id', newGuideId).eq('race_type', item.race_type as string).eq('race_number', item.race_number as number).single()
+              const remappedSavedSetupId = item.saved_setup_id
+                ? (setupIdMap.get(item.saved_setup_id as string) ?? null)
+                : null
               if (existing) {
                 const { id, created_at, ...updateData } = item
-                await supabaseAdmin.from('user_gp_guide_tracks').update({ ...updateData, gp_guide_id: newGuideId }).eq('id', existing.id)
+                await supabaseAdmin.from('user_gp_guide_tracks').update({ ...updateData, gp_guide_id: newGuideId, saved_setup_id: remappedSavedSetupId }).eq('id', existing.id)
               } else {
                 const { id, ...insertData } = item
-                await supabaseAdmin.from('user_gp_guide_tracks').insert({ ...insertData, gp_guide_id: newGuideId })
+                await supabaseAdmin.from('user_gp_guide_tracks').insert({ ...insertData, gp_guide_id: newGuideId, saved_setup_id: remappedSavedSetupId })
               }
             } catch (e) { totals.errors.push(`user_gp_guide_tracks (${userId}): ${String(e)}`) }
           }

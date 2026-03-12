@@ -824,6 +824,7 @@ function SectionHeader({ title, subtitle, raceType, onBulkImport, bulkImporting 
 function CondensedView({ guide, allTracks, allDrivers, allBoosts, allSetups }: {
   guide: GpGuide; allTracks: TrackInfo[]; allDrivers: DriverView[]; allBoosts: BoostView[]; allSetups: SetupInfo[]
 }) {
+  const [showNotes, setShowNotes] = useState(true)
   const gpLevel = GP_LEVELS[guide.gp_level] || GP_LEVELS[3]
   const qualifying = guide.tracks.filter(t => t.race_type === 'qualifying').sort((a, b) => a.race_number - b.race_number)
   const opening = guide.tracks.filter(t => t.race_type === 'opening').sort((a, b) => a.race_number - b.race_number)
@@ -831,44 +832,74 @@ function CondensedView({ guide, allTracks, allDrivers, allBoosts, allSetups }: {
 
   const renderSlots = (slots: TrackSlot[]) => slots.map((slot, i) => {
     const track = allTracks.find(t => t.id === slot.track_id) || null
-    if (!track && !slot.track_id) return <div key={slot.id} className="py-1 text-gray-400 text-sm">{i + 1}. <em>Track not assigned</em></div>
+    if (!track && !slot.track_id) return <div key={slot.id} className="py-1 text-gray-400 text-base">{i + 1}. <em>Track not assigned</em></div>
     const d1 = allDrivers.find(d => d.id === slot.driver_1_id) || null
     const d2 = allDrivers.find(d => d.id === slot.driver_2_id) || null
     const b1 = allBoosts.find(b => b.id === slot.driver_1_boost_id) || null
     const b2 = allBoosts.find(b => b.id === slot.driver_2_boost_id) || null
     const setup = allSetups.find(s => s.id === slot.saved_setup_id) || null
+    const d1RarityLabel = d1 ? (d1.rarity === 5 ? getCollectionRarityDisplay(d1.collection_theme ?? null, d1.collection_sub_name ?? null) : getRarityDisplay(d1.rarity)) : ''
+    const d2RarityLabel = d2 ? (d2.rarity === 5 ? getCollectionRarityDisplay(d2.collection_theme ?? null, d2.collection_sub_name ?? null) : getRarityDisplay(d2.rarity)) : ''
     return (
       <div key={slot.id} className="mb-4 print:mb-2 border-b border-gray-100 pb-2 last:border-0">
-        <div className="font-semibold text-base print:text-sm text-gray-900">
+        <div className="font-semibold text-lg print:text-base text-gray-900">
           {i + 1}. {track ? (track.display_name || track.name) : '?'} — {track?.laps || '?'} Laps
           {track ? ` · ${capitalizeStat(track.driver_track_stat)} / ${capitalizeStat(track.car_track_stat)}` : ''}
           {' '}{slot.is_wet ? '🌧️' : '☀️'}
         </div>
-        {setup && <div className="ml-4 text-sm print:text-xs text-gray-600"><strong>Setup:</strong> {setup.name}{slot.setup_notes ? ` — ${slot.setup_notes}` : ''}</div>}
-        {d1 && <div className="ml-4 text-sm print:text-xs text-gray-700"><strong>D1:</strong> {d1.name} ({d1.rarity === 5 ? getCollectionRarityDisplay(d1.collection_theme ?? null, d1.collection_sub_name ?? null) : getRarityDisplay(d1.rarity)}){b1 ? ` — ${boostDisplayName(b1)}` : ''}{slot.driver_1_tire_strategy ? ` — ${slot.driver_1_tire_strategy}` : ''}</div>}
-        {d2 && <div className="ml-4 text-sm print:text-xs text-gray-700"><strong>D2:</strong> {d2.name} ({d2.rarity === 5 ? getCollectionRarityDisplay(d2.collection_theme ?? null, d2.collection_sub_name ?? null) : getRarityDisplay(d2.rarity)}){b2 ? ` — ${boostDisplayName(b2)}` : ''}{slot.driver_2_tire_strategy ? ` — ${slot.driver_2_tire_strategy}` : ''}</div>}
-        {slot.strategy_notes && <div className="ml-4 text-sm print:text-xs text-gray-500 italic">{slot.strategy_notes}</div>}
+        {setup && <div className="ml-4 text-base print:text-sm text-gray-600"><strong>Setup:</strong> {setup.name}{slot.setup_notes ? ` — ${slot.setup_notes}` : ''}</div>}
+        {d1 && (
+          <div className="ml-4 text-base print:text-sm text-gray-700">
+            <strong>D1:</strong>{' '}
+            <span className={`inline-block rounded px-1.5 py-0.5 ${getRarityBackground(d1.rarity)} text-black font-medium`}>
+              {d1.name} · {d1RarityLabel}
+            </span>
+            {b1 ? ` — ${boostDisplayName(b1)}` : ''}
+            {slot.driver_1_tire_strategy ? ` — ${slot.driver_1_tire_strategy}` : ''}
+          </div>
+        )}
+        {d2 && (
+          <div className="ml-4 text-base print:text-sm text-gray-700">
+            <strong>D2:</strong>{' '}
+            <span className={`inline-block rounded px-1.5 py-0.5 ${getRarityBackground(d2.rarity)} text-black font-medium`}>
+              {d2.name} · {d2RarityLabel}
+            </span>
+            {b2 ? ` — ${boostDisplayName(b2)}` : ''}
+            {slot.driver_2_tire_strategy ? ` — ${slot.driver_2_tire_strategy}` : ''}
+          </div>
+        )}
+        {slot.strategy_notes && <div className="ml-4 text-base print:text-sm text-gray-500 italic">{slot.strategy_notes}</div>}
       </div>
     )
   })
 
   return (
-    <div className="print:text-xs">
+    <div className="print:text-sm">
       {guide.notes && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-gray-800 whitespace-pre-line">
-          <strong>Notes:</strong> {guide.notes}
+        <div className="mb-4">
+          <label className="flex items-center gap-1 text-xs text-gray-500 mb-2 cursor-pointer select-none">
+            <input type="checkbox" checked={showNotes} onChange={e => setShowNotes(e.target.checked)} />
+            Show notes
+          </label>
+          {showNotes && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-base text-gray-800 whitespace-pre-line">
+              <strong>Notes:</strong> {guide.notes}
+            </div>
+          )}
         </div>
       )}
-      {qualifying.length > 0 && <div className="mb-4"><h2 className="text-base font-bold text-gray-800 mb-2 border-b pb-1">Qualifying Round</h2>{renderSlots(qualifying)}</div>}
-      {opening.length > 0 && <div className="mb-4"><h2 className="text-base font-bold text-gray-800 mb-2 border-b pb-1">Opening Round (Saturday)</h2>{renderSlots(opening)}</div>}
-      {!guide.weekend_strategy_same && final.length > 0 && <div className="mb-4"><h2 className="text-base font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday)</h2>{renderSlots(final)}</div>}
-      {guide.weekend_strategy_same && opening.length > 0 && <div className="mb-4"><h2 className="text-base font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday) — Same as Opening</h2><p className="text-xs text-gray-500 italic">Uses the same strategy as Opening Round above.</p></div>}
+      <div className="grid grid-cols-2 gap-4">
+        {qualifying.length > 0 && <div className="mb-4"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Qualifying Round</h2>{renderSlots(qualifying)}</div>}
+        {opening.length > 0 && <div className="mb-4"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Opening Round (Saturday)</h2>{renderSlots(opening)}</div>}
+        {!guide.weekend_strategy_same && final.length > 0 && <div className="mb-4 col-start-1"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday)</h2>{renderSlots(final)}</div>}
+        {guide.weekend_strategy_same && opening.length > 0 && <div className="mb-4 col-start-1"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday) — Same as Opening</h2><p className="text-xs text-gray-500 italic">Uses the same strategy as Opening Round above.</p></div>}
+      </div>
       {guide.results.filter(r => r.results_notes).length > 0 && (
         <div className="mt-4 pt-3 border-t border-gray-300">
-          <h2 className="text-base font-bold text-gray-800 mb-2">Race Results</h2>
+          <h2 className="text-lg font-bold text-gray-800 mb-2">Race Results</h2>
           {guide.results.filter(r => r.results_notes).map(r => {
             const t = allTracks.find(tr => tr.id === r.track_id)
-            return <div key={r.track_id} className="mb-2"><span className="text-xs font-semibold text-gray-700">{t?.name || r.track_id}:</span>{' '}<span className="text-xs text-gray-600 whitespace-pre-line">{r.results_notes}</span></div>
+            return <div key={r.track_id} className="mb-2"><span className="text-sm font-semibold text-gray-700">{t?.name || r.track_id}:</span>{' '}<span className="text-sm text-gray-600 whitespace-pre-line">{r.results_notes}</span></div>
           })}
         </div>
       )}
