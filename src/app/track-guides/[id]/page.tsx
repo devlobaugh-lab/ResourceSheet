@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -59,7 +59,9 @@ export default function TrackGuideEditorPage() {
   const queryClient = useQueryClient()
   const trackId = params.id as string
 
-  const [selectedGpLevel, setSelectedGpLevel] = useState(0)
+  const searchParams = useSearchParams()
+  const initialLevel = Number(searchParams.get('level') ?? 0)
+  const [selectedGpLevel, setSelectedGpLevel] = useState(initialLevel)
   const [formData, setFormData] = useState<Partial<UserTrackGuide>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
