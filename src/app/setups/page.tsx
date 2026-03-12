@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -9,6 +9,7 @@ import { useUserCarParts, useUserCarSetups, useCreateSetup, useUpdateSetup, useD
 import { useSeason } from '@/contexts/SeasonContext'
 import { useAuth } from '@/components/auth/AuthContext'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { CarPartView, UserCarSetup } from '@/types/database'
 import { cn, calculateHighestLevel, getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils'
 import { CarPartSelectionGrid } from '@/components/CarPartSelectionGrid'
@@ -132,6 +133,17 @@ function AuthenticatedSetupsPage() {
   // Global filters (shared with modals)
   const [globalSeriesFilter, setGlobalSeriesFilter] = useState(12)
   const [globalBonusPercentage, setGlobalBonusPercentage] = useState('')
+
+  // Auto-load a setup into slot A from URL param (e.g. ?loadA=<id>)
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    const loadAId = searchParams.get('loadA')
+    if (!loadAId || !setupsResponse?.data) return
+    const setup = setupsResponse.data.find(s => s.id === loadAId)
+    if (setup) handleLoadSetup(setup, 'A')
+  // Only run once when setups first load
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setupsResponse?.data])
 
   // Filter parts by series
   const filteredParts = useMemo(() => {

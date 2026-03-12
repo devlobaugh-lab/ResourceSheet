@@ -7,12 +7,14 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { getAuthHeaders } from '@/hooks/useApi'
-import { DriverView, BoostView } from '@/types/database'
+import { DriverView, BoostView, UserCarSetup, CarPartView } from '@/types/database'
 import { DriverSelectionGrid } from '@/components/DriverSelectionGrid'
 import { DriverDisplay } from '@/components/DriverDisplay'
 import { BoostDisplay } from '@/components/BoostDisplay'
+import { SetupPreviewPanel } from '@/components/SetupPreviewPanel'
 import { getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { Eye } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,8 +49,6 @@ interface TrackInfo {
   id: string; name: string; display_name: string | null
   laps: number; driver_track_stat: string; car_track_stat: string
 }
-interface SetupInfo { id: string; name: string; notes: string | null }
-
 interface TrackSlot {
   id: string; race_number: number; race_type: 'qualifying' | 'opening' | 'final'
   track_id: string | null; is_wet: boolean; is_ready: boolean
@@ -154,16 +154,18 @@ function BoostSelectModal({
 // ─── TrackSlotCard ────────────────────────────────────────────────────────────
 
 function TrackSlotCard({
-  slot, guideId, gpLevel, allTracks, allDrivers, allBoosts, allSetups,
+  slot, guideId, gpLevel, allTracks, allDrivers, allBoosts, allSetups, carParts,
   onUpdate, onImport, importingSlotId,
 }: {
   slot: TrackSlot; guideId: string; gpLevel: number
-  allTracks: TrackInfo[]; allDrivers: DriverView[]; allBoosts: BoostView[]; allSetups: SetupInfo[]
+  allTracks: TrackInfo[]; allDrivers: DriverView[]; allBoosts: BoostView[]
+  allSetups: UserCarSetup[]; carParts: CarPartView[]
   onUpdate: (slotId: string, patch: Partial<TrackSlot>) => void
   onImport: (slotId: string, trackId: string, isWet: boolean) => void
   importingSlotId: string | null
 }) {
   const [expanded, setExpanded] = useState(false)
+  const [showSetupPreview, setShowSetupPreview] = useState(false)
   const [driverModal, setDriverModal] = useState<null | 'driver1' | 'driver2'>(null)
   const [boostModal, setBoostModal] = useState<null | 'driver1' | 'driver2'>(null)
   
@@ -370,35 +372,63 @@ function TrackSlotCard({
             </Card>
 
             {/* ── Setup + Strategy Notes ── */}
-            <Card className="p-3">
-              <h4 className="text-sm font-bold text-gray-700 mb-2">Car Setup</h4>
-              <select
-                value={slot.saved_setup_id || ''}
-                onChange={e => save({ saved_setup_id: e.target.value || null })}
-                className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
-              >
-                <option value="">— No Setup —</option>
-                {allSetups.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-              <div className="text-xs font-semibold text-gray-600 mb-1">Setup Notes</div>
-              <textarea
-                placeholder="Setup-specific changes…"
-                value={slot.setup_notes || ''}
-                onChange={e => onUpdate(slot.id, { setup_notes: e.target.value || null })}
-                onBlur={e => save({ setup_notes: e.target.value || null })}
-                rows={3}
-                className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none mb-2"
-              />
-              <div className="text-xs font-semibold text-gray-600 mb-1">Strategy Notes</div>
-              <textarea
-                placeholder="Any strategy notes…"
-                value={slot.strategy_notes || ''}
-                onChange={e => onUpdate(slot.id, { strategy_notes: e.target.value || null })}
-                onBlur={e => save({ strategy_notes: e.target.value || null })}
-                rows={3}
-                className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-              />
-            </Card>
+            <div className="flex flex-col gap-4">
+              <Card className="p-3">
+                <h4 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                  Car Setup
+                  {slot.saved_setup_id && (
+                    <button
+                      onClick={() => setShowSetupPreview(v => !v)}
+                      className="text-gray-400 hover:text-blue-600 transition-colors"
+                      aria-label="Toggle setup preview"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  )}
+                </h4>
+                <select
+                  value={slot.saved_setup_id || ''}
+                  onChange={e => {
+                    const value = e.target.value
+                    if (!value) setShowSetupPreview(false)
+                    save({ saved_setup_id: value || null })
+                  }}
+                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
+                >
+                  <option value="">— No Setup —</option>
+                  {allSetups.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                <div className="text-xs font-semibold text-gray-600 mb-1">Setup Notes</div>
+                <textarea
+                  placeholder="Setup-specific changes…"
+                  value={slot.setup_notes || ''}
+                  onChange={e => onUpdate(slot.id, { setup_notes: e.target.value || null })}
+                  onBlur={e => save({ setup_notes: e.target.value || null })}
+                  rows={3}
+                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none mb-2"
+                />
+                <div className="text-xs font-semibold text-gray-600 mb-1">Strategy Notes</div>
+                <textarea
+                  placeholder="Any strategy notes…"
+                  value={slot.strategy_notes || ''}
+                  onChange={e => onUpdate(slot.id, { strategy_notes: e.target.value || null })}
+                  onBlur={e => save({ strategy_notes: e.target.value || null })}
+                  rows={3}
+                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                />
+              </Card>
+
+              {showSetupPreview && (() => {
+                const selectedSetup = allSetups.find(s => s.id === slot.saved_setup_id)
+                return selectedSetup ? (
+                  <SetupPreviewPanel
+                    setup={selectedSetup}
+                    carParts={carParts}
+                    onClose={() => setShowSetupPreview(false)}
+                  />
+                ) : null
+              })()}
+            </div>
           </div>
         </div>
       )}
@@ -483,7 +513,8 @@ export default function GpGuideEditorPage() {
   const [allTracks, setAllTracks] = useState<TrackInfo[]>([])
   const [allDrivers, setAllDrivers] = useState<DriverView[]>([])
   const [allBoosts, setAllBoosts] = useState<any[]>([])
-  const [allSetups, setAllSetups] = useState<SetupInfo[]>([])
+  const [allSetups, setAllSetups] = useState<UserCarSetup[]>([])
+  const [allCarParts, setAllCarParts] = useState<CarPartView[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [importingSlotId, setImportingSlotId] = useState<string | null>(null)
   const [bulkImporting, setBulkImporting] = useState<string | null>(null)
@@ -499,12 +530,13 @@ export default function GpGuideEditorPage() {
     async function load() {
       const headers = await getAuthHeaders()
       const opts = { headers, credentials: 'same-origin' as const }
-      const [guideRes, tracksRes, driversRes, boostsRes, setupsRes] = await Promise.all([
+      const [guideRes, tracksRes, driversRes, boostsRes, setupsRes, carPartsRes] = await Promise.all([
         fetch(`/api/gp-guides/${guideId}`, opts),
         fetch('/api/tracks', opts),
         fetch('/api/drivers/user?limit=500', opts),
         fetch('/api/user-boosts?limit=200', opts),  // Use user-boosts to get card_count
         fetch('/api/setups', opts),
+        fetch('/api/car-parts/user?limit=1000', opts),
       ])
       if (!guideRes.ok) { router.push('/gp-guides'); return }
       const guideData = await guideRes.json()
@@ -512,11 +544,13 @@ export default function GpGuideEditorPage() {
       const driversData = driversRes.ok ? await driversRes.json() : { data: [] }
       const boostsData = boostsRes.ok ? await boostsRes.json() : { data: [] }
       const setupsData = setupsRes.ok ? await setupsRes.json() : { data: [] }
+      const carPartsData = carPartsRes.ok ? await carPartsRes.json() : { data: [] }
       setGuide(guideData.data)
       setAllTracks(Array.isArray(tracksData) ? tracksData : (tracksData.data || []))
       setAllDrivers(driversData.data || [])
       setAllBoosts(boostsData.data || [])
       setAllSetups(setupsData.data || [])
+      setAllCarParts(carPartsData.data || [])
       setIsLoading(false)
     }
     load()
@@ -658,7 +692,7 @@ export default function GpGuideEditorPage() {
   }
 
   const sharedSlotProps = {
-    guideId, gpLevel: guide.gp_level, allTracks, allDrivers, allBoosts, allSetups,
+    guideId, gpLevel: guide.gp_level, allTracks, allDrivers, allBoosts, allSetups, carParts: allCarParts,
     onUpdate: handleSlotUpdate, onImport: handleImport, importingSlotId,
   }
 
@@ -822,7 +856,7 @@ function SectionHeader({ title, subtitle, raceType, onBulkImport, bulkImporting 
 // ─── Condensed View ───────────────────────────────────────────────────────────
 
 function CondensedView({ guide, allTracks, allDrivers, allBoosts, allSetups }: {
-  guide: GpGuide; allTracks: TrackInfo[]; allDrivers: DriverView[]; allBoosts: BoostView[]; allSetups: SetupInfo[]
+  guide: GpGuide; allTracks: TrackInfo[]; allDrivers: DriverView[]; allBoosts: BoostView[]; allSetups: UserCarSetup[]
 }) {
   const [showNotes, setShowNotes] = useState(true)
   const gpLevel = GP_LEVELS[guide.gp_level] || GP_LEVELS[3]
