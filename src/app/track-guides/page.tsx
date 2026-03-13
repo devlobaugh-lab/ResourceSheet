@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import Link from 'next/link'
 import { getAuthHeaders } from '@/hooks/useApi'
+import { useSeason } from '@/contexts/SeasonContext'
 import { Track, UserTrackGuide } from '@/types/database'
 
 // Force dynamic rendering since this page requires authentication
@@ -30,6 +31,7 @@ const capitalizeStat = (stat: string): string => {
 }
 
 export default function TrackGuidesPage() {
+  const { activeSeasonId } = useSeason()
   const [tracks, setTracks] = useState<Track[]>([])
   const [trackGuides, setTrackGuides] = useState<UserTrackGuide[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -37,8 +39,11 @@ export default function TrackGuidesPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // Fetch tracks
-        const tracksResponse = await fetch('/api/tracks', {
+        // Fetch tracks filtered by active season
+        const tracksUrl = activeSeasonId
+          ? `/api/tracks?season_id=${encodeURIComponent(activeSeasonId)}`
+          : '/api/tracks'
+        const tracksResponse = await fetch(tracksUrl, {
           headers: await getAuthHeaders(),
           credentials: 'same-origin'
         })
@@ -63,7 +68,7 @@ export default function TrackGuidesPage() {
     }
 
     fetchData()
-  }, [])
+  }, [activeSeasonId])
 
   // Create a lookup map for track guides by track_id and gp_level
   const guideMap = new Map<string, UserTrackGuide>()

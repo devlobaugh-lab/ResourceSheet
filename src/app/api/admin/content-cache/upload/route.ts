@@ -231,6 +231,21 @@ function parseAILoadoutName(name: string): { trackName: string; difficulty: stri
 
 // Helper function to process content cache with change detection
 async function processContentCache(validatedData: any, seasonNumbers: number[], allowModifications: boolean = false, seasonIdMap: Record<number, string> = {}) {
+  // Determine which season ID to tag global reference data (series_data, ai_track_loadouts) with.
+  // If a single season is being imported, use that season's ID.
+  // Otherwise, fall back to the currently active season in the DB.
+  let targetSeasonId: string | null = null
+  if (seasonNumbers.length === 1) {
+    targetSeasonId = seasonIdMap[seasonNumbers[0]] ?? null
+  } else {
+    const { data: activeSeason } = await supabaseAdmin
+      .from('seasons')
+      .select('id')
+      .eq('is_active', true)
+      .single()
+    targetSeasonId = activeSeason?.id ?? null
+  }
+
   const results = {
     drivers: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
     car_parts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
@@ -436,7 +451,8 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
                 engine: team.m_engine || null,
                 gearbox: team.m_gearbox || null,
                 brakes: team.m_brakes || null
-              }
+              },
+              season_id: targetSeasonId,
             });
           }
           
@@ -460,7 +476,8 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
                 engine: team.m_engine || null,
                 gearbox: team.m_gearbox || null,
                 brakes: team.m_brakes || null
-              }
+              },
+              season_id: targetSeasonId,
             });
           }
         }
@@ -474,15 +491,20 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
       // This is because trackAILoadouts is reference data that gets completely replaced
       
       // First, count existing rows for reporting
-      const { count: existingCount } = await supabaseAdmin
+      const countQuery = supabaseAdmin
         .from('ai_track_loadouts')
-        .select('*', { count: 'exact', head: true });
-      
-      // Delete all existing AI loadouts
-      const { error: deleteError } = await supabaseAdmin
-        .from('ai_track_loadouts')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all (workaround for "delete all")
+        .select('*', { count: 'exact', head: true })
+      if (targetSeasonId) countQuery.eq('season_id', targetSeasonId)
+      const { count: existingCount } = await countQuery;
+
+      // Delete existing AI loadouts for this season (or all if no season)
+      const deleteQuery = supabaseAdmin.from('ai_track_loadouts').delete()
+      if (targetSeasonId) {
+        deleteQuery.eq('season_id', targetSeasonId)
+      } else {
+        deleteQuery.neq('id', '00000000-0000-0000-0000-000000000000') // Delete all fallback
+      }
+      const { error: deleteError } = await deleteQuery;
       
       if (deleteError) {
         console.error('❌ Failed to clear existing AI loadouts:', deleteError);
@@ -586,21 +608,27 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         track_names: trackNames,
         track_info: trackInfo,
         bot_loadout: s.botLoadout || null,
-        ai_car_loadouts: s.aiCarLoadouts || null
+        ai_car_loadouts: s.aiCarLoadouts || null,
+        season_id: targetSeasonId,
       };
     });
     
     if (seriesRows.length > 0) {
       // Count existing rows for reporting
-      const { count: existingCount } = await supabaseAdmin
+      const seriesCountQuery = supabaseAdmin
         .from('series_data')
-        .select('*', { count: 'exact', head: true });
-      
-      // Delete all existing series data
-      const { error: deleteError } = await supabaseAdmin
-        .from('series_data')
-        .delete()
-        .neq('index', -999); // Delete all (workaround for "delete all")
+        .select('*', { count: 'exact', head: true })
+      if (targetSeasonId) seriesCountQuery.eq('season_id', targetSeasonId)
+      const { count: existingCount } = await seriesCountQuery;
+
+      // Delete existing series data for this season (or all if no season)
+      const seriesDeleteQuery = supabaseAdmin.from('series_data').delete()
+      if (targetSeasonId) {
+        seriesDeleteQuery.eq('season_id', targetSeasonId)
+      } else {
+        seriesDeleteQuery.neq('index', -999) // Delete all fallback
+      }
+      const { error: deleteError } = await seriesDeleteQuery;
       
       if (deleteError) {
         console.error('❌ Failed to clear existing series data:', deleteError);

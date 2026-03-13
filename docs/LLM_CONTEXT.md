@@ -53,9 +53,15 @@ collections      (referenced by drivers/car_parts via collection_id)
 
 boost_custom_names   boost_id uuid FK boosts, custom_name text
 
+series_data          index int, entry_fee int, win_flags int, loss_flags int,
+                     win_rep int, flags_to_unlock int, max_flags int,
+                     track_ids uuid[], track_names text[], track_info jsonb?,
+                     bot_loadout jsonb?, ai_car_loadouts jsonb?,
+                     season_id uuid? FK seasons
+
 ai_track_loadouts    track_name text, difficulty text, team_name text, driver_slot int,
                      overtaking int, blocking int, qualifying int, tyre_use int,
-                     race_start int, car_parts jsonb?
+                     race_start int, car_parts jsonb?, season_id uuid? FK seasons
 
 team_driver_names    team_name text, driver_slot int, driver_name text
 ```
@@ -332,6 +338,7 @@ const { activeSeasonId, activeSeason, seasons, isLoading, setActiveSeason } = us
 | `useTracks(filters)` | `season_id` |
 | `useUserCarSetups(filters)` | `season_id` |
 | `useGpGuides(filters)` | `season_id` |
+| `useSeries(filters)` | `season_id` |
 
 ### Season-aware API endpoints
 
@@ -341,6 +348,10 @@ const { activeSeasonId, activeSeason, seasons, isLoading, setActiveSeason } = us
 | `POST /api/gp-guides` | request body |
 | `GET /api/setups` | query param |
 | `POST /api/setups` | request body |
+| `GET /api/series` | query param — filters `series_data` and fallback track lookup |
+| `GET /api/tracks` | query param |
+| `GET /api/ai-loadouts` | query param |
+| `GET /api/ai-loadouts/track/[trackName]/[difficulty]` | query param |
 | `PUT /api/seasons/[id]` | atomically clears others when `is_active: true` |
 | `PUT /api/profiles/[id]` | updates `active_season_id` |
 
@@ -474,7 +485,7 @@ Processes `content_cache.json` from the game. Import behaviour by table:
 |---|---|---|
 | `drivers`, `car_parts`, `boosts`, `collections` | Change-detection upsert | New items inserted; existing items updated only if `allow_modifications=true` |
 | `tracks` | Upsert by `id` | **Never deletes rows.** Existing tracks are updated in-place; new tracks are inserted. User data linked to existing track IDs (track guides, GP guide tracks) is never disrupted. |
-| `series_data`, `ai_track_loadouts` | Full refresh (delete + insert) | Reference-only tables with no user foreign keys |
+| `series_data`, `ai_track_loadouts` | Season-scoped full refresh (delete rows for target season + insert) | Tagged with `season_id`; delete/insert is scoped to the imported season so other seasons' data is preserved |
 
 **Why tracks must upsert, not replace:** `user_track_guides.track_id` references `tracks.id` with `ON DELETE CASCADE` — deleting all tracks would wipe all track guides. `user_gp_guide_tracks.track_id` uses `ON DELETE SET NULL`, so those rows survive but lose their track association. Always use upsert for the `tracks` table.
 

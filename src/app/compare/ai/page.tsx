@@ -8,6 +8,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useToast } from '@/components/ui/Toast'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getAuthHeaders } from '@/hooks/useApi'
+import { useSeason } from '@/contexts/SeasonContext'
 import { CustomDriverForm } from '@/components/CustomDriverForm'
 import { AIDriverCompareGrid } from '@/components/AIDriverCompareGrid'
 import { UserCustomDriver } from '@/types/database'
@@ -43,6 +44,7 @@ type CustomDriverModalMode = 'create' | 'edit' | 'view'
 
 export default function AIComparePage() {
   const { user } = useAuth()
+  const { activeSeasonId } = useSeason()
   const { addToast } = useToast()
   const queryClient = useQueryClient()
   
@@ -56,20 +58,22 @@ export default function AIComparePage() {
   
   // Fetch AI loadout options (track/difficulty combinations)
   const { data: loadoutOptions, isLoading: optionsLoading } = useQuery({
-    queryKey: ['ai-loadouts-options'],
+    queryKey: ['ai-loadouts-options', activeSeasonId],
     queryFn: async () => {
-      const response = await fetch('/api/ai-loadouts')
+      const params = activeSeasonId ? `?season_id=${encodeURIComponent(activeSeasonId)}` : ''
+      const response = await fetch(`/api/ai-loadouts${params}`)
       if (!response.ok) throw new Error('Failed to fetch loadout options')
       return response.json()
     }
   })
-  
+
   // Fetch selected AI loadout data
   const { data: loadoutData, isLoading: loadoutLoading } = useQuery({
-    queryKey: ['ai-loadouts', selectedTrack, selectedDifficulty],
+    queryKey: ['ai-loadouts', selectedTrack, selectedDifficulty, activeSeasonId],
     queryFn: async () => {
       if (!selectedTrack || !selectedDifficulty) return { data: [] }
-      const response = await fetch(`/api/ai-loadouts/track/${encodeURIComponent(selectedTrack)}/${encodeURIComponent(selectedDifficulty)}`)
+      const params = activeSeasonId ? `?season_id=${encodeURIComponent(activeSeasonId)}` : ''
+      const response = await fetch(`/api/ai-loadouts/track/${encodeURIComponent(selectedTrack)}/${encodeURIComponent(selectedDifficulty)}${params}`)
       if (!response.ok) throw new Error('Failed to fetch loadout data')
       return response.json()
     },

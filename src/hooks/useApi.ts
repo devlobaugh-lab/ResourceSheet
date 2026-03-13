@@ -640,11 +640,14 @@ export function useAddUserItem() {
 }
 
 // Fetch series data with track information
-export function useSeries() {
+export function useSeries(filters?: { season_id?: string }) {
   return useQuery({
-    queryKey: ['series'],
+    queryKey: ['series', filters],
     queryFn: async (): Promise<{ data: SeriesWithTracks[] }> => {
-      const response = await fetch(`${API_BASE}/series`)
+      const params = new URLSearchParams()
+      if (filters?.season_id) params.append('season_id', filters.season_id)
+      const query = params.toString() ? `?${params}` : ''
+      const response = await fetch(`${API_BASE}/series${query}`)
 
       if (!response.ok) {
         throw new Error('Failed to fetch series data')

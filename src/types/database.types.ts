@@ -21,6 +21,7 @@ export type Database = {
           overtaking: number | null
           qualifying: number | null
           race_start: number | null
+          season_id: string | null
           team_name: string
           track_name: string
           tyre_use: number | null
@@ -37,6 +38,7 @@ export type Database = {
           overtaking?: number | null
           qualifying?: number | null
           race_start?: number | null
+          season_id?: string | null
           team_name: string
           track_name: string
           tyre_use?: number | null
@@ -53,12 +55,21 @@ export type Database = {
           overtaking?: number | null
           qualifying?: number | null
           race_start?: number | null
+          season_id?: string | null
           team_name?: string
           track_name?: string
           tyre_use?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_track_loadouts_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       boost_custom_names: {
         Row: {
@@ -380,6 +391,7 @@ export type Database = {
           index: number
           loss_flags: number | null
           max_flags: number | null
+          season_id: string | null
           track_ids: string[] | null
           track_info: Json | null
           track_names: string[] | null
@@ -396,6 +408,7 @@ export type Database = {
           index: number
           loss_flags?: number | null
           max_flags?: number | null
+          season_id?: string | null
           track_ids?: string[] | null
           track_info?: Json | null
           track_names?: string[] | null
@@ -412,6 +425,7 @@ export type Database = {
           index?: number
           loss_flags?: number | null
           max_flags?: number | null
+          season_id?: string | null
           track_ids?: string[] | null
           track_info?: Json | null
           track_names?: string[] | null
@@ -419,7 +433,15 @@ export type Database = {
           win_flags?: number | null
           win_rep?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "series_data_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_driver_names: {
         Row: {
