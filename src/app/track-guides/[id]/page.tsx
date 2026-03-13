@@ -64,7 +64,6 @@ export default function TrackGuideEditorPage() {
   const initialLevel = Number(searchParams.get('level') ?? 0)
   const [selectedGpLevel, setSelectedGpLevel] = useState(initialLevel)
   const [formData, setFormData] = useState<Partial<UserTrackGuide>>({})
-  const [isSaving, setIsSaving] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [showSetupPreview, setShowSetupPreview] = useState(false)
@@ -378,87 +377,44 @@ export default function TrackGuideEditorPage() {
 
       return response.json()
     },
+    onMutate: () => {
+      setAutoSaveStatus('saving')
+    },
     onSuccess: () => {
-      // Removed toast message for auto-save during tab navigation
+      setAutoSaveStatus('saved')
+      setTimeout(() => setAutoSaveStatus('idle'), 2000)
       queryClient.invalidateQueries({ queryKey: ['track-guides'] })
       queryClient.invalidateQueries({ queryKey: ['track-guide', trackId, selectedGpLevel] })
     },
     onError: (error: Error) => {
+      setAutoSaveStatus('error')
       addToast(error.message, 'error')
+      setTimeout(() => setAutoSaveStatus('idle'), 3000)
     }
   })
 
-  const handleSave = () => {
-    const dataToSave = {
+  const save = useCallback(() => {
+    saveMutation.mutate({
       ...formData,
       track_id: trackId,
       gp_level: selectedGpLevel,
-    }
-    saveMutation.mutate(dataToSave)
-  }
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData, selectedGpLevel, trackId])
 
-  const handleGpLevelChange = async (newGpLevel: number) => {
-    // Only auto-save if there are changes to save
+  // Debounced auto-save whenever formData changes
+  useEffect(() => {
+    if (!isDirty || guideLoading) return
+    const timer = setTimeout(() => {
+      save()
+    }, 1000)
+    return () => clearTimeout(timer)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData, isDirty, guideLoading])
+
+  const handleGpLevelChange = (newGpLevel: number) => {
     if (selectedGpLevel !== newGpLevel) {
-      // Use the dirty state to determine if we have changes to save
-      const hasChangesToSave = isDirty
-      
-      if (hasChangesToSave) {
-        setAutoSaveStatus('saving')
-        setIsSaving(true)
-        
-        try {
-          await new Promise<void>((resolve, reject) => {
-            saveMutation.mutate({
-              ...formData,
-              track_id: trackId,
-              gp_level: selectedGpLevel, // Save with current GP level, not new one
-            }, {
-              onSuccess: () => {
-                setAutoSaveStatus('saved')
-                setIsSaving(false)
-                setSelectedGpLevel(newGpLevel)
-                
-                // Reset dirty state after successful save
-                setIsDirty(false)
-                
-                // Reset auto save status after a short delay
-                setTimeout(() => {
-                  setAutoSaveStatus('idle')
-                }, 2000)
-                
-                resolve()
-              },
-              onError: (error) => {
-                setAutoSaveStatus('error')
-                setIsSaving(false)
-                // Still switch tabs even if save fails, but show error
-                setSelectedGpLevel(newGpLevel)
-                addToast(`Failed to save changes: ${error.message}`, 'error')
-                
-                // Reset auto save status after a short delay
-                setTimeout(() => {
-                  setAutoSaveStatus('idle')
-                }, 3000)
-                
-                resolve()
-              }
-            })
-          })
-        } catch (error) {
-          setAutoSaveStatus('error')
-          setIsSaving(false)
-          setSelectedGpLevel(newGpLevel)
-          
-          // Reset auto save status after a short delay
-          setTimeout(() => {
-            setAutoSaveStatus('idle')
-          }, 3000)
-        }
-      } else {
-        // No changes to save, just switch tabs
-        setSelectedGpLevel(newGpLevel)
-      }
+      setSelectedGpLevel(newGpLevel)
     }
   }
 
@@ -597,15 +553,25 @@ export default function TrackGuideEditorPage() {
                 </h1>
                 <span className='text-lg font-normal'>{capitalizeStat(track.driver_track_stat)} / {capitalizeStat(track.car_track_stat)}</span>
               </div>
-              {/* Save Button */}
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleSave}
-                  disabled={saveMutation.isPending}
-                  className="px-4 mx-4"
-                >
-                  {saveMutation.isPending ? 'Saving...' : 'Save Guide'}
-                </Button>
+              <div className="flex items-center gap-3">
+                {autoSaveStatus === 'saving' && (
+                  <div className="flex items-center gap-1 text-xs text-blue-700 bg-blue-100 px-2 py-1 rounded-full">
+                    <div className="animate-spin rounded-full h-2 w-2 border-b-2 border-blue-600"></div>
+                    <span>Saving</span>
+                  </div>
+                )}
+                {autoSaveStatus === 'saved' && (
+                  <div className="flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-1 rounded-full">
+                    <Shield className="h-3 w-3" />
+                    <span>Saved</span>
+                  </div>
+                )}
+                {autoSaveStatus === 'error' && (
+                  <div className="flex items-center gap-1 text-xs text-red-700 bg-red-100 px-2 py-1 rounded-full">
+                    <AlertTriangle className="h-3 w-3" />
+                    <span>Error</span>
+                  </div>
+                )}
                 <Link href="/track-guides">
                   <Button variant="outline">Back to Track Guides</Button>
                 </Link>
@@ -620,37 +586,13 @@ export default function TrackGuideEditorPage() {
                 <button
                   key={level.id}
                   onClick={() => handleGpLevelChange(level.id)}
-                  disabled={isSaving}
                   className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors relative ${
                     selectedGpLevel === level.id
                       ? 'bg-gray-600 text-gray-100 border border-gray-200'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  }`}
                 >
                   {level.name}
-                  {/* Auto-save status indicator */}
-                  {selectedGpLevel === level.id && (
-                    <div className="absolute -top-1 -right-1">
-                      {autoSaveStatus === 'saving' && (
-                        <div className="flex items-center space-x-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                          <div className="animate-spin rounded-full h-2 w-2 border-b-2 border-blue-600"></div>
-                          <span>Saving</span>
-                        </div>
-                      )}
-                      {autoSaveStatus === 'saved' && (
-                        <div className="flex items-center space-x-1 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                          <Shield className="h-3 w-3" />
-                          <span>Saved</span>
-                        </div>
-                      )}
-                      {autoSaveStatus === 'error' && (
-                        <div className="flex items-center space-x-1 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">
-                          <AlertTriangle className="h-3 w-3" />
-                          <span>Error</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </button>
               ))}
             </div>
@@ -1086,16 +1028,6 @@ export default function TrackGuideEditorPage() {
               />
             </Card>
 
-            {/* Save Button */}
-            <div className="flex justify-end">
-              <Button
-                onClick={handleSave}
-                disabled={saveMutation.isPending}
-                className="px-8"
-              >
-                {saveMutation.isPending ? 'Saving...' : 'Save Track Guide'}
-              </Button>
-            </div>
           </div>
 
           {/* Driver Selection Modal */}
