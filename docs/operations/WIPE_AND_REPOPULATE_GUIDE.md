@@ -211,6 +211,14 @@ This implementation includes:
 - The import system provides detailed reporting of all changes
 - Special Edition drivers should now display their correct collection names after import
 
+## Track Import Safety
+
+The content cache import uses **upsert** (not delete + re-insert) for the `tracks` table. This means:
+- Uploading a new `content_cache.json` will update existing track records and add new ones
+- Existing `user_track_guides` and `user_gp_guide_tracks` linked to those tracks are **never deleted**
+- `user_gp_guide_tracks.track_id` has `ON DELETE SET NULL` (not CASCADE), so even if a track were manually deleted the GP guide track row survives with a null track reference
+- `user_track_guides.track_id` has `ON DELETE CASCADE` — manually deleting a track would remove its guide. Avoid deleting tracks directly; rely on the import to update them.
+
 ## Support
 
 If you encounter issues:

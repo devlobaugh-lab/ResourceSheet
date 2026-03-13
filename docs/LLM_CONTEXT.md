@@ -93,12 +93,15 @@ user_track_guide_drivers   track_guide_id uuid FK user_track_guides, driver_id u
 user_gp_guides   user_id uuid, name text, start_date date?, gp_level int,
                  notes text?, weekend_strategy_same bool, season_id uuid? FK seasons
 
-user_gp_guide_tracks   gp_guide_id uuid FK user_gp_guides, track_id uuid?, race_number int,
-                       race_type 'qualifying'|'opening'|'final', is_wet bool, is_ready bool,
+user_gp_guide_tracks   gp_guide_id uuid FK user_gp_guides ON DELETE CASCADE,
+                       track_id uuid? FK tracks ON DELETE SET NULL,
+                       race_number int, race_type 'qualifying'|'opening'|'final',
+                       is_wet bool, is_ready bool,
                        driver_1_id uuid?, driver_2_id uuid?, driver_1_boost_id uuid?,
                        driver_2_boost_id uuid?, alt_driver_ids uuid[]?, alt_boost_ids uuid[]?,
                        saved_setup_id uuid?, setup_notes text?, driver_1_tire_strategy text?,
                        driver_2_tire_strategy text?, strategy_notes text?
+                       NOTE: track_id ON DELETE SET NULL preserves guide rows when tracks are re-imported
 
 user_gp_guide_results  gp_guide_id uuid, track_id uuid, results_notes text?
 
@@ -462,6 +465,18 @@ Export format (version `1.1`):
 **Track guide update path:** On UPDATE (guide already exists), the old `user_id` from the backup is stripped and replaced with the resolved current `userId` to prevent UUID corruption on repeated imports.
 
 **Backward compatibility:** Version `1.0` exports (no `email` field) will fail to resolve and skip all users. Re-export with the current code before resetting if you need a usable backup.
+
+### Content Cache Import (`POST /api/admin/content-cache/upload`)
+
+Processes `content_cache.json` from the game. Import behaviour by table:
+
+| Table | Strategy | Notes |
+|---|---|---|
+| `drivers`, `car_parts`, `boosts`, `collections` | Change-detection upsert | New items inserted; existing items updated only if `allow_modifications=true` |
+| `tracks` | Upsert by `id` | **Never deletes rows.** Existing tracks are updated in-place; new tracks are inserted. User data linked to existing track IDs (track guides, GP guide tracks) is never disrupted. |
+| `series_data`, `ai_track_loadouts` | Full refresh (delete + insert) | Reference-only tables with no user foreign keys |
+
+**Why tracks must upsert, not replace:** `user_track_guides.track_id` references `tracks.id` with `ON DELETE CASCADE` — deleting all tracks would wipe all track guides. `user_gp_guide_tracks.track_id` uses `ON DELETE SET NULL`, so those rows survive but lose their track association. Always use upsert for the `tracks` table.
 
 ### Import Error Visibility
 

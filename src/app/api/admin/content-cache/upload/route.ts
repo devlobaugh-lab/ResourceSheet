@@ -717,27 +717,25 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
     console.log('Sample tracks:', trackRows.slice(0, 3).map((t: any) => `${t.name} (${t.laps} laps, ${t.driver_track_stat}/${t.car_track_stat})`));
     
     if (trackRows.length > 0) {
-      // Clear existing tracks (they'll be replaced)
-      // Use a more robust approach to delete all tracks
-      const { error: deleteError } = await supabaseAdmin
+      // Fetch existing track IDs to distinguish new vs updated
+      const { data: existingTracks } = await supabaseAdmin
         .from('tracks')
-        .delete()
-        .not('id', 'is', null); // Delete all rows
-      
-      if (deleteError) {
-        console.error('❌ Failed to clear existing tracks:', deleteError);
+        .select('id');
+      const existingIds = new Set((existingTracks || []).map((t: any) => t.id));
+      const newCount = trackRows.filter((t: any) => !existingIds.has(t.id)).length;
+      const updatedCount = trackRows.filter((t: any) => existingIds.has(t.id)).length;
+
+      // Upsert tracks by ID — preserves user data linked to existing track IDs
+      const { error: upsertError } = await supabaseAdmin
+        .from('tracks')
+        .upsert(trackRows, { onConflict: 'id' });
+
+      if (upsertError) {
+        console.error('❌ Failed to upsert tracks:', upsertError);
       } else {
-        // Insert new tracks
-        const { error: insertError } = await supabaseAdmin
-          .from('tracks')
-          .insert(trackRows);
-        
-        if (insertError) {
-          console.error('❌ Failed to insert tracks:', insertError);
-        } else {
-          results.tracks.new = trackRows.length;
-          console.log(`✅ Tracks processed: inserted=${trackRows.length}`);
-        }
+        results.tracks.new = newCount;
+        results.tracks.modified = updatedCount;
+        console.log(`✅ Tracks processed: new=${newCount}, updated=${updatedCount}`);
       }
     }
   }
