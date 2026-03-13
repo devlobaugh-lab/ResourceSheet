@@ -79,7 +79,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse season filter
-    let seasonNumbers = parseSeasonFilter(seasonFilter)
+    const requestedNumbers = parseSeasonFilter(seasonFilter)
+    let seasonNumbers: number[] = []
 
     // Load seasons and determine mapping from season number -> season id
     const seasonIdMap: Record<number, string> = {}
@@ -99,19 +100,21 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // If no season filter provided, default to the active season (local/dev)
-      if (seasonNumbers.length === 0) {
-        const active = (seasons || []).find((s: any) => s.is_active)
-        if (active && active.name) {
-          const match = (active.name || '').match(/(\d+)/)
-          if (match) {
-            const num = parseInt(match[1], 10)
-            if (!isNaN(num)) {
-              seasonNumbers = [num]
-              console.log('No season_filter provided — defaulting import to active season:', num)
-            }
-          }
+      if (requestedNumbers.length > 0) {
+        // Validate that all requested series numbers exist in DB
+        const invalidNums = requestedNumbers.filter(n => !(n in seasonIdMap))
+        if (invalidNums.length > 0) {
+          const available = Object.keys(seasonIdMap).map(Number).sort((a, b) => a - b)
+          return NextResponse.json(
+            { error: { code: 'VALIDATION_ERROR', message: `Series [${invalidNums.join(', ')}] not found in database. Available series: [${available.join(', ')}]` } },
+            { status: 400 }
+          )
         }
+        seasonNumbers = requestedNumbers
+      } else {
+        // No filter — import all series set up in season management
+        seasonNumbers = Object.keys(seasonIdMap).map(Number).sort((a, b) => a - b)
+        console.log('No season_filter — defaulting to all DB seasons:', seasonNumbers)
       }
     } catch (err) {
       console.warn('Could not load seasons for mapping — importing without season mapping', err)
