@@ -731,14 +731,13 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
       return statMap[stat] || stat.toLowerCase();
     };
     
-    // Build track rows for database - deduplicated by name
+    // Build track rows for database - deduplicated by name (season_id now lives in track_seasons)
     const trackRows = Array.from(tracksByName.values()).map((t: any) => ({
       id: t.id || null,
       name: t.name,
       laps: t.lapcount,
       driver_track_stat: convertStatName(t.strongStatA),
       car_track_stat: convertStatName(t.strongStatB),
-      season_id: activeSeasonId
     })).filter(track => track.id !== null && track.id !== ''); // Filter out invalid IDs
     
     console.log(`📊 Deduplicated to ${trackRows.length} unique tracks`);
@@ -764,6 +763,20 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         results.tracks.new = newCount;
         results.tracks.modified = updatedCount;
         console.log(`✅ Tracks processed: new=${newCount}, updated=${updatedCount}`);
+      }
+
+      // Upsert track_seasons junction rows — season membership is separate from track identity
+      if (activeSeasonId) {
+        const trackSeasonRows = trackRows.map((t: any) => ({
+          track_id: t.id,
+          season_id: activeSeasonId,
+          is_active: true,
+        }));
+        const { error: tsError } = await supabaseAdmin
+          .from('track_seasons')
+          .upsert(trackSeasonRows, { onConflict: 'track_id,season_id' });
+        if (tsError) console.error('❌ Failed to upsert track_seasons:', tsError);
+        else console.log(`✅ track_seasons upserted: ${trackSeasonRows.length} rows`);
       }
     }
   }

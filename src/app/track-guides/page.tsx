@@ -49,8 +49,11 @@ export default function TrackGuidesPage() {
         })
         const tracksData = tracksResponse.ok ? await tracksResponse.json() : []
 
-        // Fetch track guides
-        const guidesResponse = await fetch('/api/track-guides', {
+        // Fetch track guides filtered by active season
+        const guidesUrl = activeSeasonId
+          ? `/api/track-guides?season_id=${encodeURIComponent(activeSeasonId)}`
+          : '/api/track-guides'
+        const guidesResponse = await fetch(guidesUrl, {
           headers: await getAuthHeaders(),
           credentials: 'same-origin'
         })

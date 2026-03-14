@@ -388,6 +388,7 @@ export type Database = {
           created_at: string | null
           entry_fee: number | null
           flags_to_unlock: number | null
+          id: string
           index: number
           loss_flags: number | null
           max_flags: number | null
@@ -405,6 +406,7 @@ export type Database = {
           created_at?: string | null
           entry_fee?: number | null
           flags_to_unlock?: number | null
+          id?: string
           index: number
           loss_flags?: number | null
           max_flags?: number | null
@@ -422,6 +424,7 @@ export type Database = {
           created_at?: string | null
           entry_fee?: number | null
           flags_to_unlock?: number | null
+          id?: string
           index?: number
           loss_flags?: number | null
           max_flags?: number | null
@@ -494,16 +497,50 @@ export type Database = {
         }
         Relationships: []
       }
+      track_seasons: {
+        Row: {
+          id: string
+          is_active: boolean
+          season_id: string
+          track_id: string
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean
+          season_id: string
+          track_id: string
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          season_id?: string
+          track_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "track_seasons_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "track_seasons_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tracks: {
         Row: {
           car_track_stat: string
           created_at: string
           driver_track_stat: string
           id: string
-          is_active: boolean | null
           laps: number
           name: string
-          season_id: string
           track_guid: string | null
           updated_at: string
         }
@@ -512,10 +549,8 @@ export type Database = {
           created_at?: string
           driver_track_stat: string
           id?: string
-          is_active?: boolean | null
           laps: number
           name: string
-          season_id: string
           track_guid?: string | null
           updated_at?: string
         }
@@ -524,22 +559,12 @@ export type Database = {
           created_at?: string
           driver_track_stat?: string
           id?: string
-          is_active?: boolean | null
           laps?: number
           name?: string
-          season_id?: string
           track_guid?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "tracks_season_id_fkey"
-            columns: ["season_id"]
-            isOneToOne: false
-            referencedRelation: "seasons"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       tracks_backup: {
         Row: {
@@ -1126,6 +1151,7 @@ export type Database = {
           id: string
           notes: string | null
           saved_setup_id: string | null
+          season_id: string | null
           setup_notes: string | null
           suggested_boosts: Json | null
           suggested_drivers: Json | null
@@ -1152,6 +1178,7 @@ export type Database = {
           id?: string
           notes?: string | null
           saved_setup_id?: string | null
+          season_id?: string | null
           setup_notes?: string | null
           suggested_boosts?: Json | null
           suggested_drivers?: Json | null
@@ -1178,6 +1205,7 @@ export type Database = {
           id?: string
           notes?: string | null
           saved_setup_id?: string | null
+          season_id?: string | null
           setup_notes?: string | null
           suggested_boosts?: Json | null
           suggested_drivers?: Json | null
@@ -1227,6 +1255,13 @@ export type Database = {
             columns: ["saved_setup_id"]
             isOneToOne: false
             referencedRelation: "user_car_setups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_track_guides_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
             referencedColumns: ["id"]
           },
           {

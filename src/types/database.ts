@@ -338,7 +338,6 @@ export interface Database {
           laps: number
           driver_track_stat: string
           car_track_stat: string
-          season_id: string
           created_at: string
           updated_at: string
         }
@@ -349,7 +348,6 @@ export interface Database {
           laps: number
           driver_track_stat: string
           car_track_stat: string
-          season_id: string
           created_at?: string
           updated_at?: string
         }
@@ -360,7 +358,6 @@ export interface Database {
           laps?: number
           driver_track_stat?: string
           car_track_stat?: string
-          season_id?: string
           created_at?: string
           updated_at?: string
         }
@@ -370,6 +367,7 @@ export interface Database {
           id: string
           user_id: string
           track_id: string
+          season_id: string | null
           gp_level: number
           suggested_drivers: SuggestedDriverIds
           free_boost_id: string | null
@@ -396,6 +394,7 @@ export interface Database {
           id?: string
           user_id: string
           track_id: string
+          season_id?: string | null
           gp_level: number
           suggested_drivers?: SuggestedDriverIds
           free_boost_id?: string | null
@@ -422,6 +421,7 @@ export interface Database {
           id?: string
           user_id?: string
           track_id?: string
+          season_id?: string | null
           gp_level?: number
           suggested_drivers?: SuggestedDriverIds
           free_boost_id?: string | null

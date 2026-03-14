@@ -10,18 +10,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const seasonId = searchParams.get('season_id')
 
-    let query = supabase
-      .from('tracks')
-      .select(`
-        *,
-        seasons (
-          id,
-          name,
-          is_active
-        )
-      `)
-      .order('name')
-
     // Also get track name aliases
     const { data: aliases } = await supabaseAdmin
       .from('track_name_aliases')
@@ -32,12 +20,34 @@ export async function GET(request: NextRequest) {
       (aliases || []).map(a => [a.system_name, a.display_name])
     )
 
-    // Filter by season if provided
     if (seasonId) {
-      query = query.eq('season_id', seasonId)
+      // Query through junction table — returns only tracks in this season
+      const { data: tsData, error } = await supabase
+        .from('track_seasons')
+        .select('is_active, seasons(id, name, is_active), tracks(*)')
+        .eq('season_id', seasonId)
+
+      if (error) {
+        console.error('Error fetching tracks:', error)
+        return NextResponse.json(
+          { error: 'Failed to fetch tracks' },
+          { status: 500 }
+        )
+      }
+
+      const transformedData = (tsData || []).map(row => ({
+        ...(row.tracks as any),
+        is_active: row.is_active,
+        season_name: (row.seasons as any)?.name || 'Unknown',
+        season_is_active: (row.seasons as any)?.is_active || false,
+        display_name: aliasMap.get((row.tracks as any).name) || null,
+      })).sort((a: any, b: any) => a.name.localeCompare(b.name))
+
+      return NextResponse.json(transformedData)
     }
 
-    const { data, error } = await query
+    // No season filter — return all tracks without season info
+    const { data, error } = await supabase.from('tracks').select('*').order('name')
 
     if (error) {
       console.error('Error fetching tracks:', error)
@@ -47,12 +57,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Transform the data to flatten the season information and add alias
-    const transformedData = data.map(track => ({
+    const transformedData = (data || []).map(track => ({
       ...track,
-      season_name: track.seasons?.name || 'Unknown',
-      season_is_active: track.seasons?.is_active || false,
-      display_name: aliasMap.get(track.name) || null
+      is_active: null,
+      season_name: null,
+      season_is_active: false,
+      display_name: aliasMap.get(track.name) || null,
     }))
 
     return NextResponse.json(transformedData)
@@ -134,18 +144,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    const seasonId: string | undefined = body.season_id
     const trackData: Inserts<'tracks'> = {
       name: body.name,
       alt_name: body.alt_name,
       laps: body.laps,
       driver_track_stat: body.driver_track_stat,
       car_track_stat: body.car_track_stat,
-      season_id: body.season_id
     }
 
     // Validate required fields
     if (!trackData.name || !trackData.laps || !trackData.driver_track_stat ||
-        !trackData.car_track_stat || !trackData.season_id) {
+        !trackData.car_track_stat || !seasonId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -174,7 +184,7 @@ export async function POST(request: NextRequest) {
     const { data: season, error: seasonError } = await supabaseAdmin
       .from('seasons')
       .select('id')
-      .eq('id', trackData.season_id)
+      .eq('id', seasonId)
       .single()
 
     if (seasonError || !season) {
@@ -187,14 +197,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabaseAdmin
       .from('tracks')
       .insert(trackData)
-      .select(`
-        *,
-        seasons (
-          id,
-          name,
-          is_active
-        )
-      `)
+      .select('*')
       .single()
 
     if (error) {
@@ -203,6 +206,15 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to create track' },
         { status: 500 }
       )
+    }
+
+    // Link track to season via junction table
+    const { error: tsError } = await supabaseAdmin
+      .from('track_seasons')
+      .insert({ track_id: data.id, season_id: seasonId, is_active: true })
+
+    if (tsError) {
+      console.error('Error linking track to season:', tsError)
     }
 
     return NextResponse.json(data, { status: 201 })

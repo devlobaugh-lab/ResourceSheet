@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getAuthHeaders, useUserCarSetups, useUserCarParts } from '@/hooks/useApi'
+import { useSeason } from '@/contexts/SeasonContext'
 import { useToast } from '@/components/ui/Toast'
 import { useDriverLookup } from '@/hooks/useDriverLookup'
 import { Track, UserTrackGuide, DriverView, BoostView, UserCarSetupWithParts } from '@/types/database'
@@ -59,6 +60,7 @@ export default function TrackGuideEditorPage() {
   const { addToast } = useToast()
   const queryClient = useQueryClient()
   const trackId = params.id as string
+  const { activeSeasonId } = useSeason()
 
   const searchParams = useSearchParams()
   const initialLevel = Number(searchParams.get('level') ?? 0)
@@ -172,11 +174,13 @@ export default function TrackGuideEditorPage() {
     enabled: !!trackId
   })
 
-  // Fetch existing track guide for this track and GP level
+  // Fetch existing track guide for this track, season, and GP level
   const { data: trackGuide, isLoading: guideLoading } = useQuery({
-    queryKey: ['track-guide', trackId, selectedGpLevel],
+    queryKey: ['track-guide', trackId, selectedGpLevel, activeSeasonId],
     queryFn: async () => {
-      const response = await fetch(`/api/track-guides?track_id=${trackId}&gp_level=${selectedGpLevel}`, {
+      const params = new URLSearchParams({ track_id: trackId, gp_level: String(selectedGpLevel) })
+      if (activeSeasonId) params.set('season_id', activeSeasonId)
+      const response = await fetch(`/api/track-guides?${params}`, {
         headers: await getAuthHeaders(),
         credentials: 'same-origin'
       })
@@ -384,7 +388,7 @@ export default function TrackGuideEditorPage() {
       setAutoSaveStatus('saved')
       setTimeout(() => setAutoSaveStatus('idle'), 2000)
       queryClient.invalidateQueries({ queryKey: ['track-guides'] })
-      queryClient.invalidateQueries({ queryKey: ['track-guide', trackId, selectedGpLevel] })
+      queryClient.invalidateQueries({ queryKey: ['track-guide', trackId, selectedGpLevel, activeSeasonId] })
     },
     onError: (error: Error) => {
       setAutoSaveStatus('error')
@@ -398,9 +402,10 @@ export default function TrackGuideEditorPage() {
       ...formData,
       track_id: trackId,
       gp_level: selectedGpLevel,
+      season_id: activeSeasonId ?? null,
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData, selectedGpLevel, trackId])
+  }, [formData, selectedGpLevel, trackId, activeSeasonId])
 
   // Debounced auto-save whenever formData changes
   useEffect(() => {

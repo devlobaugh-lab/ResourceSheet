@@ -127,16 +127,22 @@ export async function GET(request: NextRequest) {
     console.log('Aliases loaded:', Object.keys(aliasMap).length)
 
     // Fetch tracks from deduplicated tracks table for fallback
-    let tracksQuery = supabaseAdmin
-      .from('tracks')
-      .select('id, name, laps, driver_track_stat, car_track_stat')
-      .in('name', Array.from(allTrackNames))
-
+    // Season filtering goes through track_seasons junction table
+    let tracksData: any[] | null = null
     if (seasonId) {
-      tracksQuery = tracksQuery.eq('season_id', seasonId)
+      const { data: tsData } = await supabaseAdmin
+        .from('track_seasons')
+        .select('tracks(id, name, laps, driver_track_stat, car_track_stat)')
+        .eq('season_id', seasonId)
+        .in('tracks.name', Array.from(allTrackNames))
+      tracksData = (tsData || []).map((row: any) => row.tracks).filter(Boolean)
+    } else {
+      const { data } = await supabaseAdmin
+        .from('tracks')
+        .select('id, name, laps, driver_track_stat, car_track_stat')
+        .in('name', Array.from(allTrackNames))
+      tracksData = data
     }
-
-    const { data: tracksData } = await tracksQuery
 
     // Build track map by name for fallback lookup
     const trackMap: Record<string, { id: string; laps: number; driver_track_stat: string; car_track_stat: string }> = {}

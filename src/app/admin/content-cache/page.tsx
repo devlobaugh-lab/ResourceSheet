@@ -450,7 +450,7 @@ export default function AdminContentCachePage() {
                     <div className="bg-white rounded p-3">
                       <div className="font-medium text-gray-700 mb-2">🏁 Tracks</div>
                       <div className="text-gray-600">
-                        Imported: {uploadResult.summary.tracks?.new ?? 0}
+                        New: {uploadResult.summary.tracks?.new ?? 0} | Updated: {uploadResult.summary.tracks?.modified ?? 0}
                       </div>
                     </div>
                     <div className="bg-white rounded p-3">
