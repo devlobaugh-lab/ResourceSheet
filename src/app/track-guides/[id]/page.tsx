@@ -342,8 +342,11 @@ export default function TrackGuideEditorPage() {
   // Track form changes to set dirty state
   useEffect(() => {
     if (!trackGuide) {
-      // For new guides, check if form has any data (other than default values)
-      const hasData = Object.values(formData).some(value => {
+      // For new guides, only mark dirty if user-entered fields have data.
+      // Exclude structural fields that are always present on a new guide.
+      const STRUCTURAL_FIELDS = new Set(['track_id', 'gp_level', 'season_id', 'id', 'user_id', 'created_at', 'updated_at', 'tracks'])
+      const hasData = Object.entries(formData).some(([key, value]) => {
+        if (STRUCTURAL_FIELDS.has(key)) return false
         if (value === null || value === undefined) return false
         if (typeof value === 'string') return value.trim() !== ''
         if (Array.isArray(value)) return value.length > 0
@@ -398,6 +401,18 @@ export default function TrackGuideEditorPage() {
   })
 
   const save = useCallback(() => {
+    // Defense-in-depth: never POST an empty new guide
+    if (!trackGuide) {
+      const STRUCTURAL_FIELDS = new Set(['track_id', 'gp_level', 'season_id', 'id', 'user_id', 'created_at', 'updated_at', 'tracks'])
+      const hasUserData = Object.entries(formData).some(([key, value]) => {
+        if (STRUCTURAL_FIELDS.has(key)) return false
+        if (value === null || value === undefined) return false
+        if (typeof value === 'string') return value.trim() !== ''
+        if (Array.isArray(value)) return value.length > 0
+        return true
+      })
+      if (!hasUserData) return
+    }
     saveMutation.mutate({
       ...formData,
       track_id: trackId,
@@ -405,7 +420,7 @@ export default function TrackGuideEditorPage() {
       season_id: activeSeasonId ?? null,
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData, selectedGpLevel, trackId, activeSeasonId])
+  }, [formData, selectedGpLevel, trackId, activeSeasonId, trackGuide])
 
   // Debounced auto-save whenever formData changes
   useEffect(() => {

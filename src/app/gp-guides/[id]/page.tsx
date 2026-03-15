@@ -863,7 +863,7 @@ function SectionHeader({ title, subtitle, raceType, onBulkImport, bulkImporting 
 function CondensedView({ guide, allTracks, allDrivers, allBoosts, allSetups }: {
   guide: GpGuide; allTracks: TrackInfo[]; allDrivers: DriverView[]; allBoosts: BoostView[]; allSetups: UserCarSetup[]
 }) {
-  const [showNotes, setShowNotes] = useState(true)
+  const [showNotes, setShowNotes] = useState(false)
   const gpLevel = GP_LEVELS[guide.gp_level] || GP_LEVELS[3]
   const qualifying = guide.tracks.filter(t => t.race_type === 'qualifying').sort((a, b) => a.race_number - b.race_number)
   const opening = guide.tracks.filter(t => t.race_type === 'opening').sort((a, b) => a.race_number - b.race_number)
