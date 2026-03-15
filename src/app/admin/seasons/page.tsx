@@ -9,12 +9,14 @@ import { Badge } from '@/components/ui/Badge'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getAuthHeaders } from '@/hooks/useApi'
 import { useToast } from '@/components/ui/Toast'
+import { useSeason } from '@/contexts/SeasonContext'
 import { Plus, Star } from 'lucide-react'
 import type { Season } from '@/types/database'
 
 export default function SeasonsAdminPage() {
   const { addToast } = useToast()
   const queryClient = useQueryClient()
+  const { setActiveSeason } = useSeason()
   const [newSeasonName, setNewSeasonName] = useState('')
 
   // Fetch all seasons
@@ -68,9 +70,10 @@ export default function SeasonsAdminPage() {
       }
       return response.json()
     },
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ['admin-seasons'] })
       queryClient.invalidateQueries({ queryKey: ['seasons'] })
+      setActiveSeason(id)
       addToast('Active season updated', 'success')
     },
     onError: (error: Error) => {
