@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react'
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { DriverView } from '@/types/database'
 import { useDrivers, useUserDrivers } from '@/hooks/useApi'
 import { cn, calculateHighestLevel } from '@/lib/utils'
 import { getRarityDisplay, getRarityOptions } from '@/lib/rarityUtils'
+import { useSeason } from '@/contexts/SeasonContext'
 
 // Helper function to get stat background color based on value position in range
 const getStatBackgroundColor = (value: number, min: number, max: number, median: number): string => {
@@ -48,7 +49,9 @@ interface DriverCompareGridProps {
 }
 
 export function DriverCompareGrid({ className }: DriverCompareGridProps) {
+  const { activeSeasonId } = useSeason()
   const { data: userDriversResponse } = useUserDrivers({
+    season_id: activeSeasonId ?? undefined,
     page: 1,
     limit: 1000 // Get all drivers for dropdown and stats
   })
@@ -57,11 +60,14 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
 
   // State for the compare grid
   const [compareDrivers, setCompareDrivers] = useState<CompareDriver[]>(() => {
-    // Load from localStorage
     try {
       const stored = localStorage.getItem(COMPARE_DRIVERS_KEY)
       if (stored) {
-        return JSON.parse(stored)
+        const parsed = JSON.parse(stored)
+        // New format: { seasonId, drivers }
+        if (parsed.drivers) return parsed.drivers
+        // Old format: array directly
+        if (Array.isArray(parsed)) return parsed
       }
     } catch (error) {
       console.warn('Failed to load compare drivers from localStorage:', error)
@@ -71,6 +77,8 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
 
   // State for rarity options
   const [rarityOptions, setRarityOptions] = useState<Array<{ rarity: number; display: string; collectionId?: string; value?: string }>>([])
+
+  const prevSeasonIdRef = useRef<string | null | undefined>(undefined)
 
   const [bonusPercentage, setBonusPercentage] = useState(() => {
     // Load bonus percentage from localStorage
@@ -84,14 +92,46 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
     }
   })
 
+  // Effect A: on mount, validate stored season matches current season
+  useEffect(() => {
+    if (activeSeasonId === null) return
+    try {
+      const stored = localStorage.getItem(COMPARE_DRIVERS_KEY)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (parsed.seasonId && parsed.seasonId !== activeSeasonId) {
+          setCompareDrivers([])
+          localStorage.removeItem(COMPARE_DRIVERS_KEY)
+        }
+      }
+    } catch {}
+  }, [activeSeasonId])
+
+  // Effect B: detect active season switch (not initial mount)
+  useEffect(() => {
+    if (prevSeasonIdRef.current === undefined) {
+      prevSeasonIdRef.current = activeSeasonId
+      return
+    }
+    if (activeSeasonId !== null && prevSeasonIdRef.current !== activeSeasonId) {
+      prevSeasonIdRef.current = activeSeasonId
+      setCompareDrivers([])
+      localStorage.removeItem(COMPARE_DRIVERS_KEY)
+    }
+  }, [activeSeasonId])
+
   // Save to localStorage whenever state changes
   useEffect(() => {
+    if (!activeSeasonId) return
     try {
-      localStorage.setItem(COMPARE_DRIVERS_KEY, JSON.stringify(compareDrivers))
+      localStorage.setItem(COMPARE_DRIVERS_KEY, JSON.stringify({
+        seasonId: activeSeasonId,
+        drivers: compareDrivers
+      }))
     } catch (error) {
       console.warn('Failed to save compare drivers to localStorage:', error)
     }
-  }, [compareDrivers])
+  }, [activeSeasonId, compareDrivers])
 
   useEffect(() => {
     try {
