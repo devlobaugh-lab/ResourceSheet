@@ -121,7 +121,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Read and parse the uploaded file
-    const fileText = await file.text()
+    let fileText: string;
+    const isCompressed = formData.get('compressed') === 'true';
+    if (isCompressed) {
+      const { gunzipSync } = await import('zlib');
+      const buffer = Buffer.from(await file.arrayBuffer());
+      fileText = gunzipSync(buffer).toString('utf-8');
+    } else {
+      fileText = await file.text();
+    }
     let contentCacheData: any
     
     try {

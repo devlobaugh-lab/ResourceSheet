@@ -142,10 +142,20 @@ export default function AdminContentCachePage() {
     setProcessingStatus('Starting upload...');
 
     try {
+      // Compress with browser-native gzip to stay under Vercel's 4.5MB body limit
+      const fileBuffer = await selectedFile.arrayBuffer();
+      const cs = new CompressionStream('gzip');
+      const writer = cs.writable.getWriter();
+      writer.write(new Uint8Array(fileBuffer));
+      writer.close();
+      const compressedBuffer = await new Response(cs.readable).arrayBuffer();
+      const compressedBlob = new Blob([compressedBuffer], { type: 'application/gzip' });
+
       const formData = new FormData();
-      formData.append('file', selectedFile);
+      formData.append('file', compressedBlob, selectedFile.name);
       formData.append('season_filter', seasonFilter.trim());
       formData.append('allow_modifications', allowModifications.toString());
+      formData.append('compressed', 'true');
 
       const authHeaders = await getAuthHeaders();
       const { 'Content-Type': _, ...uploadHeaders } = authHeaders;
@@ -157,8 +167,15 @@ export default function AdminContentCachePage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Upload failed');
+        let errorMessage = 'Upload failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error?.message || errorMessage;
+        } catch {
+          const text = await response.text();
+          if (text) errorMessage = text;
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
