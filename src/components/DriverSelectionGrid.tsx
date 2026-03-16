@@ -306,7 +306,7 @@ export function DriverSelectionGrid({
 
       return sortOrder === 'asc' ? comparison : -comparison;
     });
-  }, [filteredDrivers, sortBy, sortOrder, showHighestLevel, bonusCheckedItems, localBonusPercentage, effectiveSortBy, getStatValueForSort]);
+  }, [filteredDrivers, sortOrder, effectiveSortBy, getStatValueForSort]);
 
   // Handle driver selection toggle
   const handleDriverToggle = (driverId: string) => {

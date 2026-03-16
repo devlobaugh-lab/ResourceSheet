@@ -4,19 +4,13 @@ import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase'
 import { updateSeasonSchema } from '@/lib/validation'
 
-interface Params {
-  params: {
-    id: string
-  }
-}
-
 // GET /api/seasons/[id] - Get single season
 export async function GET(
   request: NextRequest,
-  { params }: Params
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     
     // Validate UUID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -60,7 +54,7 @@ export async function GET(
 // PUT /api/seasons/[id] - Update season (admin only)
 export async function PUT(
   request: NextRequest,
-  { params }: Params
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify authentication
@@ -99,8 +93,8 @@ export async function PUT(
       )
     }
     
-    const { id } = params
-    
+    const { id } = await params
+
     // Validate UUID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (!uuidRegex.test(id)) {
@@ -109,7 +103,7 @@ export async function PUT(
         { status: 400 }
       )
     }
-    
+
     const body = await request.json()
     const validatedData = updateSeasonSchema.parse(body)
 
@@ -168,7 +162,7 @@ export async function PUT(
 // DELETE /api/seasons/[id] - Delete season (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: Params
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify authentication
@@ -207,8 +201,8 @@ export async function DELETE(
       )
     }
     
-    const { id } = params
-    
+    const { id } = await params
+
     // Validate UUID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (!uuidRegex.test(id)) {
@@ -217,7 +211,7 @@ export async function DELETE(
         { status: 400 }
       )
     }
-    
+
     const { error } = await supabaseAdmin
       .from('seasons')
       .delete()
