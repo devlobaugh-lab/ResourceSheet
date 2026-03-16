@@ -20,6 +20,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 
 const adminEmail = process.env.ADMIN_EMAIL
 const adminPassword = process.env.ADMIN_PASSWORD
+const adminUsername = process.env.ADMIN_USERNAME || 'admin'
 
 if (!adminEmail || !adminPassword) {
   console.error('Missing ADMIN_EMAIL or ADMIN_PASSWORD environment variables')
@@ -69,7 +70,7 @@ async function createAdminUser() {
         .upsert({
           id: authData.user.id,
           email: adminEmail,
-          username: 'test_admin',
+          username: adminUsername,
           is_admin: true
         }, {
           onConflict: 'id'
@@ -84,13 +85,26 @@ async function createAdminUser() {
     } else {
       console.log('Admin user already exists:', adminUser.id)
 
+      // Update password for existing user
+      const { error: passwordError } = await supabase.auth.admin.updateUserById(
+        adminUser.id,
+        { password: adminPassword, email_confirm: true }
+      )
+
+      if (passwordError) {
+        console.error('Error updating password: An error occurred while updating the password')
+        return
+      }
+
+      console.log('Password updated successfully')
+
       // Update the profile record to ensure is_admin is true
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .upsert({
           id: adminUser.id,
           email: adminEmail,
-          username: 'test_admin',
+          username: adminUsername,
           is_admin: true
         }, {
           onConflict: 'id'
