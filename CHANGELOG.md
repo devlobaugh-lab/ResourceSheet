@@ -5,6 +5,24 @@ All notable changes to the F1 Resource Manager project will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-03-10
+
+### Split Admin Backup into System Data and User Data
+
+**Breaking change for admin backup workflows** — the single admin backup is replaced by two focused backups:
+
+- **System Data Backup** (`/api/admin/export/system`, `/api/admin/import/system`): exports/imports admin-managed config only — seasons, track name aliases, boost `is_free` flags, and boost custom names. Excludes all user tables and content-cache tables.
+- **User Data Backup** (`/api/admin/export/users`, `/api/admin/import/users`): exports/imports all users' personal data per-user, including `user_custom_drivers` and profile metadata (`username`, `active_season_id`). Never modifies `is_admin` or `is_active`.
+
+**Profile export/import updated (v2.0):**
+- `GET /api/export-user-data` now includes `user_custom_drivers` and profile metadata (`username`, `active_season_id`) in the `user` envelope; version bumped to `2.0`
+- `POST /api/import-user-data` now imports `user_custom_drivers` (upsert by name) and restores `username`/`active_season_id` from the `user` envelope
+
+**Admin UI:**
+- `/admin` backup section now shows two cards: "System Data Backup" and "User Data Backup" with independent export/import controls
+
+**Deprecated (not deleted):** `GET /api/admin/export` and `POST /api/admin/import`
+
 ## [1.2.0] - 2026-02-12
 
 ### 🚀 Rarity-5 Variants Complete Implementation - Antonelli Stats Fixed

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/components/auth/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useToast } from '@/components/ui/Toast';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAuthHeaders } from '@/hooks/useApi';
 import Link from 'next/link';
 import { Upload, FileText, Settings, Database, AlertCircle, Eye } from 'lucide-react';
@@ -15,6 +15,7 @@ import { Upload, FileText, Settings, Database, AlertCircle, Eye } from 'lucide-r
 export default function AdminContentCachePage() {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -132,6 +133,10 @@ export default function AdminContentCachePage() {
       
       // Store result for display on page
       setUploadResult(result);
+
+      // Invalidate cached results so series/AI pages fetch fresh data
+      queryClient.invalidateQueries({ queryKey: ['series'] })
+      queryClient.invalidateQueries({ queryKey: ['ai-loadouts-options'] })
       
       // Show modified items in console for admin review
       if (result.summary.total_modified > 0) {
@@ -388,17 +393,35 @@ export default function AdminContentCachePage() {
                     </div>
                   </div>
 
-                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div className="bg-white rounded p-3">
                       <div className="font-medium text-gray-700 mb-2">🏎️ Series</div>
                       <div className="text-gray-600">
-                        Imported: {uploadResult.summary.series?.new ?? 0} | Deleted: {uploadResult.summary.series?.deleted ?? 0}
+                        {uploadResult.summary.series?.skipped
+                          ? <span className="text-yellow-600">Not found in cache</span>
+                          : <>
+                              Imported: {uploadResult.summary.series?.new ?? 0} | Deleted: {uploadResult.summary.series?.deleted ?? 0}
+                              {uploadResult.summary.series?.error &&
+                                <span className="text-red-600 ml-2">Error: {uploadResult.summary.series.error}</span>}
+                            </>}
                       </div>
                     </div>
                     <div className="bg-white rounded p-3">
                       <div className="font-medium text-gray-700 mb-2">🏁 Tracks</div>
                       <div className="text-gray-600">
                         Imported: {uploadResult.summary.tracks?.new ?? 0}
+                      </div>
+                    </div>
+                    <div className="bg-white rounded p-3">
+                      <div className="font-medium text-gray-700 mb-2">🤖 AI Loadouts</div>
+                      <div className="text-gray-600">
+                        {uploadResult.summary.ai_track_loadouts?.skipped
+                          ? <span className="text-yellow-600">Not found in cache</span>
+                          : <>
+                              Imported: {uploadResult.summary.ai_track_loadouts?.new ?? 0} | Deleted: {uploadResult.summary.ai_track_loadouts?.deleted ?? 0}
+                              {uploadResult.summary.ai_track_loadouts?.error &&
+                                <span className="text-red-600 ml-2">Error: {uploadResult.summary.ai_track_loadouts.error}</span>}
+                            </>}
                       </div>
                     </div>
                   </div>

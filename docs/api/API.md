@@ -76,17 +76,23 @@ Per-user data — all routes require authentication; RLS enforces data isolation
 
 ## Import / Export
 
-There are two export/import pairs:
+There are two export/import tiers:
 
-- **User export** — a single user backs up and restores their own data only.
-- **Admin backup** — backs up all users' data plus admin-managed config. A restore from an admin backup covers everything; a separate user import is not needed.
+- **User export** — a single user backs up and restores their own data only. Version 2.0 includes `user_custom_drivers` and profile metadata (`username`, `active_season_id`).
+- **Admin — system data** — backs up admin-configured settings: seasons, track name aliases, boost `is_free` flags, and boost custom names. Does NOT include user data or content-cache tables.
+- **Admin — all users data** — backs up every user's personal data (same shape as user export) plus profile metadata. Does not include system config.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/api/export-user-data` | Yes | Export the current user's data (collection, boosts, setups, guides) |
+| GET | `/api/export-user-data` | Yes | Export the current user's data (v2.0: collection, boosts, setups, guides, custom drivers, profile metadata) |
 | POST | `/api/import-user-data` | Yes | Import the current user's data from a user export blob |
-| GET | `/api/admin/export` | Yes (admin) | Export all users' data + admin-managed config (seasons, track name aliases, boost custom names, `is_free` flags); excludes content-cache tables |
-| POST | `/api/admin/import` | Yes (admin) | Import an admin backup; upserts all user tables (including previously missing child tables) and admin config |
+| GET | `/api/admin/export/system` | Yes (admin) | Export admin-managed system config: seasons, track aliases, boost `is_free` flags, boost custom names |
+| POST | `/api/admin/import/system` | Yes (admin) | Import a system data backup; upserts seasons, track aliases, boost custom names; updates `is_free` flags |
+| GET | `/api/admin/export/users` | Yes (admin) | Export all users' personal data including `user_custom_drivers` and profile metadata |
+| POST | `/api/admin/import/users` | Yes (admin) | Import an all-users backup; upserts each user's data and profile metadata (never touches `is_admin`/`is_active`) |
+
+> **Deprecated (do not use for new integrations):**
+> `GET /api/admin/export` and `POST /api/admin/import` — the old combined backup endpoints are still present but replaced by the split routes above.
 
 ---
 

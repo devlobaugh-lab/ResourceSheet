@@ -278,7 +278,7 @@ export async function POST(request: NextRequest) {
             await supabaseAdmin.from('boost_custom_names').update({ custom_name: item.custom_name }).eq('id', existing.id)
             results.boostCustomNames.updated++
           } else {
-            const { id, ...insertData } = item
+            const { id, user_id, ...insertData } = item
             await supabaseAdmin.from('boost_custom_names').insert(insertData)
             results.boostCustomNames.imported++
           }

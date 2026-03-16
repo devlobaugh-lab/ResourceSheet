@@ -1,0 +1,163 @@
+'use client'
+
+import { UserCarSetup, CarPartView } from '@/types/database'
+import { X, Pencil } from 'lucide-react'
+import { Card } from '@/components/ui/Card'
+import Link from 'next/link'
+
+const PART_TYPES = [
+  { key: 'brake', type: 1, label: 'Brake' },
+  { key: 'gearbox', type: 0, label: 'Gearbox' },
+  { key: 'rear_wing', type: 5, label: 'Rear Wing' },
+  { key: 'front_wing', type: 4, label: 'Front Wing' },
+  { key: 'suspension', type: 3, label: 'Suspension' },
+  { key: 'engine', type: 2, label: 'Engine' },
+] as const
+
+const getStatValue = (
+  part: CarPartView | undefined,
+  statName: string,
+): number => {
+  if (!part) return 0
+  const userLevel = part.level || 0
+  if (userLevel === 0) return 0
+  const stats = part.stats_per_level
+  if (!stats || !Array.isArray(stats) || stats.length < userLevel) return 0
+  return stats[userLevel - 1][statName] || 0
+}
+
+const getRarityBg = (rarity: number): string => {
+  return rarity === 0 ? 'bg-gray-300' :
+         rarity === 1 ? 'bg-blue-200' :
+         rarity === 2 ? 'bg-orange-200' :
+         rarity === 3 ? 'bg-purple-300' :
+         rarity === 4 ? 'bg-yellow-300' :
+         rarity === 5 ? 'bg-red-300' : 'bg-gray-300'
+}
+
+interface SetupPreviewPanelProps {
+  setup: UserCarSetup
+  carParts: CarPartView[]
+  onClose: () => void
+}
+
+export function SetupPreviewPanel({ setup, carParts, onClose }: SetupPreviewPanelProps) {
+  const partMap: Record<string, string | null> = {
+    brake: setup.brake_id,
+    gearbox: setup.gearbox_id,
+    rear_wing: setup.rear_wing_id,
+    front_wing: setup.front_wing_id,
+    suspension: setup.suspension_id,
+    engine: setup.engine_id,
+  }
+
+  const getPart = (key: string) =>
+    carParts.find(p => p.id === partMap[key]) ?? undefined
+
+  const totalStats = {
+    speed: 0, cornering: 0, powerUnit: 0,
+    qualifying: 0, drs: 0, pitStopTime: 0,
+  }
+
+  PART_TYPES.forEach(({ key }) => {
+    const part = getPart(key)
+    if (part) {
+      totalStats.speed += getStatValue(part, 'speed')
+      totalStats.cornering += getStatValue(part, 'cornering')
+      totalStats.powerUnit += getStatValue(part, 'powerUnit')
+      totalStats.qualifying += getStatValue(part, 'qualifying')
+      totalStats.drs += getStatValue(part, 'drs')
+      totalStats.pitStopTime += getStatValue(part, 'pitStopTime')
+    }
+  })
+
+  return (
+    <Card className="p-4">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className="text-base font-semibold text-gray-900 truncate">{setup.name}</h3>
+          <Link
+            href={`/setups?loadA=${setup.id}`}
+            className="text-gray-400 hover:text-blue-600 transition-colors shrink-0"
+            aria-label="Edit setup" title="Edit setup"
+          >
+            <Pencil className="w-5 h-5" />
+          </Link>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-600 shrink-0 ml-2"
+          aria-label="Close preview"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Parts grid */}
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {PART_TYPES.map(({ key, label }) => {
+          const part = getPart(key)
+          return (
+            <div
+              key={key}
+              className={`${part ? getRarityBg(part.rarity) : 'bg-white border border-gray-200'} rounded-lg p-2`}
+            >
+              <div className="text-xs font-medium text-gray-700 mb-1">{label}</div>
+              {part ? (
+                <div>
+                  <div className="text-sm font-bold text-gray-900 truncate">{part.name}</div>
+                  <div className="text-sm text-gray-700">Lv.{part.level}</div>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-400 italic">None</div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Stats */}
+      <div className="space-y-2 mb-4">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-[3fr_1fr] gap-0">
+            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Speed</div>
+            <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.speed}</div>
+          </div>
+          <div className="grid grid-cols-[3fr_1fr] gap-0">
+            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Power Unit</div>
+            <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.powerUnit}</div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-[3fr_1fr] gap-0">
+            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Cornering</div>
+            <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.cornering}</div>
+          </div>
+          <div className="grid grid-cols-[3fr_1fr] gap-0">
+            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Qualifying</div>
+            <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.qualifying}</div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-[3fr_1fr] gap-0">
+            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Avg Pit Stop</div>
+            <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.pitStopTime.toFixed(2)}s</div>
+          </div>
+          <div className="grid grid-cols-[3fr_1fr] gap-0">
+            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">DRS</div>
+            <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.drs}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Notes */}
+      {setup.notes && (
+        <div>
+          <div className="text-sm font-medium text-gray-600 mb-1">Notes</div>
+          <p className="text-sm text-gray-700 whitespace-pre-wrap">{setup.notes}</p>
+        </div>
+      )}
+    </Card>
+  )
+}

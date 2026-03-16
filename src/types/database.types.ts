@@ -67,7 +67,7 @@ export type Database = {
           custom_name: string
           id: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           boost_id: string
@@ -75,7 +75,7 @@ export type Database = {
           custom_name: string
           id?: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           boost_id?: string
@@ -83,13 +83,13 @@ export type Database = {
           custom_name?: string
           id?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "boost_custom_names_boost_id_fkey"
             columns: ["boost_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "boosts"
             referencedColumns: ["id"]
           },

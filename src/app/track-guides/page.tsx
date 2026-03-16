@@ -203,15 +203,14 @@ export default function TrackGuidesPage() {
                         const status = getCompletionStatus(track.id, level.id)
                         return (
                           <td key={level.id} className="px-6 py-2 whitespace-nowrap text-center">
-                            {status === 'complete' ? (
-                              <div className="flex justify-center">
-                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                              </div>
-                            ) : (
-                              <div className="flex justify-center">
-                                <div className="w-3 h-3 border border-gray-500 rounded-full"></div>
-                              </div>
-                            )}
+                            <div className="flex justify-center">
+                              <Link
+                                href={`/track-guides/${track.id}?level=${level.id}`}
+                                title={`${level.name} guide for ${getDisplayName(track)}`}
+                              >
+                                <div className={`w-8 h-8 rounded-full hover:opacity-50 transition-opacity cursor-pointer ${status === 'complete' ? 'bg-green-600' : 'border bg-gray-400'}`} />
+                              </Link>
+                            </div>
                           </td>
                         )
                       })}

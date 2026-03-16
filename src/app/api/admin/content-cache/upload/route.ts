@@ -147,7 +147,8 @@ export async function POST(request: NextRequest) {
         car_parts: results.car_parts,
         boosts: results.boosts,
         series: results.series,
-        tracks: results.tracks
+        tracks: results.tracks,
+        ai_track_loadouts: results.ai_track_loadouts,
       }
     }, { status: 201 })
     
@@ -232,8 +233,8 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
     car_parts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
     boosts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
     collections: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
-    ai_track_loadouts: { new: 0, modified: 0, unchanged: 0, deleted: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
-    series: { new: 0, modified: 0, unchanged: 0, deleted: 0 },
+    ai_track_loadouts: { new: 0, modified: 0, unchanged: 0, deleted: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }>, error: null as string | null, skipped: false },
+    series: { new: 0, modified: 0, unchanged: 0, deleted: 0, error: null as string | null, skipped: false },
     tracks: { new: 0, modified: 0, unchanged: 0 }
   }
 
@@ -396,6 +397,10 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
   // This is a full refresh: delete old data and insert new data
   let trackAILoadoutsData = validatedData._contentResponse?.trackAILoadouts || validatedData.trackAILoadouts;
   
+  if (!trackAILoadoutsData) {
+    results.ai_track_loadouts.skipped = true;
+  }
+
   if (trackAILoadoutsData) {
     console.log(`🏎️ Processing ${trackAILoadoutsData.length} trackAILoadouts entries...`);
     
@@ -493,6 +498,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
           
           if (insertError) {
             console.error(`❌ Failed to insert AI loadouts batch ${i / BATCH_SIZE + 1}:`, insertError);
+            results.ai_track_loadouts.error = insertError.message;
           } else {
             inserted += batch.length;
           }
@@ -537,6 +543,10 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
     });
   }
   
+  if (!seriesData) {
+    results.series.skipped = true;
+  }
+
   if (seriesData) {
     console.log(`🏎️ Processing ${seriesData.length} series entries...`);
     
@@ -602,6 +612,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         if (insertError) {
           console.error('❌ Failed to insert series data:', insertError);
           console.error('❌ Series rows that failed:', seriesRows);
+          results.series.error = insertError.message;
         } else {
           results.series.new = seriesRows.length;
           console.log(`✅ Series data processed: deleted=${results.series.deleted}, inserted=${seriesRows.length}`);
@@ -708,7 +719,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
       const { error: deleteError } = await supabaseAdmin
         .from('tracks')
         .delete()
-        .gt('id', '00000000-0000-0000-0000-000000000000'); // Delete all valid UUIDs
+        .not('id', 'is', null); // Delete all rows
       
       if (deleteError) {
         console.error('❌ Failed to clear existing tracks:', deleteError);

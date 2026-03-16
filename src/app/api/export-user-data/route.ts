@@ -209,14 +209,32 @@ export async function GET(request: NextRequest) {
     data.userCarSetups = userCarSetups || []
     console.log(`  ✅ user_car_setups: ${userCarSetups?.length || 0} records`)
 
+    // 10. User Custom Drivers
+    const { data: userCustomDrivers, error: customDriversError } = await supabase
+      .from('user_custom_drivers')
+      .select('*')
+
+    if (customDriversError) console.warn('Error exporting user_custom_drivers:', customDriversError)
+    data.userCustomDrivers = userCustomDrivers || []
+    console.log(`  ✅ user_custom_drivers: ${userCustomDrivers?.length || 0} records`)
+
+    // 11. Profile metadata
+    const { data: profileData } = await supabaseAdmin
+      .from('profiles')
+      .select('username, active_season_id')
+      .eq('id', userId)
+      .single()
+
     // Build final export
     const exportData = {
-      version: '1.0',
+      version: '2.0',
       exportType: 'userData',
       exportedAt: new Date().toISOString(),
       user: {
         id: userId,
         email: user.email,
+        username: profileData?.username ?? null,
+        active_season_id: profileData?.active_season_id ?? null,
       },
       data
     }
