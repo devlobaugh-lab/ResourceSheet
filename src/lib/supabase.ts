@@ -64,9 +64,9 @@ export const supabase = createClient(
  * const supabase = createServerSupabaseClient()
  * const { data: { user } } = await supabase.auth.getUser()
  */
-export function createServerSupabaseClient() {
+export async function createServerSupabaseClient() {
   const { cookies } = require('next/headers')
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
 
   return createServerClient(
     supabaseUrl,
@@ -100,9 +100,9 @@ export function createServerSupabaseClient() {
  * const { data: { user } } = await supabase.auth.getUser()
  * // Database queries will now respect RLS policies
  */
-export function createAuthenticatedSupabaseClient(request: Request) {
+export async function createAuthenticatedSupabaseClient(request: Request) {
   const { cookies } = require('next/headers')
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
 
   return createServerClient(
     supabaseUrl,

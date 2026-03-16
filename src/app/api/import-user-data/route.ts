@@ -5,7 +5,7 @@ import { supabaseAdmin, createAuthenticatedSupabaseClient } from '@/lib/supabase
 export async function POST(request: NextRequest) {
   console.log('📥 Import user data API called')
   try {
-    const supabase = createAuthenticatedSupabaseClient(request)
+    const supabase = await createAuthenticatedSupabaseClient(request)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {

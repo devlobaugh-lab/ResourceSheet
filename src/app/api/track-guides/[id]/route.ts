@@ -28,7 +28,8 @@ const updateTrackGuideSchema = z.object({
 })
 
 // GET /api/track-guides/[id] - Get specific track guide
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     // Try to get user from Authorization header first, then fall back to cookies
     let user = null
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     // If JWT didn't work, try cookie-based auth
     if (!user) {
       try {
-        const supabase = createServerSupabaseClient()
+        const supabase = await createServerSupabaseClient()
         const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
         if (!authError && cookieUser) {
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       )
     }
 
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     const { data, error } = await supabase
       .from('user_track_guides')
       .select(`
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           car_track_stat
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id) // Ensure user can only access their own guides
       .single()
 
@@ -124,7 +125,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PUT /api/track-guides/[id] - Update track guide
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     // Try to get user from Authorization header first, then fall back to cookies
     let user = null
@@ -159,7 +161,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     // If JWT didn't work, try cookie-based auth
     if (!user) {
       try {
-        const supabase = createServerSupabaseClient()
+        const supabase = await createServerSupabaseClient()
         const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
         if (!authError && cookieUser) {
@@ -178,7 +180,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       )
     }
 
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     const body = await request.json()
     const validatedData = updateTrackGuideSchema.parse(body)
 
@@ -189,7 +191,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const { data, error } = await supabase
       .from('user_track_guides')
       .update(trackGuideData)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id) // Ensure user can only update their own guides
       .select(`
         *,
@@ -235,7 +237,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/track-guides/[id] - Delete track guide
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     // Try to get user from Authorization header first, then fall back to cookies
     let user = null
@@ -270,7 +273,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     // If JWT didn't work, try cookie-based auth
     if (!user) {
       try {
-        const supabase = createServerSupabaseClient()
+        const supabase = await createServerSupabaseClient()
         const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
         if (!authError && cookieUser) {
@@ -289,11 +292,11 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       )
     }
 
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     const { error } = await supabase
       .from('user_track_guides')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id) // Ensure user can only delete their own guides
 
     if (error) {

@@ -11,9 +11,10 @@ const updateUserDriverSchema = z.object({
 // PUT /api/drivers/[id] - Update user's driver data
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  console.log('🚗 Driver PUT API called for ID:', params.id)
+  const { id } = await params
+  console.log('🚗 Driver PUT API called for ID:', id)
 
   try {
     // Try to get user from Authorization header first, then fall back to cookies
@@ -48,7 +49,7 @@ export async function PUT(
 
     // If JWT didn't work, try cookie-based auth
     if (!user) {
-      const supabase = createServerSupabaseClient()
+      const supabase = await createServerSupabaseClient()
       const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
       if (authError || !cookieUser) {
@@ -68,7 +69,7 @@ export async function PUT(
       .from('user_drivers')
       .select('id')
       .eq('user_id', user.id)
-      .eq('driver_id', params.id)
+      .eq('driver_id', id)
       .single()
 
     if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
@@ -88,7 +89,7 @@ export async function PUT(
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
-        .eq('driver_id', params.id)
+        .eq('driver_id', id)
         .select()
         .single()
 
@@ -105,7 +106,7 @@ export async function PUT(
         .from('user_drivers')
         .insert({
           user_id: user.id,
-          driver_id: params.id,
+          driver_id: id,
           ...validatedData
         })
         .select()

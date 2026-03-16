@@ -41,15 +41,16 @@ Once ready, go to **Project Settings → API**:
 
 ### 1.3 Set Up Database Schema
 
-1. Go to **SQL Editor** in Supabase dashboard
-2. Copy the contents of `supabase/migrations/20260213000000_consolidated_initial_schema.sql`
-3. Run the SQL to create all tables
+Use the Supabase CLI to push all migrations to your cloud project:
 
-Alternatively, use the Supabase CLI to push migrations:
 ```bash
 supabase link --project-ref YOUR_PROJECT_REF
 supabase db push
 ```
+
+Your project ref is found in **Project Settings → General** in the Supabase dashboard.
+
+> **Note**: Do not run migrations manually via SQL Editor — there are multiple migration files that must all be applied in order.
 
 ### 1.4 Configure Authentication (Optional)
 
@@ -87,7 +88,10 @@ In the Vercel project dashboard, go to **Settings → Environment Variables** an
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+NEXT_PUBLIC_SITE_URL=https://your-project.vercel.app
 ```
+
+> `NEXT_PUBLIC_SITE_URL` should be your production URL. It is used for password reset email redirects. Update it if you add a custom domain.
 
 ### 2.3 Deploy
 
@@ -99,16 +103,13 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 ## Step 3: Update Local Development (Optional)
 
-To connect your local development to the cloud Supabase:
+To connect your local development to the cloud Supabase, create `.env.local` in the project root:
 
-```bash
-# Create .env.local file
-cp .env.local.example .env.local
-
-# Edit with your Supabase credentials
+```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 ---
@@ -161,7 +162,7 @@ These preview URLs allow you to review changes before merging.
 
 ### Build Fails
 - Check environment variables are set in Vercel
-- Ensure Node.js version matches (18.x required)
+- Ensure Node.js version is 18 or higher
 
 ### Database Connection Errors
 - Verify `NEXT_PUBLIC_SUPABASE_URL` is correct

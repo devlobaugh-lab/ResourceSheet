@@ -56,11 +56,12 @@ async function verifyAdmin(request: NextRequest) {
 // PATCH /api/admin/users/[id] - Update a user
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { authorized, userId, error } = await verifyAdmin(request)
-    
+
     if (!authorized) {
       return NextResponse.json(
         { error: { code: error, message: error === 'UNAUTHORIZED' ? 'Authentication required' : 'Admin access required' } },
@@ -68,7 +69,7 @@ export async function PATCH(
       )
     }
 
-    const targetUserId = params.id
+    const targetUserId = id
     const body = await request.json()
     const { username, is_admin: makeAdmin, is_active } = body
 
@@ -130,11 +131,12 @@ export async function PATCH(
 // DELETE /api/admin/users/[id] - Delete a user
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { authorized, userId, error } = await verifyAdmin(request)
-    
+
     if (!authorized) {
       return NextResponse.json(
         { error: { code: error, message: error === 'UNAUTHORIZED' ? 'Authentication required' : 'Admin access required' } },
@@ -142,7 +144,7 @@ export async function DELETE(
       )
     }
 
-    const targetUserId = params.id
+    const targetUserId = id
 
     // Prevent admin from deleting themselves
     if (targetUserId === userId) {

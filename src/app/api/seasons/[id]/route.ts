@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase'
 import { updateSeasonSchema } from '@/lib/validation'
@@ -65,7 +64,18 @@ export async function PUT(
 ) {
   try {
     // Verify authentication
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return request.cookies.getAll() },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          },
+        },
+      }
+    )
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
@@ -162,7 +172,18 @@ export async function DELETE(
 ) {
   try {
     // Verify authentication
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return request.cookies.getAll() },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          },
+        },
+      }
+    )
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {

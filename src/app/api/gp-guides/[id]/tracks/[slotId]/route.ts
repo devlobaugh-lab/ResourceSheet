@@ -36,7 +36,7 @@ async function getAuthUser(request: NextRequest) {
     } catch { /* Fall through */ }
   }
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     const { data: { user }, error } = await supabase.auth.getUser()
     if (!error && user) return user
   } catch { /* Auth failed */ }
@@ -46,8 +46,9 @@ async function getAuthUser(request: NextRequest) {
 // PUT /api/gp-guides/[id]/tracks/[slotId] - Update a track slot
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; slotId: string } }
+  { params }: { params: Promise<{ id: string; slotId: string }> }
 ) {
+  const { id, slotId } = await params
   try {
     const user = await getAuthUser(request)
     if (!user) {
@@ -61,14 +62,14 @@ export async function PUT(
     const validated = updateTrackSlotSchema.parse(body)
 
     // Use authenticated client for RLS enforcement
-    const supabase = createAuthenticatedSupabaseClient(request)
+    const supabase = await createAuthenticatedSupabaseClient(request)
 
     // Verify the track slot belongs to the user's GP guide (RLS will enforce ownership)
     const { data: slot } = await supabase
       .from('user_gp_guide_tracks')
       .select('id, gp_guide_id')
-      .eq('id', params.slotId)
-      .eq('gp_guide_id', params.id)
+      .eq('id', slotId)
+      .eq('gp_guide_id', id)
       .single()
 
     if (!slot) {
@@ -82,7 +83,7 @@ export async function PUT(
     const { data, error } = await supabase
       .from('user_gp_guide_tracks')
       .update(validated)
-      .eq('id', params.slotId)
+      .eq('id', slotId)
       .select('*')
       .single()
 

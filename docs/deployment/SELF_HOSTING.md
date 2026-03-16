@@ -4,7 +4,7 @@ This guide covers running the ResourceSheet application on your own infrastructu
 
 ## Architecture
 
-- **Frontend/API**: Next.js 14 application (Node.js)
+- **Frontend/API**: Next.js 15 application (Node.js)
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
 
@@ -16,27 +16,19 @@ This guide covers running the ResourceSheet application on your own infrastructu
 
 ## Environment Setup
 
-1. Copy the environment file:
-   ```bash
-   cp .env.local.example .env.local
-   ```
-
-2. Update the following variables in `.env.local`:
+1. Create `.env.local` in the project root with the following variables:
 
    ```env
-   # Your Supabase credentials
+   # Required: Supabase credentials
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-   
-   # Authentication (continue using Supabase Auth)
-   NEXT_PUBLIC_AUTH_PROVIDER=supabase
-   AUTH_SECRET=your_auth_secret_generate_with_openssl
-   ```
 
-3. Generate an auth secret:
-   ```bash
-   openssl rand -base64 32
+   # Required for password reset emails to work correctly
+   NEXT_PUBLIC_SITE_URL=https://your-domain.com
+
+   # Optional: set to 'debug', 'info', 'warn', 'error', or 'off' (default: 'off' in production)
+   NEXT_PUBLIC_LOG_LEVEL=off
    ```
 
 ## Development
@@ -74,7 +66,7 @@ Your existing Supabase project already contains the required database schema. Th
 
 ## Backup & Restore
 
-See [BACKUP_RESTORE_README.md](./BACKUP_RESTORE_README.md) for detailed backup instructions.
+See [BACKUP_RESTORE_README.md](../operations/BACKUP_RESTORE_README.md) for detailed backup instructions.
 
 ## Troubleshooting
 

@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     // If JWT didn't work, try cookie-based auth
     if (!user) {
       try {
-        const supabase = createServerSupabaseClient()
+        const supabase = await createServerSupabaseClient()
         const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
         if (!authError && cookieUser) {
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
     const gpLevel = searchParams.get('gp_level')
     const seasonId = searchParams.get('season_id')
 
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
 
     let query = supabase
       .from('user_track_guides')
@@ -164,7 +164,8 @@ export async function GET(request: NextRequest) {
 }
 
 // PUT /api/track-guides/:id - Update existing track guide
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     // Try to get user from Authorization header first, then fall back to cookies
     let user = null
@@ -201,7 +202,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     // If JWT didn't work, try cookie-based auth
     if (!user) {
       try {
-        const supabase = createServerSupabaseClient()
+        const supabase = await createServerSupabaseClient()
         const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
         if (!authError && cookieUser) {
@@ -220,7 +221,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       )
     }
 
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     const body = await request.json()
     const validatedData = updateTrackGuideSchema.parse(body)
 
@@ -228,7 +229,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const { data: existing } = await supabase
       .from('user_track_guides')
       .select('id, user_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (!existing) {
@@ -248,7 +249,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const { data, error } = await supabase
       .from('user_track_guides')
       .update(validatedData)
-      .eq('id', params.id)
+      .eq('id', id)
       .select(`
         *,
         tracks (
@@ -324,7 +325,7 @@ export async function POST(request: NextRequest) {
     // If JWT didn't work, try cookie-based auth
     if (!user) {
       try {
-        const supabase = createServerSupabaseClient()
+        const supabase = await createServerSupabaseClient()
         const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
         if (!authError && cookieUser) {
@@ -343,7 +344,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     const body = await request.json()
     const validatedData = createTrackGuideSchema.parse(body)
 
