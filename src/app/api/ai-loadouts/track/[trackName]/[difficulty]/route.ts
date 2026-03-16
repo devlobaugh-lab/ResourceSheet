@@ -4,10 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase'
 // GET /api/ai-loadouts/track/[trackName]/[difficulty] - Get loadout rows for specific track/difficulty
 export async function GET(
   request: NextRequest,
-  { params }: { params: { trackName: string; difficulty: string } }
+  { params }: { params: Promise<{ trackName: string; difficulty: string }> }
 ) {
+  const { trackName, difficulty } = await params
   try {
-    const { trackName, difficulty } = params
 
     // Decode URL-encoded track name
     const decodedTrackName = decodeURIComponent(trackName)

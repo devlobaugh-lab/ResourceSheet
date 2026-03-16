@@ -132,7 +132,9 @@ function AuthenticatedDriversPage() {
     try {
       // Get existing compare drivers from localStorage
       const stored = localStorage.getItem('compare-drivers-settings')
-      const existingDrivers: any[] = stored ? JSON.parse(stored) : []
+      const parsed = stored ? JSON.parse(stored) : []
+      // Handle both old format (array) and new format ({ seasonId, drivers })
+      const existingDrivers: any[] = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.drivers) ? parsed.drivers : [])
 
       // Construct rarityValue for Rarity-5 drivers (includes collection info)
       let rarityValue: string | undefined = undefined
@@ -163,7 +165,11 @@ function AuthenticatedDriversPage() {
         }
 
         const updatedDrivers = [...existingDrivers, newDriver]
-        localStorage.setItem('compare-drivers-settings', JSON.stringify(updatedDrivers))
+        // Preserve the new format ({ seasonId, drivers }) if it was already in use
+        const saveValue = (!Array.isArray(parsed) && parsed?.seasonId)
+          ? JSON.stringify({ seasonId: parsed.seasonId, drivers: updatedDrivers })
+          : JSON.stringify(updatedDrivers)
+        localStorage.setItem('compare-drivers-settings', saveValue)
 
         // Show toast notification
         addToast(`${driver.name} added to compare page`, 'success')

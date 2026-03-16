@@ -491,7 +491,7 @@ export function DataGrid({
 
       return filters.sortOrder === 'asc' ? comparison : -comparison;
     });
-  }, [filteredItems, filters.sortBy, filters.sortOrder, getStatValueForSort, getBoostTierValueForSort, bonusCheckedItems]);
+  }, [filteredItems, filters.sortBy, filters.sortOrder, getStatValueForSort, getBoostTierValueForSort, bonusCheckedItems, gridType]);
 
   // Get rarity background color for cells
   const getRarityBackground = (rarity: number): string => {

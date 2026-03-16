@@ -18,7 +18,7 @@ async function getAuthUser(request: NextRequest) {
     } catch { /* Fall through */ }
   }
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     const { data: { user }, error } = await supabase.auth.getUser()
     if (!error && user) return user
   } catch { /* Auth failed */ }
@@ -33,8 +33,9 @@ async function getAuthUser(request: NextRequest) {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; trackId: string } }
+  { params }: { params: Promise<{ id: string; trackId: string }> }
 ) {
+  const { id, trackId } = await params
   try {
     const user = await getAuthUser(request)
     if (!user) {
@@ -51,7 +52,7 @@ export async function GET(
     const { data: guide, error: guideError } = await supabaseAdmin
       .from('user_gp_guides')
       .select('id, gp_level, user_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .single()
 
@@ -67,7 +68,7 @@ export async function GET(
       .from('user_track_guides')
       .select(`*, track:tracks (id, name, laps, driver_track_stat, car_track_stat)`)
       .eq('user_id', user.id)
-      .eq('track_id', params.trackId)
+      .eq('track_id', trackId)
       .eq('gp_level', guide.gp_level)
       .single()
 

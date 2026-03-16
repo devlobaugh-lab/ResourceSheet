@@ -1,23 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase'
 import { updateSeasonSchema } from '@/lib/validation'
 
-interface Params {
-  params: {
-    id: string
-  }
-}
-
 // GET /api/seasons/[id] - Get single season
 export async function GET(
   request: NextRequest,
-  { params }: Params
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     
     // Validate UUID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -61,11 +54,22 @@ export async function GET(
 // PUT /api/seasons/[id] - Update season (admin only)
 export async function PUT(
   request: NextRequest,
-  { params }: Params
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify authentication
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return request.cookies.getAll() },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          },
+        },
+      }
+    )
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
@@ -89,8 +93,8 @@ export async function PUT(
       )
     }
     
-    const { id } = params
-    
+    const { id } = await params
+
     // Validate UUID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (!uuidRegex.test(id)) {
@@ -99,7 +103,7 @@ export async function PUT(
         { status: 400 }
       )
     }
-    
+
     const body = await request.json()
     const validatedData = updateSeasonSchema.parse(body)
 
@@ -158,11 +162,22 @@ export async function PUT(
 // DELETE /api/seasons/[id] - Delete season (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: Params
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify authentication
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return request.cookies.getAll() },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          },
+        },
+      }
+    )
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
@@ -186,8 +201,8 @@ export async function DELETE(
       )
     }
     
-    const { id } = params
-    
+    const { id } = await params
+
     // Validate UUID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (!uuidRegex.test(id)) {
@@ -196,7 +211,7 @@ export async function DELETE(
         { status: 400 }
       )
     }
-    
+
     const { error } = await supabaseAdmin
       .from('seasons')
       .delete()

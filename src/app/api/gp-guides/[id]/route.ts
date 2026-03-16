@@ -28,7 +28,7 @@ async function getAuthUser(request: NextRequest) {
     } catch { /* Fall through */ }
   }
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     const { data: { user }, error } = await supabase.auth.getUser()
     if (!error && user) return user
   } catch { /* Auth failed */ }
@@ -36,7 +36,8 @@ async function getAuthUser(request: NextRequest) {
 }
 
 // GET /api/gp-guides/[id] - Get full GP guide with tracks and results
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     const user = await getAuthUser(request)
     if (!user) {
@@ -47,13 +48,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     // Use authenticated client for RLS enforcement
-    const supabase = createAuthenticatedSupabaseClient(request)
+    const supabase = await createAuthenticatedSupabaseClient(request)
 
     // Fetch guide header (RLS will enforce ownership)
     const { data: guide, error: guideError } = await supabase
       .from('user_gp_guides')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (guideError || !guide) {
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const { data: tracks, error: tracksError } = await supabase
       .from('user_gp_guide_tracks')
       .select('*')
-      .eq('gp_guide_id', params.id)
+      .eq('gp_guide_id', id)
       .order('race_type', { ascending: true })
       .order('race_number', { ascending: true })
 
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const { data: results, error: resultsError } = await supabase
       .from('user_gp_guide_results')
       .select('*')
-      .eq('gp_guide_id', params.id)
+      .eq('gp_guide_id', id)
 
     if (resultsError) {
       console.error('Error fetching GP guide results:', resultsError)
@@ -98,7 +99,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PUT /api/gp-guides/[id] - Update GP guide header
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     const user = await getAuthUser(request)
     if (!user) {
@@ -112,14 +114,14 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const validated = updateGpGuideSchema.parse(body)
 
     // Use authenticated client for RLS enforcement
-    const supabase = createAuthenticatedSupabaseClient(request)
+    const supabase = await createAuthenticatedSupabaseClient(request)
 
     // Handle weekend_strategy_same toggle: if turning OFF, create final round slots
     if (validated.weekend_strategy_same === false) {
       const { data: existingFinalSlots } = await supabase
         .from('user_gp_guide_tracks')
         .select('id')
-        .eq('gp_guide_id', params.id)
+        .eq('gp_guide_id', id)
         .eq('race_type', 'final')
         .limit(1)
 
@@ -127,13 +129,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         const { data: openingSlots } = await supabase
           .from('user_gp_guide_tracks')
           .select('*')
-          .eq('gp_guide_id', params.id)
+          .eq('gp_guide_id', id)
           .eq('race_type', 'opening')
           .order('race_number')
 
         if (openingSlots && openingSlots.length > 0) {
           const finalSlots = openingSlots.map((slot: any) => ({
-            gp_guide_id: params.id,
+            gp_guide_id: id,
             track_id: slot.track_id,
             race_type: 'final' as const,
             race_number: slot.race_number,
@@ -153,7 +155,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           await supabase.from('user_gp_guide_tracks').insert(finalSlots)
         } else {
           const blankFinalSlots = Array.from({ length: 8 }, (_, i) => ({
-            gp_guide_id: params.id,
+            gp_guide_id: id,
             race_type: 'final' as const,
             race_number: i + 1,
             is_wet: false,
@@ -173,7 +175,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const { data, error } = await supabase
       .from('user_gp_guides')
       .update(validated)
-      .eq('id', params.id)
+      .eq('id', id)
       .select('*')
       .single()
 
@@ -203,7 +205,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/gp-guides/[id] - Delete GP guide (cascades to tracks and results)
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     const user = await getAuthUser(request)
     if (!user) {
@@ -214,13 +217,13 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     // Use authenticated client for RLS enforcement
-    const supabase = createAuthenticatedSupabaseClient(request)
+    const supabase = await createAuthenticatedSupabaseClient(request)
 
     // Delete the guide (RLS will enforce ownership)
     const { error } = await supabase
       .from('user_gp_guides')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (error) {
       return NextResponse.json(

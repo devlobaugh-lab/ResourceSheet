@@ -9,10 +9,11 @@ const updateProfileSchema = z.object({
 // GET /api/profiles/[id] - Get user profile
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
-    const supabase = createAuthenticatedSupabaseClient(request)
+    const supabase = await createAuthenticatedSupabaseClient(request)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -23,7 +24,7 @@ export async function GET(
     }
 
     // Users can only access their own profile
-    if (user.id !== params.id) {
+    if (user.id !== id) {
       return NextResponse.json(
         { error: { code: 'FORBIDDEN', message: 'Access denied' } },
         { status: 403 }
@@ -34,7 +35,7 @@ export async function GET(
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (profileError) {
@@ -58,10 +59,11 @@ export async function GET(
 // PUT /api/profiles/[id] - Update user profile
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
-    const supabase = createAuthenticatedSupabaseClient(request)
+    const supabase = await createAuthenticatedSupabaseClient(request)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -72,7 +74,7 @@ export async function PUT(
     }
 
     // Users can only update their own profile
-    if (user.id !== params.id) {
+    if (user.id !== id) {
       return NextResponse.json(
         { error: { code: 'FORBIDDEN', message: 'Access denied' } },
         { status: 403 }
@@ -85,7 +87,7 @@ export async function PUT(
     const { data: profile, error: updateError } = await supabaseAdmin
       .from('profiles')
       .update(validatedData)
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 

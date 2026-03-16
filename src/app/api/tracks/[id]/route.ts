@@ -3,7 +3,8 @@ import { createServerClient } from '@supabase/ssr'
 import { supabaseAdmin } from '@/lib/supabase'
 
 // GET /api/tracks/[id] - Get specific track
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     // Try to get user from Authorization header first, then fall back to cookies
     let user = null
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const { data, error } = await supabaseAdmin
       .from('tracks')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (error) {
@@ -109,7 +110,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/tracks/[id] - Delete specific track (admin only)
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     // Try to get user from Authorization header first, then fall back to cookies
     let user = null
@@ -193,7 +195,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       const { data: guides, error: guideErr } = await supabaseAdmin
         .from('user_track_guides')
         .select('id')
-        .eq('track_id', params.id)
+        .eq('track_id', id)
 
       if (guideErr) {
         return NextResponse.json(
@@ -237,7 +239,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const { data, error } = await supabaseAdmin
       .from('tracks')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 
@@ -275,7 +277,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 }
 
 // PUT /api/tracks/[id] - Update specific track
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     // Try to get user from Authorization header first, then fall back to cookies
     let user = null
@@ -407,7 +410,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
       await supabaseAdmin
         .from('track_seasons')
-        .upsert({ track_id: params.id, season_id: body.season_id, is_active: true }, { onConflict: 'track_id,season_id' })
+        .upsert({ track_id: id, season_id: body.season_id, is_active: true }, { onConflict: 'track_id,season_id' })
     }
 
     // Update track (season_id now lives in track_seasons)
@@ -421,7 +424,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         car_track_stat: body.car_track_stat,
         updated_at: new Date().toISOString()
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 

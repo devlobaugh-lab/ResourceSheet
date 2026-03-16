@@ -33,35 +33,34 @@ const getStatBackgroundColor = (value: number, min: number, max: number, median:
   }
 }
 
+// Driver stats first, then Qualifying Total, then Car Part stats
+const COLUMNS = [
+  // Driver COLUMNS
+  { key: 'driver_name', label: 'Driver', type: 'driver' },
+  { key: 'overtaking', label: 'OVT', type: 'driver' },
+  { key: 'blocking', label: 'DEF', type: 'driver' },
+  { key: 'qualifying', label: 'QLY', type: 'driver' },
+  { key: 'race_start', label: 'RST', type: 'driver' },
+  { key: 'tyre_use', label: 'TYR', type: 'driver' },
+  // Qualifying total (driver + parts)
+  { key: 'qualifying_total', label: 'Total QLY', type: 'combined' },
+  // Car part COLUMNS (consolidated)
+  { key: 'cp_speed', label: 'SPD', type: 'part' },
+  { key: 'cp_cornering', label: 'CRN', type: 'part' },
+  { key: 'cp_powerUnit', label: 'PWR', type: 'part' },
+  { key: 'cp_qualifying', label: 'QLY', type: 'part' },
+  { key: 'cp_pitStopTime', label: 'PIT', type: 'part' },
+  { key: 'cp_drs', label: 'DRS', type: 'part' }
+]
+
 export function AIDriverCompareGrid({ data, trackName, difficulty }: AIDriverCompareGridProps) {
   const [sortBy, setSortBy] = useState<string>('driver_name')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
-  
-  // Define columns for the grid
-  // Driver stats first, then Qualifying Total, then Car Part stats
-  const columns = [
-    // Driver columns
-    { key: 'driver_name', label: 'Driver', type: 'driver' },
-    { key: 'overtaking', label: 'OVT', type: 'driver' },
-    { key: 'blocking', label: 'DEF', type: 'driver' },
-    { key: 'qualifying', label: 'QLY', type: 'driver' },
-    { key: 'race_start', label: 'RST', type: 'driver' },
-    { key: 'tyre_use', label: 'TYR', type: 'driver' },
-    // Qualifying total (driver + parts)
-    { key: 'qualifying_total', label: 'Total QLY', type: 'combined' },
-    // Car part columns (consolidated)
-    { key: 'cp_speed', label: 'SPD', type: 'part' },
-    { key: 'cp_cornering', label: 'CRN', type: 'part' },
-    { key: 'cp_powerUnit', label: 'PWR', type: 'part' },
-    { key: 'cp_qualifying', label: 'QLY', type: 'part' },
-    { key: 'cp_pitStopTime', label: 'PIT', type: 'part' },
-    { key: 'cp_drs', label: 'DRS', type: 'part' }
-  ]
-  
+
   // Calculate column statistics for coloring
   const columnStats = useMemo(() => {
     const stats: Record<string, { min: number; max: number; median: number }> = {}
-    const numericColumns = columns.filter(c => c.key !== 'driver_name')
+    const numericColumns = COLUMNS.filter(c => c.key !== 'driver_name')
     
     numericColumns.forEach(col => {
       const values = data.map(d => d[col.key]).filter(v => typeof v === 'number').sort((a, b) => a - b)
@@ -128,8 +127,8 @@ export function AIDriverCompareGrid({ data, trackName, difficulty }: AIDriverCom
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-700 sticky top-0 z-10">
             <tr>
-              {/* Driver columns with dark header */}
-              {columns.filter(c => c.type === 'driver').map(col => (
+              {/* Driver COLUMNS with dark header */}
+              {COLUMNS.filter(c => c.type === 'driver').map(col => (
                 <th
                   key={col.key}
                   scope="col"
@@ -143,7 +142,7 @@ export function AIDriverCompareGrid({ data, trackName, difficulty }: AIDriverCom
                 </th>
               ))}
               {/* Qualifying Total with distinct header styling */}
-              {columns.filter(c => c.type === 'combined').map(col => (
+              {COLUMNS.filter(c => c.type === 'combined').map(col => (
                 <th
                   key={col.key}
                   scope="col"
@@ -153,8 +152,8 @@ export function AIDriverCompareGrid({ data, trackName, difficulty }: AIDriverCom
                   {col.label} {sortBy === col.key && (sortOrder === 'asc' ? '↑' : '↓')}
                 </th>
               ))}
-              {/* Car part columns */}
-              {columns.filter(c => c.type === 'part').map(col => (
+              {/* Car part COLUMNS */}
+              {COLUMNS.filter(c => c.type === 'part').map(col => (
                 <th
                   key={col.key}
                   scope="col"
@@ -175,8 +174,8 @@ export function AIDriverCompareGrid({ data, trackName, difficulty }: AIDriverCom
                   row.is_custom && 'bg-blue-50'
                 )}
               >
-                {/* Driver columns */}
-                {columns.filter(c => c.type === 'driver').map(col => (
+                {/* Driver COLUMNS */}
+                {COLUMNS.filter(c => c.type === 'driver').map(col => (
                   <td
                     key={col.key}
                     className={cn(
@@ -199,7 +198,7 @@ export function AIDriverCompareGrid({ data, trackName, difficulty }: AIDriverCom
                   </td>
                 ))}
                 {/* Qualifying Total with color coding */}
-                {columns.filter(c => c.type === 'combined').map(col => (
+                {COLUMNS.filter(c => c.type === 'combined').map(col => (
                   <td
                     key={col.key}
                     className={cn(
@@ -210,8 +209,8 @@ export function AIDriverCompareGrid({ data, trackName, difficulty }: AIDriverCom
                     {row[col.key]}
                   </td>
                 ))}
-                {/* Car part columns */}
-                {columns.filter(c => c.type === 'part').map(col => (
+                {/* Car part COLUMNS */}
+                {COLUMNS.filter(c => c.type === 'part').map(col => (
                   <td
                     key={col.key}
                     className={cn(

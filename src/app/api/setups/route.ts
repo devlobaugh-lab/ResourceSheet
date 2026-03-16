@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     // If JWT didn't work, try cookie-based auth
     if (!user) {
-      const supabase = createServerSupabaseClient()
+      const supabase = await createServerSupabaseClient()
       const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
       if (authError || !cookieUser) {
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
 
     // If JWT didn't work, try cookie-based auth
     if (!user) {
-      const supabase = createServerSupabaseClient()
+      const supabase = await createServerSupabaseClient()
       const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
       if (authError || !cookieUser) {

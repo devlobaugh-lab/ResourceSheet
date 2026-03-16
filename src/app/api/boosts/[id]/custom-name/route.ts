@@ -18,10 +18,11 @@ const customNameSchema = z.object({
 // GET /api/boosts/[id]/custom-name - Get custom name for a boost
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
-    const boostId = params.id
+    const boostId = id
 
     // Get custom name for this boost using admin client (public read access)
     const { data: customName, error } = await supabaseAdmin
@@ -53,8 +54,9 @@ export async function GET(
 // PUT /api/boosts/[id]/custom-name - Set/update custom name for a boost
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     // Try to get user from Authorization header first, then fall back to cookies
     let user = null
@@ -88,7 +90,7 @@ export async function PUT(
 
     // If JWT didn't work, try cookie-based auth
     if (!user) {
-      const supabase = createServerSupabaseClient()
+      const supabase = await createServerSupabaseClient()
       const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
       if (authError || !cookieUser) {
@@ -102,7 +104,7 @@ export async function PUT(
       console.log('✅ Boost custom name authenticated user from cookies:', user.id)
     }
 
-    const boostId = params.id
+    const boostId = id
 
     // Check admin status
     const { data: profile, error: profileError } = await supabaseAdmin
@@ -199,8 +201,9 @@ export async function PUT(
 // DELETE /api/boosts/[id]/custom-name - Remove custom name for a boost
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     // Try to get user from Authorization header first, then fall back to cookies
     let user = null
@@ -234,7 +237,7 @@ export async function DELETE(
 
     // If JWT didn't work, try cookie-based auth
     if (!user) {
-      const supabase = createServerSupabaseClient()
+      const supabase = await createServerSupabaseClient()
       const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
       if (authError || !cookieUser) {
@@ -248,7 +251,7 @@ export async function DELETE(
       console.log('✅ Boost custom name DELETE authenticated user from cookies:', user.id)
     }
 
-    const boostId = params.id
+    const boostId = id
 
     // Check admin status
     const { data: profile, error: profileError } = await supabaseAdmin

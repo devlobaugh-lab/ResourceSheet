@@ -2,12 +2,9 @@
 -- Migration: 20260213000000_consolidated_initial_schema
 -- This replaces all previous migrations with a clean, consolidated schema
 
--- Enable necessary extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- Create seasons table
 CREATE TABLE public.seasons (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     is_active BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
@@ -26,7 +23,7 @@ CREATE TABLE public.profiles (
 
 -- Create boosts table
 CREATE TABLE public.boosts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     icon TEXT,
     boost_type TEXT NOT NULL,
@@ -41,7 +38,7 @@ CREATE TABLE public.boosts (
 
 -- Create boost_custom_names table
 CREATE TABLE public.boost_custom_names (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     boost_id UUID REFERENCES public.boosts(id) ON DELETE CASCADE NOT NULL,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     custom_name TEXT NOT NULL,
@@ -52,7 +49,7 @@ CREATE TABLE public.boost_custom_names (
 
 -- Create user_boosts table
 CREATE TABLE public.user_boosts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     boost_id UUID REFERENCES public.boosts(id) ON DELETE CASCADE NOT NULL,
     level INTEGER DEFAULT 0,
@@ -64,7 +61,7 @@ CREATE TABLE public.user_boosts (
 
 -- Create drivers table
 CREATE TABLE public.drivers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     rarity INTEGER NOT NULL,
     series INTEGER NOT NULL,
@@ -85,7 +82,7 @@ CREATE TABLE public.drivers (
 
 -- Create car_parts table
 CREATE TABLE public.car_parts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     rarity INTEGER NOT NULL,
     series INTEGER NOT NULL,
@@ -104,7 +101,7 @@ CREATE TABLE public.car_parts (
 
 -- Create user_drivers table
 CREATE TABLE public.user_drivers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     driver_id UUID REFERENCES public.drivers(id) ON DELETE CASCADE NOT NULL,
     level INTEGER DEFAULT 0,
@@ -116,7 +113,7 @@ CREATE TABLE public.user_drivers (
 
 -- Create user_car_parts table
 CREATE TABLE public.user_car_parts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     car_part_id UUID REFERENCES public.car_parts(id) ON DELETE CASCADE NOT NULL,
     level INTEGER DEFAULT 0,
@@ -141,7 +138,7 @@ CREATE TABLE public.collections (
 
 -- Create tracks table
 CREATE TABLE public.tracks (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     alt_name TEXT,
     laps INTEGER NOT NULL,
@@ -154,7 +151,7 @@ CREATE TABLE public.tracks (
 
 -- Create user_car_setups table
 CREATE TABLE public.user_car_setups (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     name TEXT NOT NULL,
     notes TEXT,
@@ -172,7 +169,7 @@ CREATE TABLE public.user_car_setups (
 
 -- Create user_track_guides table
 CREATE TABLE public.user_track_guides (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     track_id UUID REFERENCES public.tracks(id) ON DELETE CASCADE NOT NULL,
     gp_level INTEGER NOT NULL,
@@ -201,7 +198,7 @@ CREATE TABLE public.user_track_guides (
 
 -- Create user_track_guide_drivers table
 CREATE TABLE public.user_track_guide_drivers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     track_guide_id UUID REFERENCES public.user_track_guides(id) ON DELETE CASCADE NOT NULL,
     driver_id UUID REFERENCES public.drivers(id) ON DELETE CASCADE NOT NULL,
     recommended_boost_id UUID REFERENCES public.boosts(id) ON DELETE SET NULL,
