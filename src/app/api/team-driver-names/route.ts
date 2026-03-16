@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase'
 
@@ -46,7 +45,18 @@ export async function GET(request: NextRequest) {
 // POST /api/team-driver-names - Create or update a team driver name mapping (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return request.cookies.getAll() },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          },
+        },
+      }
+    )
     
     // Check if user is admin (simplified for local dev)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -107,7 +117,18 @@ export async function POST(request: NextRequest) {
 // DELETE /api/team-driver-names - Delete a team driver name mapping (admin only)
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return request.cookies.getAll() },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          },
+        },
+      }
+    )
     
     // Check if user is admin (simplified for local dev)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
