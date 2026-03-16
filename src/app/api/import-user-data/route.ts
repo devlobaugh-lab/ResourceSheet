@@ -17,9 +17,22 @@ export async function POST(request: NextRequest) {
     const importData = body.data || body // Support both formats
 
     const results = {
-      imported: { drivers: 0, carParts: 0, boosts: 0, trackGuides: 0, gpGuides: 0, gpGuideTracks: 0, carSetups: 0 },
-      updated: { drivers: 0, carParts: 0, boosts: 0, trackGuides: 0, gpGuides: 0, gpGuideTracks: 0, carSetups: 0 },
+      imported: { drivers: 0, carParts: 0, boosts: 0, trackGuides: 0, gpGuides: 0, gpGuideTracks: 0, carSetups: 0, customDrivers: 0 },
+      updated: { drivers: 0, carParts: 0, boosts: 0, trackGuides: 0, gpGuides: 0, gpGuideTracks: 0, carSetups: 0, customDrivers: 0 },
       errors: [] as string[]
+    }
+
+    // 0. Import profile metadata (username, active_season_id only)
+    const userMeta = body.user || {}
+    if (userMeta.username !== undefined || userMeta.active_season_id !== undefined) {
+      try {
+        const profileUpdate: Record<string, unknown> = {}
+        if (userMeta.username !== undefined) profileUpdate.username = userMeta.username
+        if (userMeta.active_season_id !== undefined) profileUpdate.active_season_id = userMeta.active_season_id
+        await supabaseAdmin.from('profiles').update(profileUpdate).eq('id', userId)
+      } catch (e) {
+        results.errors.push(`profile metadata: ${String(e)}`)
+      }
     }
 
     // Define mappings for known old track IDs (used for both track guides and GP guide tracks)
@@ -422,6 +435,49 @@ export async function POST(request: NextRequest) {
         }
       }
       console.log(`  ✅ Car setups: ${results.imported.carSetups} imported, ${results.updated.carSetups} updated`)
+    }
+
+    // 7. Import User Custom Drivers (merge: upsert by name)
+    if (importData.userCustomDrivers && Array.isArray(importData.userCustomDrivers)) {
+      for (const item of importData.userCustomDrivers) {
+        try {
+          const { data: existing } = await supabaseAdmin
+            .from('user_custom_drivers')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('name', item.name)
+            .single()
+
+          const driverData = {
+            user_id: userId,
+            name: item.name,
+            qualifying: item.qualifying,
+            race_start: item.race_start,
+            overtaking: item.overtaking,
+            blocking: item.blocking,
+            tyre_use: item.tyre_use,
+            car_parts: item.car_parts,
+          }
+
+          if (existing) {
+            const { error } = await supabaseAdmin
+              .from('user_custom_drivers')
+              .update(driverData)
+              .eq('id', existing.id)
+            if (!error) results.updated.customDrivers++
+            else results.errors.push(`Custom driver ${item.name}: ${error.message}`)
+          } else {
+            const { error } = await supabaseAdmin
+              .from('user_custom_drivers')
+              .insert(driverData)
+            if (!error) results.imported.customDrivers++
+            else results.errors.push(`Custom driver ${item.name}: ${error.message}`)
+          }
+        } catch (e) {
+          results.errors.push(`Custom driver: ${String(e)}`)
+        }
+      }
+      console.log(`  ✅ Custom drivers: ${results.imported.customDrivers} imported, ${results.updated.customDrivers} updated`)
     }
 
     console.log('📥 Import complete')

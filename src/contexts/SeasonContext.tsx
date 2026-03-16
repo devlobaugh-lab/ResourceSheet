@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/components/auth/AuthContext'
 import { getAuthHeaders } from '@/hooks/useApi'
 import type { Season } from '@/types/database'
@@ -23,6 +24,7 @@ const SeasonContext = createContext<SeasonContextValue>({
 
 export function SeasonProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
+  const queryClient = useQueryClient()
   const [seasons, setSeasons] = useState<Season[]>([])
   const [activeSeasonId, setActiveSeasonId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -81,6 +83,7 @@ export function SeasonProvider({ children }: { children: React.ReactNode }) {
   const setActiveSeason = useCallback(async (id: string | null) => {
     // Optimistically update local state
     setActiveSeasonId(id)
+    queryClient.invalidateQueries()
 
     if (!user) return
 
@@ -95,7 +98,7 @@ export function SeasonProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Non-fatal — local state still reflects the choice
     }
-  }, [user])
+  }, [user, queryClient])
 
   const activeSeason = seasons.find(s => s.id === activeSeasonId) ?? null
 

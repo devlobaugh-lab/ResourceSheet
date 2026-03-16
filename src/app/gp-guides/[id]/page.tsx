@@ -7,12 +7,14 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { getAuthHeaders } from '@/hooks/useApi'
-import { DriverView, BoostView } from '@/types/database'
+import { DriverView, BoostView, UserCarSetup, CarPartView } from '@/types/database'
 import { DriverSelectionGrid } from '@/components/DriverSelectionGrid'
 import { DriverDisplay } from '@/components/DriverDisplay'
 import { BoostDisplay } from '@/components/BoostDisplay'
+import { SetupPreviewPanel } from '@/components/SetupPreviewPanel'
 import { getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { Eye } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,8 +49,6 @@ interface TrackInfo {
   id: string; name: string; display_name: string | null
   laps: number; driver_track_stat: string; car_track_stat: string
 }
-interface SetupInfo { id: string; name: string; notes: string | null }
-
 interface TrackSlot {
   id: string; race_number: number; race_type: 'qualifying' | 'opening' | 'final'
   track_id: string | null; is_wet: boolean; is_ready: boolean
@@ -101,7 +101,7 @@ function BoostSelectModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-5xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-lg max-w-6xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
@@ -110,18 +110,20 @@ function BoostSelectModal({
           <table className="w-full divide-y divide-gray-200">
             <thead className="bg-gray-700 sticky top-0 z-10">
               <tr>
-                {['Name','Amt','Overtake','Defend','Race Start','Tyre','Speed','Corners','Power Unit','Pit Stop'].map(h => (
-                  <th key={h} className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase">{h}</th>
+                {['Name','Amount','Overtake','Defend','Race Start','Tyre Use','Speed','Corners','Power Unit','Pit Stop'].map(h => (
+                  <th key={h} scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                    <div className="flex items-center">{h}</div>
+                  </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-200">
               {sorted.map((boost: any) => {
                 const bs = boost.boost_stats || {}
                 const isSelected = selectedId === boost.id
                 return (
                   <tr key={boost.id}
-                    className={cn('cursor-pointer hover:bg-gray-50', isSelected && 'bg-blue-50')}
+                    className={cn('cursor-pointer hover:bg-gray-50 transition-colors', isSelected && 'bg-blue-50')}
                     onClick={() => onSelect(isSelected ? null : boost.id)}
                   >
                     <td className="px-3 py-1 whitespace-nowrap">
@@ -130,9 +132,9 @@ function BoostSelectModal({
                         <span className="text-sm font-medium text-gray-900">{boostDisplayName(boost)}</span>
                       </div>
                     </td>
-                    <td className="px-3 py-1 text-sm text-center">{boost.card_count || 0}</td>
+                    <td className="px-3 py-1 whitespace-nowrap text-sm text-center">{boost.card_count || 0}</td>
                     {['overtake','block','race_start','tyre_use','speed','corners','power_unit','pit_stop'].map(k => (
-                      <td key={k} className={cn('px-3 py-1 text-sm text-center', bs[k] > 0 && getBoostValueColor(bs[k]))}>
+                      <td key={k} className={cn('px-3 py-1 whitespace-nowrap text-sm text-center', bs[k] > 0 && getBoostValueColor(bs[k]))}>
                         {bs[k] ? bs[k] * 5 : ''}
                       </td>
                     ))}
@@ -142,8 +144,11 @@ function BoostSelectModal({
             </tbody>
           </table>
         </div>
-        <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => onSelect(null)} disabled={!selectedId}>Clear</Button>
+        <div className="p-6 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-gray-600">Selected: {selectedId ? '1' : '0'}</div>
+            <Button variant="outline" size="sm" onClick={() => onSelect(null)} disabled={!selectedId}>Clear Selection</Button>
+          </div>
           <Button onClick={onClose}>Done</Button>
         </div>
       </div>
@@ -154,16 +159,18 @@ function BoostSelectModal({
 // ─── TrackSlotCard ────────────────────────────────────────────────────────────
 
 function TrackSlotCard({
-  slot, guideId, gpLevel, allTracks, allDrivers, allBoosts, allSetups,
+  slot, guideId, gpLevel, allTracks, allDrivers, allBoosts, allSetups, carParts,
   onUpdate, onImport, importingSlotId,
 }: {
   slot: TrackSlot; guideId: string; gpLevel: number
-  allTracks: TrackInfo[]; allDrivers: DriverView[]; allBoosts: BoostView[]; allSetups: SetupInfo[]
+  allTracks: TrackInfo[]; allDrivers: DriverView[]; allBoosts: BoostView[]
+  allSetups: UserCarSetup[]; carParts: CarPartView[]
   onUpdate: (slotId: string, patch: Partial<TrackSlot>) => void
   onImport: (slotId: string, trackId: string, isWet: boolean) => void
   importingSlotId: string | null
 }) {
   const [expanded, setExpanded] = useState(false)
+  const [showSetupPreview, setShowSetupPreview] = useState(false)
   const [driverModal, setDriverModal] = useState<null | 'driver1' | 'driver2'>(null)
   const [boostModal, setBoostModal] = useState<null | 'driver1' | 'driver2'>(null)
   
@@ -370,35 +377,63 @@ function TrackSlotCard({
             </Card>
 
             {/* ── Setup + Strategy Notes ── */}
-            <Card className="p-3">
-              <h4 className="text-sm font-bold text-gray-700 mb-2">Car Setup</h4>
-              <select
-                value={slot.saved_setup_id || ''}
-                onChange={e => save({ saved_setup_id: e.target.value || null })}
-                className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
-              >
-                <option value="">— No Setup —</option>
-                {allSetups.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-              <div className="text-xs font-semibold text-gray-600 mb-1">Setup Notes</div>
-              <textarea
-                placeholder="Setup-specific changes…"
-                value={slot.setup_notes || ''}
-                onChange={e => onUpdate(slot.id, { setup_notes: e.target.value || null })}
-                onBlur={e => save({ setup_notes: e.target.value || null })}
-                rows={3}
-                className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none mb-2"
-              />
-              <div className="text-xs font-semibold text-gray-600 mb-1">Strategy Notes</div>
-              <textarea
-                placeholder="Any strategy notes…"
-                value={slot.strategy_notes || ''}
-                onChange={e => onUpdate(slot.id, { strategy_notes: e.target.value || null })}
-                onBlur={e => save({ strategy_notes: e.target.value || null })}
-                rows={3}
-                className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-              />
-            </Card>
+            <div className="flex flex-col gap-4">
+              <Card className="p-3">
+                <h4 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                  Car Setup
+                  {slot.saved_setup_id && (
+                    <button
+                      onClick={() => setShowSetupPreview(v => !v)}
+                      className="text-gray-400 hover:text-blue-600 transition-colors"
+                      aria-label="Toggle setup preview"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  )}
+                </h4>
+                <select
+                  value={slot.saved_setup_id || ''}
+                  onChange={e => {
+                    const value = e.target.value
+                    if (!value) setShowSetupPreview(false)
+                    save({ saved_setup_id: value || null })
+                  }}
+                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
+                >
+                  <option value="">— No Setup —</option>
+                  {allSetups.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                <div className="text-xs font-semibold text-gray-600 mb-1">Setup Notes</div>
+                <textarea
+                  placeholder="Setup-specific changes…"
+                  value={slot.setup_notes || ''}
+                  onChange={e => onUpdate(slot.id, { setup_notes: e.target.value || null })}
+                  onBlur={e => save({ setup_notes: e.target.value || null })}
+                  rows={3}
+                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none mb-2"
+                />
+                <div className="text-xs font-semibold text-gray-600 mb-1">Strategy Notes</div>
+                <textarea
+                  placeholder="Any strategy notes…"
+                  value={slot.strategy_notes || ''}
+                  onChange={e => onUpdate(slot.id, { strategy_notes: e.target.value || null })}
+                  onBlur={e => save({ strategy_notes: e.target.value || null })}
+                  rows={3}
+                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                />
+              </Card>
+
+              {showSetupPreview && (() => {
+                const selectedSetup = allSetups.find(s => s.id === slot.saved_setup_id)
+                return selectedSetup ? (
+                  <SetupPreviewPanel
+                    setup={selectedSetup}
+                    carParts={carParts}
+                    onClose={() => setShowSetupPreview(false)}
+                  />
+                ) : null
+              })()}
+            </div>
           </div>
         </div>
       )}
@@ -483,7 +518,8 @@ export default function GpGuideEditorPage() {
   const [allTracks, setAllTracks] = useState<TrackInfo[]>([])
   const [allDrivers, setAllDrivers] = useState<DriverView[]>([])
   const [allBoosts, setAllBoosts] = useState<any[]>([])
-  const [allSetups, setAllSetups] = useState<SetupInfo[]>([])
+  const [allSetups, setAllSetups] = useState<UserCarSetup[]>([])
+  const [allCarParts, setAllCarParts] = useState<CarPartView[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [importingSlotId, setImportingSlotId] = useState<string | null>(null)
   const [bulkImporting, setBulkImporting] = useState<string | null>(null)
@@ -499,12 +535,13 @@ export default function GpGuideEditorPage() {
     async function load() {
       const headers = await getAuthHeaders()
       const opts = { headers, credentials: 'same-origin' as const }
-      const [guideRes, tracksRes, driversRes, boostsRes, setupsRes] = await Promise.all([
+      const [guideRes, tracksRes, driversRes, boostsRes, setupsRes, carPartsRes] = await Promise.all([
         fetch(`/api/gp-guides/${guideId}`, opts),
         fetch('/api/tracks', opts),
         fetch('/api/drivers/user?limit=500', opts),
         fetch('/api/user-boosts?limit=200', opts),  // Use user-boosts to get card_count
         fetch('/api/setups', opts),
+        fetch('/api/car-parts/user?limit=1000', opts),
       ])
       if (!guideRes.ok) { router.push('/gp-guides'); return }
       const guideData = await guideRes.json()
@@ -512,11 +549,13 @@ export default function GpGuideEditorPage() {
       const driversData = driversRes.ok ? await driversRes.json() : { data: [] }
       const boostsData = boostsRes.ok ? await boostsRes.json() : { data: [] }
       const setupsData = setupsRes.ok ? await setupsRes.json() : { data: [] }
+      const carPartsData = carPartsRes.ok ? await carPartsRes.json() : { data: [] }
       setGuide(guideData.data)
       setAllTracks(Array.isArray(tracksData) ? tracksData : (tracksData.data || []))
       setAllDrivers(driversData.data || [])
       setAllBoosts(boostsData.data || [])
       setAllSetups(setupsData.data || [])
+      setAllCarParts(carPartsData.data || [])
       setIsLoading(false)
     }
     load()
@@ -658,7 +697,7 @@ export default function GpGuideEditorPage() {
   }
 
   const sharedSlotProps = {
-    guideId, gpLevel: guide.gp_level, allTracks, allDrivers, allBoosts, allSetups,
+    guideId, gpLevel: guide.gp_level, allTracks, allDrivers, allBoosts, allSetups, carParts: allCarParts,
     onUpdate: handleSlotUpdate, onImport: handleImport, importingSlotId,
   }
 
@@ -822,8 +861,9 @@ function SectionHeader({ title, subtitle, raceType, onBulkImport, bulkImporting 
 // ─── Condensed View ───────────────────────────────────────────────────────────
 
 function CondensedView({ guide, allTracks, allDrivers, allBoosts, allSetups }: {
-  guide: GpGuide; allTracks: TrackInfo[]; allDrivers: DriverView[]; allBoosts: BoostView[]; allSetups: SetupInfo[]
+  guide: GpGuide; allTracks: TrackInfo[]; allDrivers: DriverView[]; allBoosts: BoostView[]; allSetups: UserCarSetup[]
 }) {
+  const [showNotes, setShowNotes] = useState(false)
   const gpLevel = GP_LEVELS[guide.gp_level] || GP_LEVELS[3]
   const qualifying = guide.tracks.filter(t => t.race_type === 'qualifying').sort((a, b) => a.race_number - b.race_number)
   const opening = guide.tracks.filter(t => t.race_type === 'opening').sort((a, b) => a.race_number - b.race_number)
@@ -831,44 +871,74 @@ function CondensedView({ guide, allTracks, allDrivers, allBoosts, allSetups }: {
 
   const renderSlots = (slots: TrackSlot[]) => slots.map((slot, i) => {
     const track = allTracks.find(t => t.id === slot.track_id) || null
-    if (!track && !slot.track_id) return <div key={slot.id} className="py-1 text-gray-400 text-sm">{i + 1}. <em>Track not assigned</em></div>
+    if (!track && !slot.track_id) return <div key={slot.id} className="py-1 text-gray-400 text-base">{i + 1}. <em>Track not assigned</em></div>
     const d1 = allDrivers.find(d => d.id === slot.driver_1_id) || null
     const d2 = allDrivers.find(d => d.id === slot.driver_2_id) || null
     const b1 = allBoosts.find(b => b.id === slot.driver_1_boost_id) || null
     const b2 = allBoosts.find(b => b.id === slot.driver_2_boost_id) || null
     const setup = allSetups.find(s => s.id === slot.saved_setup_id) || null
+    const d1RarityLabel = d1 ? (d1.rarity === 5 ? getCollectionRarityDisplay(d1.collection_theme ?? null, d1.collection_sub_name ?? null) : getRarityDisplay(d1.rarity)) : ''
+    const d2RarityLabel = d2 ? (d2.rarity === 5 ? getCollectionRarityDisplay(d2.collection_theme ?? null, d2.collection_sub_name ?? null) : getRarityDisplay(d2.rarity)) : ''
     return (
       <div key={slot.id} className="mb-4 print:mb-2 border-b border-gray-100 pb-2 last:border-0">
-        <div className="font-semibold text-base print:text-sm text-gray-900">
+        <div className="font-semibold text-lg print:text-base text-gray-900">
           {i + 1}. {track ? (track.display_name || track.name) : '?'} — {track?.laps || '?'} Laps
           {track ? ` · ${capitalizeStat(track.driver_track_stat)} / ${capitalizeStat(track.car_track_stat)}` : ''}
           {' '}{slot.is_wet ? '🌧️' : '☀️'}
         </div>
-        {setup && <div className="ml-4 text-sm print:text-xs text-gray-600"><strong>Setup:</strong> {setup.name}{slot.setup_notes ? ` — ${slot.setup_notes}` : ''}</div>}
-        {d1 && <div className="ml-4 text-sm print:text-xs text-gray-700"><strong>D1:</strong> {d1.name} ({d1.rarity === 5 ? getCollectionRarityDisplay(d1.collection_theme ?? null, d1.collection_sub_name ?? null) : getRarityDisplay(d1.rarity)}){b1 ? ` — ${boostDisplayName(b1)}` : ''}{slot.driver_1_tire_strategy ? ` — ${slot.driver_1_tire_strategy}` : ''}</div>}
-        {d2 && <div className="ml-4 text-sm print:text-xs text-gray-700"><strong>D2:</strong> {d2.name} ({d2.rarity === 5 ? getCollectionRarityDisplay(d2.collection_theme ?? null, d2.collection_sub_name ?? null) : getRarityDisplay(d2.rarity)}){b2 ? ` — ${boostDisplayName(b2)}` : ''}{slot.driver_2_tire_strategy ? ` — ${slot.driver_2_tire_strategy}` : ''}</div>}
-        {slot.strategy_notes && <div className="ml-4 text-sm print:text-xs text-gray-500 italic">{slot.strategy_notes}</div>}
+        {setup && <div className="ml-4 text-base print:text-sm text-gray-600"><strong>Setup:</strong> {setup.name}{slot.setup_notes ? ` — ${slot.setup_notes}` : ''}</div>}
+        {d1 && (
+          <div className="ml-4 text-base print:text-sm text-gray-700">
+            <strong>D1:</strong>{' '}
+            <span className={`inline-block rounded px-1.5 py-0.5 ${getRarityBackground(d1.rarity)} text-black font-medium`}>
+              {d1.name} · {d1RarityLabel}
+            </span>
+            {b1 ? ` — ${boostDisplayName(b1)}` : ''}
+            {slot.driver_1_tire_strategy ? ` — ${slot.driver_1_tire_strategy}` : ''}
+          </div>
+        )}
+        {d2 && (
+          <div className="ml-4 text-base print:text-sm text-gray-700">
+            <strong>D2:</strong>{' '}
+            <span className={`inline-block rounded px-1.5 py-0.5 ${getRarityBackground(d2.rarity)} text-black font-medium`}>
+              {d2.name} · {d2RarityLabel}
+            </span>
+            {b2 ? ` — ${boostDisplayName(b2)}` : ''}
+            {slot.driver_2_tire_strategy ? ` — ${slot.driver_2_tire_strategy}` : ''}
+          </div>
+        )}
+        {slot.strategy_notes && <div className="ml-4 text-base print:text-sm text-gray-500 italic">{slot.strategy_notes}</div>}
       </div>
     )
   })
 
   return (
-    <div className="print:text-xs">
+    <div className="print:text-sm">
       {guide.notes && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-gray-800 whitespace-pre-line">
-          <strong>Notes:</strong> {guide.notes}
+        <div className="mb-4">
+          <label className="flex items-center gap-1 text-xs text-gray-500 mb-2 cursor-pointer select-none">
+            <input type="checkbox" checked={showNotes} onChange={e => setShowNotes(e.target.checked)} />
+            Show notes
+          </label>
+          {showNotes && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-base text-gray-800 whitespace-pre-line">
+              <strong>Notes:</strong> {guide.notes}
+            </div>
+          )}
         </div>
       )}
-      {qualifying.length > 0 && <div className="mb-4"><h2 className="text-base font-bold text-gray-800 mb-2 border-b pb-1">Qualifying Round</h2>{renderSlots(qualifying)}</div>}
-      {opening.length > 0 && <div className="mb-4"><h2 className="text-base font-bold text-gray-800 mb-2 border-b pb-1">Opening Round (Saturday)</h2>{renderSlots(opening)}</div>}
-      {!guide.weekend_strategy_same && final.length > 0 && <div className="mb-4"><h2 className="text-base font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday)</h2>{renderSlots(final)}</div>}
-      {guide.weekend_strategy_same && opening.length > 0 && <div className="mb-4"><h2 className="text-base font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday) — Same as Opening</h2><p className="text-xs text-gray-500 italic">Uses the same strategy as Opening Round above.</p></div>}
+      <div className="grid grid-cols-2 gap-4">
+        {qualifying.length > 0 && <div className="mb-4"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Qualifying Round</h2>{renderSlots(qualifying)}</div>}
+        {opening.length > 0 && <div className="mb-4"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Opening Round (Saturday)</h2>{renderSlots(opening)}</div>}
+        {!guide.weekend_strategy_same && final.length > 0 && <div className="mb-4 col-start-1"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday)</h2>{renderSlots(final)}</div>}
+        {guide.weekend_strategy_same && opening.length > 0 && <div className="mb-4 col-start-1"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday) — Same as Opening</h2><p className="text-xs text-gray-500 italic">Uses the same strategy as Opening Round above.</p></div>}
+      </div>
       {guide.results.filter(r => r.results_notes).length > 0 && (
         <div className="mt-4 pt-3 border-t border-gray-300">
-          <h2 className="text-base font-bold text-gray-800 mb-2">Race Results</h2>
+          <h2 className="text-lg font-bold text-gray-800 mb-2">Race Results</h2>
           {guide.results.filter(r => r.results_notes).map(r => {
             const t = allTracks.find(tr => tr.id === r.track_id)
-            return <div key={r.track_id} className="mb-2"><span className="text-xs font-semibold text-gray-700">{t?.name || r.track_id}:</span>{' '}<span className="text-xs text-gray-600 whitespace-pre-line">{r.results_notes}</span></div>
+            return <div key={r.track_id} className="mb-2"><span className="text-sm font-semibold text-gray-700">{t?.name || r.track_id}:</span>{' '}<span className="text-sm text-gray-600 whitespace-pre-line">{r.results_notes}</span></div>
           })}
         </div>
       )}

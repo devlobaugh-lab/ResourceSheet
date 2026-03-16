@@ -8,19 +8,22 @@ export async function GET(
 ) {
   try {
     const { trackName, difficulty } = params
-    
+
     // Decode URL-encoded track name
     const decodedTrackName = decodeURIComponent(trackName)
     const decodedDifficulty = decodeURIComponent(difficulty)
-    
+    const seasonId = request.nextUrl.searchParams.get('season_id')
+
     // Get all loadout rows for this track/difficulty
-    const { data: loadouts, error } = await supabaseAdmin
+    let loadoutsQuery = supabaseAdmin
       .from('ai_track_loadouts')
       .select('*')
       .eq('track_name', decodedTrackName)
       .eq('difficulty', decodedDifficulty)
       .order('team_name')
       .order('driver_slot')
+    if (seasonId) loadoutsQuery = loadoutsQuery.eq('season_id', seasonId)
+    const { data: loadouts, error } = await loadoutsQuery
     
     if (error) {
       console.error('Error fetching AI loadouts:', error)

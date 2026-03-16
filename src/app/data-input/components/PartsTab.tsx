@@ -22,10 +22,11 @@ import {
  * PartsTab component for data input page.
  * Displays a table of car parts with editable level and card count fields.
  */
-export function PartsTab() {
+export function PartsTab({ seasonId }: { seasonId?: string }) {
   const { data: partsResponse, isLoading } = useUserCarParts({
     page: 1,
-    limit: 200
+    limit: 200,
+    season_id: seasonId,
   });
   const updateCarPartData = useUpdateCarPartData();
 

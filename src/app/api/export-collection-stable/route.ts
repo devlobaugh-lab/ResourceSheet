@@ -312,7 +312,6 @@ export async function GET(request: NextRequest) {
         laps: track.laps,
         driver_track_stat: track.driver_track_stat,
         car_track_stat: track.car_track_stat,
-        season_id: track.season_id,
         created_at: track.created_at
       }))
     }

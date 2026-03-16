@@ -1,5 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+
+export const dynamic = 'force-dynamic'
 import type { SeriesData, SeriesWithTracks, SeriesTrack, SeriesTrackInfo } from '@/types/database'
 
 // Stat display names mapping
@@ -59,15 +61,23 @@ function findCommonTrackStat(tracks: SeriesTrack[]): string | null {
 }
 
 // GET /api/series - Get all series data with track information
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     console.log('Starting series API request...')
-    
+    const { searchParams } = new URL(request.url)
+    const seasonId = searchParams.get('season_id')
+
     // Fetch all series data
-    const { data: seriesData, error: seriesError } = await supabaseAdmin
+    let seriesQuery = supabaseAdmin
       .from('series_data')
       .select('*')
       .order('index', { ascending: true })
+
+    if (seasonId) {
+      seriesQuery = seriesQuery.eq('season_id', seasonId)
+    }
+
+    const { data: seriesData, error: seriesError } = await seriesQuery
 
     if (seriesError) {
       console.error('Error fetching series data:', seriesError)
@@ -117,10 +127,22 @@ export async function GET() {
     console.log('Aliases loaded:', Object.keys(aliasMap).length)
 
     // Fetch tracks from deduplicated tracks table for fallback
-    const { data: tracksData } = await supabaseAdmin
-      .from('tracks')
-      .select('id, name, laps, driver_track_stat, car_track_stat')
-      .in('name', Array.from(allTrackNames))
+    // Season filtering goes through track_seasons junction table
+    let tracksData: any[] | null = null
+    if (seasonId) {
+      const { data: tsData } = await supabaseAdmin
+        .from('track_seasons')
+        .select('tracks(id, name, laps, driver_track_stat, car_track_stat)')
+        .eq('season_id', seasonId)
+        .in('tracks.name', Array.from(allTrackNames))
+      tracksData = (tsData || []).map((row: any) => row.tracks).filter(Boolean)
+    } else {
+      const { data } = await supabaseAdmin
+        .from('tracks')
+        .select('id, name, laps, driver_track_stat, car_track_stat')
+        .in('name', Array.from(allTrackNames))
+      tracksData = data
+    }
 
     // Build track map by name for fallback lookup
     const trackMap: Record<string, { id: string; laps: number; driver_track_stat: string; car_track_stat: string }> = {}

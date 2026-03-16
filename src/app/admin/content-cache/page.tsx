@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/components/auth/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useToast } from '@/components/ui/Toast';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAuthHeaders } from '@/hooks/useApi';
 import Link from 'next/link';
 import { Upload, FileText, Settings, Database, AlertCircle, Eye } from 'lucide-react';
@@ -15,6 +15,7 @@ import { Upload, FileText, Settings, Database, AlertCircle, Eye } from 'lucide-r
 export default function AdminContentCachePage() {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -24,6 +25,31 @@ export default function AdminContentCachePage() {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadResult, setUploadResult] = useState<any>(null);
   const [allowModifications, setAllowModifications] = useState<boolean>(false);
+
+  // Fetch available seasons from DB
+  const { data: seasonsData } = useQuery({
+    queryKey: ['seasons'],
+    queryFn: async () => {
+      const response = await fetch('/api/seasons?limit=100', {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      });
+      if (!response.ok) return null;
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000
+  });
+
+  const availableSeriesNumbers: number[] = React.useMemo(() => {
+    const seasons = seasonsData?.data ?? [];
+    return seasons
+      .map((s: any) => {
+        const match = (s.name || '').match(/(\d+)/);
+        return match ? parseInt(match[1], 10) : null;
+      })
+      .filter((n: number | null): n is number => n !== null)
+      .sort((a: number, b: number) => a - b);
+  }, [seasonsData]);
 
   // Check if user is admin
   const { data: profile, isLoading: isProfileLoading } = useQuery({
@@ -99,9 +125,16 @@ export default function AdminContentCachePage() {
       return;
     }
 
-    if (!seasonFilter.trim()) {
-      addToast('Please specify season filter (e.g., &quot;2,3,4,5&quot; or &quot;6&quot;)', 'error');
-      return;
+    if (seasonFilter.trim()) {
+      const enteredNumbers = seasonFilter
+        .split(',')
+        .map(s => parseInt(s.trim(), 10))
+        .filter(n => !isNaN(n));
+      const invalid = enteredNumbers.filter(n => !availableSeriesNumbers.includes(n));
+      if (invalid.length > 0) {
+        addToast(`Series ${invalid.join(', ')} is not set up in the database`, 'error');
+        return;
+      }
     }
 
     setIsProcessing(true);
@@ -132,6 +165,10 @@ export default function AdminContentCachePage() {
       
       // Store result for display on page
       setUploadResult(result);
+
+      // Invalidate cached results so series/AI pages fetch fresh data
+      queryClient.invalidateQueries({ queryKey: ['series'] })
+      queryClient.invalidateQueries({ queryKey: ['ai-loadouts-options'] })
       
       // Show modified items in console for admin review
       if (result.summary.total_modified > 0) {
@@ -266,28 +303,37 @@ export default function AdminContentCachePage() {
                   </div>
                 </div>
 
-                {/* Season Filtering */}
+                {/* Series Filter */}
                 <div className="border-t border-gray-200 pt-4">
                   <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
                     <Settings className="w-5 h-5 mr-2" />
-                    Season Filtering
+                    Series Filter
                   </h3>
-                  
+
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Filter by Seasons (required)
+                        Filter by Series (optional)
                       </label>
                       <Input
                         type="text"
                         value={seasonFilter}
                         onChange={(e) => setSeasonFilter(e.target.value)}
-                        placeholder="e.g., 2,3,4,5 or 6"
+                        placeholder={
+                          availableSeriesNumbers.length > 0
+                            ? `e.g., ${availableSeriesNumbers.join(',')} — or leave empty for all`
+                            : 'e.g., 5,6 — or leave empty for all'
+                        }
                         className="font-mono"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Enter season numbers to import (comma-separated). Leave empty to import all seasons.
+                        Enter series numbers to import (comma-separated). Leave empty to import all series set up in season management.
                       </p>
+                      {availableSeriesNumbers.length > 0 && (
+                        <p className="text-xs text-blue-600 mt-1">
+                          Available series: {availableSeriesNumbers.join(', ')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -313,7 +359,7 @@ export default function AdminContentCachePage() {
                 <div className="flex space-x-3">
                   <Button
                     onClick={handleFileUpload}
-                    disabled={!selectedFile || !seasonFilter.trim() || isProcessing}
+                    disabled={!selectedFile || isProcessing}
                     className="flex-1"
                   >
                     {isProcessing ? 'Processing...' : 'Upload & Process'}
@@ -388,17 +434,35 @@ export default function AdminContentCachePage() {
                     </div>
                   </div>
 
-                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div className="bg-white rounded p-3">
                       <div className="font-medium text-gray-700 mb-2">🏎️ Series</div>
                       <div className="text-gray-600">
-                        Imported: {uploadResult.summary.series?.new ?? 0} | Deleted: {uploadResult.summary.series?.deleted ?? 0}
+                        {uploadResult.summary.series?.skipped
+                          ? <span className="text-yellow-600">Not found in cache</span>
+                          : <>
+                              Imported: {uploadResult.summary.series?.new ?? 0} | Deleted: {uploadResult.summary.series?.deleted ?? 0}
+                              {uploadResult.summary.series?.error &&
+                                <span className="text-red-600 ml-2">Error: {uploadResult.summary.series.error}</span>}
+                            </>}
                       </div>
                     </div>
                     <div className="bg-white rounded p-3">
                       <div className="font-medium text-gray-700 mb-2">🏁 Tracks</div>
                       <div className="text-gray-600">
-                        Imported: {uploadResult.summary.tracks?.new ?? 0}
+                        New: {uploadResult.summary.tracks?.new ?? 0} | Updated: {uploadResult.summary.tracks?.modified ?? 0}
+                      </div>
+                    </div>
+                    <div className="bg-white rounded p-3">
+                      <div className="font-medium text-gray-700 mb-2">🤖 AI Loadouts</div>
+                      <div className="text-gray-600">
+                        {uploadResult.summary.ai_track_loadouts?.skipped
+                          ? <span className="text-yellow-600">Not found in cache</span>
+                          : <>
+                              Imported: {uploadResult.summary.ai_track_loadouts?.new ?? 0} | Deleted: {uploadResult.summary.ai_track_loadouts?.deleted ?? 0}
+                              {uploadResult.summary.ai_track_loadouts?.error &&
+                                <span className="text-red-600 ml-2">Error: {uploadResult.summary.ai_track_loadouts.error}</span>}
+                            </>}
                       </div>
                     </div>
                   </div>
@@ -492,18 +556,18 @@ export default function AdminContentCachePage() {
                     <h4 className="font-medium text-gray-900 mb-2">Update Process:</h4>
                     <ol className="list-decimal list-inside space-y-1">
                       <li>Download latest content_cache.json from the game</li>
-                      <li>Specify which seasons to import (e.g., &quot;2,3,4,5&quot; or &quot;6&quot;)</li>
+                      <li>Optionally filter by series number (e.g., &quot;5,6&quot;) — leave empty to import all DB series</li>
                       <li>Upload the file - system processes and imports new content only</li>
                       <li>Review change detection report for any data differences</li>
                     </ol>
                   </div>
 
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Season Filtering Examples:</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">Series Filter Examples:</h4>
                     <ul className="list-disc list-inside space-y-1">
-                      <li><code className="bg-gray-100 px-1 py-0.5 rounded">2,3,4,5</code> - Import seasons 2, 3, 4, and 5</li>
-                      <li><code className="bg-gray-100 px-1 py-0.5 rounded">6</code> - Import only season 6</li>
-                      <li><code className="bg-gray-100 px-1 py-0.5 rounded">(empty)</code> - Import all seasons</li>
+                      <li><code className="bg-gray-100 px-1 py-0.5 rounded">5,6</code> - Import series 5 and 6 only</li>
+                      <li><code className="bg-gray-100 px-1 py-0.5 rounded">6</code> - Import series 6 only</li>
+                      <li><code className="bg-gray-100 px-1 py-0.5 rounded">(empty)</code> - Import all series set up in season management</li>
                     </ul>
                   </div>
                 </div>

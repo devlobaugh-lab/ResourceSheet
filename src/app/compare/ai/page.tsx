@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/components/auth/AuthContext'
@@ -8,6 +8,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useToast } from '@/components/ui/Toast'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getAuthHeaders } from '@/hooks/useApi'
+import { useSeason } from '@/contexts/SeasonContext'
 import { CustomDriverForm } from '@/components/CustomDriverForm'
 import { AIDriverCompareGrid } from '@/components/AIDriverCompareGrid'
 import { UserCustomDriver } from '@/types/database'
@@ -43,33 +44,98 @@ type CustomDriverModalMode = 'create' | 'edit' | 'view'
 
 export default function AIComparePage() {
   const { user } = useAuth()
+  const { activeSeasonId } = useSeason()
   const { addToast } = useToast()
   const queryClient = useQueryClient()
   
-  // State
-  const [selectedTrack, setSelectedTrack] = useState<string>('')
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('')
+  const STORAGE_KEY = 'compare-ai-page-state'
+
+  const readStorage = () => {
+    try {
+      const stored = sessionStorage.getItem(STORAGE_KEY)
+      return stored ? JSON.parse(stored) : null
+    } catch {
+      return null
+    }
+  }
+
+  // State — lazily initialised from sessionStorage so restore is synchronous
+  const [selectedTrack, setSelectedTrack] = useState<string>(() => readStorage()?.selectedTrack ?? '')
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>(() => readStorage()?.selectedDifficulty ?? '')
   const [customDriversInGrid, setCustomDriversInGrid] = useState<UserCustomDriver[]>([])
+  const [pendingDriverIds, setPendingDriverIds] = useState<string[] | null>(() => {
+    const ids = readStorage()?.customDriverIds
+    return ids?.length ? ids : null
+  })
   const [showCustomDriverModal, setShowCustomDriverModal] = useState(false)
   const [modalMode, setModalMode] = useState<CustomDriverModalMode>('create')
   const [editingDriver, setEditingDriver] = useState<UserCustomDriver | null>(null)
+  const prevSeasonRef = useRef<string | null | undefined>(undefined)
+
+  // Clear state if the stored season doesn't match the active season
+  useEffect(() => {
+    if (activeSeasonId === null) return
+    const stored = readStorage()
+    if (stored && stored.seasonId !== activeSeasonId) {
+      setSelectedTrack('')
+      setSelectedDifficulty('')
+      setCustomDriversInGrid([])
+      setPendingDriverIds(null)
+      sessionStorage.removeItem(STORAGE_KEY)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSeasonId])
+
+  // Clear state when user actively switches seasons
+  useEffect(() => {
+    if (prevSeasonRef.current === undefined) {
+      prevSeasonRef.current = activeSeasonId
+      return
+    }
+    if (activeSeasonId !== null && prevSeasonRef.current !== activeSeasonId) {
+      prevSeasonRef.current = activeSeasonId
+      setSelectedTrack('')
+      setSelectedDifficulty('')
+      setCustomDriversInGrid([])
+      setPendingDriverIds(null)
+      sessionStorage.removeItem(STORAGE_KEY)
+    }
+  }, [activeSeasonId])
+
+  // Persist state to sessionStorage (skip until season is known)
+  useEffect(() => {
+    if (!activeSeasonId) return
+    // Don't persist empty state on initial mount before restore/clear logic settles
+    const stored = readStorage()
+    if (!stored && !selectedTrack && !selectedDifficulty && customDriversInGrid.length === 0) return
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+        seasonId: activeSeasonId,
+        selectedTrack,
+        selectedDifficulty,
+        customDriverIds: customDriversInGrid.map(d => d.id)
+      }))
+    } catch {}
+  }, [activeSeasonId, selectedTrack, selectedDifficulty, customDriversInGrid])
   
   // Fetch AI loadout options (track/difficulty combinations)
   const { data: loadoutOptions, isLoading: optionsLoading } = useQuery({
-    queryKey: ['ai-loadouts-options'],
+    queryKey: ['ai-loadouts-options', activeSeasonId],
     queryFn: async () => {
-      const response = await fetch('/api/ai-loadouts')
+      const params = activeSeasonId ? `?season_id=${encodeURIComponent(activeSeasonId)}` : ''
+      const response = await fetch(`/api/ai-loadouts${params}`)
       if (!response.ok) throw new Error('Failed to fetch loadout options')
       return response.json()
     }
   })
-  
+
   // Fetch selected AI loadout data
   const { data: loadoutData, isLoading: loadoutLoading } = useQuery({
-    queryKey: ['ai-loadouts', selectedTrack, selectedDifficulty],
+    queryKey: ['ai-loadouts', selectedTrack, selectedDifficulty, activeSeasonId],
     queryFn: async () => {
       if (!selectedTrack || !selectedDifficulty) return { data: [] }
-      const response = await fetch(`/api/ai-loadouts/track/${encodeURIComponent(selectedTrack)}/${encodeURIComponent(selectedDifficulty)}`)
+      const params = activeSeasonId ? `?season_id=${encodeURIComponent(activeSeasonId)}` : ''
+      const response = await fetch(`/api/ai-loadouts/track/${encodeURIComponent(selectedTrack)}/${encodeURIComponent(selectedDifficulty)}${params}`)
       if (!response.ok) throw new Error('Failed to fetch loadout data')
       return response.json()
     },
@@ -78,9 +144,10 @@ export default function AIComparePage() {
   
   // Fetch user's custom drivers
   const { data: customDriversData } = useQuery({
-    queryKey: ['custom-drivers'],
+    queryKey: ['custom-drivers', activeSeasonId],
     queryFn: async () => {
-      const response = await fetch('/api/custom-drivers', {
+      const params = activeSeasonId ? `?season_id=${encodeURIComponent(activeSeasonId)}` : ''
+      const response = await fetch(`/api/custom-drivers${params}`, {
         headers: await getAuthHeaders()
       })
       if (!response.ok) throw new Error('Failed to fetch custom drivers')
@@ -88,7 +155,18 @@ export default function AIComparePage() {
     },
     enabled: !!user
   })
-  
+
+  // Resolve pending driver IDs once custom driver data is available
+  useEffect(() => {
+    if (pendingDriverIds && customDriversData?.data) {
+      const drivers = customDriversData.data.filter((d: UserCustomDriver) =>
+        pendingDriverIds.includes(d.id)
+      )
+      setCustomDriversInGrid(drivers)
+      setPendingDriverIds(null)
+    }
+  }, [pendingDriverIds, customDriversData])
+
   // Create custom driver mutation
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -235,7 +313,7 @@ export default function AIComparePage() {
   // Handle form submit
   const handleFormSubmit = (data: any) => {
     if (modalMode === 'create') {
-      createMutation.mutate(data)
+      createMutation.mutate({ ...data, season_id: activeSeasonId ?? null })
     } else if (modalMode === 'edit' && editingDriver) {
       updateMutation.mutate({ id: editingDriver.id, ...data })
     }

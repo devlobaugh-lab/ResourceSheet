@@ -17,11 +17,15 @@ export default function AdminPage() {
   const queryClient = useQueryClient();
   
   // Loading states for backup operations
-  const [exportBackupLoading, setExportBackupLoading] = useState(false);
-  const [importBackupLoading, setImportBackupLoading] = useState(false);
+  const [exportSystemLoading, setExportSystemLoading] = useState(false);
+  const [importSystemLoading, setImportSystemLoading] = useState(false);
+  const [exportUsersLoading, setExportUsersLoading] = useState(false);
+  const [importUsersLoading, setImportUsersLoading] = useState(false);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
 
-  // File input ref
-  const backupFileInputRef = useRef<HTMLInputElement>(null);
+  // File input refs
+  const systemFileInputRef = useRef<HTMLInputElement>(null);
+  const usersFileInputRef = useRef<HTMLInputElement>(null);
 
   // Check if user is admin
   const { data: profile, isLoading: isProfileLoading } = useQuery({
@@ -110,10 +114,12 @@ export default function AdminPage() {
       const result = await response.json();
       queryClient.invalidateQueries();
 
-      toast.addToast('Import completed successfully', 'success');
-      if (result.results?.errors?.length > 0) {
-        console.warn('Import errors:', result.results.errors);
-        toast.addToast(`${result.results.errors.length} errors occurred`, 'warning');
+      const errors: string[] = result.results?.errors ?? [];
+      setImportErrors(errors);
+      if (errors.length > 0) {
+        toast.addToast(`Import completed with ${errors.length} error${errors.length === 1 ? '' : 's'}`, 'warning');
+      } else {
+        toast.addToast('Import completed successfully', 'success');
       }
     } catch (error) {
       console.error('Import error:', error);
@@ -124,9 +130,14 @@ export default function AdminPage() {
     }
   };
 
-  const handleBackupFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSystemFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) handleImport('/api/admin/import', file, setImportBackupLoading, backupFileInputRef);
+    if (file) handleImport('/api/admin/import/system', file, setImportSystemLoading, systemFileInputRef);
+  };
+
+  const handleUsersFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleImport('/api/admin/import/users', file, setImportUsersLoading, usersFileInputRef);
   };
 
   // Show loading state while checking admin status
@@ -229,37 +240,88 @@ export default function AdminPage() {
           {/* Data Backup Section */}
           <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">Data Backup & Restore</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Admin Backup */}
+            {/* System Data Backup */}
             <Card className="p-4">
               <div className="flex items-center space-x-3 mb-2">
                 <Database className="w-5 h-5 text-purple-600" />
-                <h3 className="font-semibold text-gray-900">Admin Backup</h3>
+                <h3 className="font-semibold text-gray-900">System Data Backup</h3>
               </div>
               <p className="text-sm text-gray-500 mb-3 line-clamp-2">
-                All user data + admin-configured seasons, track aliases, and boost settings.
+                Admin-configured seasons, track aliases, and boost settings.
               </p>
               <div className="flex flex-col gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleExport('/api/admin/export', 'f1-admin-backup', setExportBackupLoading)}
-                  disabled={exportBackupLoading}
+                  onClick={() => handleExport('/api/admin/export/system', 'f1-system-backup', setExportSystemLoading)}
+                  disabled={exportSystemLoading}
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  {exportBackupLoading ? 'Exporting...' : 'Export'}
+                  {exportSystemLoading ? 'Exporting...' : 'Export'}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => backupFileInputRef.current?.click()}
-                  disabled={importBackupLoading}
+                  onClick={() => systemFileInputRef.current?.click()}
+                  disabled={importSystemLoading}
                 >
                   <FileUp className="w-4 h-4 mr-2" />
-                  {importBackupLoading ? 'Importing...' : 'Import'}
+                  {importSystemLoading ? 'Importing...' : 'Import'}
+                </Button>
+              </div>
+            </Card>
+
+            {/* User Data Backup */}
+            <Card className="p-4">
+              <div className="flex items-center space-x-3 mb-2">
+                <Users className="w-5 h-5 text-blue-600" />
+                <h3 className="font-semibold text-gray-900">User Data Backup</h3>
+              </div>
+              <p className="text-sm text-gray-500 mb-3 line-clamp-2">
+                All users&apos; inventory, guides, setups, and custom drivers.
+              </p>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExport('/api/admin/export/users', 'f1-users-backup', setExportUsersLoading)}
+                  disabled={exportUsersLoading}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {exportUsersLoading ? 'Exporting...' : 'Export'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => usersFileInputRef.current?.click()}
+                  disabled={importUsersLoading}
+                >
+                  <FileUp className="w-4 h-4 mr-2" />
+                  {importUsersLoading ? 'Importing...' : 'Import'}
                 </Button>
               </div>
             </Card>
           </div>
+
+          {/* Import Errors */}
+          {importErrors.length > 0 && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-yellow-800">Import errors ({importErrors.length})</h3>
+                <button
+                  onClick={() => setImportErrors([])}
+                  className="text-xs text-yellow-600 hover:text-yellow-800 underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+              <ul className="text-xs text-yellow-700 space-y-1 max-h-40 overflow-y-auto font-mono">
+                {importErrors.map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Admin Info */}
           <Card className="mt-6 p-6">
@@ -280,8 +342,9 @@ export default function AdminPage() {
           </Card>
         </div>
 
-      {/* Hidden file input */}
-      <input type="file" ref={backupFileInputRef} onChange={handleBackupFileChange} accept=".json" style={{ display: 'none' }} />
+      {/* Hidden file inputs */}
+      <input type="file" ref={systemFileInputRef} onChange={handleSystemFileChange} accept=".json" style={{ display: 'none' }} />
+      <input type="file" ref={usersFileInputRef} onChange={handleUsersFileChange} accept=".json" style={{ display: 'none' }} />
     </ProtectedRoute>
   );
 }

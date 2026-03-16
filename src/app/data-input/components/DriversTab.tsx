@@ -40,10 +40,11 @@ const formatDriverName = (name: string): string => {
  * DriversTab component for data input page.
  * Displays a table of drivers with editable level and card count fields.
  */
-export function DriversTab() {
+export function DriversTab({ seasonId }: { seasonId?: string }) {
   const { data: driversResponse, isLoading } = useUserDrivers({
     page: 1,
-    limit: 200 // Get all drivers, not just paginated
+    limit: 200, // Get all drivers, not just paginated
+    season_id: seasonId,
   });
   const updateDriverData = useUpdateDriverData();
 

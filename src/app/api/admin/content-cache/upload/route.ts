@@ -79,7 +79,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse season filter
-    let seasonNumbers = parseSeasonFilter(seasonFilter)
+    const requestedNumbers = parseSeasonFilter(seasonFilter)
+    let seasonNumbers: number[] = []
 
     // Load seasons and determine mapping from season number -> season id
     const seasonIdMap: Record<number, string> = {}
@@ -99,19 +100,21 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // If no season filter provided, default to the active season (local/dev)
-      if (seasonNumbers.length === 0) {
-        const active = (seasons || []).find((s: any) => s.is_active)
-        if (active && active.name) {
-          const match = (active.name || '').match(/(\d+)/)
-          if (match) {
-            const num = parseInt(match[1], 10)
-            if (!isNaN(num)) {
-              seasonNumbers = [num]
-              console.log('No season_filter provided — defaulting import to active season:', num)
-            }
-          }
+      if (requestedNumbers.length > 0) {
+        // Validate that all requested series numbers exist in DB
+        const invalidNums = requestedNumbers.filter(n => !(n in seasonIdMap))
+        if (invalidNums.length > 0) {
+          const available = Object.keys(seasonIdMap).map(Number).sort((a, b) => a - b)
+          return NextResponse.json(
+            { error: { code: 'VALIDATION_ERROR', message: `Series [${invalidNums.join(', ')}] not found in database. Available series: [${available.join(', ')}]` } },
+            { status: 400 }
+          )
         }
+        seasonNumbers = requestedNumbers
+      } else {
+        // No filter — import all series set up in season management
+        seasonNumbers = Object.keys(seasonIdMap).map(Number).sort((a, b) => a - b)
+        console.log('No season_filter — defaulting to all DB seasons:', seasonNumbers)
       }
     } catch (err) {
       console.warn('Could not load seasons for mapping — importing without season mapping', err)
@@ -147,7 +150,8 @@ export async function POST(request: NextRequest) {
         car_parts: results.car_parts,
         boosts: results.boosts,
         series: results.series,
-        tracks: results.tracks
+        tracks: results.tracks,
+        ai_track_loadouts: results.ai_track_loadouts,
       }
     }, { status: 201 })
     
@@ -227,13 +231,28 @@ function parseAILoadoutName(name: string): { trackName: string; difficulty: stri
 
 // Helper function to process content cache with change detection
 async function processContentCache(validatedData: any, seasonNumbers: number[], allowModifications: boolean = false, seasonIdMap: Record<number, string> = {}) {
+  // Determine which season ID to tag global reference data (series_data, ai_track_loadouts) with.
+  // If a single season is being imported, use that season's ID.
+  // Otherwise, fall back to the currently active season in the DB.
+  let targetSeasonId: string | null = null
+  if (seasonNumbers.length === 1) {
+    targetSeasonId = seasonIdMap[seasonNumbers[0]] ?? null
+  } else {
+    const { data: activeSeason } = await supabaseAdmin
+      .from('seasons')
+      .select('id')
+      .eq('is_active', true)
+      .single()
+    targetSeasonId = activeSeason?.id ?? null
+  }
+
   const results = {
     drivers: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
     car_parts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
     boosts: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
     collections: { new: 0, modified: 0, unchanged: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
-    ai_track_loadouts: { new: 0, modified: 0, unchanged: 0, deleted: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }> },
-    series: { new: 0, modified: 0, unchanged: 0, deleted: 0 },
+    ai_track_loadouts: { new: 0, modified: 0, unchanged: 0, deleted: 0, modified_items: [] as Array<{ id: string; name: string; changes: string[] }>, error: null as string | null, skipped: false },
+    series: { new: 0, modified: 0, unchanged: 0, deleted: 0, error: null as string | null, skipped: false },
     tracks: { new: 0, modified: 0, unchanged: 0 }
   }
 
@@ -396,6 +415,10 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
   // This is a full refresh: delete old data and insert new data
   let trackAILoadoutsData = validatedData._contentResponse?.trackAILoadouts || validatedData.trackAILoadouts;
   
+  if (!trackAILoadoutsData) {
+    results.ai_track_loadouts.skipped = true;
+  }
+
   if (trackAILoadoutsData) {
     console.log(`🏎️ Processing ${trackAILoadoutsData.length} trackAILoadouts entries...`);
     
@@ -428,7 +451,8 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
                 engine: team.m_engine || null,
                 gearbox: team.m_gearbox || null,
                 brakes: team.m_brakes || null
-              }
+              },
+              season_id: targetSeasonId,
             });
           }
           
@@ -452,7 +476,8 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
                 engine: team.m_engine || null,
                 gearbox: team.m_gearbox || null,
                 brakes: team.m_brakes || null
-              }
+              },
+              season_id: targetSeasonId,
             });
           }
         }
@@ -466,15 +491,20 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
       // This is because trackAILoadouts is reference data that gets completely replaced
       
       // First, count existing rows for reporting
-      const { count: existingCount } = await supabaseAdmin
+      const countQuery = supabaseAdmin
         .from('ai_track_loadouts')
-        .select('*', { count: 'exact', head: true });
-      
-      // Delete all existing AI loadouts
-      const { error: deleteError } = await supabaseAdmin
-        .from('ai_track_loadouts')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all (workaround for "delete all")
+        .select('*', { count: 'exact', head: true })
+      if (targetSeasonId) countQuery.eq('season_id', targetSeasonId)
+      const { count: existingCount } = await countQuery;
+
+      // Delete existing AI loadouts for this season (or all if no season)
+      const deleteQuery = supabaseAdmin.from('ai_track_loadouts').delete()
+      if (targetSeasonId) {
+        deleteQuery.eq('season_id', targetSeasonId)
+      } else {
+        deleteQuery.neq('id', '00000000-0000-0000-0000-000000000000') // Delete all fallback
+      }
+      const { error: deleteError } = await deleteQuery;
       
       if (deleteError) {
         console.error('❌ Failed to clear existing AI loadouts:', deleteError);
@@ -493,6 +523,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
           
           if (insertError) {
             console.error(`❌ Failed to insert AI loadouts batch ${i / BATCH_SIZE + 1}:`, insertError);
+            results.ai_track_loadouts.error = insertError.message;
           } else {
             inserted += batch.length;
           }
@@ -537,6 +568,10 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
     });
   }
   
+  if (!seriesData) {
+    results.series.skipped = true;
+  }
+
   if (seriesData) {
     console.log(`🏎️ Processing ${seriesData.length} series entries...`);
     
@@ -573,21 +608,27 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         track_names: trackNames,
         track_info: trackInfo,
         bot_loadout: s.botLoadout || null,
-        ai_car_loadouts: s.aiCarLoadouts || null
+        ai_car_loadouts: s.aiCarLoadouts || null,
+        season_id: targetSeasonId,
       };
     });
     
     if (seriesRows.length > 0) {
       // Count existing rows for reporting
-      const { count: existingCount } = await supabaseAdmin
+      const seriesCountQuery = supabaseAdmin
         .from('series_data')
-        .select('*', { count: 'exact', head: true });
-      
-      // Delete all existing series data
-      const { error: deleteError } = await supabaseAdmin
-        .from('series_data')
-        .delete()
-        .neq('index', -999); // Delete all (workaround for "delete all")
+        .select('*', { count: 'exact', head: true })
+      if (targetSeasonId) seriesCountQuery.eq('season_id', targetSeasonId)
+      const { count: existingCount } = await seriesCountQuery;
+
+      // Delete existing series data for this season (or all if no season)
+      const seriesDeleteQuery = supabaseAdmin.from('series_data').delete()
+      if (targetSeasonId) {
+        seriesDeleteQuery.eq('season_id', targetSeasonId)
+      } else {
+        seriesDeleteQuery.neq('index', -999) // Delete all fallback
+      }
+      const { error: deleteError } = await seriesDeleteQuery;
       
       if (deleteError) {
         console.error('❌ Failed to clear existing series data:', deleteError);
@@ -602,6 +643,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         if (insertError) {
           console.error('❌ Failed to insert series data:', insertError);
           console.error('❌ Series rows that failed:', seriesRows);
+          results.series.error = insertError.message;
         } else {
           results.series.new = seriesRows.length;
           console.log(`✅ Series data processed: deleted=${results.series.deleted}, inserted=${seriesRows.length}`);
@@ -689,41 +731,52 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
       return statMap[stat] || stat.toLowerCase();
     };
     
-    // Build track rows for database - deduplicated by name
+    // Build track rows for database - deduplicated by name (season_id now lives in track_seasons)
     const trackRows = Array.from(tracksByName.values()).map((t: any) => ({
       id: t.id || null,
       name: t.name,
       laps: t.lapcount,
       driver_track_stat: convertStatName(t.strongStatA),
       car_track_stat: convertStatName(t.strongStatB),
-      season_id: activeSeasonId
     })).filter(track => track.id !== null && track.id !== ''); // Filter out invalid IDs
     
     console.log(`📊 Deduplicated to ${trackRows.length} unique tracks`);
     console.log('Sample tracks:', trackRows.slice(0, 3).map((t: any) => `${t.name} (${t.laps} laps, ${t.driver_track_stat}/${t.car_track_stat})`));
     
     if (trackRows.length > 0) {
-      // Clear existing tracks (they'll be replaced)
-      // Use a more robust approach to delete all tracks
-      const { error: deleteError } = await supabaseAdmin
+      // Fetch existing track IDs to distinguish new vs updated
+      const { data: existingTracks } = await supabaseAdmin
         .from('tracks')
-        .delete()
-        .gt('id', '00000000-0000-0000-0000-000000000000'); // Delete all valid UUIDs
-      
-      if (deleteError) {
-        console.error('❌ Failed to clear existing tracks:', deleteError);
+        .select('id');
+      const existingIds = new Set((existingTracks || []).map((t: any) => t.id));
+      const newCount = trackRows.filter((t: any) => !existingIds.has(t.id)).length;
+      const updatedCount = trackRows.filter((t: any) => existingIds.has(t.id)).length;
+
+      // Upsert tracks by ID — preserves user data linked to existing track IDs
+      const { error: upsertError } = await supabaseAdmin
+        .from('tracks')
+        .upsert(trackRows, { onConflict: 'id' });
+
+      if (upsertError) {
+        console.error('❌ Failed to upsert tracks:', upsertError);
       } else {
-        // Insert new tracks
-        const { error: insertError } = await supabaseAdmin
-          .from('tracks')
-          .insert(trackRows);
-        
-        if (insertError) {
-          console.error('❌ Failed to insert tracks:', insertError);
-        } else {
-          results.tracks.new = trackRows.length;
-          console.log(`✅ Tracks processed: inserted=${trackRows.length}`);
-        }
+        results.tracks.new = newCount;
+        results.tracks.modified = updatedCount;
+        console.log(`✅ Tracks processed: new=${newCount}, updated=${updatedCount}`);
+      }
+
+      // Upsert track_seasons junction rows — season membership is separate from track identity
+      if (activeSeasonId) {
+        const trackSeasonRows = trackRows.map((t: any) => ({
+          track_id: t.id,
+          season_id: activeSeasonId,
+          is_active: true,
+        }));
+        const { error: tsError } = await supabaseAdmin
+          .from('track_seasons')
+          .upsert(trackSeasonRows, { onConflict: 'track_id,season_id' });
+        if (tsError) console.error('❌ Failed to upsert track_seasons:', tsError);
+        else console.log(`✅ track_seasons upserted: ${trackSeasonRows.length} rows`);
       }
     }
   }

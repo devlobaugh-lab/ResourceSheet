@@ -354,9 +354,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const body = await request.json()
 
     // Validate required fields
-    const requiredFields = ['name', 'laps', 'driver_track_stat', 'car_track_stat', 'season_id']
+    const requiredFields = ['name', 'laps', 'driver_track_stat', 'car_track_stat']
     const missingFields = requiredFields.filter(field => !body[field])
-    
+
     if (missingFields.length > 0) {
       return NextResponse.json(
         { error: { code: 'VALIDATION_ERROR', message: `Missing required fields: ${missingFields.join(', ')}` } },
@@ -390,21 +390,27 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       )
     }
 
-    // Check if season exists
-    const { data: season, error: seasonError } = await supabaseAdmin
-      .from('seasons')
-      .select('id')
-      .eq('id', body.season_id)
-      .single()
+    // If season_id provided, upsert track_seasons
+    if (body.season_id) {
+      const { data: season, error: seasonError } = await supabaseAdmin
+        .from('seasons')
+        .select('id')
+        .eq('id', body.season_id)
+        .single()
 
-    if (seasonError || !season) {
-      return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'Invalid season_id' } },
-        { status: 400 }
-      )
+      if (seasonError || !season) {
+        return NextResponse.json(
+          { error: { code: 'VALIDATION_ERROR', message: 'Invalid season_id' } },
+          { status: 400 }
+        )
+      }
+
+      await supabaseAdmin
+        .from('track_seasons')
+        .upsert({ track_id: params.id, season_id: body.season_id, is_active: true }, { onConflict: 'track_id,season_id' })
     }
 
-    // Update track
+    // Update track (season_id now lives in track_seasons)
     const { data, error } = await supabaseAdmin
       .from('tracks')
       .update({
@@ -413,7 +419,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         laps: body.laps,
         driver_track_stat: body.driver_track_stat,
         car_track_stat: body.car_track_stat,
-        season_id: body.season_id,
         updated_at: new Date().toISOString()
       })
       .eq('id', params.id)
