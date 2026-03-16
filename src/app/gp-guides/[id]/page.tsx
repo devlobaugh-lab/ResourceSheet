@@ -101,7 +101,7 @@ function BoostSelectModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-5xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-lg max-w-6xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
@@ -110,18 +110,20 @@ function BoostSelectModal({
           <table className="w-full divide-y divide-gray-200">
             <thead className="bg-gray-700 sticky top-0 z-10">
               <tr>
-                {['Name','Amt','Overtake','Defend','Race Start','Tyre','Speed','Corners','Power Unit','Pit Stop'].map(h => (
-                  <th key={h} className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase">{h}</th>
+                {['Name','Amount','Overtake','Defend','Race Start','Tyre Use','Speed','Corners','Power Unit','Pit Stop'].map(h => (
+                  <th key={h} scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                    <div className="flex items-center">{h}</div>
+                  </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-200">
               {sorted.map((boost: any) => {
                 const bs = boost.boost_stats || {}
                 const isSelected = selectedId === boost.id
                 return (
                   <tr key={boost.id}
-                    className={cn('cursor-pointer hover:bg-gray-50', isSelected && 'bg-blue-50')}
+                    className={cn('cursor-pointer hover:bg-gray-50 transition-colors', isSelected && 'bg-blue-50')}
                     onClick={() => onSelect(isSelected ? null : boost.id)}
                   >
                     <td className="px-3 py-1 whitespace-nowrap">
@@ -130,9 +132,9 @@ function BoostSelectModal({
                         <span className="text-sm font-medium text-gray-900">{boostDisplayName(boost)}</span>
                       </div>
                     </td>
-                    <td className="px-3 py-1 text-sm text-center">{boost.card_count || 0}</td>
+                    <td className="px-3 py-1 whitespace-nowrap text-sm text-center">{boost.card_count || 0}</td>
                     {['overtake','block','race_start','tyre_use','speed','corners','power_unit','pit_stop'].map(k => (
-                      <td key={k} className={cn('px-3 py-1 text-sm text-center', bs[k] > 0 && getBoostValueColor(bs[k]))}>
+                      <td key={k} className={cn('px-3 py-1 whitespace-nowrap text-sm text-center', bs[k] > 0 && getBoostValueColor(bs[k]))}>
                         {bs[k] ? bs[k] * 5 : ''}
                       </td>
                     ))}
@@ -142,8 +144,11 @@ function BoostSelectModal({
             </tbody>
           </table>
         </div>
-        <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => onSelect(null)} disabled={!selectedId}>Clear</Button>
+        <div className="p-6 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-gray-600">Selected: {selectedId ? '1' : '0'}</div>
+            <Button variant="outline" size="sm" onClick={() => onSelect(null)} disabled={!selectedId}>Clear Selection</Button>
+          </div>
           <Button onClick={onClose}>Done</Button>
         </div>
       </div>

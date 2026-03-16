@@ -619,7 +619,6 @@ export async function POST(request: NextRequest) {
               laps: track.laps,
               driver_track_stat: track.driver_track_stat,
               car_track_stat: track.car_track_stat,
-              season_id: track.season_id,
               created_at: track.created_at ? new Date(track.created_at).toISOString() : new Date().toISOString(),
               updated_at: new Date().toISOString()
             }

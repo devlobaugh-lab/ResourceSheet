@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { useSeries } from '@/hooks/useApi'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { useSeason } from '@/contexts/SeasonContext'
 import type { SeriesWithTracks, SeriesTrack } from '@/types/database'
 
 // Stat display names mapping
@@ -150,7 +151,8 @@ function SeriesCard({ series }: { series: SeriesWithTracks }) {
 }
 
 export default function SeriesInfoPage() {
-  const { data: seriesData, isLoading, error } = useSeries()
+  const { activeSeasonId } = useSeason()
+  const { data: seriesData, isLoading, error } = useSeries(activeSeasonId ? { season_id: activeSeasonId } : undefined)
 
 // Show all series (0-11) - series 0 is Beginner, series 1-11 are main series
 const displaySeries = seriesData?.data?.filter((s: SeriesWithTracks) => s.index >= 0 && s.index < 12) || []

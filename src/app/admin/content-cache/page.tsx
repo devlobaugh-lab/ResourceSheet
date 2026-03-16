@@ -26,6 +26,31 @@ export default function AdminContentCachePage() {
   const [uploadResult, setUploadResult] = useState<any>(null);
   const [allowModifications, setAllowModifications] = useState<boolean>(false);
 
+  // Fetch available seasons from DB
+  const { data: seasonsData } = useQuery({
+    queryKey: ['seasons'],
+    queryFn: async () => {
+      const response = await fetch('/api/seasons?limit=100', {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin'
+      });
+      if (!response.ok) return null;
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000
+  });
+
+  const availableSeriesNumbers: number[] = React.useMemo(() => {
+    const seasons = seasonsData?.data ?? [];
+    return seasons
+      .map((s: any) => {
+        const match = (s.name || '').match(/(\d+)/);
+        return match ? parseInt(match[1], 10) : null;
+      })
+      .filter((n: number | null): n is number => n !== null)
+      .sort((a: number, b: number) => a - b);
+  }, [seasonsData]);
+
   // Check if user is admin
   const { data: profile, isLoading: isProfileLoading } = useQuery({
     queryKey: ['user-profile', user?.id],
@@ -100,9 +125,16 @@ export default function AdminContentCachePage() {
       return;
     }
 
-    if (!seasonFilter.trim()) {
-      addToast('Please specify season filter (e.g., &quot;2,3,4,5&quot; or &quot;6&quot;)', 'error');
-      return;
+    if (seasonFilter.trim()) {
+      const enteredNumbers = seasonFilter
+        .split(',')
+        .map(s => parseInt(s.trim(), 10))
+        .filter(n => !isNaN(n));
+      const invalid = enteredNumbers.filter(n => !availableSeriesNumbers.includes(n));
+      if (invalid.length > 0) {
+        addToast(`Series ${invalid.join(', ')} is not set up in the database`, 'error');
+        return;
+      }
     }
 
     setIsProcessing(true);
@@ -271,28 +303,37 @@ export default function AdminContentCachePage() {
                   </div>
                 </div>
 
-                {/* Season Filtering */}
+                {/* Series Filter */}
                 <div className="border-t border-gray-200 pt-4">
                   <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
                     <Settings className="w-5 h-5 mr-2" />
-                    Season Filtering
+                    Series Filter
                   </h3>
-                  
+
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Filter by Seasons (required)
+                        Filter by Series (optional)
                       </label>
                       <Input
                         type="text"
                         value={seasonFilter}
                         onChange={(e) => setSeasonFilter(e.target.value)}
-                        placeholder="e.g., 2,3,4,5 or 6"
+                        placeholder={
+                          availableSeriesNumbers.length > 0
+                            ? `e.g., ${availableSeriesNumbers.join(',')} — or leave empty for all`
+                            : 'e.g., 5,6 — or leave empty for all'
+                        }
                         className="font-mono"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Enter season numbers to import (comma-separated). Leave empty to import all seasons.
+                        Enter series numbers to import (comma-separated). Leave empty to import all series set up in season management.
                       </p>
+                      {availableSeriesNumbers.length > 0 && (
+                        <p className="text-xs text-blue-600 mt-1">
+                          Available series: {availableSeriesNumbers.join(', ')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -318,7 +359,7 @@ export default function AdminContentCachePage() {
                 <div className="flex space-x-3">
                   <Button
                     onClick={handleFileUpload}
-                    disabled={!selectedFile || !seasonFilter.trim() || isProcessing}
+                    disabled={!selectedFile || isProcessing}
                     className="flex-1"
                   >
                     {isProcessing ? 'Processing...' : 'Upload & Process'}
@@ -409,7 +450,7 @@ export default function AdminContentCachePage() {
                     <div className="bg-white rounded p-3">
                       <div className="font-medium text-gray-700 mb-2">🏁 Tracks</div>
                       <div className="text-gray-600">
-                        Imported: {uploadResult.summary.tracks?.new ?? 0}
+                        New: {uploadResult.summary.tracks?.new ?? 0} | Updated: {uploadResult.summary.tracks?.modified ?? 0}
                       </div>
                     </div>
                     <div className="bg-white rounded p-3">
@@ -515,18 +556,18 @@ export default function AdminContentCachePage() {
                     <h4 className="font-medium text-gray-900 mb-2">Update Process:</h4>
                     <ol className="list-decimal list-inside space-y-1">
                       <li>Download latest content_cache.json from the game</li>
-                      <li>Specify which seasons to import (e.g., &quot;2,3,4,5&quot; or &quot;6&quot;)</li>
+                      <li>Optionally filter by series number (e.g., &quot;5,6&quot;) — leave empty to import all DB series</li>
                       <li>Upload the file - system processes and imports new content only</li>
                       <li>Review change detection report for any data differences</li>
                     </ol>
                   </div>
 
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Season Filtering Examples:</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">Series Filter Examples:</h4>
                     <ul className="list-disc list-inside space-y-1">
-                      <li><code className="bg-gray-100 px-1 py-0.5 rounded">2,3,4,5</code> - Import seasons 2, 3, 4, and 5</li>
-                      <li><code className="bg-gray-100 px-1 py-0.5 rounded">6</code> - Import only season 6</li>
-                      <li><code className="bg-gray-100 px-1 py-0.5 rounded">(empty)</code> - Import all seasons</li>
+                      <li><code className="bg-gray-100 px-1 py-0.5 rounded">5,6</code> - Import series 5 and 6 only</li>
+                      <li><code className="bg-gray-100 px-1 py-0.5 rounded">6</code> - Import series 6 only</li>
+                      <li><code className="bg-gray-100 px-1 py-0.5 rounded">(empty)</code> - Import all series set up in season management</li>
                     </ul>
                   </div>
                 </div>

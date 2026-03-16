@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { Card } from '@/components/ui/Card'
 import { useCarParts } from '@/hooks/useApi'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { useSeason } from '@/contexts/SeasonContext'
 import type { CarPart } from '@/types/database'
 import { cn } from '@/lib/utils'
 
@@ -110,8 +111,9 @@ const getRarityBg = (rarity: number): string => {
 }
 
 function SeriesMaxLoadoutsContent() {
+  const { activeSeasonId } = useSeason()
   // Fetch all car parts with a high limit to ensure we get all of them
-  const { data: carPartsResponse, isLoading, error } = useCarParts({ limit: 100 })
+  const { data: carPartsResponse, isLoading, error } = useCarParts({ limit: 100, season_id: activeSeasonId ?? undefined })
   
   // Show all series from 0-11 (12 series total)
   // Note: Series 12 in the database is the "all parts unlocked" tier, not a regular series

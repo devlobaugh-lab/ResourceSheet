@@ -6,6 +6,7 @@ import { UserTrackGuide, Inserts, Updates } from '@/types/database'
 // Validation schemas
 const createTrackGuideSchema = z.object({
   track_id: z.string().uuid(),
+  season_id: z.string().uuid().optional().nullable(),
   gp_level: z.number().int().min(0).max(3),
   driver_1_id: z.string().uuid().optional().nullable(),
   driver_2_id: z.string().uuid().optional().nullable(),
@@ -110,6 +111,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const trackId = searchParams.get('track_id')
     const gpLevel = searchParams.get('gp_level')
+    const seasonId = searchParams.get('season_id')
 
     const supabase = createServerSupabaseClient()
 
@@ -135,6 +137,10 @@ export async function GET(request: NextRequest) {
 
     if (gpLevel) {
       query = query.eq('gp_level', parseInt(gpLevel))
+    }
+
+    if (seasonId) {
+      query = query.eq('season_id', seasonId)
     }
 
     const { data, error } = await query
@@ -341,14 +347,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = createTrackGuideSchema.parse(body)
 
-    // Check if track guide already exists for this user/track/gp_level
-    const { data: existing } = await supabase
+    // Check if track guide already exists for this user/track/season/gp_level
+    let existingQuery = supabase
       .from('user_track_guides')
       .select('id')
       .eq('user_id', user.id)
       .eq('track_id', validatedData.track_id)
       .eq('gp_level', validatedData.gp_level)
-      .single()
+
+    if (validatedData.season_id) {
+      existingQuery = existingQuery.eq('season_id', validatedData.season_id)
+    } else {
+      existingQuery = existingQuery.is('season_id', null)
+    }
+
+    const { data: existing } = await existingQuery.single()
 
     if (existing) {
       return NextResponse.json(
@@ -366,6 +379,7 @@ export async function POST(request: NextRequest) {
     const trackGuideData: Inserts<'user_track_guides'> = {
       user_id: user.id,
       track_id: validatedData.track_id,
+      season_id: validatedData.season_id ?? null,
       gp_level: validatedData.gp_level,
       driver_1_id: validatedData.driver_1_id,
       driver_2_id: validatedData.driver_2_id,

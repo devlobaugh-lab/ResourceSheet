@@ -6,10 +6,19 @@ export const dynamic = 'force-dynamic'
 // GET /api/ai-loadouts - List unique track/difficulty combinations
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const seasonId = searchParams.get('season_id')
+
     // Fetch both loadouts and track name aliases in parallel
     // Use a raw query to get DISTINCT combinations efficiently
+    let loadoutsQuery = supabaseAdmin
+      .from('ai_track_loadouts')
+      .select('name, track_name, difficulty', { count: 'exact' })
+      .limit(1000)
+    if (seasonId) loadoutsQuery = loadoutsQuery.eq('season_id', seasonId)
+
     const [loadoutsResult, aliasesResult] = await Promise.all([
-      supabaseAdmin.from('ai_track_loadouts').select('name, track_name, difficulty', { count: 'exact' }).limit(1000),
+      loadoutsQuery,
       supabaseAdmin
         .from('track_name_aliases')
         .select('system_name, display_name')

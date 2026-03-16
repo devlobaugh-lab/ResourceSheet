@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/components/auth/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { useSeason } from '@/contexts/SeasonContext';
 
 // Import extracted tab components
 import { DriversTab } from './components/DriversTab';
@@ -18,6 +19,7 @@ import { BoostsTab } from './components/BoostsTab';
  */
 export default function DataInputPage() {
   const { user, loading: authLoading } = useAuth();
+  const { activeSeasonId } = useSeason();
   const [activeTab, setActiveTab] = useState<'drivers' | 'parts' | 'boosts'>('drivers');
 
   if (authLoading) {
@@ -81,8 +83,8 @@ export default function DataInputPage() {
           </div>
 
           {/* Tab Content */}
-          {activeTab === 'drivers' ? <DriversTab /> :
-           activeTab === 'parts' ? <PartsTab /> :
+          {activeTab === 'drivers' ? <DriversTab seasonId={activeSeasonId ?? undefined} /> :
+           activeTab === 'parts' ? <PartsTab seasonId={activeSeasonId ?? undefined} /> :
            <BoostsTab />}
 
           </div>

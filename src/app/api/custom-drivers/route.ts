@@ -6,6 +6,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 // Schema for custom driver validation
 const customDriverSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
+  season_id: z.string().uuid().nullable().optional(),
   overtaking: z.number().min(0).max(999).default(0),
   blocking: z.number().min(0).max(999).default(0),
   qualifying: z.number().min(0).max(999).default(0),
@@ -89,13 +90,22 @@ export async function GET(request: NextRequest) {
     
     // Use a test user ID for anonymous access
     const userId = user?.id || 'f93f0ecf-47d2-4d40-a4b4-4c22a301c374' // thomas.lobaugh@example.com
-    
+
+    const { searchParams } = new URL(request.url)
+    const seasonId = searchParams.get('season_id')
+
     // Get user's custom drivers
-    const { data: drivers, error } = await supabaseAdmin
+    let driversQuery = supabaseAdmin
       .from('user_custom_drivers')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
+
+    if (seasonId) {
+      driversQuery = driversQuery.eq('season_id', seasonId)
+    }
+
+    const { data: drivers, error } = await driversQuery
     
     if (error) {
       console.error('Error fetching custom drivers:', error)
@@ -144,6 +154,7 @@ export async function POST(request: NextRequest) {
       .insert([{
         user_id: userId,
         name: validatedData.name,
+        season_id: validatedData.season_id ?? null,
         overtaking: validatedData.overtaking,
         blocking: validatedData.blocking,
         qualifying: validatedData.qualifying,

@@ -160,22 +160,40 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // user_track_guides: upsert by (user_id, track_id, gp_level)
+      // user_track_guides: upsert by (user_id, track_id, season_id, gp_level)
       if (importData.userTrackGuides?.length) {
+        // Pre-fetch track→season mapping to backfill missing season_ids
+        const { data: trackSeasons } = await supabaseAdmin
+          .from('track_seasons')
+          .select('track_id, season_id')
+          .eq('is_active', true)
+        const trackSeasonMap = new Map(trackSeasons?.map(ts => [ts.track_id, ts.season_id]) ?? [])
+
         for (const item of importData.userTrackGuides as Record<string, unknown>[]) {
           try {
             const remappedSavedSetupId = item.saved_setup_id
               ? (setupIdMap.get(item.saved_setup_id as string) ?? null)
               : null
-            const { data: existing } = await supabaseAdmin
+            const resolvedSeasonId = (item.season_id as string | null)
+              ?? trackSeasonMap.get(item.track_id as string)
+              ?? null
+
+            let existingQuery = supabaseAdmin
               .from('user_track_guides').select('id')
-              .eq('user_id', userId).eq('track_id', item.track_id as string).eq('gp_level', item.gp_level as string).single()
+              .eq('user_id', userId).eq('track_id', item.track_id as string).eq('gp_level', item.gp_level as string)
+            if (resolvedSeasonId) {
+              existingQuery = existingQuery.eq('season_id', resolvedSeasonId)
+            } else {
+              existingQuery = existingQuery.is('season_id', null)
+            }
+            const { data: existing } = await existingQuery.single()
+
             if (existing) {
               const { id, created_at, user_id: _oldUserId, ...updateData } = item
-              await supabaseAdmin.from('user_track_guides').update({ ...updateData, user_id: userId, saved_setup_id: remappedSavedSetupId }).eq('id', existing.id)
+              await supabaseAdmin.from('user_track_guides').update({ ...updateData, user_id: userId, season_id: resolvedSeasonId, saved_setup_id: remappedSavedSetupId }).eq('id', existing.id)
             } else {
               const { created_at, ...insertData } = item
-              await supabaseAdmin.from('user_track_guides').insert({ ...insertData, user_id: userId, saved_setup_id: remappedSavedSetupId })
+              await supabaseAdmin.from('user_track_guides').insert({ ...insertData, user_id: userId, season_id: resolvedSeasonId, saved_setup_id: remappedSavedSetupId })
             }
           } catch (e) { totals.errors.push(`user_track_guides (${userId}): ${String(e)}`) }
         }
@@ -274,15 +292,16 @@ export async function POST(request: NextRequest) {
       if (importData.userCustomDrivers?.length) {
         for (const item of importData.userCustomDrivers as Record<string, unknown>[]) {
           try {
+            const resolvedSeasonId = (item.season_id as string | null) ?? userEntry.active_season_id ?? null
             const { data: existing } = await supabaseAdmin
               .from('user_custom_drivers').select('id')
               .eq('user_id', userId).eq('name', item.name as string).single()
             if (existing) {
               const { id, created_at, updated_at, ...updateData } = item
-              await supabaseAdmin.from('user_custom_drivers').update(updateData).eq('id', existing.id)
+              await supabaseAdmin.from('user_custom_drivers').update({ ...updateData, season_id: resolvedSeasonId }).eq('id', existing.id)
             } else {
               const { id, created_at, updated_at, ...insertData } = item
-              await supabaseAdmin.from('user_custom_drivers').insert({ ...insertData, user_id: userId })
+              await supabaseAdmin.from('user_custom_drivers').insert({ ...insertData, user_id: userId, season_id: resolvedSeasonId })
             }
           } catch (e) { totals.errors.push(`user_custom_drivers (${userId}): ${String(e)}`) }
         }

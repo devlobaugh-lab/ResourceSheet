@@ -50,15 +50,27 @@ boosts           name text, icon text?, boost_stats jsonb?, is_free bool
 seasons          name text, is_active bool
 
 tracks           name text, alt_name text?, laps int, driver_track_stat text,
-                 car_track_stat text, season_id uuid NOT NULL
+                 car_track_stat text
+                 NOTE: season membership lives in track_seasons, not here
+
+track_seasons    track_id text FK tracks ON DELETE CASCADE,
+                 season_id uuid FK seasons ON DELETE CASCADE,
+                 is_active bool DEFAULT true
+                 UNIQUE(track_id, season_id)
 
 collections      (referenced by drivers/car_parts via collection_id)
 
 boost_custom_names   boost_id uuid FK boosts, custom_name text
 
+series_data          index int, entry_fee int, win_flags int, loss_flags int,
+                     win_rep int, flags_to_unlock int, max_flags int,
+                     track_ids uuid[], track_names text[], track_info jsonb?,
+                     bot_loadout jsonb?, ai_car_loadouts jsonb?,
+                     season_id uuid? FK seasons
+
 ai_track_loadouts    track_name text, difficulty text, team_name text, driver_slot int,
                      overtaking int, blocking int, qualifying int, tyre_use int,
-                     race_start int, car_parts jsonb?
+                     race_start int, car_parts jsonb?, season_id uuid? FK seasons
 
 team_driver_names    team_name text, driver_slot int, driver_name text
 ```
@@ -81,14 +93,16 @@ user_car_setups  user_id uuid, name text, notes text?, series_filter int,
                  engine_id uuid?,  [all FK car_parts]
                  season_id uuid? FK seasons
 
-user_track_guides   user_id uuid, track_id uuid FK tracks, gp_level int,
+user_track_guides   user_id uuid, track_id uuid FK tracks, season_id uuid? FK seasons,
+                    gp_level int,
                     driver_1_id uuid?, driver_2_id uuid?, driver_1_boost_id uuid?,
                     driver_2_boost_id uuid?, alt_driver_ids uuid[]?, alt_boost_ids uuid[]?,
                     suggested_drivers uuid[]?, suggested_boosts uuid[]?, free_boost_id uuid?,
                     saved_setup_id uuid?, setup_notes text?, dry_strategy text?,
                     wet_strategy text?, driver_1_dry_strategy text?, driver_1_wet_strategy text?,
                     driver_2_dry_strategy text?, driver_2_wet_strategy text?, notes text?
-                    UNIQUE(user_id, track_id, gp_level)
+                    UNIQUE(user_id, track_id, season_id, gp_level)
+                    NOTE: season_id NULL on pre-migration rows; guides are season-scoped
 
 user_track_guide_drivers   track_guide_id uuid FK user_track_guides, driver_id uuid,
                            recommended_boost_id uuid?, track_strategy text?
@@ -96,12 +110,15 @@ user_track_guide_drivers   track_guide_id uuid FK user_track_guides, driver_id u
 user_gp_guides   user_id uuid, name text, start_date date?, gp_level int,
                  notes text?, weekend_strategy_same bool, season_id uuid? FK seasons
 
-user_gp_guide_tracks   gp_guide_id uuid FK user_gp_guides, track_id uuid?, race_number int,
-                       race_type 'qualifying'|'opening'|'final', is_wet bool, is_ready bool,
+user_gp_guide_tracks   gp_guide_id uuid FK user_gp_guides ON DELETE CASCADE,
+                       track_id uuid? FK tracks ON DELETE SET NULL,
+                       race_number int, race_type 'qualifying'|'opening'|'final',
+                       is_wet bool, is_ready bool,
                        driver_1_id uuid?, driver_2_id uuid?, driver_1_boost_id uuid?,
                        driver_2_boost_id uuid?, alt_driver_ids uuid[]?, alt_boost_ids uuid[]?,
                        saved_setup_id uuid?, setup_notes text?, driver_1_tire_strategy text?,
                        driver_2_tire_strategy text?, strategy_notes text?
+                       NOTE: track_id ON DELETE SET NULL preserves guide rows when tracks are re-imported
 
 user_gp_guide_results  gp_guide_id uuid, track_id uuid, results_notes text?
 
@@ -363,6 +380,7 @@ const { activeSeasonId, activeSeason, seasons, isLoading, setActiveSeason } = us
 | `useTracks(filters)` | `season_id` |
 | `useUserCarSetups(filters)` | `season_id` |
 | `useGpGuides(filters)` | `season_id` |
+| `useSeries(filters)` | `season_id` |
 
 ### Season-aware API endpoints
 
@@ -372,6 +390,12 @@ const { activeSeasonId, activeSeason, seasons, isLoading, setActiveSeason } = us
 | `POST /api/gp-guides` | request body |
 | `GET /api/setups` | query param |
 | `POST /api/setups` | request body |
+| `GET /api/series` | query param — filters `series_data` and fallback track lookup via `track_seasons` |
+| `GET /api/tracks` | query param — filters via `track_seasons` junction |
+| `GET /api/track-guides` | query param |
+| `POST /api/track-guides` | request body |
+| `GET /api/ai-loadouts` | query param |
+| `GET /api/ai-loadouts/track/[trackName]/[difficulty]` | query param |
 | `PUT /api/seasons/[id]` | atomically clears others when `is_active: true` |
 | `PUT /api/profiles/[id]` | updates `active_season_id` |
 
@@ -496,6 +520,20 @@ Export format (version `1.1`):
 **Track guide update path:** On UPDATE (guide already exists), the old `user_id` from the backup is stripped and replaced with the resolved current `userId` to prevent UUID corruption on repeated imports.
 
 **Backward compatibility:** Version `1.0` exports (no `email` field) will fail to resolve and skip all users. Re-export with the current code before resetting if you need a usable backup.
+
+### Content Cache Import (`POST /api/admin/content-cache/upload`)
+
+Processes `content_cache.json` from the game. Import behaviour by table:
+
+| Table | Strategy | Notes |
+|---|---|---|
+| `drivers`, `car_parts`, `boosts`, `collections` | Change-detection upsert | New items inserted; existing items updated only if `allow_modifications=true` |
+| `tracks` | Upsert by `id` | **Never deletes rows.** Existing tracks are updated in-place; new tracks are inserted. Season membership is written separately to `track_seasons` (upsert on `track_id,season_id`). User data linked to existing track IDs is never disrupted. |
+| `series_data`, `ai_track_loadouts` | Season-scoped full refresh (delete rows for target season + insert) | Tagged with `season_id`; delete/insert is scoped to the imported season so other seasons' data is preserved |
+
+**Why tracks must upsert, not replace:** `user_track_guides.track_id` references `tracks.id` with `ON DELETE CASCADE` — deleting all tracks would wipe all track guides. `user_gp_guide_tracks.track_id` uses `ON DELETE SET NULL`, so those rows survive but lose their track association. Always use upsert for the `tracks` table.
+
+**Track season membership (many-to-many):** A track (e.g. "Austin") is a stable identity across seasons. Importing Season 5 content should not overwrite Season 6 membership. Season membership is tracked in `track_seasons`; the `tracks` table has no `season_id` column. When `GET /api/tracks?season_id=X` is called, the query goes through `track_seasons`. When the content cache upload runs, it upserts `tracks` first (identity only), then upserts `track_seasons` for the target season.
 
 ### Import Error Visibility
 
