@@ -15,9 +15,10 @@ const updateBoostSchema = z.object({
 // PUT /api/boosts/[id] - Update user's boost amount
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  console.log('🚀 Boost PUT API called for ID:', params.id)
+  const { id } = await params
+  console.log('🚀 Boost PUT API called for ID:', id)
 
   try {
     // Try to get user from Authorization header first, then fall back to cookies
@@ -88,7 +89,7 @@ export async function PUT(
       .from('user_boosts')
       .select('id')
       .eq('user_id', user.id)
-      .eq('boost_id', params.id)
+      .eq('boost_id', id)
       .single()
 
     if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
@@ -108,7 +109,7 @@ export async function PUT(
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
-        .eq('boost_id', params.id)
+        .eq('boost_id', id)
         .select()
         .single()
 
@@ -125,7 +126,7 @@ export async function PUT(
         .from('user_boosts')
         .insert({
           user_id: user.id,
-          boost_id: params.id,
+          boost_id: id,
           count: validatedData.card_count
         })
         .select()
@@ -161,9 +162,10 @@ export async function PUT(
 // PATCH /api/boosts/[id] - Update boost metadata (admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  console.log('🚀 Boost PATCH API called for ID:', params.id)
+  const { id } = await params
+  console.log('🚀 Boost PATCH API called for ID:', id)
 
   try {
     // Extract and verify JWT token from Authorization header
@@ -241,7 +243,7 @@ export async function PATCH(
         is_free: validatedData.is_free,
         updated_at: new Date().toISOString()
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 

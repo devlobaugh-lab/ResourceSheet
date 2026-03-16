@@ -23,7 +23,7 @@ async function getAuthUser(request: NextRequest) {
     } catch { /* Fall through */ }
   }
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     const { data: { user }, error } = await supabase.auth.getUser()
     if (!error && user) return user
   } catch { /* Auth failed */ }
@@ -36,8 +36,9 @@ async function getAuthUser(request: NextRequest) {
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; trackId: string } }
+  { params }: { params: Promise<{ id: string; trackId: string }> }
 ) {
+  const { id, trackId } = await params
   try {
     const user = await getAuthUser(request)
     if (!user) {
@@ -52,8 +53,8 @@ export async function PUT(
 
     // Debug logging
     console.log('Attempting to upsert race results with data:', validated)
-    console.log('gp_guide_id:', params.id)
-    console.log('track_id:', params.trackId)
+    console.log('gp_guide_id:', id)
+    console.log('track_id:', trackId)
 
     // Use admin client to bypass RLS entirely
     const supabase = supabaseAdmin
@@ -62,7 +63,7 @@ export async function PUT(
     const { data: gpGuide, error: gpGuideError } = await supabase
       .from('user_gp_guides')
       .select('user_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (gpGuideError) {
@@ -91,8 +92,8 @@ export async function PUT(
       .from('user_gp_guide_results')
       .upsert(
         {
-          gp_guide_id: params.id,
-          track_id: params.trackId,
+          gp_guide_id: id,
+          track_id: trackId,
           results_notes: validated.results_notes ?? null,
         },
         { onConflict: 'gp_guide_id,track_id' }

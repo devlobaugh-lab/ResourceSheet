@@ -33,7 +33,7 @@ const contentCacheSchema = z.object({
 // POST /api/admin/content-cache/upload - Upload and process content_cache.json (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createAuthenticatedSupabaseClient(request)
+    const supabase = await createAuthenticatedSupabaseClient(request)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {

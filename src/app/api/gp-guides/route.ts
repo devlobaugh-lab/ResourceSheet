@@ -34,7 +34,7 @@ async function getAuthUser(request: NextRequest) {
   }
 
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     const { data: { user }, error } = await supabase.auth.getUser()
     if (!error && user) return user
   } catch {
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Use authenticated client for RLS enforcement
-    const supabase = createAuthenticatedSupabaseClient(request)
+    const supabase = await createAuthenticatedSupabaseClient(request)
 
     const url = new URL(request.url)
     const season_id = url.searchParams.get('season_id')

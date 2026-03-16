@@ -6,7 +6,7 @@ import { Track, Inserts, Updates } from '@/types/database'
 // GET /api/tracks - List all tracks with optional season filtering
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     const { searchParams } = new URL(request.url)
     const seasonId = searchParams.get('season_id')
 

@@ -4,7 +4,7 @@ import { supabaseAdmin, createAuthenticatedSupabaseClient } from '@/lib/supabase
 // GET /api/admin/export - Export admin backup (all user data + admin-managed system config)
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createAuthenticatedSupabaseClient(request)
+    const supabase = await createAuthenticatedSupabaseClient(request)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {

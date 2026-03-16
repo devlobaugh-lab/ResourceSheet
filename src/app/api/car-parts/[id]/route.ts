@@ -11,9 +11,10 @@ const updateUserCarPartSchema = z.object({
 // PUT /api/car-parts/[id] - Update user's car part data
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  console.log('🔧 Car part PUT API called for ID:', params.id)
+  const { id } = await params
+  console.log('🔧 Car part PUT API called for ID:', id)
 
   try {
     // Try to get user from Authorization header first, then fall back to cookies
@@ -48,7 +49,7 @@ export async function PUT(
 
     // If JWT didn't work, try cookie-based auth
     if (!user) {
-      const supabase = createServerSupabaseClient()
+      const supabase = await createServerSupabaseClient()
       const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
       if (authError || !cookieUser) {
@@ -68,7 +69,7 @@ export async function PUT(
       .from('user_car_parts')
       .select('id')
       .eq('user_id', user.id)
-      .eq('car_part_id', params.id)
+      .eq('car_part_id', id)
       .single()
 
     if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
@@ -88,7 +89,7 @@ export async function PUT(
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
-        .eq('car_part_id', params.id)
+        .eq('car_part_id', id)
         .select()
         .single()
 
@@ -105,7 +106,7 @@ export async function PUT(
         .from('user_car_parts')
         .insert({
           user_id: user.id,
-          car_part_id: params.id,
+          car_part_id: id,
           ...validatedData
         })
         .select()

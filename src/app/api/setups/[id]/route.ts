@@ -20,8 +20,9 @@ const updateSetupSchema = z.object({
 // GET /api/setups/[id] - Get a specific setup
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     // Try to get user from Authorization header first, then fall back to cookies
     let user = null
@@ -61,7 +62,7 @@ export async function GET(
 
     // If JWT didn't work, try cookie-based auth
     if (!user) {
-      const supabase = createServerSupabaseClient()
+      const supabase = await createServerSupabaseClient()
       const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
       if (authError || !cookieUser) {
@@ -81,7 +82,7 @@ export async function GET(
     const { data: setup, error: setupError } = await supabaseAdmin
       .from('user_car_setups')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .single()
 
@@ -112,8 +113,9 @@ export async function GET(
 // PUT /api/setups/[id] - Update a specific setup
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     // Try to get user from Authorization header first, then fall back to cookies
     let user = null
@@ -153,7 +155,7 @@ export async function PUT(
 
     // If JWT didn't work, try cookie-based auth
     if (!user) {
-      const supabase = createServerSupabaseClient()
+      const supabase = await createServerSupabaseClient()
       const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
       if (authError || !cookieUser) {
@@ -176,7 +178,7 @@ export async function PUT(
     const { data: setup, error: updateError } = await supabaseAdmin
       .from('user_car_setups')
       .update(validatedData)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .select()
       .single()
@@ -215,8 +217,9 @@ export async function PUT(
 // DELETE /api/setups/[id] - Delete a specific setup
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     // Try to get user from Authorization header first, then fall back to cookies
     let user = null
@@ -256,7 +259,7 @@ export async function DELETE(
 
     // If JWT didn't work, try cookie-based auth
     if (!user) {
-      const supabase = createServerSupabaseClient()
+      const supabase = await createServerSupabaseClient()
       const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser()
 
       if (authError || !cookieUser) {
@@ -276,7 +279,7 @@ export async function DELETE(
     const { error: deleteError } = await supabaseAdmin
       .from('user_car_setups')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
 
     if (deleteError) {

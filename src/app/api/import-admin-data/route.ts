@@ -18,7 +18,7 @@ const importDataSchema = z.object({
 // POST /api/import-admin-data - Import admin data (custom boost names + free boost flags) (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createAuthenticatedSupabaseClient(request)
+    const supabase = await createAuthenticatedSupabaseClient(request)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
