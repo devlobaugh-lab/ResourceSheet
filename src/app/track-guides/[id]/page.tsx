@@ -194,7 +194,7 @@ export default function TrackGuideEditorPage() {
   const { data: availableDrivers = [], isLoading: driversLoading } = useQuery({
     queryKey: ['drivers-for-gp', selectedGpLevel],
     queryFn: async () => {
-      const response = await fetch(`/api/drivers/user?limit=100`, {
+      const response = await fetch(`/api/drivers/user?limit=1000`, {
         headers: await getAuthHeaders(),
         credentials: 'same-origin'
       })
@@ -232,40 +232,6 @@ export default function TrackGuideEditorPage() {
   const { findDriver } = useDriverLookup({
     selectedDriverDetails,
     availableDrivers
-  })
-
-  // start section holding imported code from new page
-  // New - Fetch driver details for selected drivers
-  const { data: selectedDriver1Details = null } = useQuery({
-    queryKey: ['driver-details', formData.driver_1_id],
-    queryFn: async () => {
-      if (!formData.driver_1_id) return null
-      const response = await fetch(`/api/drivers/user?limit=100`, {
-        headers: await getAuthHeaders(),
-        credentials: 'same-origin'
-      })
-      if (!response.ok) return null
-      const result = await response.json()
-      const allDrivers = result.data || []
-      return allDrivers.find((d: DriverView) => d.id === formData.driver_1_id) || null
-    },
-    enabled: !!formData.driver_1_id
-  })
-
-  const { data: selectedDriver2Details = null } = useQuery({
-    queryKey: ['driver-details', formData.driver_2_id],
-    queryFn: async () => {
-      if (!formData.driver_2_id) return null
-      const response = await fetch(`/api/drivers/user?limit=100`, {
-        headers: await getAuthHeaders(),
-        credentials: 'same-origin'
-      })
-      if (!response.ok) return null
-      const result = await response.json()
-      const allDrivers = result.data || []
-      return allDrivers.find((d: DriverView) => d.id === formData.driver_2_id) || null
-    },
-    enabled: !!formData.driver_2_id
   })
 
   // New - Fetch boost details for selected boosts
@@ -342,8 +308,11 @@ export default function TrackGuideEditorPage() {
   // Track form changes to set dirty state
   useEffect(() => {
     if (!trackGuide) {
-      // For new guides, check if form has any data (other than default values)
-      const hasData = Object.values(formData).some(value => {
+      // For new guides, only mark dirty if user-entered fields have data.
+      // Exclude structural fields that are always present on a new guide.
+      const STRUCTURAL_FIELDS = new Set(['track_id', 'gp_level', 'season_id', 'id', 'user_id', 'created_at', 'updated_at', 'tracks'])
+      const hasData = Object.entries(formData).some(([key, value]) => {
+        if (STRUCTURAL_FIELDS.has(key)) return false
         if (value === null || value === undefined) return false
         if (typeof value === 'string') return value.trim() !== ''
         if (Array.isArray(value)) return value.length > 0
@@ -398,6 +367,18 @@ export default function TrackGuideEditorPage() {
   })
 
   const save = useCallback(() => {
+    // Defense-in-depth: never POST an empty new guide
+    if (!trackGuide) {
+      const STRUCTURAL_FIELDS = new Set(['track_id', 'gp_level', 'season_id', 'id', 'user_id', 'created_at', 'updated_at', 'tracks'])
+      const hasUserData = Object.entries(formData).some(([key, value]) => {
+        if (STRUCTURAL_FIELDS.has(key)) return false
+        if (value === null || value === undefined) return false
+        if (typeof value === 'string') return value.trim() !== ''
+        if (Array.isArray(value)) return value.length > 0
+        return true
+      })
+      if (!hasUserData) return
+    }
     saveMutation.mutate({
       ...formData,
       track_id: trackId,
@@ -405,7 +386,7 @@ export default function TrackGuideEditorPage() {
       season_id: activeSeasonId ?? null,
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData, selectedGpLevel, trackId, activeSeasonId])
+  }, [formData, selectedGpLevel, trackId, activeSeasonId, trackGuide])
 
   // Debounced auto-save whenever formData changes
   useEffect(() => {
@@ -608,7 +589,7 @@ export default function TrackGuideEditorPage() {
             {/* Driver 1 Card */}
             <Card 
               className="p-4"
-              backgroundColor={getRarityBackground(selectedDriver1Details?.rarity || 0)}
+              backgroundColor={getRarityBackground(formData.driver_1_id ? findDriver(formData.driver_1_id)?.rarity ?? 0 : 0)}
             >
               <div className="space-y-3">
                 <div>
@@ -666,7 +647,7 @@ export default function TrackGuideEditorPage() {
             {/* Driver 2 Card */}
             <Card 
               className="p-4"
-              backgroundColor={getRarityBackground(selectedDriver2Details?.rarity || 0)}
+              backgroundColor={getRarityBackground(formData.driver_2_id ? findDriver(formData.driver_2_id)?.rarity ?? 0 : 0)}
             >
               <div className="space-y-3">
                 <div>

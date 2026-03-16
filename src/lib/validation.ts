@@ -127,7 +127,7 @@ export const driversFiltersSchema = z.object({
   sort_by: z.enum(['name', 'rarity', 'series', 'level']).default('name'),
   sort_order: z.enum(['asc', 'desc']).default('asc'),
   page: z.union([z.number().int().positive(), z.string().regex(/^\d+$/).transform(val => parseInt(val, 10))]).default(1),
-  limit: z.union([z.number().int().positive().max(100), z.string().regex(/^\d+$/).transform(val => parseInt(val, 10))]).default(20),
+  limit: z.union([z.number().int().positive().max(1000), z.string().regex(/^\d+$/).transform(val => Math.min(parseInt(val, 10), 1000))]).default(20),
 })
 
 // Car Parts schemas
