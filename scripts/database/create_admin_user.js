@@ -92,7 +92,7 @@ async function createAdminUser() {
       )
 
       if (passwordError) {
-        console.error('Error updating password:', passwordError && passwordError.message ? passwordError.message : 'An error occurred while updating the password')
+        console.error('Error updating password: An error occurred while updating the password')
         return
       }
 
