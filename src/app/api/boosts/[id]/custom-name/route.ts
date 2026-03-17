@@ -25,11 +25,21 @@ export async function GET(
   try {
     const boostId = id
 
-    // Get custom name for this boost using admin client (public read access)
-    const { data: customName, error } = await supabaseAdmin
-      .from('boost_custom_names')
+    // Get the boost's icon
+    const { data: boost, error: boostError } = await supabaseAdmin
+      .from('boosts')
+      .select('icon')
+      .eq('id', boostId)
+      .single()
+
+    if (boostError || !boost) {
+      return NextResponse.json({ error: 'Boost not found' }, { status: 404 })
+    }
+
+    const { data: iconData, error } = await supabaseAdmin
+      .from('boost_icon_data')
       .select('custom_name')
-      .eq('boost_id', boostId)
+      .eq('icon_name', boost.icon)
       .single()
 
     if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
@@ -41,7 +51,7 @@ export async function GET(
     }
 
     return NextResponse.json({
-      custom_name: customName?.custom_name || null
+      custom_name: iconData?.custom_name || null
     })
   } catch (error) {
     console.error('Unexpected error:', error)
@@ -121,10 +131,10 @@ export async function PUT(
       )
     }
 
-    // Verify boost exists using admin client
+    // Verify boost exists and get its icon
     const { data: boost, error: boostError } = await supabaseAdmin
       .from('boosts')
-      .select('id')
+      .select('id, icon')
       .eq('id', boostId)
       .single()
 
@@ -153,12 +163,12 @@ export async function PUT(
     const { custom_name } = validation.data
     const trimmedName = custom_name.trim()
 
-    // Check for duplicate names across all boosts (excluding current boost)
-    const { data: existingName, error: duplicateError } = await supabaseAdmin
-      .from('boost_custom_names')
+    // Check for duplicate names across all icon data (excluding current boost's icon)
+    const { data: existingName } = await supabaseAdmin
+      .from('boost_icon_data')
       .select('id')
       .eq('custom_name', trimmedName)
-      .neq('boost_id', boostId)
+      .neq('icon_name', boost.icon)
       .single()
 
     if (existingName) {
@@ -168,14 +178,14 @@ export async function PUT(
       )
     }
 
-    // Upsert the custom name (insert or update) using admin client
+    // Upsert by icon_name
     const { error: upsertError } = await supabaseAdmin
-      .from('boost_custom_names')
+      .from('boost_icon_data')
       .upsert({
-        boost_id: boostId,
+        icon_name: boost.icon,
         custom_name: trimmedName
       }, {
-        onConflict: 'boost_id'
+        onConflict: 'icon_name'
       })
 
     if (upsertError) {
@@ -268,11 +278,22 @@ export async function DELETE(
       )
     }
 
-    // Delete the custom name using admin client
+    // Get the boost's icon
+    const { data: boost, error: boostLookupError } = await supabaseAdmin
+      .from('boosts')
+      .select('icon')
+      .eq('id', boostId)
+      .single()
+
+    if (boostLookupError || !boost) {
+      return NextResponse.json({ error: 'Boost not found' }, { status: 404 })
+    }
+
+    // Clear the custom name from boost_icon_data (set to null, preserve is_free)
     const { error: deleteError } = await supabaseAdmin
-      .from('boost_custom_names')
-      .delete()
-      .eq('boost_id', boostId)
+      .from('boost_icon_data')
+      .update({ custom_name: null })
+      .eq('icon_name', boost.icon)
 
     if (deleteError) {
       console.error('Error deleting boost custom name:', deleteError)

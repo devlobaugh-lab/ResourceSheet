@@ -78,43 +78,27 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get all custom boost names
-    const { data: customNames, error: customNamesError } = await supabaseAdmin
-      .from('boost_custom_names')
-      .select('boost_id, custom_name')
-      .order('boost_id', { ascending: true })
+    // Get boost icon data (custom names + is_free)
+    const { data: boostIconData, error: boostIconDataError } = await supabaseAdmin
+      .from('boost_icon_data')
+      .select('icon_name, custom_name, is_free')
+      .order('icon_name', { ascending: true })
 
-    if (customNamesError) {
+    if (boostIconDataError) {
       return NextResponse.json(
-        { error: { code: 'DATABASE_ERROR', message: customNamesError.message } },
-        { status: 500 }
-      )
-    }
-
-    // Get all free boost flags
-    const { data: freeBoosts, error: freeBoostsError } = await supabaseAdmin
-      .from('boosts')
-      .select('id, name, is_free')
-      .eq('is_free', true)
-      .order('id', { ascending: true })
-
-    if (freeBoostsError) {
-      return NextResponse.json(
-        { error: { code: 'DATABASE_ERROR', message: freeBoostsError.message } },
+        { error: { code: 'DATABASE_ERROR', message: boostIconDataError.message } },
         { status: 500 }
       )
     }
 
     console.log('Export admin data summary:', {
-      customNamesCount: customNames?.length || 0,
-      freeBoostsCount: freeBoosts?.length || 0
+      boostIconDataCount: boostIconData?.length || 0
     })
 
     // Return the data
     const exportData = {
       exportedAt: new Date().toISOString(),
-      boostCustomNames: customNames || [],
-      freeBoosts: freeBoosts || []
+      boostIconData: boostIconData || []
     }
 
     return NextResponse.json(exportData)

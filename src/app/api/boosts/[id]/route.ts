@@ -236,27 +236,40 @@ export async function PATCH(
     const body = await request.json()
     const validatedData = updateBoostSchema.parse(body)
 
-    // Update the boost's is_free field
-    const { data, error } = await supabaseAdmin
+    // Get the boost's icon to key into boost_icon_data
+    const { data: boost, error: boostError } = await supabaseAdmin
       .from('boosts')
-      .update({
-        is_free: validatedData.is_free,
-        updated_at: new Date().toISOString()
-      })
+      .select('icon')
       .eq('id', id)
-      .select()
       .single()
 
+    if (boostError || !boost) {
+      return NextResponse.json(
+        { error: { code: 'NOT_FOUND', message: 'Boost not found' } },
+        { status: 404 }
+      )
+    }
+
+    // Upsert is_free into boost_icon_data keyed by icon_name
+    const { error } = await supabaseAdmin
+      .from('boost_icon_data')
+      .upsert({
+        icon_name: boost.icon,
+        is_free: validatedData.is_free,
+      }, {
+        onConflict: 'icon_name'
+      })
+
     if (error) {
-      console.error('Error updating boost:', error)
+      console.error('Error updating boost is_free:', error)
       return NextResponse.json(
         { error: { code: 'DATABASE_ERROR', message: error.message } },
         { status: 500 }
       )
     }
 
-    console.log('✅ Boost updated successfully:', data.id)
-    return NextResponse.json({ data })
+    console.log('✅ Boost is_free updated successfully for icon:', boost.icon)
+    return NextResponse.json({ data: { id, is_free: validatedData.is_free } })
 
   } catch (error) {
     if (error instanceof z.ZodError) {

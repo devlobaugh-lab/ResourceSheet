@@ -5,14 +5,10 @@ import { createAuthenticatedSupabaseClient } from '@/lib/supabase'
 
 // Validation schema for import data
 const importDataSchema = z.object({
-  boostCustomNames: z.array(z.object({
-    boost_id: z.string(),
-    custom_name: z.string()
-  })).optional(),
-  freeBoosts: z.array(z.object({
-    id: z.string(),
-    name: z.string(),
-    is_free: z.boolean()
+  boostIconData: z.array(z.object({
+    icon_name: z.string(),
+    custom_name: z.string().nullable().optional(),
+    is_free: z.boolean().optional()
   })).optional()
 })
 
@@ -46,101 +42,33 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = importDataSchema.parse(body)
 
-    const customNamesCount = validatedData.boostCustomNames?.length || 0
-    const freeBoostsCount = validatedData.freeBoosts?.length || 0
+    const boostIconDataCount = validatedData.boostIconData?.length || 0
 
-    console.log('Import admin data received:', {
-      customNamesCount,
-      freeBoostsCount
-    })
+    console.log('Import admin data received:', { boostIconDataCount })
 
-    // Handle custom boost names import
-    if (validatedData.boostCustomNames && validatedData.boostCustomNames.length > 0) {
-      // Validate boost IDs exist
-      const boostIds = validatedData.boostCustomNames.map(item => item.boost_id)
-      const { data: existingBoosts, error: boostsError } = await supabaseAdmin
-        .from('boosts')
-        .select('id')
-        .in('id', boostIds)
-
-      if (boostsError) {
-        return NextResponse.json(
-          { error: { code: 'VALIDATION_ERROR', message: 'Failed to validate boost IDs for custom names' } },
-          { status: 400 }
-        )
+    // Handle boost icon data import (upsert by icon_name)
+    if (validatedData.boostIconData && validatedData.boostIconData.length > 0) {
+      for (const item of validatedData.boostIconData) {
+        const { data: existing } = await supabaseAdmin
+          .from('boost_icon_data').select('id').eq('icon_name', item.icon_name).single()
+        if (existing) {
+          await supabaseAdmin.from('boost_icon_data')
+            .update({ custom_name: item.custom_name ?? null, is_free: item.is_free ?? false })
+            .eq('id', existing.id)
+        } else {
+          await supabaseAdmin.from('boost_icon_data').insert({
+            icon_name: item.icon_name,
+            custom_name: item.custom_name ?? null,
+            is_free: item.is_free ?? false
+          })
+        }
       }
-
-      const existingBoostIds = new Set((existingBoosts || []).map(item => item.id))
-      const invalidIds = boostIds.filter(id => !existingBoostIds.has(id))
-
-      if (invalidIds.length > 0) {
-        return NextResponse.json(
-          { error: { code: 'VALIDATION_ERROR', message: `Invalid boost IDs for custom names: ${invalidIds.join(', ')}` } },
-          { status: 400 }
-        )
-      }
-
-      // Delete existing custom names and insert new ones
-      console.log('Deleting existing custom names for boosts:', boostIds)
-      await supabaseAdmin
-        .from('boost_custom_names')
-        .delete()
-        .in('boost_id', boostIds)
-
-      const customNamesToInsert = validatedData.boostCustomNames.map(item => ({
-        boost_id: item.boost_id,
-        custom_name: item.custom_name
-      }))
-
-      console.log('Inserting custom names:', customNamesToInsert.length)
-      const { error: insertError } = await supabaseAdmin
-        .from('boost_custom_names')
-        .insert(customNamesToInsert)
-
-      if (insertError) {
-        console.error('Custom names insert error:', insertError)
-        return NextResponse.json(
-          { error: { code: 'DATABASE_ERROR', message: 'Failed to import custom boost names' } },
-          { status: 500 }
-        )
-      }
-      console.log('Successfully imported custom boost names')
-    }
-
-    // Handle free boost flags import
-    if (validatedData.freeBoosts && validatedData.freeBoosts.length > 0) {
-      // First, set all boosts to not free
-      console.log('Resetting all boost free flags to false')
-      await supabaseAdmin
-        .from('boosts')
-        .update({ is_free: false })
-        .neq('id', '00000000-0000-0000-0000-000000000000') // Update all except non-existent ID
-
-      // Then set specified boosts to free
-      const freeBoostIds = validatedData.freeBoosts.map(item => item.id)
-      console.log('Setting free boosts:', freeBoostIds)
-
-      const { error: freeBoostsError } = await supabaseAdmin
-        .from('boosts')
-        .update({ is_free: true })
-        .in('id', freeBoostIds)
-
-      if (freeBoostsError) {
-        console.error('Free boosts update error:', freeBoostsError)
-        return NextResponse.json(
-          { error: { code: 'DATABASE_ERROR', message: 'Failed to import free boost flags' } },
-          { status: 500 }
-        )
-      }
-      console.log('Successfully imported free boost flags')
+      console.log('Successfully imported boost icon data')
     }
 
     return NextResponse.json({
       message: 'Admin data imported successfully',
-      imported: {
-        customNames: customNamesCount,
-        freeBoosts: freeBoostsCount
-      }
+      imported: { boostIconData: boostIconDataCount }
     })
 
   } catch (error) {

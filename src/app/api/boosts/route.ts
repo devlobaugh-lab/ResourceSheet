@@ -63,6 +63,13 @@ export async function GET(request: NextRequest) {
 
     const userId = user?.id
 
+    // Fetch icon data (custom names + is_free)
+    const { data: iconData } = await supabaseAdmin
+      .from('boost_icon_data')
+      .select('icon_name, custom_name, is_free')
+
+    const iconDataMap = new Map(iconData?.map(d => [d.icon_name, d]) ?? [])
+
     // Build query for boosts
     let query = supabaseAdmin
       .from('boosts')
@@ -88,7 +95,21 @@ export async function GET(request: NextRequest) {
     }
 
     if (isFree !== null) {
-      query = query.eq('is_free', isFree === 'true')
+      const freeIcons = iconData?.filter(d => d.is_free).map(d => d.icon_name) ?? []
+      if (isFree === 'true') {
+        if (freeIcons.length === 0) {
+          // No free boosts exist, return empty result
+          return NextResponse.json({
+            data: [],
+            pagination: { page: 1, limit: Number(searchParams.get('limit')) || 20, total: 0, totalPages: 0 }
+          })
+        }
+        query = query.in('icon', freeIcons)
+      } else {
+        if (freeIcons.length > 0) {
+          query = query.not('icon', 'in', `(${freeIcons.join(',')})`)
+        }
+      }
     }
 
     const { data: boosts, error: boostsError, count } = await query
@@ -100,37 +121,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch custom names (temporarily global until migration runs)
-    let boostsWithCustomNames = boosts || []
-
-    console.log('🔍 Boosts API fetching custom names (global mode)')
-    const { data: customNames, error: customNamesError } = await supabaseAdmin
-      .from('boost_custom_names')
-      .select('boost_id, custom_name')
-
-    if (customNamesError) {
-      console.error('❌ Custom names fetch error:', customNamesError)
-    } else if (customNames && customNames.length > 0) {
-      console.log('✅ Found custom names:', customNames.length)
-
-      // Create a map for quick lookup
-      const customNamesMap = new Map<string, string>()
-      customNames.forEach(cn => {
-        customNamesMap.set(cn.boost_id, cn.custom_name)
-      })
-
-      // Merge custom names with boost data
-      boostsWithCustomNames = boosts.map(boost => ({
-        ...boost,
-        boost_custom_names: {
-          custom_name: customNamesMap.get(boost.id) || null
-        }
-      }))
-
-      console.log('📦 Merged custom names into boosts data')
-    } else {
-      console.log('⚠️ No custom names found in database')
-    }
+    // Merge icon data into boosts
+    const boostsWithCustomNames = (boosts || []).map(boost => ({
+      ...boost,
+      boost_custom_names: {
+        custom_name: iconDataMap.get(boost.icon)?.custom_name ?? null
+      },
+      is_free: iconDataMap.get(boost.icon)?.is_free ?? false
+    }))
 
     // Apply pagination
     const page = Number(searchParams.get('page')) || 1
