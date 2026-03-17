@@ -48,7 +48,28 @@ export const supabase = createClient(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: true,
+      storage: {
+        getItem: (key: string) => {
+          if (typeof window === 'undefined') return null
+          const cookies = document.cookie.split(';')
+          for (const cookie of cookies) {
+            const [cookieKey, cookieValue] = cookie.trim().split('=')
+            if (cookieKey === key) return decodeURIComponent(cookieValue)
+          }
+          return window.localStorage.getItem(key)
+        },
+        setItem: (key: string, value: string) => {
+          if (typeof window === 'undefined') return
+          document.cookie = `${key}=${encodeURIComponent(value)}; path=/; SameSite=Lax`
+          window.localStorage.setItem(key, value)
+        },
+        removeItem: (key: string) => {
+          if (typeof window === 'undefined') return
+          document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+          window.localStorage.removeItem(key)
+        }
+      }
     }
   }
 )

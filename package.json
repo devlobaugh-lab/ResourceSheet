@@ -18,7 +18,8 @@
     "db:seed:seasons": "node scripts/database/seed_seasons.js",
     "db:seed:car-parts": "node scripts/database/seed_car_parts.js",
     "db:seed:drivers": "node scripts/database/seed_drivers.js",
-    "db:seed:boosts": "node scripts/database/seed_boosts.js"
+    "db:seed:boosts": "node scripts/database/seed_boosts.js",
+    "db:reset:prod": "node scripts/database/reset_prod_database.js"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
