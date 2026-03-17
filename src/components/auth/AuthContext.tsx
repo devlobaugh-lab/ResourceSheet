@@ -1,50 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { User, Session } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-
-// Client-side supabase client with cookie-based storage configuration
-const supabase = createClient(
-  supabaseUrl,
-  supabaseAnonKey,
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storage: {
-        getItem: (key: string) => {
-          if (typeof window === 'undefined') return null
-          // Try to get from cookies first, then localStorage as fallback
-          const cookies = document.cookie.split(';')
-          for (let cookie of cookies) {
-            const [cookieKey, cookieValue] = cookie.trim().split('=')
-            if (cookieKey === key) {
-              return decodeURIComponent(cookieValue)
-            }
-          }
-          return window.localStorage.getItem(key)
-        },
-        setItem: (key: string, value: string) => {
-          if (typeof window === 'undefined') return
-          // Set in both cookies and localStorage for compatibility
-          document.cookie = `${key}=${encodeURIComponent(value)}; path=/; SameSite=Lax`
-          window.localStorage.setItem(key, value)
-        },
-        removeItem: (key: string) => {
-          if (typeof window === 'undefined') return
-          // Remove from both cookies and localStorage
-          document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
-          window.localStorage.removeItem(key)
-        }
-      }
-    }
-  }
-)
+import { supabase } from '@/lib/supabase';
 
 interface AuthContextType {
   user: User | null;

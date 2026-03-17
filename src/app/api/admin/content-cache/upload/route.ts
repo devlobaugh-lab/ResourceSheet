@@ -100,6 +100,13 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      if (Object.keys(seasonIdMap).length === 0) {
+        return NextResponse.json(
+          { error: { code: 'VALIDATION_ERROR', message: 'No seasons are configured. Please add at least one season before importing content cache data.' } },
+          { status: 400 }
+        )
+      }
+
       if (requestedNumbers.length > 0) {
         // Validate that all requested series numbers exist in DB
         const invalidNums = requestedNumbers.filter(n => !(n in seasonIdMap))
