@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { supabaseAdmin, createAuthenticatedSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { createAuthenticatedSupabaseClient } from '@/lib/supabase'
 import { createCatalogItemSchema, createBoostSchema, createSeasonSchema } from '@/lib/validation'
 import { preprocessDrivers } from '@/lib/preprocessing'
 

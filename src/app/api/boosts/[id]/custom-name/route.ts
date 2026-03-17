@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { createServerSupabaseClient } from '@/lib/supabase'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
 

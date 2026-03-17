@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient, supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { createServerSupabaseClient } from '@/lib/supabase'
 import { createServerClient } from '@supabase/ssr'
 import { Track, Inserts, Updates } from '@/types/database'
 

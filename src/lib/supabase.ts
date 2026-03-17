@@ -1,6 +1,6 @@
 /**
  * Supabase client configuration and initialization
- * Provides three different client types for different use cases
+ * Provides browser and server client types
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -8,28 +8,6 @@ import { createServerClient } from '@supabase/ssr'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key'
-
-/**
- * Server-side admin client with full privileges
- * Uses the service role key for unrestricted database access
- * Should only be used in server-side code (API routes, server components)
- *
- * @example
- * const { data, error } = await supabaseAdmin
- *   .from('users')
- *   .select('*')
- */
-export const supabaseAdmin = createClient(
-  supabaseUrl,
-  serviceRoleKey,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-)
 
 /**
  * Client-side public client with user-level privileges

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@supabase/supabase-js'
-import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 const updateUserDriverSchema = z.object({
   level: z.number().min(0).optional(),

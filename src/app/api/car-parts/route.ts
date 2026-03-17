@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { supabaseAdmin, createServerSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { createServerSupabaseClient } from '@/lib/supabase'
 import { carPartsFiltersSchema } from '@/lib/validation'
 
 // GET /api/car-parts - Get all car parts with optional filtering
