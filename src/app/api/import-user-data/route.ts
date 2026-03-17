@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, createAuthenticatedSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { createAuthenticatedSupabaseClient } from '@/lib/supabase'
 
 // POST /api/import-user-data - Import user's data (merge strategy)
 export async function POST(request: NextRequest) {

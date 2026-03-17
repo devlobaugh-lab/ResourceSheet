@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, createAuthenticatedSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { createAuthenticatedSupabaseClient } from '@/lib/supabase'
 
 // GET /api/export-user-data - Export ALL current user's data
 export async function GET(request: NextRequest) {
