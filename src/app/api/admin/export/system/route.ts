@@ -24,8 +24,7 @@ export async function GET(request: NextRequest) {
 
     const { data: seasons } = await supabaseAdmin.from('seasons').select('*').order('created_at')
     const { data: trackNameAliases } = await supabaseAdmin.from('track_name_aliases').select('id, system_name, display_name')
-    const { data: boostOverrides } = await supabaseAdmin.from('boosts').select('id, is_free')
-    const { data: boostCustomNames } = await supabaseAdmin.from('boost_custom_names').select('id, boost_id, custom_name, created_at, updated_at')
+    const { data: boostIconData } = await supabaseAdmin.from('boost_icon_data').select('icon_name, custom_name, is_free')
     const { data: profiles } = await supabaseAdmin.from('profiles').select('id, username, is_admin, is_active')
     const { data: authUsersData } = await supabaseAdmin.auth.admin.listUsers()
     const authEmailById = new Map((authUsersData?.users ?? []).map(u => [u.id, u.email]))
@@ -43,8 +42,7 @@ export async function GET(request: NextRequest) {
       data: {
         seasons: seasons || [],
         trackNameAliases: trackNameAliases || [],
-        boostOverrides: boostOverrides || [],
-        boostCustomNames: boostCustomNames || [],
+        boostIconData: boostIconData || [],
         users,
       }
     })

@@ -45,7 +45,7 @@ car_parts        name text, rarity int, series int, season_id uuid?, icon text?,
                  stats_per_level jsonb?
                  [API also attaches collection_theme from collections table, same as drivers]
 
-boosts           name text, icon text?, boost_stats jsonb?, is_free bool
+boosts           name text, icon text?, boost_stats jsonb?
 
 seasons          name text, is_active bool
 
@@ -60,7 +60,10 @@ track_seasons    track_id text FK tracks ON DELETE CASCADE,
 
 collections      (referenced by drivers/car_parts via collection_id)
 
-boost_custom_names   boost_id uuid FK boosts, custom_name text
+boost_icon_data      icon_name text UNIQUE, custom_name text?, is_free bool
+                     Links by icon_name (= boosts.icon) — no UUID FK, so data can be
+                     imported before boosts are seeded. Replaces old boost_custom_names
+                     table and the former boosts.is_free column.
 
 series_data          index int, entry_fee int, win_flags int, loss_flags int,
                      win_rep int, flags_to_unlock int, max_flags int,
@@ -141,7 +144,7 @@ Always import from `@/types/database`. Key named exports:
 
 ```typescript
 // Table row types
-Season, Profile, Boost, BoostCustomName, UserBoost
+Season, Profile, Boost, BoostIconData, UserBoost
 Driver, CarPart, UserDriver, UserCarPart
 Track, UserTrackGuide, UserTrackGuideDriver
 UserGpGuide, UserGpGuideTrack, UserGpGuideResult
@@ -479,8 +482,7 @@ Export format (version `1.1`):
   "data": {
     "seasons": [...],
     "trackNameAliases": [...],
-    "boostOverrides": [...],
-    "boostCustomNames": [...],
+    "boostIconData": [{ "icon_name": "...", "custom_name": "...", "is_free": false }],
     "users": [
       { "email": "...", "username": "...", "is_admin": false, "is_active": true }
     ]

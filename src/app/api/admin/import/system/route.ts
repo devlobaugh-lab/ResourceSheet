@@ -48,8 +48,7 @@ export async function POST(request: NextRequest) {
     const results = {
       seasons: { imported: 0, updated: 0 },
       trackNameAliases: { imported: 0, updated: 0 },
-      boostCustomNames: { imported: 0, updated: 0 },
-      boosts: { updated: 0 },
+      boostIconData: { imported: 0, updated: 0 },
       users: { imported: 0, updated: 0 },
       errors: [] as string[]
     }
@@ -89,35 +88,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // boost_custom_names: upsert by boost_id
-    if (importData.boostCustomNames?.length) {
-      for (const item of importData.boostCustomNames) {
+    // boost_icon_data: upsert by icon_name
+    if (importData.boostIconData?.length) {
+      for (const item of importData.boostIconData) {
         try {
           const { data: existing } = await supabaseAdmin
-            .from('boost_custom_names').select('id').eq('boost_id', item.boost_id).single()
+            .from('boost_icon_data').select('id').eq('icon_name', item.icon_name).single()
           if (existing) {
-            await supabaseAdmin.from('boost_custom_names').update({ custom_name: item.custom_name }).eq('id', existing.id)
-            results.boostCustomNames.updated++
+            await supabaseAdmin.from('boost_icon_data').update({ custom_name: item.custom_name, is_free: item.is_free }).eq('id', existing.id)
+            results.boostIconData.updated++
           } else {
-            const { id, user_id, ...insertData } = item
-            await supabaseAdmin.from('boost_custom_names').insert(insertData)
-            results.boostCustomNames.imported++
+            await supabaseAdmin.from('boost_icon_data').insert({ icon_name: item.icon_name, custom_name: item.custom_name, is_free: item.is_free })
+            results.boostIconData.imported++
           }
-        } catch (e) { results.errors.push(`boost_custom_names: ${String(e)}`) }
-      }
-    }
-
-    // boosts: update is_free only (boostOverrides key from new format, boosts key from old format)
-    const boostItems = importData.boostOverrides || importData.boosts
-    if (boostItems?.length) {
-      for (const item of boostItems) {
-        try {
-          const { data: existing } = await supabaseAdmin.from('boosts').select('id').eq('id', item.id).single()
-          if (existing) {
-            await supabaseAdmin.from('boosts').update({ is_free: item.is_free }).eq('id', item.id)
-            results.boosts.updated++
-          }
-        } catch (e) { results.errors.push(`boosts: ${String(e)}`) }
+        } catch (e) { results.errors.push(`boost_icon_data: ${String(e)}`) }
       }
     }
 

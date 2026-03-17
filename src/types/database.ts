@@ -85,7 +85,6 @@ export interface Database {
           name: string
           icon: string | null
           boost_stats: BoostStats
-          is_free: boolean
           created_at: string
           updated_at: string
         }
@@ -94,7 +93,6 @@ export interface Database {
           name: string
           icon?: string | null
           boost_stats?: BoostStats
-          is_free?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -103,7 +101,6 @@ export interface Database {
           name?: string
           icon?: string | null
           boost_stats?: BoostStats
-          is_free?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -307,25 +304,28 @@ export interface Database {
           updated_at?: string
         }
       }
-      boost_custom_names: {
+      boost_icon_data: {
         Row: {
           id: string
-          boost_id: string
-          custom_name: string
+          icon_name: string
+          custom_name: string | null
+          is_free: boolean
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          boost_id: string
-          custom_name: string
+          icon_name: string
+          custom_name?: string | null
+          is_free?: boolean
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          boost_id?: string
-          custom_name?: string
+          icon_name?: string
+          custom_name?: string | null
+          is_free?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -748,7 +748,7 @@ export type Updates<T extends keyof Database['public']['Tables']> = Database['pu
 export type Season = Tables<'seasons'>
 export type Profile = Tables<'profiles'>
 export type Boost = Tables<'boosts'>
-export type BoostCustomName = Tables<'boost_custom_names'>
+export type BoostIconData = Tables<'boost_icon_data'>
 export type UserBoost = Tables<'user_boosts'>
 export type Driver = Tables<'drivers'>
 export type CarPart = Tables<'car_parts'>
@@ -866,7 +866,7 @@ export interface BoostView {
   boost_stats: any | null
   is_free: boolean
 
-  // From boost_custom_names (optional custom override)
+  // From boost_icon_data (optional custom override)
   boost_custom_names?: {
     custom_name?: string | null
   }
@@ -878,9 +878,13 @@ export interface BoostView {
   is_owned: boolean // derived: level > 0
 }
 
-// Extended Boost type for API responses that include custom names from left join
+// Extended Boost type for API responses that include custom names and is_free from boost_icon_data
 export interface BoostWithCustomName extends Tables<'boosts'> {
   custom_name?: string | null
+  is_free?: boolean
+  boost_custom_names?: {
+    custom_name?: string | null
+  }
 }
 
 // User Car Setup types
