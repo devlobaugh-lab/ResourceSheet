@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { supabaseAdmin, createServerSupabaseClient, createAuthenticatedSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { createServerSupabaseClient, createAuthenticatedSupabaseClient } from '@/lib/supabase'
 
 const updateTrackSlotSchema = z.object({
   track_id: z.string().uuid().nullable().optional(),

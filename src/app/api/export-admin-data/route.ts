@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 // GET /api/export-admin-data - Export admin data (custom boost names + free boost flags) (admin only)
 export async function GET(request: NextRequest) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 // GET /api/ai-loadouts/track/[trackName]/[difficulty] - Get loadout rows for specific track/difficulty
 export async function GET(

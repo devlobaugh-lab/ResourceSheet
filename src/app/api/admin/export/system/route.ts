@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, createAuthenticatedSupabaseClient } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { createAuthenticatedSupabaseClient } from '@/lib/supabase'
 
 // GET /api/admin/export/system - Export admin-managed system configuration
 export async function GET(request: NextRequest) {
