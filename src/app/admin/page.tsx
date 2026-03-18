@@ -22,6 +22,7 @@ export default function AdminPage() {
   const [exportUsersLoading, setExportUsersLoading] = useState(false);
   const [importUsersLoading, setImportUsersLoading] = useState(false);
   const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [importResults, setImportResults] = useState<Record<string, { imported: number; updated: number }> | null>(null);
 
   // File input refs
   const systemFileInputRef = useRef<HTMLInputElement>(null);
@@ -116,6 +117,12 @@ export default function AdminPage() {
 
       const errors: string[] = result.results?.errors ?? [];
       setImportErrors(errors);
+
+      const { errors: _errors, ...sectionResults } = result.results ?? {};
+      const hasCounts = Object.values(sectionResults as Record<string, { imported: number; updated: number }>)
+        .some(s => s.imported > 0 || s.updated > 0);
+      setImportResults(hasCounts ? sectionResults : null);
+
       if (errors.length > 0) {
         toast.addToast(`Import completed with ${errors.length} error${errors.length === 1 ? '' : 's'}`, 'warning');
       } else {
@@ -302,6 +309,28 @@ export default function AdminPage() {
               </div>
             </Card>
           </div>
+
+          {/* Import Results */}
+          {importResults && (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-green-800">Import results</h3>
+                <button
+                  onClick={() => setImportResults(null)}
+                  className="text-xs text-green-600 hover:text-green-800 underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+              <ul className="text-xs text-green-700 space-y-1 font-mono">
+                {Object.entries(importResults).map(([section, counts]) => (
+                  <li key={section}>
+                    {section}: {counts.imported} imported, {counts.updated} updated
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Import Errors */}
           {importErrors.length > 0 && (
