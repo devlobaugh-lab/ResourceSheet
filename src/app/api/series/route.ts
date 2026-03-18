@@ -191,6 +191,7 @@ export async function GET(request: NextRequest) {
       const commonStat = findCommonTrackStat(seriesTracks)
 
       return {
+        id: series.id,
         index: series.index,
         entry_fee: series.entry_fee,
         win_flags: series.win_flags,

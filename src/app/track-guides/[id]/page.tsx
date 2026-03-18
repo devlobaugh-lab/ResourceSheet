@@ -123,7 +123,7 @@ export default function TrackGuideEditorPage() {
   }, [])
 
   // Fetch user's saved car setups
-  const { data: userSetupsResponse } = useUserCarSetups()
+  const { data: userSetupsResponse } = useUserCarSetups(activeSeasonId ? { season_id: activeSeasonId } : undefined)
   const userSetups = userSetupsResponse?.data || []
 
   // Fetch car parts for setup preview
@@ -192,9 +192,11 @@ export default function TrackGuideEditorPage() {
 
   // Fetch drivers for display and selection
   const { data: availableDrivers = [], isLoading: driversLoading } = useQuery({
-    queryKey: ['drivers-for-gp', selectedGpLevel],
+    queryKey: ['drivers-for-gp', selectedGpLevel, activeSeasonId],
     queryFn: async () => {
-      const response = await fetch(`/api/drivers/user?limit=1000`, {
+      const params = new URLSearchParams({ limit: '1000' })
+      if (activeSeasonId) params.set('season_id', activeSeasonId)
+      const response = await fetch(`/api/drivers/user?${params}`, {
         headers: await getAuthHeaders(),
         credentials: 'same-origin'
       })

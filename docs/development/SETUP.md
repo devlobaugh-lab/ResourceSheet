@@ -74,6 +74,8 @@ App: http://localhost:3000 — Supabase Studio: http://127.0.0.1:54323
 | `npm run db:reset` | Reset DB and apply migrations only (no admin user) |
 | `npm run db:push` | Apply pending migrations without resetting |
 | `npm run db:generate` | Regenerate `src/types/database.types.ts` from local schema |
+| `npm run db:reset:prod` | Reset DB and apply migrations to Prod |
+
 | `supabase start` | Start local Supabase stack |
 | `supabase stop` | Stop local Supabase stack |
 | `supabase status` | Show running URLs and auth keys |
@@ -116,15 +118,7 @@ Data imported via the app's admin import UI will need to be re-imported after th
 
 ## Seeding catalog data
 
-`npm run db:setup` only creates the admin user and baseline schema. Catalog data (drivers, car parts, boosts) is imported through the app's **Admin → Import** UI using backup files.
-
-The following `package.json` seed scripts are stubs and do not currently have backing files:
-
-- `npm run db:seed:car-parts`
-- `npm run db:seed:drivers`
-- `npm run db:seed:boosts`
-
-Use `npm run db:seed:seasons` to seed season data from the script at `scripts/database/seed_seasons.js`.
+All seeding should be done by adding a Seasion (or importing a system backup) and then importing a content_cache file
 
 ---
 

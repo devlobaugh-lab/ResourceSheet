@@ -22,11 +22,14 @@ npm run db:reset     # Reset DB and re-run all migrations
 npm run db:setup     # Reset DB and create admin user in one step
 npm run db:generate  # Regenerate TypeScript types from local schema -> src/types/database.types.ts
 
-# Seeding
-npm run db:seed:seasons    # Seed seasons data
-npm run db:seed:car-parts  # Seed car parts
-npm run db:seed:drivers    # Seed drivers
-npm run db:seed:boosts     # Seed boosts
+# Game data — use content cache import, not seed scripts
+# Seasons, drivers, car parts, and boosts are populated via the admin
+# content cache import UI (/admin → Content Cache). seed.sql is intentionally
+# empty; the db:seed:* scripts below exist but are not the intended workflow.
+npm run db:seed:seasons    # (legacy) seed seasons
+npm run db:seed:car-parts  # (legacy) seed car parts
+npm run db:seed:drivers    # (legacy) seed drivers
+npm run db:seed:boosts     # (legacy) seed boosts
 ```
 
 ## Environment Variables

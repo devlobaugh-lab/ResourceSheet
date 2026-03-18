@@ -18,7 +18,7 @@ function AuthenticatedDriversPage() {
   const { activeSeasonId } = useSeason()
   const { data: driversResponse, isLoading, error } = useUserDrivers({
     page: 1,
-    limit: 100,
+    limit: 1000,
     ...(activeSeasonId ? { season_id: activeSeasonId } : {}),
   })
 

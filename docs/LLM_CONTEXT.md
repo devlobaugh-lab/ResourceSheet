@@ -45,7 +45,7 @@ car_parts        name text, rarity int, series int, season_id uuid?, icon text?,
                  stats_per_level jsonb?
                  [API also attaches collection_theme from collections table, same as drivers]
 
-boosts           name text, icon text?, boost_stats jsonb?, is_free bool
+boosts           name text, icon text?, boost_stats jsonb?
 
 seasons          name text, is_active bool
 
@@ -60,7 +60,10 @@ track_seasons    track_id text FK tracks ON DELETE CASCADE,
 
 collections      (referenced by drivers/car_parts via collection_id)
 
-boost_custom_names   boost_id uuid FK boosts, custom_name text
+boost_icon_data      icon_name text UNIQUE, custom_name text?, is_free bool
+                     Links by icon_name (= boosts.icon) — no UUID FK, so data can be
+                     imported before boosts are seeded. Replaces old boost_custom_names
+                     table and the former boosts.is_free column.
 
 series_data          index int, entry_fee int, win_flags int, loss_flags int,
                      win_rep int, flags_to_unlock int, max_flags int,
@@ -141,7 +144,7 @@ Always import from `@/types/database`. Key named exports:
 
 ```typescript
 // Table row types
-Season, Profile, Boost, BoostCustomName, UserBoost
+Season, Profile, Boost, BoostIconData, UserBoost
 Driver, CarPart, UserDriver, UserCarPart
 Track, UserTrackGuide, UserTrackGuideDriver
 UserGpGuide, UserGpGuideTrack, UserGpGuideResult
@@ -479,8 +482,7 @@ Export format (version `1.1`):
   "data": {
     "seasons": [...],
     "trackNameAliases": [...],
-    "boostOverrides": [...],
-    "boostCustomNames": [...],
+    "boostIconData": [{ "icon_name": "...", "custom_name": "...", "is_free": false }],
     "users": [
       { "email": "...", "username": "...", "is_admin": false, "is_active": true }
     ]
@@ -527,9 +529,14 @@ Processes `content_cache.json` from the game. Import behaviour by table:
 
 | Table | Strategy | Notes |
 |---|---|---|
-| `drivers`, `car_parts`, `boosts`, `collections` | Change-detection upsert | New items inserted; existing items updated only if `allow_modifications=true` |
+| `drivers`, `car_parts` | Change-detection upsert | New items inserted; `season_id` **always updated** (force field) regardless of `allow_modifications`; all other fields updated only if `allow_modifications=true` |
+| `boosts`, `collections` | Change-detection upsert | New items inserted; existing items updated only if `allow_modifications=true` |
 | `tracks` | Upsert by `id` | **Never deletes rows.** Existing tracks are updated in-place; new tracks are inserted. Season membership is written separately to `track_seasons` (upsert on `track_id,season_id`). User data linked to existing track IDs is never disrupted. |
 | `series_data`, `ai_track_loadouts` | Season-scoped full refresh (delete rows for target season + insert) | Tagged with `season_id`; delete/insert is scoped to the imported season so other seasons' data is preserved |
+
+**Season resolution during import:** The route builds a `seasonIdMap` (season number → UUID) from the `seasons` table, ordered by `is_active DESC, created_at DESC`. When duplicate season names exist (e.g. a seeded row and an admin-created row both named "Season 6"), the active/most-recently-created season wins. This ensures drivers are assigned to the season the admin UI is currently showing.
+
+**Seeding philosophy:** `supabase/seed.sql` is intentionally empty — no game data is seeded. Seasons, drivers, car parts, boosts, and tracks are all populated exclusively via the content cache import. The `db:seed:*` npm scripts are legacy and should not be used.
 
 **Why tracks must upsert, not replace:** `user_track_guides.track_id` references `tracks.id` with `ON DELETE CASCADE` — deleting all tracks would wipe all track guides. `user_gp_guide_tracks.track_id` uses `ON DELETE SET NULL`, so those rows survive but lose their track association. Always use upsert for the `tracks` table.
 
