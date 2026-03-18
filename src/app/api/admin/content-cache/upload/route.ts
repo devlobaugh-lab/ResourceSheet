@@ -754,54 +754,84 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
       return statMap[stat] || stat.toLowerCase();
     };
     
-    // Build track rows for database - deduplicated by name (season_id now lives in track_seasons)
-    const trackRows = Array.from(tracksByName.values()).map((t: any) => ({
-      id: t.id || null,
-      name: t.name,
-      laps: t.lapcount,
-      driver_track_stat: convertStatName(t.strongStatA),
-      car_track_stat: convertStatName(t.strongStatB),
-    })).filter(track => track.id !== null && track.id !== ''); // Filter out invalid IDs
-    
-    console.log(`📊 Deduplicated to ${trackRows.length} unique tracks`);
-    console.log('Sample tracks:', trackRows.slice(0, 3).map((t: any) => `${t.name} (${t.laps} laps, ${t.driver_track_stat}/${t.car_track_stat})`));
-    
-    if (trackRows.length > 0) {
-      // Fetch existing track IDs to distinguish new vs updated
-      const { data: existingTracks } = await supabaseAdmin
-        .from('tracks')
-        .select('id');
-      const existingIds = new Set((existingTracks || []).map((t: any) => t.id));
-      const newCount = trackRows.filter((t: any) => !existingIds.has(t.id)).length;
-      const updatedCount = trackRows.filter((t: any) => existingIds.has(t.id)).length;
+    console.log(`📊 Deduplicated to ${tracksByName.size} unique tracks by name`);
 
-      // Upsert tracks by ID — preserves user data linked to existing track IDs
-      const { error: upsertError } = await supabaseAdmin
-        .from('tracks')
-        .upsert(trackRows, { onConflict: 'id' });
-
-      if (upsertError) {
-        console.error('❌ Failed to upsert tracks:', upsertError);
-      } else {
-        results.tracks.new = newCount;
-        results.tracks.modified = updatedCount;
-        console.log(`✅ Tracks processed: new=${newCount}, updated=${updatedCount}`);
+    // Fetch tracks already linked to this season so we can prefer existing IDs over
+    // content-cache IDs. This prevents re-imports from creating duplicate track rows
+    // for the same named track (different content-cache IDs across series).
+    const existingTracksByName: Map<string, any> = new Map();
+    if (activeSeasonId) {
+      const { data: existingSeasonTracks } = await supabaseAdmin
+        .from('track_seasons')
+        .select('tracks(id, name, laps, driver_track_stat, car_track_stat)')
+        .eq('season_id', activeSeasonId);
+      for (const row of existingSeasonTracks || []) {
+        const track = row.tracks as any;
+        if (track) existingTracksByName.set(track.name, track);
       }
+      console.log(`📊 Found ${existingTracksByName.size} tracks already linked to this season`);
+    }
 
-      // Upsert track_seasons junction rows — season membership is separate from track identity
-      if (activeSeasonId) {
-        const trackSeasonRows = trackRows.map((t: any) => ({
-          track_id: t.id,
-          season_id: activeSeasonId,
-          is_active: true,
-        }));
-        const { error: tsError } = await supabaseAdmin
-          .from('track_seasons')
-          .upsert(trackSeasonRows, { onConflict: 'track_id,season_id' });
-        if (tsError) console.error('❌ Failed to upsert track_seasons:', tsError);
-        else console.log(`✅ track_seasons upserted: ${trackSeasonRows.length} rows`);
+    // Classify each deduplicated track as: new, changed, or unchanged
+    const toInsert: any[] = [];         // brand new tracks not yet in this season
+    const toUpdate: any[] = [];         // existing tracks with changed fields
+    const newSeasonLinks: any[] = [];   // track_seasons rows needed for new tracks
+
+    for (const cacheTrack of Array.from(tracksByName.values())) {
+      if (!cacheTrack.id) continue;
+      const incoming = {
+        name: cacheTrack.name,
+        laps: cacheTrack.lapcount,
+        driver_track_stat: convertStatName(cacheTrack.strongStatA),
+        car_track_stat: convertStatName(cacheTrack.strongStatB),
+      };
+
+      const existing = existingTracksByName.get(cacheTrack.name);
+      if (existing) {
+        // Track already linked to this season — update only if fields changed
+        const changed =
+          existing.laps !== incoming.laps ||
+          existing.driver_track_stat !== incoming.driver_track_stat ||
+          existing.car_track_stat !== incoming.car_track_stat;
+        if (changed) toUpdate.push({ id: existing.id, ...incoming });
+        // track_seasons row already exists; no new link needed
+      } else {
+        // New track for this season — use content-cache ID
+        toInsert.push({ id: cacheTrack.id, ...incoming });
+        if (activeSeasonId) {
+          newSeasonLinks.push({ track_id: cacheTrack.id, season_id: activeSeasonId, is_active: true });
+        }
       }
     }
+
+    results.tracks.unchanged = existingTracksByName.size - toUpdate.length;
+
+    if (toInsert.length > 0) {
+      const { error } = await supabaseAdmin.from('tracks').insert(toInsert);
+      if (error) console.error('❌ Failed to insert new tracks:', error);
+      else {
+        results.tracks.new = toInsert.length;
+        console.log(`✅ Inserted ${toInsert.length} new tracks`);
+      }
+    }
+
+    if (toUpdate.length > 0) {
+      for (const track of toUpdate) {
+        const { id, ...fields } = track;
+        const { error } = await supabaseAdmin.from('tracks').update(fields).eq('id', id);
+        if (error) console.error(`❌ Failed to update track ${id}:`, error);
+      }
+      results.tracks.modified = toUpdate.length;
+      console.log(`✅ Updated ${toUpdate.length} changed tracks`);
+    }
+
+    if (newSeasonLinks.length > 0) {
+      const { error } = await supabaseAdmin.from('track_seasons').insert(newSeasonLinks);
+      if (error) console.error('❌ Failed to insert track_seasons:', error);
+      else console.log(`✅ Linked ${newSeasonLinks.length} new tracks to season`);
+    }
+
+    console.log(`✅ Tracks: ${results.tracks.new} new, ${results.tracks.modified} updated, ${results.tracks.unchanged} unchanged`);
   }
 
   return results
