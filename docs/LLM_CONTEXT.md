@@ -76,6 +76,10 @@ ai_track_loadouts    track_name text, difficulty text, team_name text, driver_sl
                      race_start int, car_parts jsonb?, season_id uuid? FK seasons
 
 team_driver_names    team_name text, driver_slot int, driver_name text
+
+track_name_aliases   system_name text UNIQUE, display_name text
+                     Maps content-cache track names to user-facing display names
+                     (e.g. "Americas" → "Austin"). No FK to tracks — keyed by name string.
 ```
 
 ### User tables (RLS: user_id = auth.uid())
