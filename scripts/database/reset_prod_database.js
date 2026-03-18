@@ -47,7 +47,7 @@ const TABLE_DELETION_ORDER = [
   'user_gp_guides',
   // Boost children
   'user_boosts',
-  'boost_custom_names',
+  'boost_icon_data',          // replaces dropped boost_custom_names
   // Car setup / parts children
   'user_car_setups',
   'user_car_parts',
@@ -60,6 +60,7 @@ const TABLE_DELETION_ORDER = [
   'series_data',
   // Track hierarchy
   'track_seasons',
+  'track_name_aliases',       // system track display name overrides
   'tracks',
   // Core catalog
   'car_parts',
