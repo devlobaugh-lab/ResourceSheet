@@ -118,22 +118,20 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Fetch custom names and merge into results
-    const { data: customNames } = await supabaseAdmin
-      .from('boost_custom_names')
-      .select('boost_id, custom_name')
+    // Fetch icon data and merge custom names into results
+    const { data: iconData } = await supabaseAdmin
+      .from('boost_icon_data')
+      .select('icon_name, custom_name, is_free')
 
-    if (customNames && customNames.length > 0) {
-      const customNamesMap = new Map<string, string>()
-      customNames.forEach(cn => customNamesMap.set(cn.boost_id, cn.custom_name))
+    const iconDataMap = new Map((iconData ?? []).map(d => [d.icon_name, d]))
 
-      mergedData = mergedData.map(boost => ({
-        ...boost,
-        boost_custom_names: {
-          custom_name: customNamesMap.get(boost.id) || null
-        }
-      }))
-    }
+    mergedData = mergedData.map(boost => ({
+      ...boost,
+      boost_custom_names: {
+        custom_name: iconDataMap.get(boost.icon)?.custom_name ?? null
+      },
+      is_free: iconDataMap.get(boost.icon)?.is_free ?? false
+    }))
 
     // Apply owned_only filter if requested
     const ownedOnly = searchParams.get('owned_only')

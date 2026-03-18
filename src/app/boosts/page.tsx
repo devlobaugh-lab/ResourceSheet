@@ -9,30 +9,10 @@ import { Input } from '@/components/ui/Input'
 import { useUserBoosts, useBoosts } from '@/hooks/useApi'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useAuth } from '@/components/auth/AuthContext'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { BoostWithCustomName } from '@/types/database'
 
-// Custom hook to fetch boost custom names
-function useBoostCustomNames() {
-  return useQuery<{ [boostId: string]: string }>({
-    queryKey: ['boost-custom-names'],
-    queryFn: async (): Promise<{ [boostId: string]: string }> => {
-      const { getAuthHeaders } = await import('@/hooks/useApi');
-      const response = await fetch('/api/boosts/custom-names', {
-        headers: await getAuthHeaders(),
-        credentials: 'same-origin'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch boost custom names');
-      }
-
-      return response.json();
-    },
-    staleTime: 0, // Disable caching to ensure fresh data
-  });
-}
 
 function AuthenticatedBoostsPage() {
   const queryClient = useQueryClient()

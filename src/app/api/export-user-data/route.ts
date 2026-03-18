@@ -123,16 +123,21 @@ export async function GET(request: NextRequest) {
       const boostIds = userBoosts.map(b => b.boost_id)
       const { data: boostDetails } = await supabaseAdmin
         .from('boosts')
-        .select('id, name, is_free')
+        .select('id, name, icon')
         .in('id', boostIds)
-      
+
+      const { data: iconData } = await supabaseAdmin
+        .from('boost_icon_data')
+        .select('icon_name, is_free')
+
+      const iconDataMap = new Map((iconData ?? []).map(d => [d.icon_name, d]))
       const boostMap = new Map((boostDetails || []).map(b => [b.id, b]))
       userBoosts = userBoosts.map(ub => {
         const boost = boostMap.get(ub.boost_id)
         return {
           boost_id: ub.boost_id,
           name: boost?.name || 'Unknown',
-          is_free: boost?.is_free || false,
+          is_free: iconDataMap.get(boost?.icon ?? '')?.is_free ?? false,
           level: ub.level,
           count: ub.count
         }

@@ -61,12 +61,8 @@ export async function GET(request: NextRequest) {
     const { data: trackNameAliases } = await supabaseAdmin.from('track_name_aliases').select('id, system_name, display_name')
     data.trackNameAliases = trackNameAliases || []
 
-    const { data: boostCustomNames } = await supabaseAdmin.from('boost_custom_names').select('*')
-    data.boostCustomNames = boostCustomNames || []
-
-    // Boosts: export only id + is_free (content cache fields excluded)
-    const { data: boosts } = await supabaseAdmin.from('boosts').select('id, is_free')
-    data.boosts = boosts || []
+    const { data: boostIconData } = await supabaseAdmin.from('boost_icon_data').select('icon_name, custom_name, is_free')
+    data.boostIconData = boostIconData || []
 
     return NextResponse.json({
       version: '2.0',

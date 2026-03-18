@@ -224,10 +224,7 @@ export async function DELETE(
       )
     }
     
-    return NextResponse.json(
-      { message: 'Season deleted successfully' },
-      { status: 204 }
-    )
+    return new NextResponse(null, { status: 204 })
     
   } catch (error) {
     console.error('Season DELETE error:', error)

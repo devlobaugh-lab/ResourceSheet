@@ -86,14 +86,21 @@ export async function POST(request: NextRequest) {
     // Load seasons and determine mapping from season number -> season id
     const seasonIdMap: Record<number, string> = {}
     try {
-      const { data: seasons } = await supabaseAdmin.from('seasons').select('id,name,is_active')
+      // Order by is_active DESC then created_at DESC so that for duplicate season
+      // numbers the active (or most recently created) season wins.
+      const { data: seasons } = await supabaseAdmin
+        .from('seasons')
+        .select('id,name,is_active,created_at')
+        .order('is_active', { ascending: false })
+        .order('created_at', { ascending: false })
       if (Array.isArray(seasons)) {
         for (const s of seasons) {
           if (s && s.name) {
             const match = (s.name || '').match(/(\d+)/)
             if (match) {
               const num = parseInt(match[1], 10)
-              if (!isNaN(num)) {
+              // First season seen for each number wins (active/most-recent due to ordering)
+              if (!isNaN(num) && !(num in seasonIdMap)) {
                 seasonIdMap[num] = s.id
               }
             }
@@ -358,7 +365,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
     // })
 
     if (processedDrivers.length > 0) {
-      const driverResults = await processItems(processedDrivers, 'drivers', 'id', allowModifications)
+      const driverResults = await processItems(processedDrivers, 'drivers', 'id', allowModifications, ['season_id'])
       results.drivers.new = driverResults.new
       results.drivers.modified = driverResults.modified
       results.drivers.unchanged = driverResults.unchanged
@@ -389,7 +396,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
       }))
 
     if (carParts.length > 0) {
-      const carPartResults = await processItems(carParts, 'car_parts', 'id', allowModifications)
+      const carPartResults = await processItems(carParts, 'car_parts', 'id', allowModifications, ['season_id'])
       results.car_parts.new = carPartResults.new
       results.car_parts.modified = carPartResults.modified
       results.car_parts.unchanged = carPartResults.unchanged
@@ -811,7 +818,7 @@ function shouldImportBySeason(item: any, seasonNumbers: number[]): boolean {
 }
 
 // Helper function to process items with change detection
-async function processItems(items: any[], tableName: string, idField: string, allowModifications: boolean = false) {
+async function processItems(items: any[], tableName: string, idField: string, allowModifications: boolean = false, forceUpdateFields: string[] = []) {
   const results = {
     new: 0,
     modified: 0,
@@ -825,7 +832,7 @@ async function processItems(items: any[], tableName: string, idField: string, al
 
   for (const newItem of items) {
     const existingItem = existingMap.get(newItem[idField])
-    
+
     if (!existingItem) {
       // New item - add to database
       const { error } = await supabaseAdmin
@@ -841,30 +848,37 @@ async function processItems(items: any[], tableName: string, idField: string, al
     } else {
       // Existing item - check for changes
       const changes = detectChanges(existingItem, newItem)
-      
-      if (changes.length > 0) {
+
+      const forcedChanges = changes.filter(c => forceUpdateFields.some(f => c.startsWith(f)))
+      const optionalChanges = changes.filter(c => !forceUpdateFields.some(f => c.startsWith(f)))
+
+      if (optionalChanges.length > 0) {
         results.modified++
         results.modified_items.push({
           id: newItem[idField],
           name: newItem.name,
-          changes: changes
+          changes: optionalChanges
         })
-        
-        // Update the database if modifications are allowed
-        if (allowModifications) {
-          const { error } = await supabaseAdmin
-            .from(tableName)
-            .update(newItem)
-            .eq(idField, newItem[idField])
-          
-          if (!error) {
-            console.log(`✅ Updated ${tableName} item: ${newItem[idField]} (${newItem.name})`)
-          } else {
-            console.error(`❌ Failed to update ${tableName} item: ${newItem[idField]} (${newItem.name})`, error)
-          }
-        }
-      } else {
+      } else if (changes.length === 0) {
         results.unchanged++
+      }
+
+      const shouldUpdate = (allowModifications && changes.length > 0) || forcedChanges.length > 0
+      if (shouldUpdate) {
+        const updatePayload = allowModifications
+          ? newItem
+          : Object.fromEntries(forceUpdateFields.map(f => [f, newItem[f]]))
+
+        const { error } = await supabaseAdmin
+          .from(tableName)
+          .update(updatePayload)
+          .eq(idField, newItem[idField])
+
+        if (!error) {
+          console.log(`✅ Updated ${tableName} item: ${newItem[idField]} (${newItem.name})`)
+        } else {
+          console.error(`❌ Failed to update ${tableName} item: ${newItem[idField]} (${newItem.name})`, error)
+        }
       }
     }
   }
