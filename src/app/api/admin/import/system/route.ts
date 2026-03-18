@@ -57,13 +57,15 @@ export async function POST(request: NextRequest) {
     if (importData.seasons?.length) {
       for (const item of importData.seasons) {
         try {
-          const { data: existing } = await supabaseAdmin.from('seasons').select('id').eq('id', item.id).single()
+          const { data: existing } = await supabaseAdmin.from('seasons').select('id').eq('id', item.id).maybeSingle()
           if (existing) {
             const { id, created_at, ...updateData } = item
-            await supabaseAdmin.from('seasons').update(updateData).eq('id', item.id)
+            const { error: updateError } = await supabaseAdmin.from('seasons').update(updateData).eq('id', item.id)
+            if (updateError) throw updateError
             results.seasons.updated++
           } else {
-            await supabaseAdmin.from('seasons').insert(item)
+            const { error: insertError } = await supabaseAdmin.from('seasons').insert(item)
+            if (insertError) throw insertError
             results.seasons.imported++
           }
         } catch (e) { results.errors.push(`seasons: ${String(e)}`) }
@@ -75,13 +77,15 @@ export async function POST(request: NextRequest) {
       for (const item of importData.trackNameAliases) {
         try {
           const { data: existing } = await supabaseAdmin
-            .from('track_name_aliases').select('id').eq('system_name', item.system_name).single()
+            .from('track_name_aliases').select('id').eq('system_name', item.system_name).maybeSingle()
           if (existing) {
-            await supabaseAdmin.from('track_name_aliases').update({ display_name: item.display_name }).eq('id', existing.id)
+            const { error: updateError } = await supabaseAdmin.from('track_name_aliases').update({ display_name: item.display_name }).eq('id', existing.id)
+            if (updateError) throw updateError
             results.trackNameAliases.updated++
           } else {
             const { id, ...insertData } = item
-            await supabaseAdmin.from('track_name_aliases').insert(insertData)
+            const { error: insertError } = await supabaseAdmin.from('track_name_aliases').insert(insertData)
+            if (insertError) throw insertError
             results.trackNameAliases.imported++
           }
         } catch (e) { results.errors.push(`track_name_aliases: ${String(e)}`) }
@@ -93,12 +97,14 @@ export async function POST(request: NextRequest) {
       for (const item of importData.boostIconData) {
         try {
           const { data: existing } = await supabaseAdmin
-            .from('boost_icon_data').select('id').eq('icon_name', item.icon_name).single()
+            .from('boost_icon_data').select('id').eq('icon_name', item.icon_name).maybeSingle()
           if (existing) {
-            await supabaseAdmin.from('boost_icon_data').update({ custom_name: item.custom_name, is_free: item.is_free }).eq('id', existing.id)
+            const { error: updateError } = await supabaseAdmin.from('boost_icon_data').update({ custom_name: item.custom_name, is_free: item.is_free }).eq('id', existing.id)
+            if (updateError) throw updateError
             results.boostIconData.updated++
           } else {
-            await supabaseAdmin.from('boost_icon_data').insert({ icon_name: item.icon_name, custom_name: item.custom_name, is_free: item.is_free })
+            const { error: insertError } = await supabaseAdmin.from('boost_icon_data').insert({ icon_name: item.icon_name, custom_name: item.custom_name, is_free: item.is_free })
+            if (insertError) throw insertError
             results.boostIconData.imported++
           }
         } catch (e) { results.errors.push(`boost_icon_data: ${String(e)}`) }
