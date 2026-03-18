@@ -776,6 +776,7 @@ export interface SeriesTrackInfo {
 
 // Series data type (from series_data table)
 export interface SeriesData {
+  id: string
   index: number
   entry_fee: number
   win_flags: number

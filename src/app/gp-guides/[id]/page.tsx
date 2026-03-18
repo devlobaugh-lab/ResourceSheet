@@ -535,16 +535,19 @@ export default function GpGuideEditorPage() {
     async function load() {
       const headers = await getAuthHeaders()
       const opts = { headers, credentials: 'same-origin' as const }
-      const [guideRes, tracksRes, driversRes, boostsRes, setupsRes, carPartsRes] = await Promise.all([
-        fetch(`/api/gp-guides/${guideId}`, opts),
-        fetch('/api/tracks', opts),
-        fetch('/api/drivers/user?limit=500', opts),
-        fetch('/api/user-boosts?limit=200', opts),  // Use user-boosts to get card_count
-        fetch('/api/setups', opts),
-        fetch('/api/car-parts/user?limit=1000', opts),
-      ])
+      const guideRes = await fetch(`/api/gp-guides/${guideId}`, opts)
       if (!guideRes.ok) { router.push('/gp-guides'); return }
       const guideData = await guideRes.json()
+      const seasonId = guideData.data?.season_id
+      const driverParams = new URLSearchParams({ limit: '500' })
+      if (seasonId) driverParams.set('season_id', seasonId)
+      const [tracksRes, driversRes, boostsRes, setupsRes, carPartsRes] = await Promise.all([
+        fetch('/api/tracks', opts),
+        fetch(`/api/drivers/user?${driverParams}`, opts),
+        fetch('/api/user-boosts?limit=200', opts),  // Use user-boosts to get card_count
+        fetch(seasonId ? `/api/setups?season_id=${seasonId}` : '/api/setups', opts),
+        fetch('/api/car-parts/user?limit=1000', opts),
+      ])
       const tracksData = tracksRes.ok ? await tracksRes.json() : []
       const driversData = driversRes.ok ? await driversRes.json() : { data: [] }
       const boostsData = boostsRes.ok ? await boostsRes.json() : { data: [] }

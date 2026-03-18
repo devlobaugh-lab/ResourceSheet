@@ -192,7 +192,7 @@ const displaySeries = seriesData?.data?.filter((s: SeriesWithTracks) => s.index 
                 </Card>
               ) : (
                 displaySeries.map((series: SeriesWithTracks) => (
-                  <SeriesCard key={series.index} series={series} />
+                  <SeriesCard key={series.id} series={series} />
                 ))
               )}
             </div>
