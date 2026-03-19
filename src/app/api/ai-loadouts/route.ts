@@ -10,11 +10,11 @@ export async function GET(request: NextRequest) {
     const seasonId = searchParams.get('season_id')
 
     // Fetch both loadouts and track name aliases in parallel
-    // Use a raw query to get DISTINCT combinations efficiently
+    // No limit — we only select 3 lightweight columns and deduplicate client-side.
+    // A limit here caused only a fraction of unique track/difficulty combos to appear.
     let loadoutsQuery = supabaseAdmin
       .from('ai_track_loadouts')
-      .select('name, track_name, difficulty', { count: 'exact' })
-      .limit(1000)
+      .select('name, track_name, difficulty')
     if (seasonId) loadoutsQuery = loadoutsQuery.eq('season_id', seasonId)
 
     const [loadoutsResult, aliasesResult] = await Promise.all([
