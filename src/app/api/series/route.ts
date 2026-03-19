@@ -140,20 +140,19 @@ export async function GET(request: NextRequest) {
     if (seasonId) {
       const { data: tsData } = await supabaseAdmin
         .from('track_seasons')
-        .select('tracks(id, name, laps, driver_track_stat, car_track_stat, min_weather_factor, max_weather_factor)')
+        .select('tracks(id, name, laps, driver_track_stat, car_track_stat, min_weather_factor, max_weather_factor, weather_freq)')
         .eq('season_id', seasonId)
-        .in('tracks.name', Array.from(allTrackNames))
       tracksData = (tsData || []).map((row: any) => row.tracks).filter(Boolean)
     } else {
       const { data } = await supabaseAdmin
         .from('tracks')
-        .select('id, name, laps, driver_track_stat, car_track_stat, min_weather_factor, max_weather_factor')
+        .select('id, name, laps, driver_track_stat, car_track_stat, min_weather_factor, max_weather_factor, weather_freq')
         .in('name', Array.from(allTrackNames))
       tracksData = data
     }
 
     // Build track map by name for fallback lookup
-    const trackMap: Record<string, { id: string; laps: number; driver_track_stat: string; car_track_stat: string; min_weather_factor: number | null; max_weather_factor: number | null }> = {}
+    const trackMap: Record<string, { id: string; laps: number; driver_track_stat: string; car_track_stat: string; min_weather_factor: number | null; max_weather_factor: number | null; weather_freq: number | null }> = {}
     for (const track of (tracksData || [])) {
       trackMap[track.name] = {
         id: track.id,
@@ -162,6 +161,7 @@ export async function GET(request: NextRequest) {
         car_track_stat: track.car_track_stat,
         min_weather_factor: track.min_weather_factor ?? null,
         max_weather_factor: track.max_weather_factor ?? null,
+        weather_freq: track.weather_freq ?? null,
       }
     }
 
@@ -181,7 +181,10 @@ export async function GET(request: NextRequest) {
           laps: info.laps,
           driver_track_stat: info.driverStat,
           car_track_stat: info.carStat,
-          weather: getWeatherCategory(trackMap[info.name]?.min_weather_factor ?? null, trackMap[info.name]?.max_weather_factor ?? null)
+          weather: getWeatherCategory(trackMap[info.name]?.min_weather_factor ?? null, trackMap[info.name]?.max_weather_factor ?? null),
+          min_weather_factor: trackMap[info.name]?.min_weather_factor ?? null,
+          max_weather_factor: trackMap[info.name]?.max_weather_factor ?? null,
+          weather_freq: trackMap[info.name]?.weather_freq ?? null,
         }))
       } else {
         // Fallback: lookup from tracks table using track_names
@@ -194,7 +197,10 @@ export async function GET(request: NextRequest) {
             laps: trackData?.laps || 0,
             driver_track_stat: trackData?.driver_track_stat || 'none',
             car_track_stat: trackData?.car_track_stat || 'none',
-            weather: getWeatherCategory(trackData?.min_weather_factor ?? null, trackData?.max_weather_factor ?? null)
+            weather: getWeatherCategory(trackData?.min_weather_factor ?? null, trackData?.max_weather_factor ?? null),
+            min_weather_factor: trackData?.min_weather_factor ?? null,
+            max_weather_factor: trackData?.max_weather_factor ?? null,
+            weather_freq: trackData?.weather_freq ?? null,
           }
         })
       }

@@ -763,7 +763,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
     if (activeSeasonId) {
       const { data: existingSeasonTracks } = await supabaseAdmin
         .from('track_seasons')
-        .select('tracks(id, name, laps, driver_track_stat, car_track_stat, min_weather_factor, max_weather_factor)')
+        .select('tracks(id, name, laps, driver_track_stat, car_track_stat, min_weather_factor, max_weather_factor, weather_freq)')
         .eq('season_id', activeSeasonId);
       for (const row of existingSeasonTracks || []) {
         const track = row.tracks as any;
@@ -786,6 +786,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         car_track_stat: convertStatName(cacheTrack.strongStatB),
         min_weather_factor: cacheTrack.weather?.MinWeatherFactor ?? null,
         max_weather_factor: cacheTrack.weather?.MaxWeatherFactor ?? null,
+        weather_freq: cacheTrack.weather?.Frequency ?? null,
       };
 
       const existing = existingTracksByName.get(cacheTrack.name);
@@ -796,7 +797,8 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
           existing.driver_track_stat !== incoming.driver_track_stat ||
           existing.car_track_stat !== incoming.car_track_stat ||
           existing.min_weather_factor !== incoming.min_weather_factor ||
-          existing.max_weather_factor !== incoming.max_weather_factor;
+          existing.max_weather_factor !== incoming.max_weather_factor ||
+          existing.weather_freq !== incoming.weather_freq;
         if (changed) toUpdate.push({ id: existing.id, ...incoming });
         // track_seasons row already exists; no new link needed
       } else {

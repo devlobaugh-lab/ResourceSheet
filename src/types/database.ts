@@ -809,6 +809,9 @@ export interface SeriesTrack {
   driver_track_stat: string
   car_track_stat: string
   weather: 'dry' | 'wet' | 'mixed' | null
+  min_weather_factor: number | null
+  max_weather_factor: number | null
+  weather_freq: number | null
 }
 
 // Business logic types
