@@ -494,7 +494,7 @@ export default function AdminUsersPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
               <div>
                 <h4 className="font-medium text-gray-900 mb-2">Adding Users</h4>
-                <p>When you add a user, an invite link is generated for you to share. Optionally check "Send invite email" to also email them the link. You can regenerate a link for any existing user using the link icon in the Actions column.</p>
+                <p>When you add a user, an invite link is generated for you to share. Optionally check &quot;Send invite email&quot; to also email them the link. You can regenerate a link for any existing user using the link icon in the Actions column.</p>
               </div>
               <div>
                 <h4 className="font-medium text-gray-900 mb-2">Deactivating vs Deleting</h4>
