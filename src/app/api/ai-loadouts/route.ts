@@ -10,11 +10,12 @@ export async function GET(request: NextRequest) {
     const seasonId = searchParams.get('season_id')
 
     // Fetch both loadouts and track name aliases in parallel
-    // Use a raw query to get DISTINCT combinations efficiently
+    // Large explicit limit needed — PostgREST defaults to 1000 rows even without .limit().
+    // We only select 3 lightweight columns and deduplicate client-side.
     let loadoutsQuery = supabaseAdmin
       .from('ai_track_loadouts')
-      .select('name, track_name, difficulty', { count: 'exact' })
-      .limit(1000)
+      .select('name, track_name, difficulty')
+      .limit(10000)
     if (seasonId) loadoutsQuery = loadoutsQuery.eq('season_id', seasonId)
 
     const [loadoutsResult, aliasesResult] = await Promise.all([
