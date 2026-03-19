@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json()
-    const { email, username, is_admin: makeAdmin } = body
+    const { email, username, is_admin: makeAdmin, send_email: sendEmail } = body
 
     if (!email) {
       return NextResponse.json(
@@ -221,14 +221,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Send password reset email so user can set their own password
-    const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || request.headers.get('origin')}/auth/update-password`,
+    // Generate invite link so admin can share it directly
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || request.headers.get('origin') || ''
+    const redirectTo = `${baseUrl}/auth/callback?next=/auth/update-password`
+    let inviteLink: string | null = null
+
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+      options: { redirectTo },
     })
 
-    if (resetError) {
-      console.error('Error sending password reset:', resetError)
-      // Don't fail - user exists, they just need to request a password reset manually
+    if (linkError) {
+      console.error('Error generating invite link:', linkError)
+    } else if (linkData?.properties?.hashed_token) {
+      // Return an app-relative URL so the client SDK drives the PKCE flow via verifyOtp,
+      // rather than pointing users at the raw Supabase verify endpoint which bypasses PKCE.
+      inviteLink = `${baseUrl}/auth/invite?th=${linkData.properties.hashed_token}`
+    }
+
+    // Optionally send email if requested
+    if (sendEmail === true) {
+      const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      })
+      if (resetError) {
+        console.error('Error sending password reset email:', resetError)
+      }
     }
 
     return NextResponse.json({
@@ -240,7 +259,8 @@ export async function POST(request: NextRequest) {
         is_active: true,
         created_at: newUser.user.created_at,
       },
-      message: 'User created successfully. A password reset email has been sent.'
+      invite_link: inviteLink,
+      message: 'User created successfully.',
     })
 
   } catch (error) {
