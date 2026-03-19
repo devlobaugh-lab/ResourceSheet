@@ -19,6 +19,12 @@ const statDisplayNames: Record<string, string> = {
   'none': 'None'
 }
 
+const weatherColors: Record<string, string> = {
+  dry: 'text-amber-600',
+  wet: 'text-blue-600',
+  mixed: 'text-gray-500',
+}
+
 // Series collapsible component
 function SeriesCard({ series }: { series: SeriesWithTracks }) {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -113,12 +119,15 @@ function SeriesCard({ series }: { series: SeriesWithTracks }) {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
                   Car Stat
                 </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
+                  Weather
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {series.tracks.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
                     No tracks found for this series
                   </td>
                 </tr>
@@ -138,6 +147,13 @@ function SeriesCard({ series }: { series: SeriesWithTracks }) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {formatStat(track.car_track_stat)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {track.weather ? (
+                        <span className={weatherColors[track.weather]}>
+                          {track.weather.charAt(0).toUpperCase() + track.weather.slice(1)}
+                        </span>
+                      ) : '—'}
                     </td>
                   </tr>
                 ))
