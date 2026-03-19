@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAuthHeaders } from '@/hooks/useApi';
 import Link from 'next/link';
-import { Users, UserPlus, Edit, Trash2, UserX, UserCheck, AlertTriangle, X } from 'lucide-react';
+import { Users, UserPlus, Edit, Trash2, UserX, UserCheck, AlertTriangle, X, Link as LinkIcon, Copy, Check } from 'lucide-react';
 
 interface User {
   id: string;
@@ -27,12 +27,14 @@ interface FormData {
   email: string;
   username: string;
   is_admin: boolean;
+  send_email: boolean;
 }
 
 const initialFormData: FormData = {
   email: '',
   username: '',
   is_admin: false,
+  send_email: false,
 };
 
 export default function AdminUsersPage() {
@@ -43,6 +45,9 @@ export default function AdminUsersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [inviteCopied, setInviteCopied] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,6 +100,7 @@ export default function AdminUsersPage() {
       email: user.email || '',
       username: user.username || '',
       is_admin: user.is_admin || false,
+      send_email: false,
     });
     setShowEditModal(true);
   };
@@ -108,8 +114,41 @@ export default function AdminUsersPage() {
     setShowAddModal(false);
     setShowEditModal(false);
     setShowDeleteModal(false);
+    setShowInviteModal(false);
+    setInviteLink(null);
+    setInviteCopied(false);
     setSelectedUser(null);
     setFormData(initialFormData);
+  };
+
+  const openInviteModal = (link: string) => {
+    setInviteLink(link);
+    setInviteCopied(false);
+    setShowInviteModal(true);
+  };
+
+  const handleCopyInviteLink = async () => {
+    if (!inviteLink) return;
+    await navigator.clipboard.writeText(inviteLink);
+    setInviteCopied(true);
+    setTimeout(() => setInviteCopied(false), 2000);
+  };
+
+  const handleGenerateInviteLink = async (user: User) => {
+    try {
+      const response = await fetch(`/api/admin/users/${user.id}/invite`, {
+        method: 'POST',
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Failed to generate invite link');
+      }
+      openInviteModal(data.invite_link);
+    } catch (error) {
+      toast.addToast(error instanceof Error ? error.message : 'Failed to generate invite link', 'error');
+    }
   };
 
   const handleAddUser = async (e: React.FormEvent) => {
@@ -124,7 +163,12 @@ export default function AdminUsersPage() {
           'Content-Type': 'application/json',
         },
         credentials: 'same-origin',
-        body: JSON.stringify({ email: formData.email, username: formData.username, is_admin: formData.is_admin }),
+        body: JSON.stringify({
+          email: formData.email,
+          username: formData.username,
+          is_admin: formData.is_admin,
+          send_email: formData.send_email,
+        }),
       });
 
       const data = await response.json();
@@ -133,9 +177,15 @@ export default function AdminUsersPage() {
         throw new Error(data.error?.message || 'Failed to create user');
       }
 
-      toast.addToast(data.message || 'User created successfully', 'success');
-      closeModal();
       refetchUsers();
+      setShowAddModal(false);
+      setFormData(initialFormData);
+
+      if (data.invite_link) {
+        openInviteModal(data.invite_link);
+      } else {
+        toast.addToast(data.message || 'User created successfully', 'success');
+      }
     } catch (error) {
       toast.addToast(error instanceof Error ? error.message : 'Failed to create user', 'error');
     } finally {
@@ -400,6 +450,14 @@ export default function AdminUsersPage() {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => handleGenerateInviteLink(user)}
+                              title="Generate invite link"
+                            >
+                              <LinkIcon className="w-4 h-4 text-blue-600" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => handleToggleActive(user)}
                               title={user.is_active ? 'Deactivate user' : 'Reactivate user'}
                               disabled={user.id === currentUser?.id}
@@ -436,7 +494,7 @@ export default function AdminUsersPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
               <div>
                 <h4 className="font-medium text-gray-900 mb-2">Adding Users</h4>
-                <p>When you add a user, they will receive an email to set their password. The account is created immediately and ready to use once they set their password.</p>
+                <p>When you add a user, an invite link is generated for you to share. Optionally check "Send invite email" to also email them the link. You can regenerate a link for any existing user using the link icon in the Actions column.</p>
               </div>
               <div>
                 <h4 className="font-medium text-gray-900 mb-2">Deactivating vs Deleting</h4>
@@ -499,6 +557,19 @@ export default function AdminUsersPage() {
                     <option value="normal">Normal</option>
                     <option value="admin">Admin</option>
                   </select>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="send_email"
+                    checked={formData.send_email}
+                    onChange={(e) => setFormData({ ...formData, send_email: e.target.checked })}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                  />
+                  <label htmlFor="send_email" className="text-sm text-gray-700">
+                    Send invite email
+                  </label>
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">
@@ -574,6 +645,49 @@ export default function AdminUsersPage() {
                   </Button>
                 </div>
               </form>
+            </Card>
+          </div>
+        )}
+
+        {/* Invite Link Modal */}
+        {showInviteModal && inviteLink && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">Invite Link</h2>
+                <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-4">
+                Share this link with the user. It expires in 24 hours and can only be used once.
+              </p>
+
+              <div className="flex items-center space-x-2 mb-6">
+                <input
+                  type="text"
+                  readOnly
+                  value={inviteLink}
+                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50 text-gray-800 font-mono overflow-hidden"
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                />
+                <Button
+                  variant="outline"
+                  onClick={handleCopyInviteLink}
+                  className="shrink-0"
+                >
+                  {inviteCopied ? (
+                    <Check className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={closeModal}>Close</Button>
+              </div>
             </Card>
           </div>
         )}
