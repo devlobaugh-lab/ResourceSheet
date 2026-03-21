@@ -34,6 +34,21 @@ export default function TracksReferencePage() {
     return track.name;
   };
 
+  if (!activeSeasonId) {
+    return (
+      <ProtectedRoute>
+        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Tracks</h1>
+          </div>
+          <Card className="p-8 text-center text-gray-500">
+            Select a season to view tracks.
+          </Card>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
   return (
     <ProtectedRoute>
       <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">

@@ -3,7 +3,6 @@
 import React, { useState, useRef } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/components/auth/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useToast } from '@/components/ui/Toast';
@@ -19,7 +18,7 @@ export default function AdminContentCachePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [seasonFilter, setSeasonFilter] = useState<string>('');
+  const [targetSeasonId, setTargetSeasonId] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string>('');
   const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -40,16 +39,13 @@ export default function AdminContentCachePage() {
     staleTime: 5 * 60 * 1000
   });
 
-  const availableSeriesNumbers: number[] = React.useMemo(() => {
-    const seasons = seasonsData?.data ?? [];
-    return seasons
-      .map((s: any) => {
-        const match = (s.name || '').match(/(\d+)/);
-        return match ? parseInt(match[1], 10) : null;
-      })
-      .filter((n: number | null): n is number => n !== null)
-      .sort((a: number, b: number) => a - b);
+  const availableSeasons: { id: string; name: string; is_active: boolean }[] = React.useMemo(() => {
+    return seasonsData?.data ?? [];
   }, [seasonsData]);
+
+  const activeGameSeason = React.useMemo(() => {
+    return availableSeasons.find((s) => s.is_active) ?? null;
+  }, [availableSeasons]);
 
   // Check if user is admin
   const { data: profile, isLoading: isProfileLoading } = useQuery({
@@ -125,18 +121,6 @@ export default function AdminContentCachePage() {
       return;
     }
 
-    if (seasonFilter.trim()) {
-      const enteredNumbers = seasonFilter
-        .split(',')
-        .map(s => parseInt(s.trim(), 10))
-        .filter(n => !isNaN(n));
-      const invalid = enteredNumbers.filter(n => !availableSeriesNumbers.includes(n));
-      if (invalid.length > 0) {
-        addToast(`Series ${invalid.join(', ')} is not set up in the database`, 'error');
-        return;
-      }
-    }
-
     setIsProcessing(true);
     setUploadProgress(0);
     setProcessingStatus('Starting upload...');
@@ -153,9 +137,11 @@ export default function AdminContentCachePage() {
 
       const formData = new FormData();
       formData.append('file', compressedBlob, selectedFile.name);
-      formData.append('season_filter', seasonFilter.trim());
       formData.append('allow_modifications', allowModifications.toString());
       formData.append('compressed', 'true');
+      if (targetSeasonId) {
+        formData.append('target_season_id', targetSeasonId);
+      }
 
       const authHeaders = await getAuthHeaders();
       const { 'Content-Type': _, ...uploadHeaders } = authHeaders;
@@ -194,7 +180,7 @@ export default function AdminContentCachePage() {
       
       // Reset form
       setSelectedFile(null);
-      setSeasonFilter('');
+      setTargetSeasonId('');
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -320,38 +306,35 @@ export default function AdminContentCachePage() {
                   </div>
                 </div>
 
-                {/* Series Filter */}
+                {/* Target Season Override */}
                 <div className="border-t border-gray-200 pt-4">
                   <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
-                    <Settings className="w-5 h-5 mr-2" />
-                    Series Filter
+                    <Database className="w-5 h-5 mr-2" />
+                    Target Game Season
                   </h3>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Filter by Series (optional)
-                      </label>
-                      <Input
-                        type="text"
-                        value={seasonFilter}
-                        onChange={(e) => setSeasonFilter(e.target.value)}
-                        placeholder={
-                          availableSeriesNumbers.length > 0
-                            ? `e.g., ${availableSeriesNumbers.join(',')} — or leave empty for all`
-                            : 'e.g., 5,6 — or leave empty for all'
-                        }
-                        className="font-mono"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Enter series numbers to import (comma-separated). Leave empty to import all series set up in season management.
-                      </p>
-                      {availableSeriesNumbers.length > 0 && (
-                        <p className="text-xs text-blue-600 mt-1">
-                          Available series: {availableSeriesNumbers.join(', ')}
-                        </p>
-                      )}
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Import into season (optional override)
+                    </label>
+                    <select
+                      value={targetSeasonId}
+                      onChange={(e) => setTargetSeasonId(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">
+                        {activeGameSeason
+                          ? `Default — current game season (${activeGameSeason.name})`
+                          : 'Default — current game season (none set)'}
+                      </option>
+                      {availableSeasons.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}{s.is_active ? ' (current game season)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Tracks and series data are always imported into the current game season. Override only for testing future seasons.
+                    </p>
                   </div>
                 </div>
 
@@ -385,7 +368,6 @@ export default function AdminContentCachePage() {
                     variant="outline"
                     onClick={() => {
                       setSelectedFile(null);
-                      setSeasonFilter('');
                       if (fileInputRef.current) {
                         fileInputRef.current.value = '';
                       }
@@ -573,18 +555,16 @@ export default function AdminContentCachePage() {
                     <h4 className="font-medium text-gray-900 mb-2">Update Process:</h4>
                     <ol className="list-decimal list-inside space-y-1">
                       <li>Download latest content_cache.json from the game</li>
-                      <li>Optionally filter by series number (e.g., &quot;5,6&quot;) — leave empty to import all DB series</li>
-                      <li>Upload the file - system processes and imports new content only</li>
+                      <li>Upload the file — system imports content scoped to the current game season</li>
                       <li>Review change detection report for any data differences</li>
                     </ol>
                   </div>
 
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Series Filter Examples:</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">Target Game Season:</h4>
                     <ul className="list-disc list-inside space-y-1">
-                      <li><code className="bg-gray-100 px-1 py-0.5 rounded">5,6</code> - Import series 5 and 6 only</li>
-                      <li><code className="bg-gray-100 px-1 py-0.5 rounded">6</code> - Import series 6 only</li>
-                      <li><code className="bg-gray-100 px-1 py-0.5 rounded">(empty)</code> - Import all series set up in season management</li>
+                      <li>Defaults to the current active season</li>
+                      <li>Override only when testing a future/pre-release season</li>
                     </ul>
                   </div>
                 </div>

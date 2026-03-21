@@ -766,6 +766,31 @@ export type AITrackLoadout = Tables<'ai_track_loadouts'>
 export type TeamDriverName = Tables<'team_driver_names'>
 export type UserCustomDriver = Tables<'user_custom_drivers'>
 
+// Track rotation types
+export type RotationWeather = 'dry' | 'wet' | 'mixed'
+export interface RotationTrackEntry { track: string; weather: RotationWeather }
+export type RotationSeriesData = Record<string, RotationTrackEntry[]> // keys: "9","10","11"
+
+export interface TrackRotationSet {
+  id: string; set_number: number; series_data: RotationSeriesData
+  created_at: string; updated_at: string
+}
+export interface TrackRotationScheduleEntry {
+  id: string; rotation_set_id: string; start_date: string; end_date: string
+  created_at: string; updated_at: string
+}
+export interface RotationTrackEntryWithInfo extends RotationTrackEntry {
+  laps?: number
+  driver_track_stat?: string
+  car_track_stat?: string
+}
+
+export interface TrackRotationView {
+  schedule: TrackRotationScheduleEntry
+  rotation_set: TrackRotationSet
+  series: { series_index: number; series_number: number; tracks: RotationTrackEntryWithInfo[] }[]
+}
+
 // Track info as stored in series_data.track_info
 export interface SeriesTrackInfo {
   name: string

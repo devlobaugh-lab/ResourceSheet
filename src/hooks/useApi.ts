@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup, Track, CatalogItem, SeriesWithTracks } from '@/types/database'
+import type { Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup, Track, CatalogItem, SeriesWithTracks, TrackRotationView } from '@/types/database'
 import type { PaginationMeta } from '@/types/api'
 
 // API base URL
@@ -635,6 +635,152 @@ export function useAddUserItem() {
     },
     onSuccess: () => {
       // No-op since we're not actually updating anything
+    },
+  })
+}
+
+// Fetch current track rotation by date
+export function useCurrentTrackRotation(date?: string) {
+  return useQuery({
+    queryKey: ['track-rotation', date],
+    queryFn: async (): Promise<TrackRotationView> => {
+      const params = date ? `?date=${date}` : ''
+      const response = await fetch(`${API_BASE}/track-rotations${params}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch track rotation')
+      }
+      return response.json()
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+// Fetch all track rotation schedule entries
+export function useTrackRotationSchedule() {
+  return useQuery({
+    queryKey: ['track-rotation-schedule'],
+    queryFn: async (): Promise<{ data: (import('@/types/database').TrackRotationScheduleEntry & { rotation_set_number: number })[] }> => {
+      const response = await fetch(`${API_BASE}/track-rotations/schedule`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch rotation schedule')
+      }
+      return response.json()
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+// Admin: fetch all rotation sets
+export function useAdminRotationSets() {
+  return useQuery({
+    queryKey: ['admin-rotation-sets'],
+    queryFn: async (): Promise<{ data: import('@/types/database').TrackRotationSet[] }> => {
+      const response = await fetch(`${API_BASE}/admin/track-rotations/sets`, {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
+      })
+      if (!response.ok) throw new Error('Failed to fetch rotation sets')
+      return response.json()
+    },
+    staleTime: 60 * 1000,
+  })
+}
+
+// Admin: update a rotation set
+export function useUpdateRotationSet() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, series_data }: { id: string; series_data: import('@/types/database').RotationSeriesData }) => {
+      const response = await fetch(`${API_BASE}/admin/track-rotations/sets/${id}`, {
+        method: 'PUT',
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify({ series_data }),
+      })
+      if (!response.ok) throw new Error('Failed to update rotation set')
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-rotation-sets'] })
+      queryClient.invalidateQueries({ queryKey: ['track-rotation'] })
+    },
+  })
+}
+
+// Admin: fetch all schedule entries
+export function useAdminRotationSchedule() {
+  return useQuery({
+    queryKey: ['admin-rotation-schedule'],
+    queryFn: async (): Promise<{ data: (import('@/types/database').TrackRotationScheduleEntry & { rotation_set_number: number })[] }> => {
+      const response = await fetch(`${API_BASE}/admin/track-rotations/schedule`, {
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
+      })
+      if (!response.ok) throw new Error('Failed to fetch admin schedule')
+      return response.json()
+    },
+    staleTime: 60 * 1000,
+  })
+}
+
+// Admin: create schedule entry
+export function useCreateRotationScheduleEntry() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: { rotation_set_id: string; start_date: string; end_date: string }) => {
+      const response = await fetch(`${API_BASE}/admin/track-rotations/schedule`, {
+        method: 'POST',
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify(data),
+      })
+      if (!response.ok) throw new Error('Failed to create schedule entry')
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-rotation-schedule'] })
+      queryClient.invalidateQueries({ queryKey: ['track-rotation-schedule'] })
+    },
+  })
+}
+
+// Admin: update schedule entry
+export function useUpdateRotationScheduleEntry() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { rotation_set_id?: string; start_date?: string; end_date?: string } }) => {
+      const response = await fetch(`${API_BASE}/admin/track-rotations/schedule/${id}`, {
+        method: 'PUT',
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify(data),
+      })
+      if (!response.ok) throw new Error('Failed to update schedule entry')
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-rotation-schedule'] })
+      queryClient.invalidateQueries({ queryKey: ['track-rotation-schedule'] })
+    },
+  })
+}
+
+// Admin: delete schedule entry
+export function useDeleteRotationScheduleEntry() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`${API_BASE}/admin/track-rotations/schedule/${id}`, {
+        method: 'DELETE',
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
+      })
+      if (!response.ok) throw new Error('Failed to delete schedule entry')
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-rotation-schedule'] })
+      queryClient.invalidateQueries({ queryKey: ['track-rotation-schedule'] })
     },
   })
 }

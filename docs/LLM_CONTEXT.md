@@ -16,10 +16,13 @@ src/lib/console-init.ts        side-effect module — imports logger and calls o
 src/instrumentation.ts         Next.js server instrumentation — calls logger.overrideConsole() at server startup
 src/lib/utils.ts               shared utilities incl. getRarityDisplay, getCollectionRarityDisplay, getRarityBackground
 src/lib/rarityUtils.ts         additional rarity helpers (getRarityStyles, getRarityOptions)
+src/lib/track-rotation-constants.ts  ROTATION_SERIES_INDICES ([9,10,11]) and ROTATION_TRACK_NAMES list
 src/hooks/useApi.ts            all TanStack Query hooks (getAuthHeaders exported here too)
 src/contexts/SeasonContext.tsx useSeasonContext — activeSeasonId, activeSeason, seasons, setActiveSeason
 src/components/auth/AuthContext.tsx   useAuth() hook — user, session, signIn, signOut
 src/app/api/                   all API route handlers
+src/app/track-rotations/       public track rotation schedule page
+src/app/admin/track-rotations/ admin UI for managing rotation sets and schedule
 supabase/migrations/           SQL migration files (source of truth for DB schema)
 scripts/database/              seeding scripts (not production code)
 external_data/                 raw game data files for import
@@ -50,13 +53,24 @@ boosts           name text, icon text?, boost_stats jsonb?
 seasons          name text, is_active bool
 
 tracks           name text, alt_name text?, laps int, driver_track_stat text,
-                 car_track_stat text
-                 NOTE: season membership lives in track_seasons, not here
+                 car_track_stat text,
+                 min_weather_factor int?, max_weather_factor int?, weather_freq int?
+                 NOTE: season membership lives in track_seasons, not here.
+                 Same track name across different seasons = intentionally distinct rows.
+                 One track row per (name, season) — duplicates within a season are a bug.
 
 track_seasons    track_id text FK tracks ON DELETE CASCADE,
                  season_id uuid FK seasons ON DELETE CASCADE,
                  is_active bool DEFAULT true
                  UNIQUE(track_id, season_id)
+
+track_rotation_sets      id uuid PK, set_number int UNIQUE (1–7),
+                         series_data jsonb  -- keys "9","10","11"; each an array of
+                         {track: string, weather: "dry"|"wet"|"mixed"}
+
+track_rotation_schedule  id uuid PK, rotation_set_id uuid FK track_rotation_sets,
+                         start_date date, end_date date
+                         INDEX on (start_date, end_date)
 
 collections      (referenced by drivers/car_parts via collection_id)
 
@@ -153,6 +167,14 @@ Driver, CarPart, UserDriver, UserCarPart
 Track, UserTrackGuide, UserTrackGuideDriver
 UserGpGuide, UserGpGuideTrack, UserGpGuideResult
 AITrackLoadout, TeamDriverName, UserCustomDriver
+TrackRotationSet, TrackRotationScheduleEntry
+
+// Track rotation composite types
+RotationWeather          // 'dry' | 'wet' | 'mixed'
+RotationTrackEntry       // { track: string; weather: RotationWeather }
+RotationSeriesData       // Record<string, RotationTrackEntry[]>  (keys "9","10","11")
+RotationTrackEntryWithInfo  // RotationTrackEntry + laps?, driver_track_stat?, car_track_stat?
+TrackRotationView        // { schedule, rotation_set, series: [{series_index, series_number, tracks}] }
 
 // View types (catalog + user data merged)
 DriverView, CarPartView, BoostView, BoostWithCustomName
@@ -363,6 +385,19 @@ Admin check in client code: `user` alone is not enough — fetch `/api/admin-che
 
 ---
 
+## Two Season Concepts
+
+The app distinguishes two separate season ideas:
+
+| Concept | Meaning | DB field |
+|---|---|---|
+| **Game season** | The season the game is currently running; the target for all content-cache imports | `seasons.is_active = true` |
+| **Viewing season** | The season the user has selected to browse in the app (can be historical) | `profiles.active_season_id` |
+
+A content cache file always represents the **game season's** data. The import always targets `is_active` season by default. The `season_filter` form field only controls which series numbers of *drivers/car parts/boosts* are pulled — it does not affect which season tracks, series data, or AI loadouts are tagged to.
+
+---
+
 ## Season Context (client components)
 
 ```typescript
@@ -370,12 +405,14 @@ import { useSeason } from '@/contexts/SeasonContext'
 const { activeSeasonId, activeSeason, seasons, isLoading, setActiveSeason } = useSeason()
 ```
 
-- `activeSeasonId` — the resolved working season (user preference → globally `is_active` → null)
-- `activeSeason` — full `Season` object for the active season, or null
+- `activeSeasonId` — the user's **viewing season** (user preference `profiles.active_season_id` → globally `is_active` → null). This is NOT necessarily the current game season.
+- `activeSeason` — full `Season` object for the viewing season, or null
 - `seasons` — all seasons
 - `setActiveSeason(id)` — persists to `profiles.active_season_id` via `PUT /api/profiles/[id]` and updates local state optimistically
 
 **Convention:** page components read `activeSeasonId` from context and pass it as a filter to hooks. Do **not** bake context reads into `useApi.ts` hooks.
+
+**Tracks page:** when `activeSeasonId` is null, the tracks page shows "Select a season to view tracks" — it does NOT fall back to all tracks.
 
 ### Season-aware hooks
 
@@ -538,17 +575,59 @@ Processes `content_cache.json` from the game. Import behaviour by table:
 | `tracks` | Upsert by `id` | **Never deletes rows.** Existing tracks are updated in-place; new tracks are inserted. Season membership is written separately to `track_seasons` (upsert on `track_id,season_id`). User data linked to existing track IDs is never disrupted. |
 | `series_data`, `ai_track_loadouts` | Season-scoped full refresh (delete rows for target season + insert) | Tagged with `season_id`; delete/insert is scoped to the imported season so other seasons' data is preserved |
 
+**Target season for import:** The import always defaults to the `is_active = true` season from the DB (the current game season). An admin can optionally override this via the "Target Game Season" dropdown on the import page (passes `target_season_id` in the form) — use only for testing a future/pre-release season. The target season controls both where tracks/series_data/AI loadouts are tagged *and* which drivers/car parts are included: the server derives the season number from the resolved target season's name (e.g. "Season 6" → `6`) and uses it to filter `item.season` on drivers and car parts. If the season name contains no parseable number, the filter falls back to importing all configured seasons. There is no separate client-side series filter.
+
 **Season resolution during import:** The route builds a `seasonIdMap` (season number → UUID) from the `seasons` table, ordered by `is_active DESC, created_at DESC`. When duplicate season names exist (e.g. a seeded row and an admin-created row both named "Season 6"), the active/most-recently-created season wins. This ensures drivers are assigned to the season the admin UI is currently showing.
 
 **Seeding philosophy:** `supabase/seed.sql` is intentionally empty — no game data is seeded. Seasons, drivers, car parts, boosts, and tracks are all populated exclusively via the content cache import. The `db:seed:*` npm scripts are legacy and should not be used.
 
 **Why tracks must upsert, not replace:** `user_track_guides.track_id` references `tracks.id` with `ON DELETE CASCADE` — deleting all tracks would wipe all track guides. `user_gp_guide_tracks.track_id` uses `ON DELETE SET NULL`, so those rows survive but lose their track association. Always use upsert for the `tracks` table.
 
-**Track season membership (many-to-many):** A track (e.g. "Austin") is a stable identity across seasons. Importing Season 5 content should not overwrite Season 6 membership. Season membership is tracked in `track_seasons`; the `tracks` table has no `season_id` column. When `GET /api/tracks?season_id=X` is called, the query goes through `track_seasons`. When the content cache upload runs, it upserts `tracks` first (identity only), then upserts `track_seasons` for the target season.
+**Track deduplication during import:** The import deduplicates tracks by name from the content cache (preferring the highest series index when the same name appears in multiple series). Before inserting, it checks ALL existing tracks in the DB by name to avoid creating a second row for the same named track. If a matching track exists but is not yet linked to the target season, a `track_seasons` row is created for it (rather than inserting a duplicate track row).
+
+**Track season membership (many-to-many):** Tracks between seasons share the same name but are considered distinct (each season's content cache may have slightly different stats). Season membership is tracked in `track_seasons`; the `tracks` table has no `season_id` column. Each (track name, season) pair should have exactly one row in `track_seasons` — duplicates within a season are a data bug. When `GET /api/tracks?season_id=X` is called, the query goes through `track_seasons`.
 
 ### Import Error Visibility
 
 Import errors are returned in `results.errors[]` and rendered in the admin page (`src/app/admin/page.tsx`) as a dismissible yellow panel below the backup cards. Previously only a count toast was shown.
+
+---
+
+## Track Rotations
+
+Series 9–11 tracks rotate on a bi-weekly Wednesday cadence through 7 fixed sets (set_number 1–7). The schedule repeats cyclically.
+
+### DB tables
+
+- `track_rotation_sets` — 7 rows, one per set. `series_data` JSONB holds tracks per series: `{"9": [{track, weather}, ...], "10": [...], "11": [...]}`. Track names are the display/rotation names (may need alias lookup to match `tracks.name`).
+- `track_rotation_schedule` — grows over time. Each row covers a date range and points to a set. Query: `.lte('start_date', date).gte('end_date', date)` to find the current rotation.
+
+### API routes
+
+- `GET /api/track-rotations?date=YYYY-MM-DD` — returns `TrackRotationView` (schedule entry + rotation set + enriched series tracks with laps/stats from `tracks` table). Date defaults to today.
+- `GET /api/track-rotations/schedule` — all schedule entries with `rotation_set_number`
+- `GET /api/admin/track-rotations/sets` — all 7 sets (admin auth)
+- `PUT /api/admin/track-rotations/sets/[id]` — update a set's series_data (admin auth)
+- `POST /api/admin/track-rotations/schedule` — add a schedule entry (admin auth)
+- `PUT /api/admin/track-rotations/schedule/[id]` — update a schedule entry (admin auth)
+- `DELETE /api/admin/track-rotations/schedule/[id]` — delete a schedule entry (admin auth)
+
+### Hooks (`src/hooks/useApi.ts`)
+
+```
+useCurrentTrackRotation(date?)      → TrackRotationView
+useTrackRotationSchedule()          → { data: TrackRotationScheduleEntry[] }
+useAdminRotationSets()              → { data: TrackRotationSet[] }
+useUpdateRotationSet()              mutation
+useAdminRotationSchedule()          → { data: TrackRotationScheduleEntry[] }
+useCreateRotationScheduleEntry()    mutation
+useUpdateRotationScheduleEntry()    mutation
+useDeleteRotationScheduleEntry()    mutation
+```
+
+### Track name matching
+
+Rotation track names (e.g. "Montréal") may differ from `tracks.name` (e.g. "Montreal"). The API normalises both sides by stripping accents and lowercasing before matching, then falls back to `track_name_aliases`.
 
 ---
 

@@ -9,7 +9,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAuthHeaders } from '@/hooks/useApi';
 import Link from 'next/link';
-import { Upload, Users, Shield, Download, FileUp, Database, MapPin, Calendar } from 'lucide-react';
+import { Upload, Users, Shield, Download, FileUp, Database, MapPin, Calendar, RotateCcw } from 'lucide-react';
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -178,6 +178,13 @@ export default function AdminPage() {
   }
 
   const adminSections = [
+    {
+      title: 'Track Rotations',
+      description: 'Manage rotation sets and the bi-weekly track schedule',
+      icon: RotateCcw,
+      href: '/admin/track-rotations',
+      color: 'text-indigo-600'
+    },
     {
       title: 'Content Cache Management',
       description: 'Upload and process content_cache.json files for new seasons',
