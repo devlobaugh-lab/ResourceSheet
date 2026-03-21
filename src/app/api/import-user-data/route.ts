@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
     const importData = body.data || body // Support both formats
 
     const results = {
-      imported: { drivers: 0, carParts: 0, boosts: 0, trackGuides: 0, gpGuides: 0, gpGuideTracks: 0, carSetups: 0, customDrivers: 0 },
-      updated: { drivers: 0, carParts: 0, boosts: 0, trackGuides: 0, gpGuides: 0, gpGuideTracks: 0, carSetups: 0, customDrivers: 0 },
+      imported: { drivers: 0, carParts: 0, boosts: 0, trackGuides: 0, gpGuides: 0, gpGuideTracks: 0, carSetups: 0, customDrivers: 0, rotationSeriesData: 0, rotationTrackData: 0 },
+      updated: { drivers: 0, carParts: 0, boosts: 0, trackGuides: 0, gpGuides: 0, gpGuideTracks: 0, carSetups: 0, customDrivers: 0, rotationSeriesData: 0, rotationTrackData: 0 },
       errors: [] as string[]
     }
 
@@ -479,6 +479,82 @@ export async function POST(request: NextRequest) {
         }
       }
       console.log(`  ✅ Custom drivers: ${results.imported.customDrivers} imported, ${results.updated.customDrivers} updated`)
+    }
+
+    // 8. Import User Rotation Series Data (upsert by user_id + rotation_set_id + series_index)
+    if (importData.userRotationSeriesData && Array.isArray(importData.userRotationSeriesData)) {
+      for (const item of importData.userRotationSeriesData) {
+        try {
+          const { data: existing } = await supabaseAdmin
+            .from('user_rotation_series_data')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('rotation_set_id', item.rotation_set_id)
+            .eq('series_index', item.series_index)
+            .single()
+
+          const rowData = {
+            user_id: userId,
+            rotation_set_id: item.rotation_set_id,
+            series_index: item.series_index,
+            driver_1_id: item.driver_1_id,
+            driver_2_id: item.driver_2_id,
+            saved_setup_id: item.saved_setup_id,
+          }
+
+          if (existing) {
+            const { error } = await supabaseAdmin.from('user_rotation_series_data').update(rowData).eq('id', existing.id)
+            if (!error) results.updated.rotationSeriesData++
+            else results.errors.push(`Rotation series data ${item.rotation_set_id}/${item.series_index}: ${error.message}`)
+          } else {
+            const { error } = await supabaseAdmin.from('user_rotation_series_data').insert(rowData)
+            if (!error) results.imported.rotationSeriesData++
+            else results.errors.push(`Rotation series data ${item.rotation_set_id}/${item.series_index}: ${error.message}`)
+          }
+        } catch (e) {
+          results.errors.push(`Rotation series data ${item.rotation_set_id}/${item.series_index}: ${String(e)}`)
+        }
+      }
+      console.log(`  ✅ Rotation series data: ${results.imported.rotationSeriesData} imported, ${results.updated.rotationSeriesData} updated`)
+    }
+
+    // 9. Import User Rotation Track Data (upsert by user_id + rotation_set_id + series_index + track_position)
+    if (importData.userRotationTrackData && Array.isArray(importData.userRotationTrackData)) {
+      for (const item of importData.userRotationTrackData) {
+        try {
+          const { data: existing } = await supabaseAdmin
+            .from('user_rotation_track_data')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('rotation_set_id', item.rotation_set_id)
+            .eq('series_index', item.series_index)
+            .eq('track_position', item.track_position)
+            .single()
+
+          const rowData = {
+            user_id: userId,
+            rotation_set_id: item.rotation_set_id,
+            series_index: item.series_index,
+            track_position: item.track_position,
+            boost_id: item.boost_id,
+            dry_strategy: item.dry_strategy,
+            wet_strategy: item.wet_strategy,
+          }
+
+          if (existing) {
+            const { error } = await supabaseAdmin.from('user_rotation_track_data').update(rowData).eq('id', existing.id)
+            if (!error) results.updated.rotationTrackData++
+            else results.errors.push(`Rotation track data ${item.rotation_set_id}/${item.series_index}/${item.track_position}: ${error.message}`)
+          } else {
+            const { error } = await supabaseAdmin.from('user_rotation_track_data').insert(rowData)
+            if (!error) results.imported.rotationTrackData++
+            else results.errors.push(`Rotation track data ${item.rotation_set_id}/${item.series_index}/${item.track_position}: ${error.message}`)
+          }
+        } catch (e) {
+          results.errors.push(`Rotation track data ${item.rotation_set_id}/${item.series_index}/${item.track_position}: ${String(e)}`)
+        }
+      }
+      console.log(`  ✅ Rotation track data: ${results.imported.rotationTrackData} imported, ${results.updated.rotationTrackData} updated`)
     }
 
     console.log('📥 Import complete')

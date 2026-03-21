@@ -250,8 +250,8 @@ function RotationSeriesCard({
           <div className="border-t border-gray-100 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Drivers column */}
             <div className="flex flex-col gap-4">
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Driver 1</p>
+              <Card className="p-4">
+                <p className="text-base font-semibold text-gray-900 mb-4">Driver 1</p>
                 <div className={cn('rounded-lg p-4', driver1 ? getRarityBackground(driver1.rarity) : 'bg-gray-100')}>
                   <DriverDisplay
                     driver={driver1}
@@ -259,9 +259,9 @@ function RotationSeriesCard({
                     onEdit={() => setDriverModal({ open: true, slot: 'driver_1_id' })}
                   />
                 </div>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Driver 2</p>
+              </Card>
+              <Card className="p-4">
+                <p className="text-base font-semibold text-gray-900 mb-4">Driver 2</p>
                 <div className={cn('rounded-lg p-4', driver2 ? getRarityBackground(driver2.rarity) : 'bg-gray-100')}>
                   <DriverDisplay
                     driver={driver2}
@@ -269,12 +269,11 @@ function RotationSeriesCard({
                     onEdit={() => setDriverModal({ open: true, slot: 'driver_2_id' })}
                   />
                 </div>
-              </div>
+              </Card>
             </div>
 
             {/* Car Setup column */}
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Car Setup</p>
               <SetupSelector
                 setups={allSetups}
                 selectedSetupId={seriesData?.saved_setup_id}

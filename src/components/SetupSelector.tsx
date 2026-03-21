@@ -187,7 +187,7 @@ export function SetupSelector({
         onClick={() => setMode('select')}
         className="w-full text-sm text-blue-600 hover:text-blue-700 border border-dashed border-blue-300 rounded-lg px-3 py-2 hover:bg-blue-50 transition-colors"
       >
-        + Select Setup
+        + Select Car Setup
       </button>
     )
   }

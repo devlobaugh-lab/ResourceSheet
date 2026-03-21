@@ -224,7 +224,25 @@ export async function GET(request: NextRequest) {
     data.userCustomDrivers = userCustomDrivers || []
     console.log(`  ✅ user_custom_drivers: ${userCustomDrivers?.length || 0} records`)
 
-    // 11. Profile metadata
+    // 11. User Rotation Series Data
+    const { data: userRotationSeriesData, error: rotSeriesError } = await supabase
+      .from('user_rotation_series_data')
+      .select('*')
+
+    if (rotSeriesError) console.warn('Error exporting user_rotation_series_data:', rotSeriesError)
+    data.userRotationSeriesData = userRotationSeriesData || []
+    console.log(`  ✅ user_rotation_series_data: ${userRotationSeriesData?.length || 0} records`)
+
+    // 12. User Rotation Track Data
+    const { data: userRotationTrackData, error: rotTrackError } = await supabase
+      .from('user_rotation_track_data')
+      .select('*')
+
+    if (rotTrackError) console.warn('Error exporting user_rotation_track_data:', rotTrackError)
+    data.userRotationTrackData = userRotationTrackData || []
+    console.log(`  ✅ user_rotation_track_data: ${userRotationTrackData?.length || 0} records`)
+
+    // 13. Profile metadata
     const { data: profileData } = await supabaseAdmin
       .from('profiles')
       .select('username, active_season_id')

@@ -145,6 +145,18 @@ user_gp_guide_results  gp_guide_id uuid, track_id uuid, results_notes text?
 
 user_custom_drivers   user_id uuid, name text, overtaking int, blocking int,
                       qualifying int, tyre_use int, race_start int, car_parts jsonb?
+
+user_rotation_series_data   user_id uuid, rotation_set_id uuid FK track_rotation_sets,
+                            series_index int (9|10|11),
+                            driver_1_id uuid? FK drivers, driver_2_id uuid? FK drivers,
+                            saved_setup_id uuid? FK user_car_setups
+                            UNIQUE(user_id, rotation_set_id, series_index)
+
+user_rotation_track_data    user_id uuid, rotation_set_id uuid FK track_rotation_sets,
+                            series_index int, track_position int (0–3),
+                            boost_id uuid? FK boosts,
+                            dry_strategy text?, wet_strategy text?
+                            UNIQUE(user_id, rotation_set_id, series_index, track_position)
 ```
 
 ### System table
@@ -511,9 +523,60 @@ All `console.*` output is suppressed in production via a global console override
 
 ## Admin Import / Export
 
+### Admin Backup (`GET /api/admin/export` → `POST /api/admin/import`)
+
+Single-file backup covering all user data (all users) and all admin-managed system config. Export format (version `2.0`):
+
+```json
+{
+  "version": "2.0",
+  "exportType": "adminBackup",
+  "exportedAt": "<ISO timestamp>",
+  "data": {
+    "userDrivers": [...],
+    "userCarParts": [...],
+    "userBoosts": [...],
+    "userTrackGuides": [...],
+    "userTrackGuideDrivers": [...],
+    "userGpGuides": [...],
+    "userGpGuideTracks": [...],
+    "userGpGuideResults": [...],
+    "userCarSetups": [...],
+    "userRotationSeriesData": [...],
+    "userRotationTrackData": [...],
+    "seasons": [...],
+    "trackNameAliases": [...],
+    "boostIconData": [{ "icon_name": "...", "custom_name": "...", "is_free": false }],
+    "trackRotationSets": [...],
+    "trackRotationSchedule": [...]
+  }
+}
+```
+
+Import upsert keys by table:
+
+| Table | Upsert key |
+|---|---|
+| `user_drivers` | `(user_id, driver_id)` |
+| `user_car_parts` | `(user_id, car_part_id)` |
+| `user_boosts` | `(user_id, boost_id)` |
+| `user_track_guides` | `(user_id, track_id, gp_level)` |
+| `user_track_guide_drivers` | delete+insert by `track_guide_id` |
+| `user_gp_guides` | insert-only (preserve history) |
+| `user_gp_guide_tracks` | `(gp_guide_id, race_type, race_number)` |
+| `user_gp_guide_results` | `(gp_guide_id, track_id)` |
+| `user_car_setups` | `(user_id, name)` |
+| `user_rotation_series_data` | `(user_id, rotation_set_id, series_index)` |
+| `user_rotation_track_data` | `(user_id, rotation_set_id, series_index, track_position)` |
+| `seasons` | `id` |
+| `track_name_aliases` | `system_name` |
+| `boost_icon_data` | `icon_name` |
+| `track_rotation_sets` | `set_number` |
+| `track_rotation_schedule` | `(rotation_set_id, start_date)` |
+
 ### System Backup (`GET /api/admin/export/system` → `POST /api/admin/import/system`)
 
-Export format (version `1.1`):
+Separate route covering auth users + profiles + admin system config only (no user collection/guide data). Export format (version `1.1`):
 
 ```json
 {
@@ -537,7 +600,7 @@ Export format (version `1.1`):
 
 ### User Data Backup (`GET /api/admin/export/users` → `POST /api/admin/import/users`)
 
-Export format (version `1.1`):
+Per-user backup covering collection and guide data for all users. Export format (version `1.1`):
 
 ```json
 {
@@ -612,17 +675,27 @@ Series 9–11 tracks rotate on a bi-weekly Wednesday cadence through 7 fixed set
 - `PUT /api/admin/track-rotations/schedule/[id]` — update a schedule entry (admin auth)
 - `DELETE /api/admin/track-rotations/schedule/[id]` — delete a schedule entry (admin auth)
 
+### User rotation data
+
+Users annotate each rotation set (per series and per track) with driver picks, setup, boosts, and strategy notes. This data is keyed to `rotation_set_id` (stable UUID from `track_rotation_sets`), not to a specific schedule entry — so it persists across repeat occurrences of the same set.
+
+- `user_rotation_series_data` — driver 1/2 and saved setup for a (user, rotation set, series)
+- `user_rotation_track_data` — boost and dry/wet strategy for a (user, rotation set, series, track position)
+
 ### Hooks (`src/hooks/useApi.ts`)
 
 ```
-useCurrentTrackRotation(date?)      → TrackRotationView
-useTrackRotationSchedule()          → { data: TrackRotationScheduleEntry[] }
-useAdminRotationSets()              → { data: TrackRotationSet[] }
-useUpdateRotationSet()              mutation
-useAdminRotationSchedule()          → { data: TrackRotationScheduleEntry[] }
-useCreateRotationScheduleEntry()    mutation
-useUpdateRotationScheduleEntry()    mutation
-useDeleteRotationScheduleEntry()    mutation
+useCurrentTrackRotation(date?)          → TrackRotationView
+useTrackRotationSchedule()              → { data: TrackRotationScheduleEntry[] }
+useUserRotationSetData(rotationSetId?)  → { series_data: UserRotationSeriesData[], track_data: UserRotationTrackData[] }
+useUpsertRotationSeriesData()           mutation — upsert user_rotation_series_data
+useUpsertRotationTrackData()            mutation — upsert user_rotation_track_data
+useAdminRotationSets()                  → { data: TrackRotationSet[] }
+useUpdateRotationSet()                  mutation
+useAdminRotationSchedule()              → { data: TrackRotationScheduleEntry[] }
+useCreateRotationScheduleEntry()        mutation
+useUpdateRotationScheduleEntry()        mutation
+useDeleteRotationScheduleEntry()        mutation
 ```
 
 ### Track name matching
