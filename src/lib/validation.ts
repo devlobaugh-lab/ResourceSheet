@@ -155,6 +155,24 @@ export const boostsFiltersSchema = z.object({
   ...paginationSchema.shape,
 })
 
+// Track rotation user data schemas
+export const upsertRotationSeriesDataSchema = z.object({
+  rotation_set_id: uuidSchema,
+  series_index: z.number().int(),
+  driver_1_id: uuidSchema.nullable().optional(),
+  driver_2_id: uuidSchema.nullable().optional(),
+  saved_setup_id: uuidSchema.nullable().optional(),
+})
+
+export const upsertRotationTrackDataSchema = z.object({
+  rotation_set_id: uuidSchema,
+  series_index: z.number().int(),
+  track_position: z.number().int().min(0).max(3),
+  boost_id: uuidSchema.nullable().optional(),
+  dry_strategy: z.string().nullable().optional(),
+  wet_strategy: z.string().nullable().optional(),
+})
+
 // Export all schemas
 export const schemas = {
   // Catalog Items

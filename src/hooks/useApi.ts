@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup, Track, CatalogItem, SeriesWithTracks, TrackRotationView } from '@/types/database'
+import type { Boost, Season, DriverView, CarPartView, BoostView, UserCarSetup, Track, CatalogItem, SeriesWithTracks, TrackRotationView, UserRotationSetData } from '@/types/database'
 import type { PaginationMeta } from '@/types/api'
 
 // API base URL
@@ -802,5 +802,75 @@ export function useSeries(filters?: { season_id?: string }) {
       return response.json()
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+// Fetch user rotation data (series + track) for a given rotation set
+export function useUserRotationSetData(rotationSetId?: string) {
+  return useQuery({
+    queryKey: ['user-rotation-data', rotationSetId],
+    queryFn: async (): Promise<UserRotationSetData> => {
+      const response = await fetch(
+        `${API_BASE}/track-rotations/user-data?rotation_set_id=${rotationSetId}`,
+        { headers: await getAuthHeaders(), credentials: 'same-origin' }
+      )
+      if (!response.ok) throw new Error('Failed to fetch user rotation data')
+      return response.json()
+    },
+    enabled: !!rotationSetId,
+    staleTime: 30 * 1000,
+  })
+}
+
+// Upsert a series data row (driver 1, driver 2, setup)
+export function useUpsertRotationSeriesData() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: {
+      rotation_set_id: string
+      series_index: number
+      driver_1_id?: string | null
+      driver_2_id?: string | null
+      saved_setup_id?: string | null
+    }) => {
+      const response = await fetch(`${API_BASE}/track-rotations/user-data`, {
+        method: 'PUT',
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify(data),
+      })
+      if (!response.ok) throw new Error('Failed to save series data')
+      return response.json()
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['user-rotation-data', variables.rotation_set_id] })
+    },
+  })
+}
+
+// Upsert a track data row (boost, dry/wet strategy)
+export function useUpsertRotationTrackData() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: {
+      rotation_set_id: string
+      series_index: number
+      track_position: number
+      boost_id?: string | null
+      dry_strategy?: string | null
+      wet_strategy?: string | null
+    }) => {
+      const response = await fetch(`${API_BASE}/track-rotations/user-data/track`, {
+        method: 'PUT',
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify(data),
+      })
+      if (!response.ok) throw new Error('Failed to save track data')
+      return response.json()
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['user-rotation-data', variables.rotation_set_id] })
+    },
   })
 }

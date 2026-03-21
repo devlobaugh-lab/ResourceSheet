@@ -723,6 +723,79 @@ export interface Database {
           updated_at?: string
         }
       }
+      user_rotation_series_data: {
+        Row: {
+          id: string
+          user_id: string
+          rotation_set_id: string
+          series_index: number
+          driver_1_id: string | null
+          driver_2_id: string | null
+          saved_setup_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          rotation_set_id: string
+          series_index: number
+          driver_1_id?: string | null
+          driver_2_id?: string | null
+          saved_setup_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          rotation_set_id?: string
+          series_index?: number
+          driver_1_id?: string | null
+          driver_2_id?: string | null
+          saved_setup_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      user_rotation_track_data: {
+        Row: {
+          id: string
+          user_id: string
+          rotation_set_id: string
+          series_index: number
+          track_position: number
+          boost_id: string | null
+          dry_strategy: string | null
+          wet_strategy: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          rotation_set_id: string
+          series_index: number
+          track_position: number
+          boost_id?: string | null
+          dry_strategy?: string | null
+          wet_strategy?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          rotation_set_id?: string
+          series_index?: number
+          track_position?: number
+          boost_id?: string | null
+          dry_strategy?: string | null
+          wet_strategy?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -765,6 +838,15 @@ export type UserGpGuideResult = Tables<'user_gp_guide_results'>
 export type AITrackLoadout = Tables<'ai_track_loadouts'>
 export type TeamDriverName = Tables<'team_driver_names'>
 export type UserCustomDriver = Tables<'user_custom_drivers'>
+
+// Track rotation user data types
+export type UserRotationSeriesData = Tables<'user_rotation_series_data'>
+export type UserRotationTrackData = Tables<'user_rotation_track_data'>
+
+export interface UserRotationSetData {
+  series_data: UserRotationSeriesData[]
+  track_data: UserRotationTrackData[]
+}
 
 // Track rotation types
 export type RotationWeather = 'dry' | 'wet' | 'mixed'

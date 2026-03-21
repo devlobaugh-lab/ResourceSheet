@@ -1,13 +1,34 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
-import { useCurrentTrackRotation, useTrackRotationSchedule } from '@/hooks/useApi'
-import { cn } from '@/lib/utils'
-import type { RotationTrackEntryWithInfo } from '@/types/database'
+import {
+  useCurrentTrackRotation,
+  useTrackRotationSchedule,
+  useUserRotationSetData,
+  useUpsertRotationSeriesData,
+  useUpsertRotationTrackData,
+  useUserBoosts,
+  useUserDrivers,
+  useUserCarSetups,
+  useUserCarParts,
+} from '@/hooks/useApi'
+import { cn, getRarityBackground } from '@/lib/utils'
+import type {
+  RotationTrackEntryWithInfo,
+  UserRotationSeriesData,
+  UserRotationTrackData,
+  BoostView,
+  DriverView,
+  UserCarSetup,
+  CarPartView,
+} from '@/types/database'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { DriverDisplay } from '@/components/DriverDisplay'
+import { DriverSelectionGrid } from '@/components/DriverSelectionGrid'
+import { SetupSelector } from '@/components/SetupSelector'
 
 const statDisplayNames: Record<string, string> = {
   tyreUse: 'Tyre Management',
@@ -18,6 +39,36 @@ const statDisplayNames: Record<string, string> = {
   cornering: 'Cornering',
   powerUnit: 'Power Unit',
   none: 'None',
+}
+
+// Maps track stat names to boost stat keys (same as track-guides)
+const trackStatToBoostStat: Record<string, string> = {
+  overtaking: 'overtake',
+  overtake: 'overtake',
+  defending: 'block',
+  defend: 'block',
+  block: 'block',
+  corners: 'corners',
+  cornering: 'corners',
+  tyre_use: 'tyre_use',
+  tyreUse: 'tyre_use',
+  tyre: 'tyre_use',
+  power_unit: 'power_unit',
+  powerUnit: 'power_unit',
+  speed: 'speed',
+  pit_stop: 'pit_stop',
+  pitStop: 'pit_stop',
+  race_start: 'race_start',
+  raceStart: 'race_start',
+}
+
+// Color coding for boost stat tier values (matching track-guides)
+function getBoostValueColor(tierValue: number): string {
+  return tierValue === 1 ? 'bg-blue-200' :
+         tierValue === 2 ? 'bg-green-200' :
+         tierValue === 3 ? 'bg-yellow-200' :
+         tierValue === 4 ? 'bg-orange-200' :
+         tierValue === 5 ? 'bg-red-300' : 'bg-gray-50'
 }
 
 const weatherLabel: Record<string, string> = {
@@ -37,14 +88,57 @@ function formatStat(stat: string | undefined): string {
   return statDisplayNames[stat] || stat
 }
 
+// ─── RotationSeriesCard ────────────────────────────────────────────────────────
+
+interface RotationSeriesCardProps {
+  seriesNumber: number
+  seriesIndex: number
+  tracks: RotationTrackEntryWithInfo[]
+  seriesData?: UserRotationSeriesData
+  trackDataMap: Record<string, UserRotationTrackData>
+  allBoosts: BoostView[]
+  allDrivers: DriverView[]
+  allSetups: UserCarSetup[]
+  allCarParts: CarPartView[]
+  onSaveSeries: (patch: Partial<Pick<UserRotationSeriesData, 'driver_1_id' | 'driver_2_id' | 'saved_setup_id'>>) => void
+  onSaveTrack: (position: number, patch: Partial<Pick<UserRotationTrackData, 'boost_id' | 'dry_strategy' | 'wet_strategy'>>) => void
+}
+
 function RotationSeriesCard({
   seriesNumber,
+  seriesIndex,
   tracks,
-}: {
-  seriesNumber: number
-  tracks: RotationTrackEntryWithInfo[]
-}) {
+  seriesData,
+  trackDataMap,
+  allBoosts,
+  allDrivers,
+  allSetups,
+  allCarParts,
+  onSaveSeries,
+  onSaveTrack,
+}: RotationSeriesCardProps) {
   const [isExpanded, setIsExpanded] = useState(true)
+  const [boostModal, setBoostModal] = useState<{ open: boolean; position: number }>({ open: false, position: 0 })
+  const [driverModal, setDriverModal] = useState<{ open: boolean; slot: 'driver_1_id' | 'driver_2_id' } | null>(null)
+
+  const driver1 = useMemo(() => allDrivers.find((d) => d.id === seriesData?.driver_1_id), [allDrivers, seriesData?.driver_1_id])
+  const driver2 = useMemo(() => allDrivers.find((d) => d.id === seriesData?.driver_2_id), [allDrivers, seriesData?.driver_2_id])
+
+  // Most prevalent driver_track_stat across the 4 tracks
+  const dominantDriverStat = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const t of tracks) {
+      if (t.driver_track_stat) {
+        counts[t.driver_track_stat] = (counts[t.driver_track_stat] ?? 0) + 1
+      }
+    }
+    let best = 'overtaking'
+    let bestCount = 0
+    for (const [stat, count] of Object.entries(counts)) {
+      if (count > bestCount) { best = stat; bestCount = count }
+    }
+    return best
+  }, [tracks])
 
   return (
     <Card className="overflow-hidden">
@@ -89,35 +183,267 @@ function RotationSeriesCard({
                 <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
                   Car Stat
                 </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
+                  Boost
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
+                  Strategy
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {tracks.map((entry, i) => (
-                <tr key={i} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {entry.track}
-                  </td>
-                  <td className={cn('px-6 py-4 whitespace-nowrap text-sm', weatherClass[entry.weather])}>
-                    {weatherLabel[entry.weather] ?? entry.weather}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {entry.laps ?? '—'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {formatStat(entry.driver_track_stat)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {formatStat(entry.car_track_stat)}
-                  </td>
-                </tr>
-              ))}
+              {tracks.map((entry, i) => {
+                const trackKey = `${seriesIndex}_${i}`
+                const td = trackDataMap[trackKey]
+                const boost = allBoosts.find((b) => b.id === td?.boost_id) ?? null
+
+                return (
+                  <tr key={i} className="hover:bg-gray-50">
+                    <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {entry.track}
+                    </td>
+                    <td className={cn('px-6 py-2 whitespace-nowrap text-sm', weatherClass[entry.weather])}>
+                      {weatherLabel[entry.weather] ?? entry.weather}
+                    </td>
+                    <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">
+                      {entry.laps ?? '—'}
+                    </td>
+                    <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-600">
+                      {formatStat(entry.driver_track_stat)}
+                    </td>
+                    <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-600">
+                      {formatStat(entry.car_track_stat)}
+                    </td>
+                    <td className="px-6 py-2 whitespace-nowrap text-sm">
+                      {boost ? (
+                        <button
+                          onClick={() => setBoostModal({ open: true, position: i })}
+                          className="text-left text-xs font-medium text-gray-800 hover:text-blue-600 underline-offset-2 hover:underline truncate max-w-[120px]"
+                          title="Change boost"
+                        >
+                          {boost.boost_custom_names?.custom_name ||
+                            (boost.icon ? boost.icon.replace('BoostIcon_', '') : null) ||
+                            boost.name}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setBoostModal({ open: true, position: i })}
+                          className="text-xs text-blue-600 hover:text-blue-700"
+                        >
+                          + Boost
+                        </button>
+                      )}
+                    </td>
+                    <td className="px-6 py-2 text-sm">
+                      <StrategyCell
+                        value={td?.dry_strategy ?? ''}
+                        onBlur={(v) => onSaveTrack(i, { dry_strategy: v || null })}
+                      />
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
+
+          {/* Below-table: Drivers (stacked) | Car Setup */}
+          <div className="border-t border-gray-100 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Drivers column */}
+            <div className="flex flex-col gap-4">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Driver 1</p>
+                <div className={cn('rounded-lg p-4', driver1 ? getRarityBackground(driver1.rarity) : 'bg-gray-100')}>
+                  <DriverDisplay
+                    driver={driver1}
+                    placeholderText="+ Select Driver 1"
+                    onEdit={() => setDriverModal({ open: true, slot: 'driver_1_id' })}
+                  />
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Driver 2</p>
+                <div className={cn('rounded-lg p-4', driver2 ? getRarityBackground(driver2.rarity) : 'bg-gray-100')}>
+                  <DriverDisplay
+                    driver={driver2}
+                    placeholderText="+ Select Driver 2"
+                    onEdit={() => setDriverModal({ open: true, slot: 'driver_2_id' })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Car Setup column */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Car Setup</p>
+              <SetupSelector
+                setups={allSetups}
+                selectedSetupId={seriesData?.saved_setup_id}
+                allCarParts={allCarParts}
+                onSelect={(id) => onSaveSeries({ saved_setup_id: id })}
+                seriesFilter={seriesIndex}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Boost picker modal */}
+      {boostModal.open && (() => {
+        const currentTrack = tracks[boostModal.position]
+
+        // Count all driver + car stat references across all 4 tracks
+        const statCounts: Record<string, number> = {}
+        for (const t of tracks) {
+          if (t.driver_track_stat) {
+            const k = trackStatToBoostStat[t.driver_track_stat] ?? t.driver_track_stat
+            statCounts[k] = (statCounts[k] ?? 0) + 1
+          }
+          if (t.car_track_stat) {
+            const k = trackStatToBoostStat[t.car_track_stat] ?? t.car_track_stat
+            statCounts[k] = (statCounts[k] ?? 0) + 1
+          }
+        }
+        const rankedStats = Object.entries(statCounts).sort((a, b) => b[1] - a[1]).map(([s]) => s)
+        const primaryBoostStat = rankedStats[0] ?? 'overtake'
+        const secondaryBoostStat = rankedStats[1] ?? primaryBoostStat
+
+        const sortedBoosts = [...allBoosts].sort((a, b) => {
+          const aStats = a.boost_stats ?? {}
+          const bStats = b.boost_stats ?? {}
+          const aPri = aStats[primaryBoostStat] ?? 0
+          const bPri = bStats[primaryBoostStat] ?? 0
+          if (aPri !== bPri) return bPri - aPri
+          const aSec = aStats[secondaryBoostStat] ?? 0
+          const bSec = bStats[secondaryBoostStat] ?? 0
+          if (aSec !== bSec) return bSec - aSec
+          const aName = a.boost_custom_names?.custom_name || (a.icon ? a.icon.replace('BoostIcon_', '') : null) || a.name
+          const bName = b.boost_custom_names?.custom_name || (b.icon ? b.icon.replace('BoostIcon_', '') : null) || b.name
+          return aName.localeCompare(bName)
+        })
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center" onClick={() => setBoostModal({ open: false, position: 0 })}>
+            <div className="bg-white rounded-lg w-full max-w-5xl mx-4 max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Select Boost — {currentTrack?.track}</h3>
+                <button onClick={() => setBoostModal({ open: false, position: 0 })} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+              </div>
+              <div className="overflow-auto flex-1 p-4">
+                <table className="w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-700 sticky top-0 z-10">
+                    <tr>
+                      {['Name', 'Amount', 'Overtake', 'Defend', 'Race Start', 'Tyre Use', 'Speed', 'Corners', 'Power Unit', 'Pit Stop'].map((col) => (
+                        <th key={col} scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">{col}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    <tr
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => {
+                        onSaveTrack(boostModal.position, { boost_id: null })
+                        setBoostModal({ open: false, position: 0 })
+                      }}
+                    >
+                      <td className="px-3 py-1 text-sm text-gray-400 italic" colSpan={10}>— No boost</td>
+                    </tr>
+                    {sortedBoosts.map((b) => {
+                      const s = b.boost_stats ?? {}
+                      const isSelected = trackDataMap[`${seriesIndex}_${boostModal.position}`]?.boost_id === b.id
+                      return (
+                        <tr
+                          key={b.id}
+                          className={cn('hover:bg-gray-50 cursor-pointer transition-colors', isSelected && 'bg-blue-50')}
+                          onClick={() => {
+                            onSaveTrack(boostModal.position, { boost_id: b.id })
+                            setBoostModal({ open: false, position: 0 })
+                          }}
+                        >
+                          <td className="px-3 py-1 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {b.boost_custom_names?.custom_name || (b.icon ? b.icon.replace('BoostIcon_', '') : null) || b.name}
+                          </td>
+                          <td className="px-3 py-1 whitespace-nowrap text-sm text-center text-gray-900">{b.card_count || 0}</td>
+                          <td className={cn('px-3 py-1 whitespace-nowrap text-sm text-center font-medium', s.overtake > 0 && getBoostValueColor(s.overtake))}>{s.overtake ? s.overtake * 5 : ''}</td>
+                          <td className={cn('px-3 py-1 whitespace-nowrap text-sm text-center font-medium', s.block > 0 && getBoostValueColor(s.block))}>{s.block ? s.block * 5 : ''}</td>
+                          <td className={cn('px-3 py-1 whitespace-nowrap text-sm text-center font-medium', s.race_start > 0 && getBoostValueColor(s.race_start))}>{s.race_start ? s.race_start * 5 : ''}</td>
+                          <td className={cn('px-3 py-1 whitespace-nowrap text-sm text-center font-medium', s.tyre_use > 0 && getBoostValueColor(s.tyre_use))}>{s.tyre_use ? s.tyre_use * 5 : ''}</td>
+                          <td className={cn('px-3 py-1 whitespace-nowrap text-sm text-center font-medium', s.speed > 0 && getBoostValueColor(s.speed))}>{s.speed ? s.speed * 5 : ''}</td>
+                          <td className={cn('px-3 py-1 whitespace-nowrap text-sm text-center font-medium', s.corners > 0 && getBoostValueColor(s.corners))}>{s.corners ? s.corners * 5 : ''}</td>
+                          <td className={cn('px-3 py-1 whitespace-nowrap text-sm text-center font-medium', s.power_unit > 0 && getBoostValueColor(s.power_unit))}>{s.power_unit ? s.power_unit * 5 : ''}</td>
+                          <td className={cn('px-3 py-1 whitespace-nowrap text-sm text-center font-medium', s.pit_stop > 0 && getBoostValueColor(s.pit_stop))}>{s.pit_stop ? s.pit_stop * 5 : ''}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Driver picker modal */}
+      {driverModal?.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDriverModal(null)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="font-semibold text-gray-900">
+                {driverModal.slot === 'driver_1_id' ? 'Select Driver 1' : 'Select Driver 2'}
+              </h3>
+              <button onClick={() => setDriverModal(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+            </div>
+            <div className="overflow-auto flex-1 p-4">
+            <DriverSelectionGrid
+              drivers={allDrivers}
+              selectedDriverIds={
+                driverModal.slot === 'driver_1_id'
+                  ? seriesData?.driver_1_id ? [seriesData.driver_1_id] : []
+                  : seriesData?.driver_2_id ? [seriesData.driver_2_id] : []
+              }
+              onDriverSelectionChange={(ids) => {
+                onSaveSeries({ [driverModal.slot]: ids[0] ?? null })
+                setDriverModal(null)
+              }}
+              maxSeries={seriesIndex}
+              singleSelect
+              driver1Id={seriesData?.driver_1_id ?? undefined}
+              driver2Id={seriesData?.driver_2_id ?? undefined}
+              trackStat={dominantDriverStat}
+            />
+            </div>
+          </div>
         </div>
       )}
     </Card>
   )
 }
+
+// ─── StrategyCell ──────────────────────────────────────────────────────────────
+
+function StrategyCell({
+  value,
+  onBlur,
+}: {
+  value: string
+  onBlur: (v: string) => void
+}) {
+  const [strategy, setStrategy] = useState(value)
+
+  const prev = useRef(value)
+  if (prev.current !== value) { prev.current = value; setStrategy(value) }
+
+  return (
+    <input
+      value={strategy}
+      onChange={(e) => setStrategy(e.target.value)}
+      onBlur={(e) => onBlur(e.target.value)}
+      placeholder="—"
+      className="w-full min-w-[120px] text-xs border border-gray-200 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
+    />
+  )
+}
+
+// ─── Date helpers ──────────────────────────────────────────────────────────────
 
 function formatDateRange(startDate: string, endDate: string): string {
   const start = new Date(startDate + 'T00:00:00')
@@ -135,6 +461,8 @@ function getTodayDate(): string {
 function isDateInRange(date: string, startDate: string, endDate: string): boolean {
   return date >= startDate && date <= endDate
 }
+
+// ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function TrackRotationsPage() {
   const today = getTodayDate()
@@ -157,6 +485,76 @@ export default function TrackRotationsPage() {
   const queryDate = currentEntry?.start_date ?? viewDate
 
   const { data: rotationView, isLoading: rotationLoading } = useCurrentTrackRotation(queryDate)
+
+  const rotationSetId = rotationView?.rotation_set?.id
+
+  // User data for this rotation set
+  const { data: userRotationData } = useUserRotationSetData(rotationSetId)
+  const upsertSeries = useUpsertRotationSeriesData()
+  const upsertTrack = useUpsertRotationTrackData()
+
+  // Supporting data (all fetched once at page level)
+  const { data: boostsData } = useUserBoosts({ limit: 200 })
+  const { data: driversData } = useUserDrivers({ limit: 1000 })
+  const { data: setupsData } = useUserCarSetups()
+  const { data: carPartsData } = useUserCarParts({ limit: 1000 })
+
+  const allBoosts = useMemo(() => boostsData?.data ?? [], [boostsData])
+  const allDrivers = useMemo(() => driversData?.data ?? [], [driversData])
+  const allSetups = useMemo(() => setupsData?.data ?? [], [setupsData])
+  const allCarParts = useMemo(() => carPartsData?.data ?? [], [carPartsData])
+
+  // Lookup maps
+  const seriesMap = useMemo(() => {
+    const map: Record<number, UserRotationSeriesData> = {}
+    for (const row of userRotationData?.series_data ?? []) {
+      map[row.series_index] = row
+    }
+    return map
+  }, [userRotationData])
+
+  const trackMap = useMemo(() => {
+    const map: Record<string, UserRotationTrackData> = {}
+    for (const row of userRotationData?.track_data ?? []) {
+      map[`${row.series_index}_${row.track_position}`] = row
+    }
+    return map
+  }, [userRotationData])
+
+  // Callbacks
+  function handleSaveSeries(
+    seriesIndex: number,
+    patch: Partial<Pick<UserRotationSeriesData, 'driver_1_id' | 'driver_2_id' | 'saved_setup_id'>>
+  ) {
+    if (!rotationSetId) return
+    const existing = seriesMap[seriesIndex]
+    upsertSeries.mutate({
+      rotation_set_id: rotationSetId,
+      series_index: seriesIndex,
+      driver_1_id: existing?.driver_1_id ?? null,
+      driver_2_id: existing?.driver_2_id ?? null,
+      saved_setup_id: existing?.saved_setup_id ?? null,
+      ...patch,
+    })
+  }
+
+  function handleSaveTrack(
+    seriesIndex: number,
+    position: number,
+    patch: Partial<Pick<UserRotationTrackData, 'boost_id' | 'dry_strategy' | 'wet_strategy'>>
+  ) {
+    if (!rotationSetId) return
+    const existing = trackMap[`${seriesIndex}_${position}`]
+    upsertTrack.mutate({
+      rotation_set_id: rotationSetId,
+      series_index: seriesIndex,
+      track_position: position,
+      boost_id: existing?.boost_id ?? null,
+      dry_strategy: existing?.dry_strategy ?? null,
+      wet_strategy: existing?.wet_strategy ?? null,
+      ...patch,
+    })
+  }
 
   const isCurrentRotation = useMemo(() => {
     if (!currentEntry) return false
@@ -261,7 +659,16 @@ export default function TrackRotationsPage() {
               <RotationSeriesCard
                 key={s.series_index}
                 seriesNumber={s.series_number}
+                seriesIndex={s.series_index}
                 tracks={s.tracks}
+                seriesData={seriesMap[s.series_index]}
+                trackDataMap={trackMap}
+                allBoosts={allBoosts}
+                allDrivers={allDrivers}
+                allSetups={allSetups}
+                allCarParts={allCarParts}
+                onSaveSeries={(patch) => handleSaveSeries(s.series_index, patch)}
+                onSaveTrack={(pos, patch) => handleSaveTrack(s.series_index, pos, patch)}
               />
             ))}
           </div>
