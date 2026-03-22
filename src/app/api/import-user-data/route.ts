@@ -151,31 +151,28 @@ export async function POST(request: NextRequest) {
 
     // 4. Import User Track Guides (merge: upsert by user_id + track_id + gp_level)
     if (importData.userTrackGuides && Array.isArray(importData.userTrackGuides)) {
-      // Create track ID mapping for old UUIDs
-      const trackIdMapping = new Map<string, string>()
-      
-      // Get current track IDs for reference
+      // Build track lookup maps once — used for both direct ID and name-based fallback
       const { data: currentTracks } = await supabaseAdmin.from('tracks').select('id, name')
-      const trackMap = new Map(currentTracks?.map(t => [t.name, t.id]) || [])
+      const currentTrackIds = new Set(currentTracks?.map(t => t.id) || [])
+      const trackNameToIdMap = new Map(currentTracks?.map(t => [t.name, t.id]) || [])
+
+      const resolveTrackId = (trackId: string, trackName?: string | null): string | null => {
+        // 1. Legacy hardcoded UUID mapping
+        const mapped = oldTrackMappings[trackId]
+        if (mapped) return mapped
+        // 2. Direct ID exists in this environment
+        if (currentTrackIds.has(trackId)) return trackId
+        // 3. Fall back to name-based lookup (cross-environment imports)
+        if (trackName) return trackNameToIdMap.get(trackName) ?? null
+        return null
+      }
 
       for (const item of importData.userTrackGuides) {
         try {
-          // Map old track ID to current track ID first
-          let trackId = item.track_id
-          if (oldTrackMappings[item.track_id]) {
-            trackId = oldTrackMappings[item.track_id]
-            console.log(`🔄 Mapping old track ID ${item.track_id} to ${trackId}`)
-          }
+          const trackId = resolveTrackId(item.track_id, item._track_name)
 
-          // Now check if the (mapped) track exists
-          const { data: existingTrack } = await supabaseAdmin
-            .from('tracks')
-            .select('id')
-            .eq('id', trackId)
-            .single()
-          
-          if (!existingTrack) {
-            results.errors.push(`Track guide ${item.track_id}: Track not found, skipping`)
+          if (!trackId) {
+            results.errors.push(`Track guide (id=${item.track_id}, name=${item._track_name ?? 'unknown'}): Track not found in this environment, skipping`)
             continue
           }
 
@@ -294,6 +291,18 @@ export async function POST(request: NextRequest) {
 
       // Now import GP guide tracks using the ID mapping (upsert by gp_guide_id + race_type + race_number)
       if (importData.userGpGuideTracks && Array.isArray(importData.userGpGuideTracks)) {
+        const { data: gpTracks } = await supabaseAdmin.from('tracks').select('id, name')
+        const gpTrackIds = new Set(gpTracks?.map(t => t.id) || [])
+        const gpTrackNameToId = new Map(gpTracks?.map(t => [t.name, t.id]) || [])
+
+        const resolveGpTrackId = (trackId: string, trackName?: string | null): string | null => {
+          const mapped = oldTrackMappings[trackId]
+          if (mapped) return mapped
+          if (gpTrackIds.has(trackId)) return trackId
+          if (trackName) return gpTrackNameToId.get(trackName) ?? null
+          return null
+        }
+
         for (const item of importData.userGpGuideTracks) {
           try {
             const newGuideId = guideIdMap.get(item.gp_guide_id)
@@ -302,22 +311,10 @@ export async function POST(request: NextRequest) {
               continue
             }
 
-            // Map old track ID to current track ID for GP guide tracks first
-            let trackId = item.track_id
-            if (oldTrackMappings[item.track_id]) {
-              trackId = oldTrackMappings[item.track_id]
-              console.log(`🔄 Mapping old track ID ${item.track_id} to ${trackId} for GP guide track`)
-            }
+            const trackId = resolveGpTrackId(item.track_id, item._track_name)
 
-            // Now check if the (mapped) track exists
-            const { data: existingTrack } = await supabaseAdmin
-              .from('tracks')
-              .select('id')
-              .eq('id', trackId)
-              .single()
-            
-            if (!existingTrack) {
-              results.errors.push(`GP guide track ${item.track_id}: Track not found, skipping`)
+            if (!trackId) {
+              results.errors.push(`GP guide track (id=${item.track_id}, name=${item._track_name ?? 'unknown'}): Track not found in this environment, skipping`)
               continue
             }
 

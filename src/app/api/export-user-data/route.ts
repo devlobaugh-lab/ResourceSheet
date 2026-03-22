@@ -153,7 +153,14 @@ export async function GET(request: NextRequest) {
       .select('*')
 
     if (trackGuidesError) console.warn('Error exporting user_track_guides:', trackGuidesError)
-    data.userTrackGuides = userTrackGuides || []
+    if (userTrackGuides && userTrackGuides.length > 0) {
+      const trackIds = [...new Set(userTrackGuides.map(g => g.track_id).filter(Boolean))]
+      const { data: trackDetails } = await supabaseAdmin.from('tracks').select('id, name').in('id', trackIds)
+      const trackNameMap = new Map((trackDetails || []).map(t => [t.id, t.name]))
+      data.userTrackGuides = userTrackGuides.map(g => ({ ...g, _track_name: trackNameMap.get(g.track_id) ?? null }))
+    } else {
+      data.userTrackGuides = userTrackGuides || []
+    }
     console.log(`  ✅ user_track_guides: ${userTrackGuides?.length || 0} records`)
 
     // 5. User Track Guide Drivers
@@ -189,7 +196,14 @@ export async function GET(request: NextRequest) {
         .in('gp_guide_id', gpGuideIds)
 
       if (gpTracksError) console.warn('Error exporting user_gp_guide_tracks:', gpTracksError)
-      data.userGpGuideTracks = userGpGuideTracks || []
+      if (userGpGuideTracks && userGpGuideTracks.length > 0) {
+        const trackIds = [...new Set(userGpGuideTracks.map(t => t.track_id).filter(Boolean))]
+        const { data: trackDetails } = await supabaseAdmin.from('tracks').select('id, name').in('id', trackIds)
+        const trackNameMap = new Map((trackDetails || []).map(t => [t.id, t.name]))
+        data.userGpGuideTracks = userGpGuideTracks.map(t => ({ ...t, _track_name: trackNameMap.get(t.track_id) ?? null }))
+      } else {
+        data.userGpGuideTracks = userGpGuideTracks || []
+      }
       console.log(`  ✅ user_gp_guide_tracks: ${userGpGuideTracks?.length || 0} records`)
 
       // 8. User GP Guide Results
