@@ -26,7 +26,11 @@ export async function GET(request: NextRequest) {
       .from('profiles')
       .select('id, username, active_season_id')
 
-    const { data: authUsersData } = await supabaseAdmin.auth.admin.listUsers()
+    const { data: authUsersData, error: listUsersError } = await supabaseAdmin.auth.admin.listUsers()
+    if (listUsersError) {
+      console.error('Failed to list auth users:', listUsersError)
+      return NextResponse.json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to retrieve auth user list' } }, { status: 500 })
+    }
     const authUserMap = new Map(authUsersData?.users.map(u => [u.id, u.email]) ?? [])
 
     const users = []
