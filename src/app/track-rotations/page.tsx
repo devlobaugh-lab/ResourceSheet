@@ -102,6 +102,7 @@ interface RotationSeriesCardProps {
   allCarParts: CarPartView[]
   onSaveSeries: (patch: Partial<Pick<UserRotationSeriesData, 'driver_1_id' | 'driver_2_id' | 'saved_setup_id'>>) => void
   onSaveTrack: (position: number, patch: Partial<Pick<UserRotationTrackData, 'boost_id' | 'dry_strategy' | 'wet_strategy'>>) => void
+  quickRef?: boolean
 }
 
 function RotationSeriesCard({
@@ -116,6 +117,7 @@ function RotationSeriesCard({
   allCarParts,
   onSaveSeries,
   onSaveTrack,
+  quickRef = false,
 }: RotationSeriesCardProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [boostModal, setBoostModal] = useState<{ open: boolean; position: number }>({ open: false, position: 0 })
@@ -140,30 +142,38 @@ function RotationSeriesCard({
     return best
   }, [tracks])
 
+  const showContent = quickRef || isExpanded
+
   return (
     <Card className="overflow-hidden">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
-      >
-        <div className="flex items-center gap-4">
-          <span className="text-gray-400 text-xl w-6 flex-shrink-0">
-            {isExpanded ? '▼' : '▶'}
-          </span>
+      {quickRef ? (
+        <div className="px-6 py-3">
           <h2 className="text-lg font-semibold text-gray-900">Series {seriesNumber}</h2>
         </div>
-
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-500">Tracks:</span>
-            <span className="font-medium text-gray-900">
-              {tracks.map((t) => t.track).join(', ')}
+      ) : (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
+        >
+          <div className="flex items-center gap-4">
+            <span className="text-gray-400 text-xl w-6 flex-shrink-0">
+              {isExpanded ? '▼' : '▶'}
             </span>
+            <h2 className="text-lg font-semibold text-gray-900">Series {seriesNumber}</h2>
           </div>
-        </div>
-      </button>
 
-      {isExpanded && (
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-gray-500">Tracks:</span>
+              <span className="font-medium text-gray-900">
+                {tracks.map((t) => t.track).join(', ')}
+              </span>
+            </div>
+          </div>
+        </button>
+      )}
+
+      {showContent && (
         <div className="border-t border-gray-200">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-700">
@@ -180,15 +190,21 @@ function RotationSeriesCard({
                 <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
                   Weather
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
-                  Laps
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
-                  Boost
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
-                  Strategy
-                </th>
+                {!quickRef && (
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
+                    Laps
+                  </th>
+                )}
+                {!quickRef && (
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
+                    Boost
+                  </th>
+                )}
+                {!quickRef && (
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
+                    Strategy
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -211,35 +227,41 @@ function RotationSeriesCard({
                     <td className={cn('px-6 py-2 whitespace-nowrap text-sm', weatherClass[entry.weather])}>
                       {weatherLabel[entry.weather] ?? entry.weather}
                     </td>
-                    <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">
-                      {entry.laps ?? '—'}
-                    </td>
-                    <td className="px-6 py-2 whitespace-nowrap text-sm">
-                      {boost ? (
-                        <button
-                          onClick={() => setBoostModal({ open: true, position: i })}
-                          className="text-left text-xs font-medium text-gray-800 hover:text-blue-600 underline-offset-2 hover:underline truncate max-w-[120px]"
-                          title="Change boost"
-                        >
-                          {boost.boost_custom_names?.custom_name ||
-                            (boost.icon ? boost.icon.replace('BoostIcon_', '') : null) ||
-                            boost.name}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setBoostModal({ open: true, position: i })}
-                          className="text-xs text-blue-600 hover:text-blue-700"
-                        >
-                          + Boost
-                        </button>
-                      )}
-                    </td>
-                    <td className="px-6 py-2 text-sm">
-                      <StrategyCell
-                        value={td?.dry_strategy ?? ''}
-                        onBlur={(v) => onSaveTrack(i, { dry_strategy: v || null })}
-                      />
-                    </td>
+                    {!quickRef && (
+                      <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">
+                        {entry.laps ?? '—'}
+                      </td>
+                    )}
+                    {!quickRef && (
+                      <td className="px-6 py-2 whitespace-nowrap text-sm">
+                        {boost ? (
+                          <button
+                            onClick={() => setBoostModal({ open: true, position: i })}
+                            className="text-left text-xs font-medium text-gray-800 hover:text-blue-600 underline-offset-2 hover:underline truncate max-w-[120px]"
+                            title="Change boost"
+                          >
+                            {boost.boost_custom_names?.custom_name ||
+                              (boost.icon ? boost.icon.replace('BoostIcon_', '') : null) ||
+                              boost.name}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setBoostModal({ open: true, position: i })}
+                            className="text-xs text-blue-600 hover:text-blue-700"
+                          >
+                            + Boost
+                          </button>
+                        )}
+                      </td>
+                    )}
+                    {!quickRef && (
+                      <td className="px-6 py-2 text-sm">
+                        <StrategyCell
+                          value={td?.dry_strategy ?? ''}
+                          onBlur={(v) => onSaveTrack(i, { dry_strategy: v || null })}
+                        />
+                      </td>
+                    )}
                   </tr>
                 )
               })}
@@ -247,42 +269,44 @@ function RotationSeriesCard({
           </table>
 
           {/* Below-table: Drivers (stacked) | Car Setup */}
-          <div className="border-t border-gray-100 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Drivers column */}
-            <div className="flex flex-col gap-4">
-              <Card className="p-4">
-                <p className="text-base font-semibold text-gray-900 mb-4">Driver 1</p>
-                <div className={cn('rounded-lg p-4', driver1 ? getRarityBackground(driver1.rarity) : 'bg-gray-100')}>
-                  <DriverDisplay
-                    driver={driver1}
-                    placeholderText="+ Select Driver 1"
-                    onEdit={() => setDriverModal({ open: true, slot: 'driver_1_id' })}
-                  />
-                </div>
-              </Card>
-              <Card className="p-4">
-                <p className="text-base font-semibold text-gray-900 mb-4">Driver 2</p>
-                <div className={cn('rounded-lg p-4', driver2 ? getRarityBackground(driver2.rarity) : 'bg-gray-100')}>
-                  <DriverDisplay
-                    driver={driver2}
-                    placeholderText="+ Select Driver 2"
-                    onEdit={() => setDriverModal({ open: true, slot: 'driver_2_id' })}
-                  />
-                </div>
-              </Card>
-            </div>
+          {!quickRef && (
+            <div className="border-t border-gray-100 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Drivers column */}
+              <div className="flex flex-col gap-4">
+                <Card className="p-4">
+                  <p className="text-base font-semibold text-gray-900 mb-4">Driver 1</p>
+                  <div className={cn('rounded-lg p-4', driver1 ? getRarityBackground(driver1.rarity) : 'bg-gray-100')}>
+                    <DriverDisplay
+                      driver={driver1}
+                      placeholderText="+ Select Driver 1"
+                      onEdit={() => setDriverModal({ open: true, slot: 'driver_1_id' })}
+                    />
+                  </div>
+                </Card>
+                <Card className="p-4">
+                  <p className="text-base font-semibold text-gray-900 mb-4">Driver 2</p>
+                  <div className={cn('rounded-lg p-4', driver2 ? getRarityBackground(driver2.rarity) : 'bg-gray-100')}>
+                    <DriverDisplay
+                      driver={driver2}
+                      placeholderText="+ Select Driver 2"
+                      onEdit={() => setDriverModal({ open: true, slot: 'driver_2_id' })}
+                    />
+                  </div>
+                </Card>
+              </div>
 
-            {/* Car Setup column */}
-            <div>
-              <SetupSelector
-                setups={allSetups}
-                selectedSetupId={seriesData?.saved_setup_id}
-                allCarParts={allCarParts}
-                onSelect={(id) => onSaveSeries({ saved_setup_id: id })}
-                seriesFilter={seriesIndex}
-              />
+              {/* Car Setup column */}
+              <div>
+                <SetupSelector
+                  setups={allSetups}
+                  selectedSetupId={seriesData?.saved_setup_id}
+                  allCarParts={allCarParts}
+                  onSelect={(id) => onSaveSeries({ saved_setup_id: id })}
+                  seriesFilter={seriesIndex}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -466,6 +490,7 @@ function isDateInRange(date: string, startDate: string, endDate: string): boolea
 export default function TrackRotationsPage() {
   const today = getTodayDate()
   const [viewDate, setViewDate] = useState(today)
+  const [quickRef, setQuickRef] = useState(false)
 
   const { data: scheduleData, isLoading: scheduleLoading } = useTrackRotationSchedule()
   const schedule = useMemo(() => scheduleData?.data ?? [], [scheduleData])
@@ -589,11 +614,21 @@ export default function TrackRotationsPage() {
   return (
     <ProtectedRoute>
       <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Track Rotations</h1>
-          <p className="mt-2 text-gray-600">
-            Series 10–12 rotate tracks every two weeks on Wednesdays.
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Track Rotations</h1>
+            <p className="mt-2 text-gray-600">
+              Series 10–12 rotate tracks every two weeks on Wednesdays.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setQuickRef((v) => !v)}
+            className={quickRef ? 'bg-gray-900 text-white border-gray-900 hover:bg-gray-800' : ''}
+          >
+            Quick Ref
+          </Button>
         </div>
 
         {/* Navigator */}
@@ -653,23 +688,26 @@ export default function TrackRotationsPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
           </div>
         ) : rotationView ? (
-          <div className="space-y-4">
-            {[...rotationView.series].reverse().map((s) => (
-              <RotationSeriesCard
-                key={s.series_index}
-                seriesNumber={s.series_number}
-                seriesIndex={s.series_index}
-                tracks={s.tracks}
-                seriesData={seriesMap[s.series_index]}
-                trackDataMap={trackMap}
-                allBoosts={allBoosts}
-                allDrivers={allDrivers}
-                allSetups={allSetups}
-                allCarParts={allCarParts}
-                onSaveSeries={(patch) => handleSaveSeries(s.series_index, patch)}
-                onSaveTrack={(pos, patch) => handleSaveTrack(s.series_index, pos, patch)}
-              />
-            ))}
+          <div className={quickRef ? 'w-1/2' : undefined}>
+            <div className="space-y-4">
+              {[...rotationView.series].reverse().map((s) => (
+                <RotationSeriesCard
+                  key={s.series_index}
+                  seriesNumber={s.series_number}
+                  seriesIndex={s.series_index}
+                  tracks={s.tracks}
+                  seriesData={seriesMap[s.series_index]}
+                  trackDataMap={trackMap}
+                  allBoosts={allBoosts}
+                  allDrivers={allDrivers}
+                  allSetups={allSetups}
+                  allCarParts={allCarParts}
+                  onSaveSeries={(patch) => handleSaveSeries(s.series_index, patch)}
+                  onSaveTrack={(pos, patch) => handleSaveTrack(s.series_index, pos, patch)}
+                  quickRef={quickRef}
+                />
+              ))}
+            </div>
           </div>
         ) : (
           <Card className="p-8 text-center text-gray-500">
