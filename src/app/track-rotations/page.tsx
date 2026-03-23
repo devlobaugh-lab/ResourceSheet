@@ -172,16 +172,16 @@ function RotationSeriesCard({
                   Track
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
-                  Weather
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
-                  Laps
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
                   Driver Stat
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
                   Car Stat
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
+                  Weather
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
+                  Laps
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">
                   Boost
@@ -202,17 +202,17 @@ function RotationSeriesCard({
                     <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                       {entry.track}
                     </td>
-                    <td className={cn('px-6 py-2 whitespace-nowrap text-sm', weatherClass[entry.weather])}>
-                      {weatherLabel[entry.weather] ?? entry.weather}
-                    </td>
-                    <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">
-                      {entry.laps ?? '—'}
-                    </td>
                     <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-600">
                       {formatStat(entry.driver_track_stat)}
                     </td>
                     <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-600">
                       {formatStat(entry.car_track_stat)}
+                    </td>
+                    <td className={cn('px-6 py-2 whitespace-nowrap text-sm', weatherClass[entry.weather])}>
+                      {weatherLabel[entry.weather] ?? entry.weather}
+                    </td>
+                    <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">
+                      {entry.laps ?? '—'}
                     </td>
                     <td className="px-6 py-2 whitespace-nowrap text-sm">
                       {boost ? (
