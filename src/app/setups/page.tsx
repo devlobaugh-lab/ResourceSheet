@@ -13,7 +13,7 @@ import { useSearchParams } from 'next/navigation'
 import { CarPartView, UserCarSetup } from '@/types/database'
 import { cn, calculateHighestLevel, getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils'
 import { CarPartSelectionGrid } from '@/components/CarPartSelectionGrid'
-import { Pencil } from 'lucide-react'
+import { Pencil, Copy } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 
 // Part type definitions
@@ -332,6 +332,18 @@ function AuthenticatedSetupsPage() {
     })
   }
 
+  // Handle copy slot to the other slot
+  const handleCopySlot = (sourceKey: 'A' | 'B') => {
+    const source = sourceKey === 'A' ? slotA : slotB
+    const setTarget = sourceKey === 'A' ? setSlotB : setSlotA
+    setTarget({
+      ...source,
+      id: null,
+      name: source.name ? `${source.name} Copy` : 'Copy',
+      bonusParts: new Set(source.bonusParts),
+    })
+  }
+
   // Handle clear slot
   const handleClearSlot = (slotKey: 'A' | 'B') => {
     const setSlot = slotKey === 'A' ? setSlotA : setSlotB
@@ -594,6 +606,14 @@ function AuthenticatedSetupsPage() {
             className="flex-1"
           >
             {(createSetup.isPending || updateSetup.isPending) ? 'Saving...' : slot.id ? 'Update Setup' : 'Save Setup'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleCopySlot(slotKey)}
+            className="px-3"
+            title={`Copy to Slot ${slotKey === 'A' ? 'B' : 'A'}`}
+          >
+            <Copy className="w-4 h-4" />
           </Button>
           <Button
             variant="outline"

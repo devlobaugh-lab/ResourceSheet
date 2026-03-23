@@ -197,7 +197,7 @@ export function SetupSelector({
       <SetupPreviewPanel
         setup={selectedSetup}
         carParts={allCarParts}
-        onClose={() => setMode('select')}
+        onClose={() => { onSelect(null); setMode('display') }}
       />
     </div>
   )

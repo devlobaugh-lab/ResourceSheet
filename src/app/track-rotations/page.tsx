@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useRef } from 'react'
+import React, { useState, useMemo, useRef, useCallback } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
@@ -122,6 +122,25 @@ function RotationSeriesCard({
   const [isExpanded, setIsExpanded] = useState(true)
   const [boostModal, setBoostModal] = useState<{ open: boolean; position: number }>({ open: false, position: 0 })
   const [driverModal, setDriverModal] = useState<{ open: boolean; slot: 'driver_1_id' | 'driver_2_id' } | null>(null)
+
+  const [bonusCheckedDrivers, setBonusCheckedDrivers] = useState<Set<string>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('track-rotation-bonus-drivers')
+        if (stored) return new Set(JSON.parse(stored))
+      } catch {}
+    }
+    return new Set()
+  })
+
+  const handleBonusToggle = useCallback((driverId: string) => {
+    setBonusCheckedDrivers(prev => {
+      const next = new Set(prev)
+      if (next.has(driverId)) { next.delete(driverId) } else { next.add(driverId) }
+      try { localStorage.setItem('track-rotation-bonus-drivers', JSON.stringify(Array.from(next))) } catch {}
+      return next
+    })
+  }, [])
 
   const driver1 = useMemo(() => allDrivers.find((d) => d.id === seriesData?.driver_1_id), [allDrivers, seriesData?.driver_1_id])
   const driver2 = useMemo(() => allDrivers.find((d) => d.id === seriesData?.driver_2_id), [allDrivers, seriesData?.driver_2_id])
@@ -427,11 +446,12 @@ function RotationSeriesCard({
                 onSaveSeries({ [driverModal.slot]: ids[0] ?? null })
                 setDriverModal(null)
               }}
-              maxSeries={seriesIndex}
               singleSelect
               driver1Id={seriesData?.driver_1_id ?? undefined}
               driver2Id={seriesData?.driver_2_id ?? undefined}
               trackStat={dominantDriverStat}
+              bonusCheckedItems={bonusCheckedDrivers}
+              onBonusToggle={handleBonusToggle}
             />
             </div>
           </div>
