@@ -33,6 +33,10 @@ export async function GET(request: NextRequest) {
     }
     const authUserMap = new Map(authUsersData?.users.map(u => [u.id, u.email]) ?? [])
 
+    // Pre-fetch track names once for cross-environment _track_name enrichment
+    const { data: allTracks } = await supabaseAdmin.from('tracks').select('id, name')
+    const trackNameMap = new Map((allTracks || []).map(t => [t.id, t.name]))
+
     const users = []
 
     for (const userProfile of allProfiles || []) {
@@ -75,6 +79,16 @@ export async function GET(request: NextRequest) {
           : Promise.resolve({ data: [] }),
       ])
 
+      const enrichedTrackGuides = (userTrackGuides || []).map(g => ({
+        ...g,
+        _track_name: trackNameMap.get(g.track_id) ?? null,
+      }))
+
+      const enrichedGpGuideTracks = (userGpGuideTracks || []).map(t => ({
+        ...t,
+        _track_name: trackNameMap.get(t.track_id) ?? null,
+      }))
+
       users.push({
         userId,
         email: authUserMap.get(userId) ?? null,
@@ -85,10 +99,10 @@ export async function GET(request: NextRequest) {
           userCarParts: userCarParts || [],
           userBoosts: userBoosts || [],
           userCarSetups: userCarSetups || [],
-          userTrackGuides: userTrackGuides || [],
+          userTrackGuides: enrichedTrackGuides,
           userTrackGuideDrivers: userTrackGuideDrivers || [],
           userGpGuides: userGpGuides || [],
-          userGpGuideTracks: userGpGuideTracks || [],
+          userGpGuideTracks: enrichedGpGuideTracks,
           userGpGuideResults: userGpGuideResults || [],
           userCustomDrivers: userCustomDrivers || [],
         }
