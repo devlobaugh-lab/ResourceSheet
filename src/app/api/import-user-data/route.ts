@@ -49,6 +49,46 @@ export async function POST(request: NextRequest) {
       'e029213b-544f-46b0-93ec-500c21e7f441': 'ed34468f-dd09-4b34-b461-43d56f3d9bf5', // Monza (common fallback)
     }
 
+    // 0b. Import User Car Setups FIRST (needed for saved_setup_id FK in track guides / GP guide tracks)
+    // Build oldId → newId mapping so we can remap saved_setup_id references
+    const setupIdMap = new Map<string, string>()
+    if (importData.userCarSetups && Array.isArray(importData.userCarSetups)) {
+      for (const item of importData.userCarSetups) {
+        try {
+          const { data: existing } = await supabaseAdmin
+            .from('user_car_setups')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('name', item.name)
+            .single()
+
+          const { id: oldSetupId, created_at, user_id: _oldUserId, ...setupRest } = item
+          const setupData = { ...setupRest, user_id: userId }
+
+          if (existing) {
+            const { error } = await supabaseAdmin.from('user_car_setups').update(setupData).eq('id', existing.id)
+            if (!error) {
+              setupIdMap.set(oldSetupId, existing.id)
+              results.updated.carSetups++
+            } else {
+              results.errors.push(`Car setup ${item.name}: ${error.message}`)
+            }
+          } else {
+            const { data: newSetup, error } = await supabaseAdmin.from('user_car_setups').insert(setupData).select('id').single()
+            if (!error && newSetup) {
+              setupIdMap.set(oldSetupId, newSetup.id)
+              results.imported.carSetups++
+            } else if (error) {
+              results.errors.push(`Car setup ${item.name}: ${error.message}`)
+            }
+          }
+        } catch (e) {
+          results.errors.push(`Car setup: ${String(e)}`)
+        }
+      }
+      console.log(`  ✅ Car setups (pre-pass): ${results.imported.carSetups} imported, ${results.updated.carSetups} updated`)
+    }
+
     // 1. Import User Drivers (merge: upsert)
     if (importData.userDrivers && Array.isArray(importData.userDrivers)) {
       for (const item of importData.userDrivers) {
@@ -150,11 +190,19 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Import User Track Guides (merge: upsert by user_id + track_id + gp_level)
+    const trackGuideIdMap = new Map<string, string>() // old ID → new ID, for track guide drivers
     if (importData.userTrackGuides && Array.isArray(importData.userTrackGuides)) {
       // Build track lookup maps once — used for both direct ID and name-based fallback
       const { data: currentTracks } = await supabaseAdmin.from('tracks').select('id, name')
       const currentTrackIds = new Set(currentTracks?.map(t => t.id) || [])
       const trackNameToIdMap = new Map(currentTracks?.map(t => [t.name, t.id]) || [])
+
+      // Pre-fetch track→season mapping to backfill missing season_ids
+      const { data: trackSeasons } = await supabaseAdmin
+        .from('track_seasons')
+        .select('track_id, season_id')
+        .eq('is_active', true)
+      const trackSeasonMap = new Map(trackSeasons?.map(ts => [ts.track_id, ts.season_id]) ?? [])
 
       const resolveTrackId = (trackId: string, trackName?: string | null): string | null => {
         // 1. Legacy hardcoded UUID mapping
@@ -176,37 +224,30 @@ export async function POST(request: NextRequest) {
             continue
           }
 
-          // Check by unique constraint: user_id + track_id + gp_level
-          const { data: existing } = await supabaseAdmin
+          const remappedSavedSetupId = item.saved_setup_id ? (setupIdMap.get(item.saved_setup_id) ?? null) : null
+          const resolvedSeasonId = (item.season_id ?? null) ?? trackSeasonMap.get(trackId) ?? null
+
+          // Check by unique constraint: user_id + track_id + gp_level (+ season_id if present)
+          let existingQuery = supabaseAdmin
             .from('user_track_guides')
             .select('id')
             .eq('user_id', userId)
             .eq('track_id', trackId)
             .eq('gp_level', item.gp_level)
-            .single()
+          if (resolvedSeasonId) {
+            existingQuery = existingQuery.eq('season_id', resolvedSeasonId)
+          } else {
+            existingQuery = existingQuery.is('season_id', null)
+          }
+          const { data: existing } = await existingQuery.single()
 
+          const { id: _oldId, created_at, _track_name, user_id: _oldUserId, ...rest } = item
           const guideData = {
+            ...rest,
             user_id: userId,
             track_id: trackId,
-            gp_level: item.gp_level,
-            suggested_drivers: item.suggested_drivers,
-            free_boost_id: item.free_boost_id,
-            suggested_boosts: item.suggested_boosts,
-            saved_setup_id: item.saved_setup_id,
-            setup_notes: item.setup_notes,
-            dry_strategy: item.dry_strategy,
-            wet_strategy: item.wet_strategy,
-            driver_1_dry_strategy: item.driver_1_dry_strategy,
-            driver_1_wet_strategy: item.driver_1_wet_strategy,
-            driver_2_dry_strategy: item.driver_2_dry_strategy,
-            driver_2_wet_strategy: item.driver_2_wet_strategy,
-            notes: item.notes,
-            driver_1_id: item.driver_1_id,
-            driver_2_id: item.driver_2_id,
-            driver_1_boost_id: item.driver_1_boost_id,
-            driver_2_boost_id: item.driver_2_boost_id,
-            alt_driver_ids: item.alt_driver_ids,
-            alt_boost_ids: item.alt_boost_ids,
+            season_id: resolvedSeasonId,
+            saved_setup_id: remappedSavedSetupId,
           }
 
           if (existing) {
@@ -214,20 +255,48 @@ export async function POST(request: NextRequest) {
               .from('user_track_guides')
               .update(guideData)
               .eq('id', existing.id)
-            if (!error) results.updated.trackGuides++
-            else results.errors.push(`Track guide ${item.track_id}: ${error.message}`)
+            if (!error) {
+              trackGuideIdMap.set(item.id, existing.id)
+              results.updated.trackGuides++
+            } else results.errors.push(`Track guide ${item.track_id}: ${error.message}`)
           } else {
-            const { error } = await supabaseAdmin
+            const { data: newGuide, error } = await supabaseAdmin
               .from('user_track_guides')
               .insert(guideData)
-            if (!error) results.imported.trackGuides++
-            else results.errors.push(`Track guide ${item.track_id}: ${error.message}`)
+              .select('id')
+              .single()
+            if (!error && newGuide) {
+              trackGuideIdMap.set(item.id, newGuide.id)
+              results.imported.trackGuides++
+            } else if (error) results.errors.push(`Track guide ${item.track_id}: ${error.message}`)
           }
         } catch (e) {
           results.errors.push(`Track guide ${item.track_id}: ${String(e)}`)
         }
       }
       console.log(`  ✅ Track guides: ${results.imported.trackGuides} imported, ${results.updated.trackGuides} updated`)
+    }
+
+    // 4b. Import User Track Guide Drivers
+    if (importData.userTrackGuideDrivers && Array.isArray(importData.userTrackGuideDrivers) && importData.userTrackGuideDrivers.length > 0) {
+      const byGuide = new Map<string, Record<string, unknown>[]>()
+      for (const item of importData.userTrackGuideDrivers) {
+        const guideId = item.track_guide_id as string
+        if (!byGuide.has(guideId)) byGuide.set(guideId, [])
+        byGuide.get(guideId)!.push(item)
+      }
+      for (const [oldGuideId, items] of Array.from(byGuide.entries())) {
+        try {
+          const newGuideId = trackGuideIdMap.get(oldGuideId)
+          if (!newGuideId) continue
+          await supabaseAdmin.from('user_track_guide_drivers').delete().eq('track_guide_id', newGuideId)
+          const insertRows = items.map(({ id: _id, track_guide_id: _tgId, ...rest }) => ({ ...rest, track_guide_id: newGuideId }))
+          await supabaseAdmin.from('user_track_guide_drivers').insert(insertRows)
+        } catch (e) {
+          results.errors.push(`Track guide drivers (guide ${oldGuideId}): ${String(e)}`)
+        }
+      }
+      console.log(`  ✅ Track guide drivers imported`)
     }
 
     // 5. Import User GP Guides with tracks (upsert by user_id + name)
@@ -253,6 +322,8 @@ export async function POST(request: NextRequest) {
             gp_level: item.gp_level,
             notes: item.notes,
             weekend_strategy_same: item.weekend_strategy_same,
+            is_ready: item.is_ready ?? false,
+            season_id: item.season_id ?? null,
           }
 
           if (existing) {
@@ -318,23 +389,12 @@ export async function POST(request: NextRequest) {
               continue
             }
 
+            const { id: _gtId, created_at: _gtCa, _track_name: _gtTn, ...trackRest } = item
             const trackData = {
+              ...trackRest,
               gp_guide_id: newGuideId,
               track_id: trackId,
-              race_number: item.race_number,
-              race_type: item.race_type,
-              is_wet: item.is_wet,
-              driver_1_id: item.driver_1_id,
-              driver_2_id: item.driver_2_id,
-              driver_1_boost_id: item.driver_1_boost_id,
-              driver_2_boost_id: item.driver_2_boost_id,
-              alt_driver_ids: item.alt_driver_ids,
-              alt_boost_ids: item.alt_boost_ids,
-              saved_setup_id: item.saved_setup_id,
-              setup_notes: item.setup_notes,
-              driver_1_tire_strategy: item.driver_1_tire_strategy,
-              driver_2_tire_strategy: item.driver_2_tire_strategy,
-              strategy_notes: item.strategy_notes,
+              saved_setup_id: item.saved_setup_id ? (setupIdMap.get(item.saved_setup_id) ?? null) : null,
             }
 
             // Check if track exists by unique constraint
@@ -369,19 +429,35 @@ export async function POST(request: NextRequest) {
 
       // Import GP guide results
       if (importData.userGpGuideResults && Array.isArray(importData.userGpGuideResults)) {
+        const { data: resultTracks } = await supabaseAdmin.from('tracks').select('id, name')
+        const resultTrackIds = new Set(resultTracks?.map(t => t.id) || [])
+        const resultTrackNameToId = new Map(resultTracks?.map(t => [t.name, t.id]) || [])
+
         for (const item of importData.userGpGuideResults) {
           try {
             const newGuideId = guideIdMap.get(item.gp_guide_id)
             if (!newGuideId) continue
 
-            const { error } = await supabaseAdmin
+            // Resolve track_id cross-environment via _track_name
+            let trackId: string | null = resultTrackIds.has(item.track_id) ? item.track_id : null
+            if (!trackId && item._track_name) trackId = resultTrackNameToId.get(item._track_name) ?? null
+            if (!trackId) {
+              results.errors.push(`GP guide result (track id=${item.track_id}, name=${item._track_name ?? 'unknown'}): track not found, skipping`)
+              continue
+            }
+
+            const { data: existing } = await supabaseAdmin
               .from('user_gp_guide_results')
-              .insert({
-                gp_guide_id: newGuideId,
-                track_id: item.track_id,
-                results_notes: item.results_notes,
-              })
-            // Don't count results separately, they're part of the GP guide
+              .select('id')
+              .eq('gp_guide_id', newGuideId)
+              .eq('track_id', trackId)
+              .single()
+
+            if (existing) {
+              await supabaseAdmin.from('user_gp_guide_results').update({ results_notes: item.results_notes }).eq('id', existing.id)
+            } else {
+              await supabaseAdmin.from('user_gp_guide_results').insert({ gp_guide_id: newGuideId, track_id: trackId, results_notes: item.results_notes })
+            }
           } catch (e) {
             results.errors.push(`GP guide result: ${String(e)}`)
           }
@@ -389,51 +465,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 6. Import User Car Setups (merge: upsert by name)
-    if (importData.userCarSetups && Array.isArray(importData.userCarSetups)) {
-      for (const item of importData.userCarSetups) {
-        try {
-          const { data: existing } = await supabaseAdmin
-            .from('user_car_setups')
-            .select('id')
-            .eq('user_id', userId)
-            .eq('name', item.name)
-            .single()
-
-          const setupData = {
-            user_id: userId,
-            name: item.name,
-            notes: item.notes,
-            brake_id: item.brake_id,
-            gearbox_id: item.gearbox_id,
-            rear_wing_id: item.rear_wing_id,
-            front_wing_id: item.front_wing_id,
-            suspension_id: item.suspension_id,
-            engine_id: item.engine_id,
-            series_filter: item.series_filter,
-            bonus_percentage: item.bonus_percentage,
-          }
-
-          if (existing) {
-            const { error } = await supabaseAdmin
-              .from('user_car_setups')
-              .update(setupData)
-              .eq('id', existing.id)
-            if (!error) results.updated.carSetups++
-            else results.errors.push(`Car setup ${item.name}: ${error.message}`)
-          } else {
-            const { error } = await supabaseAdmin
-              .from('user_car_setups')
-              .insert(setupData)
-            if (!error) results.imported.carSetups++
-            else results.errors.push(`Car setup ${item.name}: ${error.message}`)
-          }
-        } catch (e) {
-          results.errors.push(`Car setup: ${String(e)}`)
-        }
-      }
-      console.log(`  ✅ Car setups: ${results.imported.carSetups} imported, ${results.updated.carSetups} updated`)
-    }
+    // 6. (Car Setups already imported in pre-pass above)
 
     // 7. Import User Custom Drivers (merge: upsert by name)
     if (importData.userCustomDrivers && Array.isArray(importData.userCustomDrivers)) {
@@ -446,15 +478,11 @@ export async function POST(request: NextRequest) {
             .eq('name', item.name)
             .single()
 
+          const { id: _id, created_at, updated_at, user_id: _oldUserId, ...driverRest } = item
           const driverData = {
+            ...driverRest,
             user_id: userId,
-            name: item.name,
-            qualifying: item.qualifying,
-            race_start: item.race_start,
-            overtaking: item.overtaking,
-            blocking: item.blocking,
-            tyre_use: item.tyre_use,
-            car_parts: item.car_parts,
+            season_id: item.season_id ?? null,
           }
 
           if (existing) {
@@ -480,23 +508,42 @@ export async function POST(request: NextRequest) {
 
     // 8. Import User Rotation Series Data (upsert by user_id + rotation_set_id + series_index)
     if (importData.userRotationSeriesData && Array.isArray(importData.userRotationSeriesData)) {
+      // Build a map from set_number → id for cross-environment resolution
+      const { data: rotationSets } = await supabaseAdmin.from('track_rotation_sets').select('id, set_number')
+      const rotationSetByNumber = new Map((rotationSets || []).map(s => [s.set_number, s.id]))
+      const validRotationSetIds = new Set((rotationSets || []).map(s => s.id))
+
+      const resolveRotationSetId = (item: { rotation_set_id: string; _rotation_set_number?: number | null }): string | null => {
+        // 1. Prefer set_number lookup (cross-environment safe)
+        if (item._rotation_set_number != null) return rotationSetByNumber.get(item._rotation_set_number) ?? null
+        // 2. Fall back to direct UUID if it exists in this environment
+        if (validRotationSetIds.has(item.rotation_set_id)) return item.rotation_set_id
+        return null
+      }
+
       for (const item of importData.userRotationSeriesData) {
         try {
+          const rotationSetId = resolveRotationSetId(item)
+          if (!rotationSetId) {
+            results.errors.push(`Rotation series data ${item.rotation_set_id}/${item.series_index}: rotation set not found in this environment, skipping`)
+            continue
+          }
+
           const { data: existing } = await supabaseAdmin
             .from('user_rotation_series_data')
             .select('id')
             .eq('user_id', userId)
-            .eq('rotation_set_id', item.rotation_set_id)
+            .eq('rotation_set_id', rotationSetId)
             .eq('series_index', item.series_index)
             .single()
 
           const rowData = {
             user_id: userId,
-            rotation_set_id: item.rotation_set_id,
+            rotation_set_id: rotationSetId,
             series_index: item.series_index,
             driver_1_id: item.driver_1_id,
             driver_2_id: item.driver_2_id,
-            saved_setup_id: item.saved_setup_id,
+            saved_setup_id: item.saved_setup_id ? (setupIdMap.get(item.saved_setup_id) ?? null) : null,
           }
 
           if (existing) {
@@ -517,20 +564,37 @@ export async function POST(request: NextRequest) {
 
     // 9. Import User Rotation Track Data (upsert by user_id + rotation_set_id + series_index + track_position)
     if (importData.userRotationTrackData && Array.isArray(importData.userRotationTrackData)) {
+      // Reuse rotation set lookup from step 8 (or rebuild if step 8 was skipped)
+      const { data: rotationSets2 } = await supabaseAdmin.from('track_rotation_sets').select('id, set_number')
+      const rotationSetByNumber2 = new Map((rotationSets2 || []).map(s => [s.set_number, s.id]))
+      const validRotationSetIds2 = new Set((rotationSets2 || []).map(s => s.id))
+
+      const resolveRotationSetId2 = (item: { rotation_set_id: string; _rotation_set_number?: number | null }): string | null => {
+        if (item._rotation_set_number != null) return rotationSetByNumber2.get(item._rotation_set_number) ?? null
+        if (validRotationSetIds2.has(item.rotation_set_id)) return item.rotation_set_id
+        return null
+      }
+
       for (const item of importData.userRotationTrackData) {
         try {
+          const rotationSetId = resolveRotationSetId2(item)
+          if (!rotationSetId) {
+            results.errors.push(`Rotation track data ${item.rotation_set_id}/${item.series_index}/${item.track_position}: rotation set not found in this environment, skipping`)
+            continue
+          }
+
           const { data: existing } = await supabaseAdmin
             .from('user_rotation_track_data')
             .select('id')
             .eq('user_id', userId)
-            .eq('rotation_set_id', item.rotation_set_id)
+            .eq('rotation_set_id', rotationSetId)
             .eq('series_index', item.series_index)
             .eq('track_position', item.track_position)
             .single()
 
           const rowData = {
             user_id: userId,
-            rotation_set_id: item.rotation_set_id,
+            rotation_set_id: rotationSetId,
             series_index: item.series_index,
             track_position: item.track_position,
             boost_id: item.boost_id,

@@ -213,7 +213,14 @@ export async function GET(request: NextRequest) {
         .in('gp_guide_id', gpGuideIds)
 
       if (gpResultsError) console.warn('Error exporting user_gp_guide_results:', gpResultsError)
-      data.userGpGuideResults = userGpGuideResults || []
+      if (userGpGuideResults && userGpGuideResults.length > 0) {
+        const resultTrackIds = Array.from(new Set(userGpGuideResults.map(r => r.track_id).filter(Boolean)))
+        const { data: resultTrackDetails } = await supabaseAdmin.from('tracks').select('id, name').in('id', resultTrackIds)
+        const resultTrackNameMap = new Map((resultTrackDetails || []).map(t => [t.id, t.name]))
+        data.userGpGuideResults = userGpGuideResults.map(r => ({ ...r, _track_name: resultTrackNameMap.get(r.track_id) ?? null }))
+      } else {
+        data.userGpGuideResults = userGpGuideResults || []
+      }
       console.log(`  ✅ user_gp_guide_results: ${userGpGuideResults?.length || 0} records`)
     } else {
       data.userGpGuideTracks = []
@@ -239,22 +246,36 @@ export async function GET(request: NextRequest) {
     console.log(`  ✅ user_custom_drivers: ${userCustomDrivers?.length || 0} records`)
 
     // 11. User Rotation Series Data
-    const { data: userRotationSeriesData, error: rotSeriesError } = await supabase
+    const { data: userRotationSeriesDataRaw, error: rotSeriesError } = await supabase
       .from('user_rotation_series_data')
       .select('*')
 
     if (rotSeriesError) console.warn('Error exporting user_rotation_series_data:', rotSeriesError)
-    data.userRotationSeriesData = userRotationSeriesData || []
-    console.log(`  ✅ user_rotation_series_data: ${userRotationSeriesData?.length || 0} records`)
+    if (userRotationSeriesDataRaw && userRotationSeriesDataRaw.length > 0) {
+      const rotSetIds = Array.from(new Set(userRotationSeriesDataRaw.map(r => r.rotation_set_id)))
+      const { data: rotSets } = await supabaseAdmin.from('track_rotation_sets').select('id, set_number').in('id', rotSetIds)
+      const rotSetNumberMap = new Map((rotSets || []).map(s => [s.id, s.set_number]))
+      data.userRotationSeriesData = userRotationSeriesDataRaw.map(r => ({ ...r, _rotation_set_number: rotSetNumberMap.get(r.rotation_set_id) ?? null }))
+    } else {
+      data.userRotationSeriesData = userRotationSeriesDataRaw || []
+    }
+    console.log(`  ✅ user_rotation_series_data: ${userRotationSeriesDataRaw?.length || 0} records`)
 
     // 12. User Rotation Track Data
-    const { data: userRotationTrackData, error: rotTrackError } = await supabase
+    const { data: userRotationTrackDataRaw, error: rotTrackError } = await supabase
       .from('user_rotation_track_data')
       .select('*')
 
     if (rotTrackError) console.warn('Error exporting user_rotation_track_data:', rotTrackError)
-    data.userRotationTrackData = userRotationTrackData || []
-    console.log(`  ✅ user_rotation_track_data: ${userRotationTrackData?.length || 0} records`)
+    if (userRotationTrackDataRaw && userRotationTrackDataRaw.length > 0) {
+      const rotSetIds2 = Array.from(new Set(userRotationTrackDataRaw.map(r => r.rotation_set_id)))
+      const { data: rotSets2 } = await supabaseAdmin.from('track_rotation_sets').select('id, set_number').in('id', rotSetIds2)
+      const rotSetNumberMap2 = new Map((rotSets2 || []).map(s => [s.id, s.set_number]))
+      data.userRotationTrackData = userRotationTrackDataRaw.map(r => ({ ...r, _rotation_set_number: rotSetNumberMap2.get(r.rotation_set_id) ?? null }))
+    } else {
+      data.userRotationTrackData = userRotationTrackDataRaw || []
+    }
+    console.log(`  ✅ user_rotation_track_data: ${userRotationTrackDataRaw?.length || 0} records`)
 
     // 13. Profile metadata
     const { data: profileData } = await supabaseAdmin

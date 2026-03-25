@@ -169,9 +169,10 @@ export default function AdminContentCachePage() {
       // Store result for display on page
       setUploadResult(result);
 
-      // Invalidate cached results so series/AI pages fetch fresh data
+      // Invalidate cached results so series/AI/tracks pages fetch fresh data
       queryClient.invalidateQueries({ queryKey: ['series'] })
       queryClient.invalidateQueries({ queryKey: ['ai-loadouts-options'] })
+      queryClient.invalidateQueries({ queryKey: ['tracks'] })
       
       // Show modified items in console for admin review
       if (result.summary.total_modified > 0) {

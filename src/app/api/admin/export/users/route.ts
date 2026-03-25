@@ -37,6 +37,10 @@ export async function GET(request: NextRequest) {
     const { data: allTracks } = await supabaseAdmin.from('tracks').select('id, name')
     const trackNameMap = new Map((allTracks || []).map(t => [t.id, t.name]))
 
+    // Pre-fetch rotation set numbers for cross-environment resolution
+    const { data: allRotationSets } = await supabaseAdmin.from('track_rotation_sets').select('id, set_number')
+    const rotationSetNumberMap = new Map((allRotationSets || []).map(s => [s.id, s.set_number]))
+
     const users = []
 
     for (const userProfile of allProfiles || []) {
@@ -50,6 +54,8 @@ export async function GET(request: NextRequest) {
         { data: userTrackGuides },
         { data: userGpGuides },
         { data: userCustomDrivers },
+        { data: userRotationSeriesDataRaw },
+        { data: userRotationTrackDataRaw },
       ] = await Promise.all([
         supabaseAdmin.from('user_drivers').select('*').eq('user_id', userId),
         supabaseAdmin.from('user_car_parts').select('*').eq('user_id', userId),
@@ -58,6 +64,8 @@ export async function GET(request: NextRequest) {
         supabaseAdmin.from('user_track_guides').select('*').eq('user_id', userId),
         supabaseAdmin.from('user_gp_guides').select('*').eq('user_id', userId),
         supabaseAdmin.from('user_custom_drivers').select('*').eq('user_id', userId),
+        supabaseAdmin.from('user_rotation_series_data').select('*').eq('user_id', userId),
+        supabaseAdmin.from('user_rotation_track_data').select('*').eq('user_id', userId),
       ])
 
       const trackGuideIds = (userTrackGuides || []).map(g => g.id)
@@ -89,6 +97,21 @@ export async function GET(request: NextRequest) {
         _track_name: trackNameMap.get(t.track_id) ?? null,
       }))
 
+      const enrichedGpGuideResults = (userGpGuideResults || []).map(r => ({
+        ...r,
+        _track_name: trackNameMap.get(r.track_id) ?? null,
+      }))
+
+      const enrichedRotationSeriesData = (userRotationSeriesDataRaw || []).map(r => ({
+        ...r,
+        _rotation_set_number: rotationSetNumberMap.get(r.rotation_set_id) ?? null,
+      }))
+
+      const enrichedRotationTrackData = (userRotationTrackDataRaw || []).map(r => ({
+        ...r,
+        _rotation_set_number: rotationSetNumberMap.get(r.rotation_set_id) ?? null,
+      }))
+
       users.push({
         userId,
         email: authUserMap.get(userId) ?? null,
@@ -103,8 +126,10 @@ export async function GET(request: NextRequest) {
           userTrackGuideDrivers: userTrackGuideDrivers || [],
           userGpGuides: userGpGuides || [],
           userGpGuideTracks: enrichedGpGuideTracks,
-          userGpGuideResults: userGpGuideResults || [],
+          userGpGuideResults: enrichedGpGuideResults,
           userCustomDrivers: userCustomDrivers || [],
+          userRotationSeriesData: enrichedRotationSeriesData,
+          userRotationTrackData: enrichedRotationTrackData,
         }
       })
     }

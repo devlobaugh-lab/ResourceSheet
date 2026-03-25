@@ -474,7 +474,7 @@ export function useTracks(filters?: {
   season_id?: string
   page?: number
   limit?: number
-}) {
+}, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['tracks', filters],
     queryFn: async () => {
@@ -497,6 +497,7 @@ export function useTracks(filters?: {
       return response.json()
     },
     staleTime: 60 * 1000, // 1 minute
+    enabled: options?.enabled ?? true,
   })
 }
 
