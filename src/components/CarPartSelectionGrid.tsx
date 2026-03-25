@@ -118,6 +118,16 @@ export function CarPartSelectionGrid({
     return baseValue;
   }, [showHighestLevel, bonusCheckedItems, bonusPercentage]);
 
+  const getTotalValue = useCallback((part: CarPartView): number => {
+    return (
+      getStatValue(part, 'speed') +
+      getStatValue(part, 'cornering') +
+      getStatValue(part, 'powerUnit') +
+      getStatValue(part, 'qualifying') +
+      getStatValue(part, 'drs')
+    );
+  }, [getStatValue]);
+
   // Calculate column stats for color coding
   const columnStats = useMemo(() => {
     const statNames = ['speed', 'cornering', 'powerUnit', 'qualifying', 'drs', 'pitStopTime'];
@@ -139,8 +149,23 @@ export function CarPartSelectionGrid({
       }
     });
 
+    // Total value (sum of all stats except pit stop)
+    const totalValues: number[] = [];
+    partsForType.forEach(part => {
+      const v = getTotalValue(part);
+      if (v > 0) totalValues.push(v);
+    });
+    if (totalValues.length > 0) {
+      const sorted = [...totalValues].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      const median = sorted.length % 2 === 0
+        ? (sorted[mid - 1] + sorted[mid]) / 2
+        : sorted[mid];
+      result['totalValue'] = { min: sorted[0], max: sorted[sorted.length - 1], median };
+    }
+
     return result;
-  }, [partsForType, getStatValue]);
+  }, [partsForType, getStatValue, getTotalValue]);
 
   // Sorted parts
   const sortedParts = useMemo(() => {
@@ -154,12 +179,14 @@ export function CarPartSelectionGrid({
         cmp = (a.level || 0) - (b.level || 0);
       } else if (sortBy === 'series') {
         cmp = a.series - b.series;
+      } else if (sortBy === 'totalValue') {
+        cmp = getTotalValue(a) - getTotalValue(b);
       } else {
         cmp = getStatValue(a, sortBy) - getStatValue(b, sortBy);
       }
       return sortOrder === 'asc' ? cmp : -cmp;
     });
-  }, [partsForType, sortBy, sortOrder, getStatValue]);
+  }, [partsForType, sortBy, sortOrder, getStatValue, getTotalValue]);
 
   const handleSort = (col: string) => {
     if (sortBy === col) {
@@ -182,6 +209,7 @@ export function CarPartSelectionGrid({
     { key: 'qualifying', label: 'Qualifying' },
     { key: 'drs', label: 'DRS' },
     { key: 'pitStopTime', label: 'Pit Stop' },
+    { key: 'totalValue', label: 'Total Value' },
     { key: 'series', label: 'Series' },
   ];
 
@@ -254,6 +282,7 @@ export function CarPartSelectionGrid({
               const qualifying = getStatValue(part, 'qualifying');
               const drs = getStatValue(part, 'drs');
               const pitStopTime = getStatValue(part, 'pitStopTime');
+              const totalValue = getTotalValue(part);
               const effectiveLevel = showHighestLevel
                 ? calculateHighestLevel(part.level || 0, part.card_count || 0, part.rarity)
                 : (part.level || 0);
@@ -326,6 +355,10 @@ export function CarPartSelectionGrid({
                   </td>
                   <td className={cn('px-3 py-1 whitespace-nowrap text-center', columnStats['pitStopTime'] && getStatBackgroundColor(pitStopTime, columnStats['pitStopTime'].min, columnStats['pitStopTime'].max, columnStats['pitStopTime'].median, true))}>
                     <span className="text-sm text-gray-900">{pitStopTime > 0 ? pitStopTime.toFixed(2) : ''}</span>
+                  </td>
+                  {/* Total Value */}
+                  <td className={cn('px-3 py-1 whitespace-nowrap text-center', columnStats['totalValue'] && getStatBackgroundColor(totalValue, columnStats['totalValue'].min, columnStats['totalValue'].max, columnStats['totalValue'].median))}>
+                    <span className="text-sm text-gray-900">{totalValue || ''}</span>
                   </td>
                   {/* Series */}
                   <td className="px-3 py-1 whitespace-nowrap text-center">
