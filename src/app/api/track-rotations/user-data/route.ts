@@ -97,7 +97,12 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const { rotation_set_id, series_index, driver_1_id, driver_2_id, saved_setup_id } = parsed.data
+    const {
+      rotation_set_id, series_index, driver_1_id, driver_2_id,
+      setup_brake_id, setup_gearbox_id, setup_rear_wing_id,
+      setup_front_wing_id, setup_suspension_id, setup_engine_id,
+      setup_bonus_percentage, setup_series_filter,
+    } = parsed.data
 
     const { data, error } = await supabaseAdmin
       .from('user_rotation_series_data')
@@ -108,7 +113,14 @@ export async function PUT(request: NextRequest) {
           series_index,
           driver_1_id: driver_1_id ?? null,
           driver_2_id: driver_2_id ?? null,
-          saved_setup_id: saved_setup_id ?? null,
+          setup_brake_id: setup_brake_id ?? null,
+          setup_gearbox_id: setup_gearbox_id ?? null,
+          setup_rear_wing_id: setup_rear_wing_id ?? null,
+          setup_front_wing_id: setup_front_wing_id ?? null,
+          setup_suspension_id: setup_suspension_id ?? null,
+          setup_engine_id: setup_engine_id ?? null,
+          ...(setup_bonus_percentage !== undefined && { setup_bonus_percentage }),
+          ...(setup_series_filter !== undefined && { setup_series_filter }),
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'user_id,rotation_set_id,series_index' }

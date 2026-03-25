@@ -823,7 +823,7 @@ export function useUserRotationSetData(rotationSetId?: string) {
   })
 }
 
-// Upsert a series data row (driver 1, driver 2, setup)
+// Upsert a series data row (driver 1, driver 2, inline setup)
 export function useUpsertRotationSeriesData() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -832,7 +832,14 @@ export function useUpsertRotationSeriesData() {
       series_index: number
       driver_1_id?: string | null
       driver_2_id?: string | null
-      saved_setup_id?: string | null
+      setup_brake_id?: string | null
+      setup_gearbox_id?: string | null
+      setup_rear_wing_id?: string | null
+      setup_front_wing_id?: string | null
+      setup_suspension_id?: string | null
+      setup_engine_id?: string | null
+      setup_bonus_percentage?: number
+      setup_series_filter?: number
     }) => {
       const response = await fetch(`${API_BASE}/track-rotations/user-data`, {
         method: 'PUT',

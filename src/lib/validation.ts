@@ -161,7 +161,14 @@ export const upsertRotationSeriesDataSchema = z.object({
   series_index: z.number().int(),
   driver_1_id: uuidSchema.nullable().optional(),
   driver_2_id: uuidSchema.nullable().optional(),
-  saved_setup_id: uuidSchema.nullable().optional(),
+  setup_brake_id: uuidSchema.nullable().optional(),
+  setup_gearbox_id: uuidSchema.nullable().optional(),
+  setup_rear_wing_id: uuidSchema.nullable().optional(),
+  setup_front_wing_id: uuidSchema.nullable().optional(),
+  setup_suspension_id: uuidSchema.nullable().optional(),
+  setup_engine_id: uuidSchema.nullable().optional(),
+  setup_bonus_percentage: z.number().int().min(0).max(100).optional(),
+  setup_series_filter: z.number().int().min(1).optional(),
 })
 
 export const upsertRotationTrackDataSchema = z.object({

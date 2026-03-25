@@ -731,7 +731,14 @@ export interface Database {
           series_index: number
           driver_1_id: string | null
           driver_2_id: string | null
-          saved_setup_id: string | null
+          setup_brake_id: string | null
+          setup_gearbox_id: string | null
+          setup_rear_wing_id: string | null
+          setup_front_wing_id: string | null
+          setup_suspension_id: string | null
+          setup_engine_id: string | null
+          setup_bonus_percentage: number
+          setup_series_filter: number
           created_at: string
           updated_at: string
         }
@@ -742,7 +749,14 @@ export interface Database {
           series_index: number
           driver_1_id?: string | null
           driver_2_id?: string | null
-          saved_setup_id?: string | null
+          setup_brake_id?: string | null
+          setup_gearbox_id?: string | null
+          setup_rear_wing_id?: string | null
+          setup_front_wing_id?: string | null
+          setup_suspension_id?: string | null
+          setup_engine_id?: string | null
+          setup_bonus_percentage?: number
+          setup_series_filter?: number
           created_at?: string
           updated_at?: string
         }
@@ -753,7 +767,14 @@ export interface Database {
           series_index?: number
           driver_1_id?: string | null
           driver_2_id?: string | null
-          saved_setup_id?: string | null
+          setup_brake_id?: string | null
+          setup_gearbox_id?: string | null
+          setup_rear_wing_id?: string | null
+          setup_front_wing_id?: string | null
+          setup_suspension_id?: string | null
+          setup_engine_id?: string | null
+          setup_bonus_percentage?: number
+          setup_series_filter?: number
           created_at?: string
           updated_at?: string
         }

@@ -28,7 +28,7 @@ import type {
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { DriverDisplay } from '@/components/DriverDisplay'
 import { DriverSelectionGrid } from '@/components/DriverSelectionGrid'
-import { SetupSelector } from '@/components/SetupSelector'
+import { RotationSetupCard, RotationSetupPatch } from '@/components/RotationSetupCard'
 
 const statDisplayNames: Record<string, string> = {
   tyreUse: 'Tyre Management',
@@ -100,7 +100,7 @@ interface RotationSeriesCardProps {
   allDrivers: DriverView[]
   allSetups: UserCarSetup[]
   allCarParts: CarPartView[]
-  onSaveSeries: (patch: Partial<Pick<UserRotationSeriesData, 'driver_1_id' | 'driver_2_id' | 'saved_setup_id'>>) => void
+  onSaveSeries: (patch: Partial<Pick<UserRotationSeriesData, 'driver_1_id' | 'driver_2_id'>> | RotationSetupPatch) => void
   onSaveTrack: (position: number, patch: Partial<Pick<UserRotationTrackData, 'boost_id' | 'dry_strategy' | 'wet_strategy'>>) => void
   quickRef?: boolean
 }
@@ -292,7 +292,7 @@ function RotationSeriesCard({
           {!quickRef && (
             <div className="border-t border-gray-100">
               <button
-                className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-50"
                 onClick={() => setShowDriverSetup(v => !v)}
               >
                 <span>Drivers &amp; Setup</span>
@@ -306,7 +306,7 @@ function RotationSeriesCard({
             </div>
           )}
           {!quickRef && showDriverSetup && (
-            <div className="border-t border-gray-100 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="border-t border-gray-100 bg-gray-400 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Drivers column */}
               <div className="flex flex-col gap-4">
                 <Card className="p-4">
@@ -333,12 +333,11 @@ function RotationSeriesCard({
 
               {/* Car Setup column */}
               <div>
-                <SetupSelector
-                  setups={allSetups}
-                  selectedSetupId={seriesData?.saved_setup_id}
+                <RotationSetupCard
+                  seriesData={seriesData}
                   allCarParts={allCarParts}
-                  onSelect={(id) => onSaveSeries({ saved_setup_id: id })}
-                  seriesFilter={seriesIndex}
+                  allSetups={allSetups}
+                  onSave={(patch) => onSaveSeries(patch)}
                 />
               </div>
             </div>
@@ -585,7 +584,7 @@ export default function TrackRotationsPage() {
   // Callbacks
   function handleSaveSeries(
     seriesIndex: number,
-    patch: Partial<Pick<UserRotationSeriesData, 'driver_1_id' | 'driver_2_id' | 'saved_setup_id'>>
+    patch: Partial<Pick<UserRotationSeriesData, 'driver_1_id' | 'driver_2_id'>> | RotationSetupPatch
   ) {
     if (!rotationSetId) return
     const existing = seriesMap[seriesIndex]
@@ -594,7 +593,14 @@ export default function TrackRotationsPage() {
       series_index: seriesIndex,
       driver_1_id: existing?.driver_1_id ?? null,
       driver_2_id: existing?.driver_2_id ?? null,
-      saved_setup_id: existing?.saved_setup_id ?? null,
+      setup_brake_id: existing?.setup_brake_id ?? null,
+      setup_gearbox_id: existing?.setup_gearbox_id ?? null,
+      setup_rear_wing_id: existing?.setup_rear_wing_id ?? null,
+      setup_front_wing_id: existing?.setup_front_wing_id ?? null,
+      setup_suspension_id: existing?.setup_suspension_id ?? null,
+      setup_engine_id: existing?.setup_engine_id ?? null,
+      setup_bonus_percentage: existing?.setup_bonus_percentage ?? 0,
+      setup_series_filter: existing?.setup_series_filter ?? 12,
       ...patch,
     })
   }
