@@ -1034,6 +1034,7 @@ export interface UserCarSetup {
   engine_id: string | null
   series_filter: number
   bonus_percentage: number
+  bonus_part_ids: string[]
   season_id: string | null
   created_at: string
   updated_at: string

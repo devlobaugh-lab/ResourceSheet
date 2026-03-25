@@ -334,7 +334,8 @@ function AuthenticatedSetupsPage() {
             suspension_id: slot.selectedParts.suspension || null,
             engine_id: slot.selectedParts.engine || null,
             series_filter: slot.seriesFilter,
-            bonus_percentage: parseFloat(slot.bonusPercentage) || 0
+            bonus_percentage: parseFloat(slot.bonusPercentage) || 0,
+            bonus_part_ids: Array.from(slot.bonusParts),
           }
         })
         addToast('Setup updated successfully!', 'success')
@@ -351,6 +352,7 @@ function AuthenticatedSetupsPage() {
           engine_id: slot.selectedParts.engine || null,
           series_filter: slot.seriesFilter,
           bonus_percentage: parseFloat(slot.bonusPercentage) || 0,
+          bonus_part_ids: Array.from(slot.bonusParts),
           season_id: activeSeasonId ?? null,
         })
         // Update slot with new id
@@ -378,7 +380,7 @@ function AuthenticatedSetupsPage() {
         suspension: setup.suspension_id || '',
         engine: setup.engine_id || ''
       },
-      bonusParts: new Set(),
+      bonusParts: new Set(setup.bonus_part_ids || []),
       seriesFilter: setup.series_filter || 12,
       bonusPercentage: setup.bonus_percentage?.toString() || ''
     })

@@ -379,6 +379,7 @@ export function useCreateSetup() {
       engine_id?: string | null
       series_filter?: number
       bonus_percentage?: number
+      bonus_part_ids?: string[]
       season_id?: string | null
     }) => {
       const response = await fetch(`${API_BASE}/setups`, {
@@ -422,6 +423,7 @@ export function useUpdateSetup() {
         engine_id: string | null
         series_filter: number
         bonus_percentage: number
+        bonus_part_ids: string[]
       }>
     }) => {
       const response = await fetch(`${API_BASE}/setups/${id}`, {

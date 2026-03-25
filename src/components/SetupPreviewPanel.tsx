@@ -1,7 +1,7 @@
 'use client'
 
 import { UserCarSetup, CarPartView } from '@/types/database'
-import { X, Pencil } from 'lucide-react'
+import { X, Pencil, Star } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import Link from 'next/link'
 
@@ -17,13 +17,22 @@ const PART_TYPES = [
 const getStatValue = (
   part: CarPartView | undefined,
   statName: string,
+  bonusPercentage: number,
 ): number => {
   if (!part) return 0
   const userLevel = part.level || 0
   if (userLevel === 0) return 0
   const stats = part.stats_per_level
   if (!stats || !Array.isArray(stats) || stats.length < userLevel) return 0
-  return stats[userLevel - 1][statName] || 0
+  let baseValue = stats[userLevel - 1][statName] || 0
+  if (bonusPercentage > 0) {
+    if (statName === 'pitStopTime') {
+      baseValue = Math.round((baseValue * (1 - bonusPercentage / 100)) * 100) / 100
+    } else {
+      baseValue = Math.ceil(baseValue * (1 + bonusPercentage / 100))
+    }
+  }
+  return baseValue
 }
 
 const getRarityBg = (rarity: number): string => {
@@ -42,6 +51,9 @@ interface SetupPreviewPanelProps {
 }
 
 export function SetupPreviewPanel({ setup, carParts, onClose }: SetupPreviewPanelProps) {
+  const bonusPercentage = setup.bonus_percentage || 0
+  const bonusPartIds = new Set(setup.bonus_part_ids || [])
+
   const partMap: Record<string, string | null> = {
     brake: setup.brake_id,
     gearbox: setup.gearbox_id,
@@ -62,12 +74,14 @@ export function SetupPreviewPanel({ setup, carParts, onClose }: SetupPreviewPane
   PART_TYPES.forEach(({ key }) => {
     const part = getPart(key)
     if (part) {
-      totalStats.speed += getStatValue(part, 'speed')
-      totalStats.cornering += getStatValue(part, 'cornering')
-      totalStats.powerUnit += getStatValue(part, 'powerUnit')
-      totalStats.qualifying += getStatValue(part, 'qualifying')
-      totalStats.drs += getStatValue(part, 'drs')
-      totalStats.pitStopTime += getStatValue(part, 'pitStopTime')
+      const hasBonus = bonusPartIds.has(part.id)
+      const pct = hasBonus ? bonusPercentage : 0
+      totalStats.speed += getStatValue(part, 'speed', pct)
+      totalStats.cornering += getStatValue(part, 'cornering', pct)
+      totalStats.powerUnit += getStatValue(part, 'powerUnit', pct)
+      totalStats.qualifying += getStatValue(part, 'qualifying', pct)
+      totalStats.drs += getStatValue(part, 'drs', pct)
+      totalStats.pitStopTime += getStatValue(part, 'pitStopTime', pct)
     }
   })
 
@@ -98,6 +112,7 @@ export function SetupPreviewPanel({ setup, carParts, onClose }: SetupPreviewPane
       <div className="grid grid-cols-3 gap-2 mb-4">
         {PART_TYPES.map(({ key, label }) => {
           const part = getPart(key)
+          const hasBonus = part ? bonusPartIds.has(part.id) : false
           return (
             <div
               key={key}
@@ -107,7 +122,12 @@ export function SetupPreviewPanel({ setup, carParts, onClose }: SetupPreviewPane
               {part ? (
                 <div>
                   <div className="text-sm font-bold text-gray-900 truncate">{part.name}</div>
-                  <div className="text-sm text-gray-700">Lv.{part.level}</div>
+                  <div className="flex items-center gap-1 text-sm text-gray-700">
+                    Lv.{part.level}
+                    {hasBonus && (
+                      <Star className="w-3 h-3 fill-blue-500 text-blue-500" />
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="text-sm text-gray-400 italic">None</div>
