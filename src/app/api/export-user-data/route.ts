@@ -255,7 +255,42 @@ export async function GET(request: NextRequest) {
       const rotSetIds = Array.from(new Set(userRotationSeriesDataRaw.map(r => r.rotation_set_id)))
       const { data: rotSets } = await supabaseAdmin.from('track_rotation_sets').select('id, set_number').in('id', rotSetIds)
       const rotSetNumberMap = new Map((rotSets || []).map(s => [s.id, s.set_number]))
-      data.userRotationSeriesData = userRotationSeriesDataRaw.map(r => ({ ...r, _rotation_set_number: rotSetNumberMap.get(r.rotation_set_id) ?? null }))
+
+      // Collect driver/car-part IDs for cross-environment name metadata
+      const driverIds = Array.from(new Set(
+        userRotationSeriesDataRaw.flatMap(r => [r.driver_1_id, r.driver_2_id]).filter(Boolean) as string[]
+      ))
+      const setupPartIds = Array.from(new Set(
+        userRotationSeriesDataRaw.flatMap(r => [
+          r.setup_brake_id, r.setup_gearbox_id, r.setup_rear_wing_id,
+          r.setup_front_wing_id, r.setup_suspension_id, r.setup_engine_id,
+        ]).filter(Boolean) as string[]
+      ))
+
+      const driverNameMap = new Map<string, string>()
+      if (driverIds.length > 0) {
+        const { data: drivers } = await supabaseAdmin.from('drivers').select('id, name').in('id', driverIds)
+        ;(drivers || []).forEach(d => driverNameMap.set(d.id, d.name))
+      }
+
+      const carPartNameMap = new Map<string, string>()
+      if (setupPartIds.length > 0) {
+        const { data: parts } = await supabaseAdmin.from('car_parts').select('id, name').in('id', setupPartIds)
+        ;(parts || []).forEach(p => carPartNameMap.set(p.id, p.name))
+      }
+
+      data.userRotationSeriesData = userRotationSeriesDataRaw.map(r => ({
+        ...r,
+        _rotation_set_number: rotSetNumberMap.get(r.rotation_set_id) ?? null,
+        _driver_1_name: r.driver_1_id ? (driverNameMap.get(r.driver_1_id) ?? null) : null,
+        _driver_2_name: r.driver_2_id ? (driverNameMap.get(r.driver_2_id) ?? null) : null,
+        _setup_brake_name:      r.setup_brake_id      ? (carPartNameMap.get(r.setup_brake_id)      ?? null) : null,
+        _setup_gearbox_name:    r.setup_gearbox_id    ? (carPartNameMap.get(r.setup_gearbox_id)    ?? null) : null,
+        _setup_rear_wing_name:  r.setup_rear_wing_id  ? (carPartNameMap.get(r.setup_rear_wing_id)  ?? null) : null,
+        _setup_front_wing_name: r.setup_front_wing_id ? (carPartNameMap.get(r.setup_front_wing_id) ?? null) : null,
+        _setup_suspension_name: r.setup_suspension_id ? (carPartNameMap.get(r.setup_suspension_id) ?? null) : null,
+        _setup_engine_name:     r.setup_engine_id     ? (carPartNameMap.get(r.setup_engine_id)     ?? null) : null,
+      }))
     } else {
       data.userRotationSeriesData = userRotationSeriesDataRaw || []
     }
@@ -271,7 +306,22 @@ export async function GET(request: NextRequest) {
       const rotSetIds2 = Array.from(new Set(userRotationTrackDataRaw.map(r => r.rotation_set_id)))
       const { data: rotSets2 } = await supabaseAdmin.from('track_rotation_sets').select('id, set_number').in('id', rotSetIds2)
       const rotSetNumberMap2 = new Map((rotSets2 || []).map(s => [s.id, s.set_number]))
-      data.userRotationTrackData = userRotationTrackDataRaw.map(r => ({ ...r, _rotation_set_number: rotSetNumberMap2.get(r.rotation_set_id) ?? null }))
+
+      // Collect boost IDs for cross-environment name metadata
+      const boostIds = Array.from(new Set(
+        userRotationTrackDataRaw.map(r => r.boost_id).filter(Boolean) as string[]
+      ))
+      const boostNameMap = new Map<string, string>()
+      if (boostIds.length > 0) {
+        const { data: boosts } = await supabaseAdmin.from('boosts').select('id, name').in('id', boostIds)
+        ;(boosts || []).forEach(b => boostNameMap.set(b.id, b.name))
+      }
+
+      data.userRotationTrackData = userRotationTrackDataRaw.map(r => ({
+        ...r,
+        _rotation_set_number: rotSetNumberMap2.get(r.rotation_set_id) ?? null,
+        _boost_name: r.boost_id ? (boostNameMap.get(r.boost_id) ?? null) : null,
+      }))
     } else {
       data.userRotationTrackData = userRotationTrackDataRaw || []
     }

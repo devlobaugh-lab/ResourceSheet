@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { CarPartView, UserCarSetup, UserRotationSeriesData } from '@/types/database'
 import { CarPartSelectionGrid } from './CarPartSelectionGrid'
 import { Card } from './ui/Card'
@@ -26,14 +26,14 @@ const getRarityBg = (rarity: number): string =>
   rarity === 4 ? 'bg-yellow-300' :
   rarity === 5 ? 'bg-red-300' : 'bg-gray-300'
 
-const getStatValue = (part: CarPartView | undefined, statName: string, bonusPercentage: number): number => {
+const getStatValue = (part: CarPartView | undefined, statName: string, bonusPercentage: number, hasBonus: boolean): number => {
   if (!part) return 0
   const userLevel = part.level || 0
   if (userLevel === 0) return 0
   const stats = part.stats_per_level
   if (!stats || !Array.isArray(stats) || stats.length < userLevel) return 0
   const baseValue = (stats[userLevel - 1] as Record<string, number>)[statName] || 0
-  if (bonusPercentage <= 0) return baseValue
+  if (!hasBonus || bonusPercentage <= 0) return baseValue
   if (statName === 'pitStopTime') {
     return Math.round((baseValue * (1 - bonusPercentage / 100)) * 100) / 100
   }
@@ -67,6 +67,22 @@ export function RotationSetupCard({
   const [partModal, setPartModal] = useState<{ partKey: PartKey; partType: number } | null>(null)
   const [bonusInput, setBonusInput] = useState<string>(() => String(seriesData?.setup_bonus_percentage ?? 0))
   const [seriesFilterInput, setSeriesFilterInput] = useState<string>(() => String(seriesData?.setup_series_filter ?? 12))
+  const [bonusCheckedItems, setBonusCheckedItems] = useState<Set<string>>(() => {
+    if (!seriesData?.id) return new Set()
+    try {
+      const raw = localStorage.getItem(`rotation-bonus-parts:${seriesData.id}`)
+      return raw ? new Set(JSON.parse(raw) as string[]) : new Set()
+    } catch {
+      return new Set()
+    }
+  })
+
+  useEffect(() => {
+    if (!seriesData?.id) return
+    try {
+      localStorage.setItem(`rotation-bonus-parts:${seriesData.id}`, JSON.stringify(Array.from(bonusCheckedItems)))
+    } catch { /* ignore */ }
+  }, [bonusCheckedItems, seriesData?.id])
 
   // Sync inputs when seriesData changes (e.g. after load-from-setup)
   const prevSeriesData = React.useRef(seriesData)
@@ -89,26 +105,29 @@ export function RotationSetupCard({
   const bonusPercentage = seriesData?.setup_bonus_percentage ?? 0
 
   const totalStats = useMemo(() => {
+    const bonusPct = bonusPercentage
     const s = { speed: 0, cornering: 0, powerUnit: 0, qualifying: 0, drs: 0, pitStopTime: 0 }
     for (const { key } of PART_TYPES) {
       const part = getPart(key)
       if (part) {
-        s.speed       += getStatValue(part, 'speed', bonusPercentage)
-        s.cornering   += getStatValue(part, 'cornering', bonusPercentage)
-        s.powerUnit   += getStatValue(part, 'powerUnit', bonusPercentage)
-        s.qualifying  += getStatValue(part, 'qualifying', bonusPercentage)
-        s.drs         += getStatValue(part, 'drs', bonusPercentage)
-        s.pitStopTime += getStatValue(part, 'pitStopTime', bonusPercentage)
+        const hasBonus = bonusCheckedItems.has(part.id)
+        s.speed       += getStatValue(part, 'speed', bonusPct, hasBonus)
+        s.cornering   += getStatValue(part, 'cornering', bonusPct, hasBonus)
+        s.powerUnit   += getStatValue(part, 'powerUnit', bonusPct, hasBonus)
+        s.qualifying  += getStatValue(part, 'qualifying', bonusPct, hasBonus)
+        s.drs         += getStatValue(part, 'drs', bonusPct, hasBonus)
+        s.pitStopTime += getStatValue(part, 'pitStopTime', bonusPct, hasBonus)
       }
     }
     return s
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seriesData, allCarParts])
+  }, [seriesData, allCarParts, bonusCheckedItems, bonusInput])
 
-  function handlePartSelect(partKey: PartKey, partId: string | null) {
+  function handlePartSelect(partKey: PartKey, partId: string) {
     const pt = PART_TYPES.find(p => p.key === partKey)!
-    onSave({ [pt.dbKey]: partId } as RotationSetupPatch)
-    setPartModal(null)
+    const currentId = getPartId(partKey)
+    const newId = currentId === partId ? null : partId
+    onSave({ [pt.dbKey]: newId } as RotationSetupPatch)
   }
 
   function handleLoadFromSetup(setupId: string) {
@@ -197,6 +216,7 @@ export function RotationSetupCard({
       <div className="grid grid-cols-3 gap-2">
         {PART_TYPES.map(({ key, label }) => {
           const part = getPart(key)
+          const hasBonus = part ? bonusCheckedItems.has(part.id) : false
           return (
             <button
               key={key}
@@ -211,6 +231,9 @@ export function RotationSetupCard({
                 <div>
                   <div className="text-xs font-bold text-gray-900 truncate">{part.name}</div>
                   <div className="text-xs text-gray-700">Lv.{part.level}</div>
+                  {hasBonus && (
+                    <div className="text-xs text-blue-600 font-medium">★ Bonus</div>
+                  )}
                 </div>
               ) : (
                 <div className="text-xs text-gray-400 italic">+ Select</div>
@@ -239,44 +262,48 @@ export function RotationSetupCard({
       {/* Part selection modal */}
       {partModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
           onClick={() => setPartModal(null)}
         >
           <div
-            className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto p-4"
+            className="bg-white rounded-lg max-w-6xl w-full mx-4 max-h-[80vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-gray-900">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">
                 Select {PART_TYPES.find(p => p.key === partModal.partKey)?.label}
               </h3>
-              <div className="flex items-center gap-3">
-                {getPartId(partModal.partKey) && (
-                  <button
-                    onClick={() => handlePartSelect(partModal.partKey, null)}
-                    className="text-xs text-red-500 hover:text-red-700"
-                  >
-                    Remove
-                  </button>
-                )}
-                <button
-                  onClick={() => setPartModal(null)}
-                  className="text-gray-400 hover:text-gray-600 text-xl leading-none"
-                >
-                  ×
-                </button>
-              </div>
+              <button
+                onClick={() => setPartModal(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <span className="text-2xl">×</span>
+              </button>
             </div>
-            <CarPartSelectionGrid
-              parts={allCarParts}
-              partType={partModal.partType}
-              selectedPartId={getPartId(partModal.partKey) ?? ''}
-              onPartSelect={(id) => handlePartSelect(partModal.partKey, id)}
-              bonusCheckedItems={new Set()}
-              onBonusToggle={() => {}}
-              bonusPercentage={bonusInput}
-              initialMaxSeries={currentSeriesFilter}
-            />
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
+              <CarPartSelectionGrid
+                parts={allCarParts}
+                partType={partModal.partType}
+                selectedPartId={getPartId(partModal.partKey) ?? ''}
+                onPartSelect={(id) => handlePartSelect(partModal.partKey, id)}
+                bonusCheckedItems={bonusCheckedItems}
+                onBonusToggle={(id) => setBonusCheckedItems(prev => {
+                  const next = new Set(prev)
+                  next.has(id) ? next.delete(id) : next.add(id)
+                  return next
+                })}
+                bonusPercentage={bonusInput}
+                initialMaxSeries={currentSeriesFilter}
+              />
+            </div>
+            <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end">
+              <button
+                onClick={() => setPartModal(null)}
+                className="px-4 py-2 bg-gray-900 text-white text-sm rounded hover:bg-gray-700"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -521,6 +521,32 @@ export async function POST(request: NextRequest) {
         return null
       }
 
+      // Pre-load catalog data for cross-environment ID resolution
+      const { data: allDriversCatalog } = await supabaseAdmin.from('drivers').select('id, name')
+      const driverIdSet = new Set((allDriversCatalog || []).map(d => d.id))
+      const driverNameToIdMap = new Map((allDriversCatalog || []).map(d => [d.name, d.id]))
+
+      const { data: allCarPartsCatalog } = await supabaseAdmin.from('car_parts').select('id, name, car_part_type')
+      const carPartIdSet = new Set((allCarPartsCatalog || []).map(p => p.id))
+      const carPartNameTypeToIdMap = new Map(
+        (allCarPartsCatalog || []).map(p => [`${p.name}:${p.car_part_type}`, p.id])
+      )
+
+      const resolveDriverId = (id: string | null | undefined, name?: string | null): string | null => {
+        if (!id) return null
+        if (driverIdSet.has(id)) return id
+        if (name) return driverNameToIdMap.get(name) ?? null
+        return null
+      }
+
+      // car_part_type values: 0=Gearbox, 1=Brake, 2=Engine, 3=Suspension, 4=Front Wing, 5=Rear Wing
+      const resolveCarPartId = (id: string | null | undefined, name: string | null | undefined, type: number): string | null => {
+        if (!id) return null
+        if (carPartIdSet.has(id)) return id
+        if (name) return carPartNameTypeToIdMap.get(`${name}:${type}`) ?? null
+        return null
+      }
+
       for (const item of importData.userRotationSeriesData) {
         try {
           const rotationSetId = resolveRotationSetId(item)
@@ -541,9 +567,16 @@ export async function POST(request: NextRequest) {
             user_id: userId,
             rotation_set_id: rotationSetId,
             series_index: item.series_index,
-            driver_1_id: item.driver_1_id,
-            driver_2_id: item.driver_2_id,
-            saved_setup_id: item.saved_setup_id ? (setupIdMap.get(item.saved_setup_id) ?? null) : null,
+            driver_1_id: resolveDriverId(item.driver_1_id, item._driver_1_name),
+            driver_2_id: resolveDriverId(item.driver_2_id, item._driver_2_name),
+            setup_brake_id:      resolveCarPartId(item.setup_brake_id,      item._setup_brake_name,      1),
+            setup_gearbox_id:    resolveCarPartId(item.setup_gearbox_id,    item._setup_gearbox_name,    0),
+            setup_rear_wing_id:  resolveCarPartId(item.setup_rear_wing_id,  item._setup_rear_wing_name,  5),
+            setup_front_wing_id: resolveCarPartId(item.setup_front_wing_id, item._setup_front_wing_name, 4),
+            setup_suspension_id: resolveCarPartId(item.setup_suspension_id, item._setup_suspension_name, 3),
+            setup_engine_id:     resolveCarPartId(item.setup_engine_id,     item._setup_engine_name,     2),
+            setup_bonus_percentage: item.setup_bonus_percentage ?? 0,
+            setup_series_filter:    item.setup_series_filter ?? 12,
           }
 
           if (existing) {
@@ -564,7 +597,6 @@ export async function POST(request: NextRequest) {
 
     // 9. Import User Rotation Track Data (upsert by user_id + rotation_set_id + series_index + track_position)
     if (importData.userRotationTrackData && Array.isArray(importData.userRotationTrackData)) {
-      // Reuse rotation set lookup from step 8 (or rebuild if step 8 was skipped)
       const { data: rotationSets2 } = await supabaseAdmin.from('track_rotation_sets').select('id, set_number')
       const rotationSetByNumber2 = new Map((rotationSets2 || []).map(s => [s.set_number, s.id]))
       const validRotationSetIds2 = new Set((rotationSets2 || []).map(s => s.id))
@@ -572,6 +604,18 @@ export async function POST(request: NextRequest) {
       const resolveRotationSetId2 = (item: { rotation_set_id: string; _rotation_set_number?: number | null }): string | null => {
         if (item._rotation_set_number != null) return rotationSetByNumber2.get(item._rotation_set_number) ?? null
         if (validRotationSetIds2.has(item.rotation_set_id)) return item.rotation_set_id
+        return null
+      }
+
+      // Pre-load boosts catalog for cross-environment boost ID resolution
+      const { data: allBoostsCatalog } = await supabaseAdmin.from('boosts').select('id, name')
+      const boostIdSet = new Set((allBoostsCatalog || []).map(b => b.id))
+      const boostNameToIdMap = new Map((allBoostsCatalog || []).map(b => [b.name, b.id]))
+
+      const resolveBoostId = (id: string | null | undefined, name?: string | null): string | null => {
+        if (!id) return null
+        if (boostIdSet.has(id)) return id
+        if (name) return boostNameToIdMap.get(name) ?? null
         return null
       }
 
@@ -597,7 +641,7 @@ export async function POST(request: NextRequest) {
             rotation_set_id: rotationSetId,
             series_index: item.series_index,
             track_position: item.track_position,
-            boost_id: item.boost_id,
+            boost_id: resolveBoostId(item.boost_id, item._boost_name),
             dry_strategy: item.dry_strategy,
             wet_strategy: item.wet_strategy,
           }
