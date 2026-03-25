@@ -120,6 +120,7 @@ function RotationSeriesCard({
   quickRef = false,
 }: RotationSeriesCardProps) {
   const [isExpanded, setIsExpanded] = useState(true)
+  const [showDriverSetup, setShowDriverSetup] = useState(false)
   const [boostModal, setBoostModal] = useState<{ open: boolean; position: number }>({ open: false, position: 0 })
   const [driverModal, setDriverModal] = useState<{ open: boolean; slot: 'driver_1_id' | 'driver_2_id' } | null>(null)
 
@@ -289,6 +290,22 @@ function RotationSeriesCard({
 
           {/* Below-table: Drivers (stacked) | Car Setup */}
           {!quickRef && (
+            <div className="border-t border-gray-100">
+              <button
+                className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                onClick={() => setShowDriverSetup(v => !v)}
+              >
+                <span>Drivers &amp; Setup</span>
+                <svg
+                  className={cn('w-4 h-4 transition-transform', showDriverSetup ? 'rotate-180' : '')}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+          )}
+          {!quickRef && showDriverSetup && (
             <div className="border-t border-gray-100 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Drivers column */}
               <div className="flex flex-col gap-4">
