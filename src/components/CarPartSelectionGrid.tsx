@@ -200,7 +200,7 @@ export function CarPartSelectionGrid({
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-700">Max Series:</label>
           <select
-            className="rounded-lg border-gray-300 text-sm px-3 py-2"
+            className="rounded-lg border-gray-300 text-sm pl-3 pr-8 py-2"
             value={localMaxSeries}
             onChange={(e) => setLocalMaxSeries(Number(e.target.value))}
           >
