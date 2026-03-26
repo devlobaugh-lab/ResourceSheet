@@ -779,7 +779,7 @@ export default function GpGuideEditorPage() {
                       onBlur={e => saveHeader({ notes: e.target.value || null })}
                       placeholder="e.g. Norris Rare lvl3+ → +5 Race Points; Verstappen Epic boosted +10%…"
                       rows={3}
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+                      className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   </div>
                 </div>
               </Card>
