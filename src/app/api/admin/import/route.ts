@@ -56,9 +56,13 @@ export async function POST(request: NextRequest) {
       userGpGuideTracks: { imported: 0, updated: 0 },
       userGpGuideResults: { imported: 0, updated: 0 },
       userCarSetups: { imported: 0, updated: 0 },
+      userRotationSeriesData: { imported: 0, updated: 0 },
+      userRotationTrackData: { imported: 0, updated: 0 },
       seasons: { imported: 0, updated: 0 },
       trackNameAliases: { imported: 0, updated: 0 },
       boostIconData: { imported: 0, updated: 0 },
+      trackRotationSets: { imported: 0, updated: 0 },
+      trackRotationSchedule: { imported: 0, updated: 0 },
       errors: [] as string[]
     }
 
@@ -230,6 +234,47 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // user_rotation_series_data: upsert by (user_id, rotation_set_id, series_index)
+    if (importData.userRotationSeriesData?.length) {
+      for (const item of importData.userRotationSeriesData) {
+        try {
+          const { data: existing } = await supabaseAdmin
+            .from('user_rotation_series_data').select('id')
+            .eq('user_id', item.user_id).eq('rotation_set_id', item.rotation_set_id).eq('series_index', item.series_index).single()
+          if (existing) {
+            const { id, created_at, ...updateData } = item
+            await supabaseAdmin.from('user_rotation_series_data').update(updateData).eq('id', existing.id)
+            results.userRotationSeriesData.updated++
+          } else {
+            const { id, created_at, ...insertData } = item
+            await supabaseAdmin.from('user_rotation_series_data').insert(insertData)
+            results.userRotationSeriesData.imported++
+          }
+        } catch (e) { results.errors.push(`user_rotation_series_data: ${String(e)}`) }
+      }
+    }
+
+    // user_rotation_track_data: upsert by (user_id, rotation_set_id, series_index, track_position)
+    if (importData.userRotationTrackData?.length) {
+      for (const item of importData.userRotationTrackData) {
+        try {
+          const { data: existing } = await supabaseAdmin
+            .from('user_rotation_track_data').select('id')
+            .eq('user_id', item.user_id).eq('rotation_set_id', item.rotation_set_id)
+            .eq('series_index', item.series_index).eq('track_position', item.track_position).single()
+          if (existing) {
+            const { id, created_at, ...updateData } = item
+            await supabaseAdmin.from('user_rotation_track_data').update(updateData).eq('id', existing.id)
+            results.userRotationTrackData.updated++
+          } else {
+            const { id, created_at, ...insertData } = item
+            await supabaseAdmin.from('user_rotation_track_data').insert(insertData)
+            results.userRotationTrackData.imported++
+          }
+        } catch (e) { results.errors.push(`user_rotation_track_data: ${String(e)}`) }
+      }
+    }
+
     // === ADMIN-MANAGED SYSTEM CONFIG ===
 
     // seasons: upsert by id
@@ -284,6 +329,43 @@ export async function POST(request: NextRequest) {
             results.boostIconData.imported++
           }
         } catch (e) { results.errors.push(`boost_icon_data: ${String(e)}`) }
+      }
+    }
+
+    // track_rotation_sets: upsert by set_number (unique)
+    if (importData.trackRotationSets?.length) {
+      for (const item of importData.trackRotationSets) {
+        try {
+          const { data: existing } = await supabaseAdmin
+            .from('track_rotation_sets').select('id').eq('set_number', item.set_number).single()
+          if (existing) {
+            await supabaseAdmin.from('track_rotation_sets').update({ series_data: item.series_data }).eq('id', existing.id)
+            results.trackRotationSets.updated++
+          } else {
+            const { id, created_at, updated_at, ...insertData } = item
+            await supabaseAdmin.from('track_rotation_sets').insert(insertData)
+            results.trackRotationSets.imported++
+          }
+        } catch (e) { results.errors.push(`track_rotation_sets: ${String(e)}`) }
+      }
+    }
+
+    // track_rotation_schedule: upsert by (rotation_set_id, start_date)
+    if (importData.trackRotationSchedule?.length) {
+      for (const item of importData.trackRotationSchedule) {
+        try {
+          const { data: existing } = await supabaseAdmin
+            .from('track_rotation_schedule').select('id')
+            .eq('rotation_set_id', item.rotation_set_id).eq('start_date', item.start_date).single()
+          if (existing) {
+            await supabaseAdmin.from('track_rotation_schedule').update({ end_date: item.end_date }).eq('id', existing.id)
+            results.trackRotationSchedule.updated++
+          } else {
+            const { id, created_at, updated_at, ...insertData } = item
+            await supabaseAdmin.from('track_rotation_schedule').insert(insertData)
+            results.trackRotationSchedule.imported++
+          }
+        } catch (e) { results.errors.push(`track_rotation_schedule: ${String(e)}`) }
       }
     }
 

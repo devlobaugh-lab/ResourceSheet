@@ -22,8 +22,8 @@
     "db:reset:prod": "node scripts/database/reset_prod_database.js"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.8.0",
-    "@supabase/supabase-js": "^2.98.0",
+    "@supabase/ssr": "^0.9.0",
+    "@supabase/supabase-js": "^2.99.3",
     "@tanstack/react-query": "^5.90.16",
     "autoprefixer": "^10.4.16",
     "clsx": "^2.1.1",
@@ -39,13 +39,13 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.0",
     "@tailwindcss/forms": "^0.5.7",
     "@tailwindcss/typography": "^0.5.10",
     "@types/node": "^20.8.10",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "dotenv": "^16.3.1",
-    "@eslint/eslintrc": "^3.3.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "^15.5.12",
     "supabase": "^2.78.1",

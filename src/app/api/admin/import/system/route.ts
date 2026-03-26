@@ -49,6 +49,8 @@ export async function POST(request: NextRequest) {
       seasons: { imported: 0, updated: 0 },
       trackNameAliases: { imported: 0, updated: 0 },
       boostIconData: { imported: 0, updated: 0 },
+      trackRotationSets: { imported: 0, updated: 0 },
+      trackRotationSchedule: { imported: 0, updated: 0 },
       users: { imported: 0, updated: 0 },
       errors: [] as string[]
     }
@@ -68,7 +70,7 @@ export async function POST(request: NextRequest) {
             if (insertError) throw insertError
             results.seasons.imported++
           }
-        } catch (e) { results.errors.push(`seasons: ${String(e)}`) }
+        } catch (e) { results.errors.push(`seasons: ${e instanceof Error ? e.message : JSON.stringify(e)}`) }
       }
     }
 
@@ -88,7 +90,7 @@ export async function POST(request: NextRequest) {
             if (insertError) throw insertError
             results.trackNameAliases.imported++
           }
-        } catch (e) { results.errors.push(`track_name_aliases: ${String(e)}`) }
+        } catch (e) { results.errors.push(`track_name_aliases: ${e instanceof Error ? e.message : JSON.stringify(e)}`) }
       }
     }
 
@@ -107,7 +109,54 @@ export async function POST(request: NextRequest) {
             if (insertError) throw insertError
             results.boostIconData.imported++
           }
-        } catch (e) { results.errors.push(`boost_icon_data: ${String(e)}`) }
+        } catch (e) { results.errors.push(`boost_icon_data: ${e instanceof Error ? e.message : JSON.stringify(e)}`) }
+      }
+    }
+
+    // track_rotation_sets: upsert by set_number (unique)
+    // Build a map from export UUID -> DB UUID so schedule entries can be remapped
+    const rotationSetIdMap = new Map<string, string>()
+    if (importData.trackRotationSets?.length) {
+      for (const item of importData.trackRotationSets) {
+        try {
+          const { data: existing } = await supabaseAdmin
+            .from('track_rotation_sets').select('id').eq('set_number', item.set_number).maybeSingle()
+          if (existing) {
+            const { error: updateError } = await supabaseAdmin.from('track_rotation_sets').update({ series_data: item.series_data }).eq('id', existing.id)
+            if (updateError) throw updateError
+            rotationSetIdMap.set(item.id, existing.id)
+            results.trackRotationSets.updated++
+          } else {
+            const { created_at, updated_at, ...insertData } = item
+            const { data: inserted, error: insertError } = await supabaseAdmin.from('track_rotation_sets').insert(insertData).select('id').single()
+            if (insertError) throw insertError
+            rotationSetIdMap.set(item.id, inserted.id)
+            results.trackRotationSets.imported++
+          }
+        } catch (e) { results.errors.push(`track_rotation_sets: ${e instanceof Error ? e.message : JSON.stringify(e)}`) }
+      }
+    }
+
+    // track_rotation_schedule: upsert by (rotation_set_id, start_date)
+    // Remap rotation_set_id from export UUID to the actual DB UUID
+    if (importData.trackRotationSchedule?.length) {
+      for (const item of importData.trackRotationSchedule) {
+        try {
+          const dbRotationSetId = rotationSetIdMap.get(item.rotation_set_id) ?? item.rotation_set_id
+          const { data: existing } = await supabaseAdmin
+            .from('track_rotation_schedule').select('id')
+            .eq('rotation_set_id', dbRotationSetId).eq('start_date', item.start_date).maybeSingle()
+          if (existing) {
+            const { error: updateError } = await supabaseAdmin.from('track_rotation_schedule').update({ end_date: item.end_date }).eq('id', existing.id)
+            if (updateError) throw updateError
+            results.trackRotationSchedule.updated++
+          } else {
+            const { id, created_at, updated_at, ...insertData } = item
+            const { error: insertError } = await supabaseAdmin.from('track_rotation_schedule').insert({ ...insertData, rotation_set_id: dbRotationSetId })
+            if (insertError) throw insertError
+            results.trackRotationSchedule.imported++
+          }
+        } catch (e) { results.errors.push(`track_rotation_schedule: ${e instanceof Error ? e.message : JSON.stringify(e)}`) }
       }
     }
 
@@ -141,7 +190,7 @@ export async function POST(request: NextRequest) {
             is_admin: item.is_admin ?? false,
             is_active: item.is_active ?? true,
           }, { onConflict: 'id' })
-        } catch (e) { results.errors.push(`users (${item.email}): ${String(e)}`) }
+        } catch (e) { results.errors.push(`users (${item.email}): ${e instanceof Error ? e.message : JSON.stringify(e)}`) }
       }
     }
 

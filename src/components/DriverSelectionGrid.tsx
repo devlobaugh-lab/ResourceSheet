@@ -429,7 +429,7 @@ export function DriverSelectionGrid({
           </label>
           <select
             id="maxSeries"
-            className="rounded-lg border-gray-300 text-sm px-3 py-2"
+            className="rounded-lg border border-gray-300 bg-white text-sm pl-3 pr-8 py-2"
             value={localMaxSeries}
             onChange={(e) => setLocalMaxSeries(Number(e.target.value))}
           >

@@ -17,6 +17,7 @@ const setupSchema = z.object({
   engine_id: z.string().uuid().nullable(),
   series_filter: z.number().min(1).max(12).default(12),
   bonus_percentage: z.number().min(0).max(100).default(0),
+  bonus_part_ids: z.array(z.string().uuid()).default([]),
   season_id: z.string().uuid().nullable().optional(),
 })
 

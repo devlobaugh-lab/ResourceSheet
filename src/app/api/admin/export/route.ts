@@ -54,6 +54,13 @@ export async function GET(request: NextRequest) {
     const { data: userCarSetups } = await supabaseAdmin.from('user_car_setups').select('*')
     data.userCarSetups = userCarSetups || []
 
+    // User rotation data (all users)
+    const { data: userRotationSeriesData } = await supabaseAdmin.from('user_rotation_series_data').select('*')
+    data.userRotationSeriesData = userRotationSeriesData || []
+
+    const { data: userRotationTrackData } = await supabaseAdmin.from('user_rotation_track_data').select('*')
+    data.userRotationTrackData = userRotationTrackData || []
+
     // === ADMIN-MANAGED SYSTEM CONFIG (not content cache) ===
     const { data: seasons } = await supabaseAdmin.from('seasons').select('*').order('created_at')
     data.seasons = seasons || []
@@ -63,6 +70,12 @@ export async function GET(request: NextRequest) {
 
     const { data: boostIconData } = await supabaseAdmin.from('boost_icon_data').select('icon_name, custom_name, is_free')
     data.boostIconData = boostIconData || []
+
+    const { data: trackRotationSets } = await supabaseAdmin.from('track_rotation_sets').select('*').order('set_number')
+    data.trackRotationSets = trackRotationSets || []
+
+    const { data: trackRotationSchedule } = await supabaseAdmin.from('track_rotation_schedule').select('*').order('start_date')
+    data.trackRotationSchedule = trackRotationSchedule || []
 
     return NextResponse.json({
       version: '2.0',

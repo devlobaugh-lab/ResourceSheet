@@ -13,7 +13,7 @@ import { useSearchParams } from 'next/navigation'
 import { CarPartView, UserCarSetup } from '@/types/database'
 import { cn, calculateHighestLevel, getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils'
 import { CarPartSelectionGrid } from '@/components/CarPartSelectionGrid'
-import { Pencil } from 'lucide-react'
+import { Pencil, Copy } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 
 // Part type definitions
@@ -96,6 +96,53 @@ const createEmptySlot = (): SetupSlot => ({
   bonusPercentage: ''
 })
 
+const SETUPS_STORAGE_KEY = 'setups_page_state'
+
+interface PersistedSetupsState {
+  slotA: Omit<SetupSlot, 'bonusParts'> & { bonusParts: string[] }
+  slotB: Omit<SetupSlot, 'bonusParts'> & { bonusParts: string[] }
+  globalSeriesFilter: number
+  globalBonusPercentage: string
+}
+
+function serializeSlot(slot: SetupSlot): PersistedSetupsState['slotA'] {
+  return { ...slot, bonusParts: Array.from(slot.bonusParts) }
+}
+
+function deserializeSlot(data: PersistedSetupsState['slotA']): SetupSlot {
+  return { ...data, bonusParts: new Set(data.bonusParts) }
+}
+
+function loadSetupsState(): { slotA: SetupSlot; slotB: SetupSlot; globalSeriesFilter: number; globalBonusPercentage: string } | null {
+  try {
+    const raw = localStorage.getItem(SETUPS_STORAGE_KEY)
+    if (!raw) return null
+    const parsed: PersistedSetupsState = JSON.parse(raw)
+    return {
+      slotA: deserializeSlot(parsed.slotA),
+      slotB: deserializeSlot(parsed.slotB),
+      globalSeriesFilter: parsed.globalSeriesFilter,
+      globalBonusPercentage: parsed.globalBonusPercentage,
+    }
+  } catch {
+    return null
+  }
+}
+
+function saveSetupsState(slotA: SetupSlot, slotB: SetupSlot, globalSeriesFilter: number, globalBonusPercentage: string) {
+  try {
+    const state: PersistedSetupsState = {
+      slotA: serializeSlot(slotA),
+      slotB: serializeSlot(slotB),
+      globalSeriesFilter,
+      globalBonusPercentage,
+    }
+    localStorage.setItem(SETUPS_STORAGE_KEY, JSON.stringify(state))
+  } catch {
+    // ignore storage errors
+  }
+}
+
 function AuthenticatedSetupsPage() {
   const { addToast } = useToast()
   const { activeSeasonId } = useSeason()
@@ -113,9 +160,9 @@ function AuthenticatedSetupsPage() {
   const updateSetup = useUpdateSetup()
   const deleteSetup = useDeleteSetup()
 
-  // Two setup slots for side-by-side editing
-  const [slotA, setSlotA] = useState<SetupSlot>(createEmptySlot())
-  const [slotB, setSlotB] = useState<SetupSlot>(createEmptySlot())
+  // Two setup slots for side-by-side editing — restored from localStorage if available
+  const [slotA, setSlotA] = useState<SetupSlot>(() => loadSetupsState()?.slotA ?? createEmptySlot())
+  const [slotB, setSlotB] = useState<SetupSlot>(() => loadSetupsState()?.slotB ?? createEmptySlot())
 
   // Modal state
   const [showPartModal, setShowPartModal] = useState(false)
@@ -131,8 +178,13 @@ function AuthenticatedSetupsPage() {
   const [suggestTargetSlot, setSuggestTargetSlot] = useState<'A' | 'B'>('A')
 
   // Global filters (shared with modals)
-  const [globalSeriesFilter, setGlobalSeriesFilter] = useState(12)
-  const [globalBonusPercentage, setGlobalBonusPercentage] = useState('')
+  const [globalSeriesFilter, setGlobalSeriesFilter] = useState(() => loadSetupsState()?.globalSeriesFilter ?? 12)
+  const [globalBonusPercentage, setGlobalBonusPercentage] = useState(() => loadSetupsState()?.globalBonusPercentage ?? '')
+
+  // Persist slot and filter state to localStorage on every change
+  useEffect(() => {
+    saveSetupsState(slotA, slotB, globalSeriesFilter, globalBonusPercentage)
+  }, [slotA, slotB, globalSeriesFilter, globalBonusPercentage])
 
   // Auto-load a setup into slot A from URL param (e.g. ?loadA=<id>)
   const searchParams = useSearchParams()
@@ -282,7 +334,8 @@ function AuthenticatedSetupsPage() {
             suspension_id: slot.selectedParts.suspension || null,
             engine_id: slot.selectedParts.engine || null,
             series_filter: slot.seriesFilter,
-            bonus_percentage: parseFloat(slot.bonusPercentage) || 0
+            bonus_percentage: parseFloat(slot.bonusPercentage) || 0,
+            bonus_part_ids: Array.from(slot.bonusParts),
           }
         })
         addToast('Setup updated successfully!', 'success')
@@ -299,6 +352,7 @@ function AuthenticatedSetupsPage() {
           engine_id: slot.selectedParts.engine || null,
           series_filter: slot.seriesFilter,
           bonus_percentage: parseFloat(slot.bonusPercentage) || 0,
+          bonus_part_ids: Array.from(slot.bonusParts),
           season_id: activeSeasonId ?? null,
         })
         // Update slot with new id
@@ -326,9 +380,21 @@ function AuthenticatedSetupsPage() {
         suspension: setup.suspension_id || '',
         engine: setup.engine_id || ''
       },
-      bonusParts: new Set(),
+      bonusParts: new Set(setup.bonus_part_ids || []),
       seriesFilter: setup.series_filter || 12,
       bonusPercentage: setup.bonus_percentage?.toString() || ''
+    })
+  }
+
+  // Handle copy slot to the other slot
+  const handleCopySlot = (sourceKey: 'A' | 'B') => {
+    const source = sourceKey === 'A' ? slotA : slotB
+    const setTarget = sourceKey === 'A' ? setSlotB : setSlotA
+    setTarget({
+      ...source,
+      id: null,
+      name: source.name ? `${source.name} Copy` : 'Copy',
+      bonusParts: new Set(source.bonusParts),
     })
   }
 
@@ -594,6 +660,14 @@ function AuthenticatedSetupsPage() {
             className="flex-1"
           >
             {(createSetup.isPending || updateSetup.isPending) ? 'Saving...' : slot.id ? 'Update Setup' : 'Save Setup'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleCopySlot(slotKey)}
+            className="px-3"
+            title={`Copy to Slot ${slotKey === 'A' ? 'B' : 'A'}`}
+          >
+            <Copy className="w-4 h-4" />
           </Button>
           <Button
             variant="outline"

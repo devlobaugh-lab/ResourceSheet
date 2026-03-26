@@ -26,8 +26,20 @@ export async function GET(request: NextRequest) {
       .from('profiles')
       .select('id, username, active_season_id')
 
-    const { data: authUsersData } = await supabaseAdmin.auth.admin.listUsers()
+    const { data: authUsersData, error: listUsersError } = await supabaseAdmin.auth.admin.listUsers()
+    if (listUsersError) {
+      console.error('Failed to list auth users:', listUsersError)
+      return NextResponse.json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to retrieve auth user list' } }, { status: 500 })
+    }
     const authUserMap = new Map(authUsersData?.users.map(u => [u.id, u.email]) ?? [])
+
+    // Pre-fetch track names once for cross-environment _track_name enrichment
+    const { data: allTracks } = await supabaseAdmin.from('tracks').select('id, name')
+    const trackNameMap = new Map((allTracks || []).map(t => [t.id, t.name]))
+
+    // Pre-fetch rotation set numbers for cross-environment resolution
+    const { data: allRotationSets } = await supabaseAdmin.from('track_rotation_sets').select('id, set_number')
+    const rotationSetNumberMap = new Map((allRotationSets || []).map(s => [s.id, s.set_number]))
 
     const users = []
 
@@ -42,6 +54,8 @@ export async function GET(request: NextRequest) {
         { data: userTrackGuides },
         { data: userGpGuides },
         { data: userCustomDrivers },
+        { data: userRotationSeriesDataRaw },
+        { data: userRotationTrackDataRaw },
       ] = await Promise.all([
         supabaseAdmin.from('user_drivers').select('*').eq('user_id', userId),
         supabaseAdmin.from('user_car_parts').select('*').eq('user_id', userId),
@@ -50,6 +64,8 @@ export async function GET(request: NextRequest) {
         supabaseAdmin.from('user_track_guides').select('*').eq('user_id', userId),
         supabaseAdmin.from('user_gp_guides').select('*').eq('user_id', userId),
         supabaseAdmin.from('user_custom_drivers').select('*').eq('user_id', userId),
+        supabaseAdmin.from('user_rotation_series_data').select('*').eq('user_id', userId),
+        supabaseAdmin.from('user_rotation_track_data').select('*').eq('user_id', userId),
       ])
 
       const trackGuideIds = (userTrackGuides || []).map(g => g.id)
@@ -71,6 +87,31 @@ export async function GET(request: NextRequest) {
           : Promise.resolve({ data: [] }),
       ])
 
+      const enrichedTrackGuides = (userTrackGuides || []).map(g => ({
+        ...g,
+        _track_name: trackNameMap.get(g.track_id) ?? null,
+      }))
+
+      const enrichedGpGuideTracks = (userGpGuideTracks || []).map(t => ({
+        ...t,
+        _track_name: trackNameMap.get(t.track_id) ?? null,
+      }))
+
+      const enrichedGpGuideResults = (userGpGuideResults || []).map(r => ({
+        ...r,
+        _track_name: trackNameMap.get(r.track_id) ?? null,
+      }))
+
+      const enrichedRotationSeriesData = (userRotationSeriesDataRaw || []).map(r => ({
+        ...r,
+        _rotation_set_number: rotationSetNumberMap.get(r.rotation_set_id) ?? null,
+      }))
+
+      const enrichedRotationTrackData = (userRotationTrackDataRaw || []).map(r => ({
+        ...r,
+        _rotation_set_number: rotationSetNumberMap.get(r.rotation_set_id) ?? null,
+      }))
+
       users.push({
         userId,
         email: authUserMap.get(userId) ?? null,
@@ -81,12 +122,14 @@ export async function GET(request: NextRequest) {
           userCarParts: userCarParts || [],
           userBoosts: userBoosts || [],
           userCarSetups: userCarSetups || [],
-          userTrackGuides: userTrackGuides || [],
+          userTrackGuides: enrichedTrackGuides,
           userTrackGuideDrivers: userTrackGuideDrivers || [],
           userGpGuides: userGpGuides || [],
-          userGpGuideTracks: userGpGuideTracks || [],
-          userGpGuideResults: userGpGuideResults || [],
+          userGpGuideTracks: enrichedGpGuideTracks,
+          userGpGuideResults: enrichedGpGuideResults,
           userCustomDrivers: userCustomDrivers || [],
+          userRotationSeriesData: enrichedRotationSeriesData,
+          userRotationTrackData: enrichedRotationTrackData,
         }
       })
     }

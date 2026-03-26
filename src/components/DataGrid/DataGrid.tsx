@@ -846,7 +846,7 @@ export function DataGrid({
               </label>
               <select
                 id="maxSeries"
-                className="rounded-lg border-gray-300 text-sm px-3 py-2"
+                className="rounded-lg border-gray-300 text-sm pl-3 pr-8 py-2"
                 value={filters.maxSeries}
                 onChange={(e) => setFilters(prev => ({ ...prev, maxSeries: Number(e.target.value) }))}
               >

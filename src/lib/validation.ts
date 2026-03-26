@@ -155,6 +155,31 @@ export const boostsFiltersSchema = z.object({
   ...paginationSchema.shape,
 })
 
+// Track rotation user data schemas
+export const upsertRotationSeriesDataSchema = z.object({
+  rotation_set_id: uuidSchema,
+  series_index: z.number().int(),
+  driver_1_id: uuidSchema.nullable().optional(),
+  driver_2_id: uuidSchema.nullable().optional(),
+  setup_brake_id: uuidSchema.nullable().optional(),
+  setup_gearbox_id: uuidSchema.nullable().optional(),
+  setup_rear_wing_id: uuidSchema.nullable().optional(),
+  setup_front_wing_id: uuidSchema.nullable().optional(),
+  setup_suspension_id: uuidSchema.nullable().optional(),
+  setup_engine_id: uuidSchema.nullable().optional(),
+  setup_bonus_percentage: z.number().int().min(0).max(100).optional(),
+  setup_series_filter: z.number().int().min(1).optional(),
+})
+
+export const upsertRotationTrackDataSchema = z.object({
+  rotation_set_id: uuidSchema,
+  series_index: z.number().int(),
+  track_position: z.number().int().min(0).max(3),
+  boost_id: uuidSchema.nullable().optional(),
+  dry_strategy: z.string().nullable().optional(),
+  wet_strategy: z.string().nullable().optional(),
+})
+
 // Export all schemas
 export const schemas = {
   // Catalog Items
