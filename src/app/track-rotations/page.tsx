@@ -731,8 +731,8 @@ export default function TrackRotationsPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
           </div>
         ) : rotationView ? (
-          <div className={quickRef ? 'w-1/2' : undefined}>
-            <div className="space-y-4">
+          <div className={quickRef ? 'flex justify-center' : undefined}>
+            <div className={quickRef ? 'w-1/2 space-y-4' : 'space-y-4'}>
               {[...rotationView.series].reverse().map((s) => (
                 <RotationSeriesCard
                   key={s.series_index}
