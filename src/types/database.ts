@@ -723,6 +723,100 @@ export interface Database {
           updated_at?: string
         }
       }
+      user_rotation_series_data: {
+        Row: {
+          id: string
+          user_id: string
+          rotation_set_id: string
+          series_index: number
+          driver_1_id: string | null
+          driver_2_id: string | null
+          setup_brake_id: string | null
+          setup_gearbox_id: string | null
+          setup_rear_wing_id: string | null
+          setup_front_wing_id: string | null
+          setup_suspension_id: string | null
+          setup_engine_id: string | null
+          setup_bonus_percentage: number
+          setup_series_filter: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          rotation_set_id: string
+          series_index: number
+          driver_1_id?: string | null
+          driver_2_id?: string | null
+          setup_brake_id?: string | null
+          setup_gearbox_id?: string | null
+          setup_rear_wing_id?: string | null
+          setup_front_wing_id?: string | null
+          setup_suspension_id?: string | null
+          setup_engine_id?: string | null
+          setup_bonus_percentage?: number
+          setup_series_filter?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          rotation_set_id?: string
+          series_index?: number
+          driver_1_id?: string | null
+          driver_2_id?: string | null
+          setup_brake_id?: string | null
+          setup_gearbox_id?: string | null
+          setup_rear_wing_id?: string | null
+          setup_front_wing_id?: string | null
+          setup_suspension_id?: string | null
+          setup_engine_id?: string | null
+          setup_bonus_percentage?: number
+          setup_series_filter?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      user_rotation_track_data: {
+        Row: {
+          id: string
+          user_id: string
+          rotation_set_id: string
+          series_index: number
+          track_position: number
+          boost_id: string | null
+          dry_strategy: string | null
+          wet_strategy: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          rotation_set_id: string
+          series_index: number
+          track_position: number
+          boost_id?: string | null
+          dry_strategy?: string | null
+          wet_strategy?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          rotation_set_id?: string
+          series_index?: number
+          track_position?: number
+          boost_id?: string | null
+          dry_strategy?: string | null
+          wet_strategy?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -765,6 +859,40 @@ export type UserGpGuideResult = Tables<'user_gp_guide_results'>
 export type AITrackLoadout = Tables<'ai_track_loadouts'>
 export type TeamDriverName = Tables<'team_driver_names'>
 export type UserCustomDriver = Tables<'user_custom_drivers'>
+
+// Track rotation user data types
+export type UserRotationSeriesData = Tables<'user_rotation_series_data'>
+export type UserRotationTrackData = Tables<'user_rotation_track_data'>
+
+export interface UserRotationSetData {
+  series_data: UserRotationSeriesData[]
+  track_data: UserRotationTrackData[]
+}
+
+// Track rotation types
+export type RotationWeather = 'dry' | 'wet' | 'mixed'
+export interface RotationTrackEntry { track: string; weather: RotationWeather }
+export type RotationSeriesData = Record<string, RotationTrackEntry[]> // keys: "9","10","11"
+
+export interface TrackRotationSet {
+  id: string; set_number: number; series_data: RotationSeriesData
+  created_at: string; updated_at: string
+}
+export interface TrackRotationScheduleEntry {
+  id: string; rotation_set_id: string; start_date: string; end_date: string
+  created_at: string; updated_at: string
+}
+export interface RotationTrackEntryWithInfo extends RotationTrackEntry {
+  laps?: number
+  driver_track_stat?: string
+  car_track_stat?: string
+}
+
+export interface TrackRotationView {
+  schedule: TrackRotationScheduleEntry
+  rotation_set: TrackRotationSet
+  series: { series_index: number; series_number: number; tracks: RotationTrackEntryWithInfo[] }[]
+}
 
 // Track info as stored in series_data.track_info
 export interface SeriesTrackInfo {
@@ -906,6 +1034,7 @@ export interface UserCarSetup {
   engine_id: string | null
   series_filter: number
   bonus_percentage: number
+  bonus_part_ids: string[]
   season_id: string | null
   created_at: string
   updated_at: string

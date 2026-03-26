@@ -23,8 +23,11 @@ const carStats: Record<string, string> = {
 };
 
 export default function TracksReferencePage() {
-  const { activeSeasonId } = useSeason()
-  const { data: tracksData, isLoading, error } = useTracks(activeSeasonId ? { season_id: activeSeasonId } : undefined);
+  const { activeSeasonId, isLoading: seasonLoading } = useSeason()
+  const { data: tracksData, isLoading, error } = useTracks(
+    activeSeasonId ? { season_id: activeSeasonId } : undefined,
+    { enabled: !!activeSeasonId }
+  );
 
   // Get display name with alias if available
   const getDisplayName = (track: any) => {
@@ -33,6 +36,36 @@ export default function TracksReferencePage() {
     }
     return track.name;
   };
+
+  if (seasonLoading) {
+    return (
+      <ProtectedRoute>
+        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Tracks</h1>
+          </div>
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  if (!activeSeasonId) {
+    return (
+      <ProtectedRoute>
+        <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Tracks</h1>
+          </div>
+          <Card className="p-8 text-center text-gray-500">
+            Select a season to view tracks.
+          </Card>
+        </div>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute>

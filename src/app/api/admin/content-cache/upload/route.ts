@@ -2,13 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createAuthenticatedSupabaseClient } from '@/lib/supabase'
-import { createCatalogItemSchema, createBoostSchema, createSeasonSchema } from '@/lib/validation'
 import { preprocessDrivers } from '@/lib/preprocessing'
-
-// Schema for season filtering
-const seasonFilterSchema = z.object({
-  season_filter: z.string().optional(),
-})
 
 // Schema for content cache data
 const contentCacheSchema = z.object({
@@ -60,8 +54,8 @@ export async function POST(request: NextRequest) {
     // Parse form data
     const formData = await request.formData()
     const file = formData.get('file') as File
-    const seasonFilter = formData.get('season_filter') as string
     const allowModifications = formData.get('allow_modifications') === 'true'
+    const targetSeasonOverride = (formData.get('target_season_id') as string) || null
     
     console.log('Content cache upload - Allow modifications:', allowModifications)
 
@@ -79,8 +73,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse season filter
-    const requestedNumbers = parseSeasonFilter(seasonFilter)
     let seasonNumbers: number[] = []
 
     // Load seasons and determine mapping from season number -> season id
@@ -115,21 +107,21 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      if (requestedNumbers.length > 0) {
-        // Validate that all requested series numbers exist in DB
-        const invalidNums = requestedNumbers.filter(n => !(n in seasonIdMap))
-        if (invalidNums.length > 0) {
-          const available = Object.keys(seasonIdMap).map(Number).sort((a, b) => a - b)
-          return NextResponse.json(
-            { error: { code: 'VALIDATION_ERROR', message: `Series [${invalidNums.join(', ')}] not found in database. Available series: [${available.join(', ')}]` } },
-            { status: 400 }
-          )
-        }
-        seasonNumbers = requestedNumbers
+      // Derive season number from the target season (override or active).
+      // This ensures drivers/car parts are filtered to the same season being targeted.
+      const targetIdForFilter = targetSeasonOverride
+        ?? seasons?.find((s: any) => s.is_active)?.id
+        ?? null
+      const targetNum = targetIdForFilter
+        ? Number(Object.keys(seasonIdMap).find(k => seasonIdMap[Number(k)] === targetIdForFilter))
+        : NaN
+      if (!isNaN(targetNum)) {
+        seasonNumbers = [targetNum]
+        console.log('Derived season filter from target season:', targetNum)
       } else {
-        // No filter — import all series set up in season management
+        // Target season name has no parseable number — fall back to all configured seasons
         seasonNumbers = Object.keys(seasonIdMap).map(Number).sort((a, b) => a - b)
-        console.log('No season_filter — defaulting to all DB seasons:', seasonNumbers)
+        console.warn('Could not derive season number from target season — importing all configured seasons:', seasonNumbers)
       }
     } catch (err) {
       console.warn('Could not load seasons for mapping — importing without season mapping', err)
@@ -160,7 +152,7 @@ export async function POST(request: NextRequest) {
     const validatedData = contentCacheSchema.parse(contentCacheData)
 
     // Process and import data with change detection
-    const results = await processContentCache(validatedData, seasonNumbers, allowModifications, seasonIdMap)
+    const results = await processContentCache(validatedData, seasonNumbers, allowModifications, seasonIdMap, targetSeasonOverride)
 
     return NextResponse.json({
       message: 'Content cache processed successfully',
@@ -191,25 +183,6 @@ export async function POST(request: NextRequest) {
       { error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } },
       { status: 500 }
     )
-  }
-}
-
-// Helper function to parse season filter
-function parseSeasonFilter(seasonFilter: string): number[] {
-  if (!seasonFilter || seasonFilter.trim() === '') {
-    return []; // Import all seasons
-  }
-  
-  try {
-    const seasons = seasonFilter
-      .split(',')
-      .map(s => parseInt(s.trim()))
-      .filter(s => !isNaN(s) && s >= 0 && s <= 12)
-      .sort((a, b) => a - b)
-    
-    return seasons
-  } catch (error) {
-    return [] // Import all seasons if parsing fails
   }
 }
 
@@ -253,14 +226,13 @@ function parseAILoadoutName(name: string): { trackName: string; difficulty: stri
 }
 
 // Helper function to process content cache with change detection
-async function processContentCache(validatedData: any, seasonNumbers: number[], allowModifications: boolean = false, seasonIdMap: Record<number, string> = {}) {
-  // Determine which season ID to tag global reference data (series_data, ai_track_loadouts) with.
-  // If a single season is being imported, use that season's ID.
-  // Otherwise, fall back to the currently active season in the DB.
-  let targetSeasonId: string | null = null
-  if (seasonNumbers.length === 1) {
-    targetSeasonId = seasonIdMap[seasonNumbers[0]] ?? null
-  } else {
+async function processContentCache(validatedData: any, seasonNumbers: number[], allowModifications: boolean = false, seasonIdMap: Record<number, string> = {}, targetSeasonOverride: string | null = null) {
+  // Determine which season ID to tag all imported data with.
+  // A content cache always represents the current game season, so we default
+  // to the season marked is_active=true in the DB.  Admins can override this
+  // (e.g. to test a future season) by passing target_season_id explicitly.
+  let targetSeasonId: string | null = targetSeasonOverride ?? null
+  if (!targetSeasonId) {
     const { data: activeSeason } = await supabaseAdmin
       .from('seasons')
       .select('id')
@@ -706,23 +678,13 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
       }
     }
     
-    // Get active season ID
-    let activeSeasonId: string | null = null;
-    const activeSeasons = Object.entries(seasonIdMap).filter(([num, id]) => {
-      // The active season should be in seasonNumbers
-      return seasonNumbers.includes(parseInt(num));
-    });
-    if (activeSeasons.length > 0) {
-      activeSeasonId = activeSeasons[0][1];
-    }
-    
     // Filter trackData to only include tracks that appear in any series
     const activeTrackIds = new Set(trackToSeries.keys());
     const activeTracks = trackDataRaw.filter((t: any) => activeTrackIds.has(t.id));
-    
+
     console.log(`📊 Found ${activeTrackIds.size} track IDs across all series`);
     console.log(`📊 Found ${activeTracks.length} matching entries in trackData`);
-    
+
     // Group by name to deduplicate - pick track from highest series (prefer later series)
     const tracksByName: Map<string, any> = new Map();
     for (const track of activeTracks) {
@@ -738,7 +700,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         }
       }
     }
-    
+
     // Helper function to convert stat names to lowercase
     const convertStatName = (stat: string): string => {
       const statMap: Record<string, string> = {
@@ -753,29 +715,41 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
       };
       return statMap[stat] || stat.toLowerCase();
     };
-    
+
     console.log(`📊 Deduplicated to ${tracksByName.size} unique tracks by name`);
 
-    // Fetch tracks already linked to this season so we can prefer existing IDs over
-    // content-cache IDs. This prevents re-imports from creating duplicate track rows
-    // for the same named track (different content-cache IDs across series).
-    const existingTracksByName: Map<string, any> = new Map();
-    if (activeSeasonId) {
-      const { data: existingSeasonTracks } = await supabaseAdmin
-        .from('track_seasons')
-        .select('tracks(id, name, laps, driver_track_stat, car_track_stat, min_weather_factor, max_weather_factor, weather_freq)')
-        .eq('season_id', activeSeasonId);
-      for (const row of existingSeasonTracks || []) {
-        const track = row.tracks as any;
-        if (track) existingTracksByName.set(track.name, track);
-      }
-      console.log(`📊 Found ${existingTracksByName.size} tracks already linked to this season`);
+    // Fetch all existing tracks for this season (to detect what is already linked)
+    // and all existing tracks by name globally (to avoid creating duplicate track rows).
+    // Using targetSeasonId (the game season) ensures we check the right season.
+    const existingTracksByName: Map<string, any> = new Map();  // name → track row (any season)
+    const existingSeasonTrackIds = new Set<string>();           // IDs already in track_seasons for targetSeasonId
+
+    // Load all tracks by name (across all seasons) to prevent duplicate track rows
+    const { data: allTracks } = await supabaseAdmin
+      .from('tracks')
+      .select('id, name, laps, driver_track_stat, car_track_stat, min_weather_factor, max_weather_factor, weather_freq');
+    for (const track of allTracks || []) {
+      existingTracksByName.set(track.name, track);
     }
 
-    // Classify each deduplicated track as: new, changed, or unchanged
-    const toInsert: any[] = [];         // brand new tracks not yet in this season
+    // Load which of those are already linked to the target season
+    if (targetSeasonId) {
+      const { data: existingSeasonTracks } = await supabaseAdmin
+        .from('track_seasons')
+        .select('track_id')
+        .eq('season_id', targetSeasonId);
+      for (const row of existingSeasonTracks || []) {
+        existingSeasonTrackIds.add(row.track_id);
+      }
+      console.log(`📊 Found ${existingSeasonTrackIds.size} tracks already linked to target season`);
+    }
+
+    console.log(`📊 Found ${existingTracksByName.size} tracks in DB across all seasons`);
+
+    // Classify each deduplicated track as: new, changed, or needs season link
+    const toInsert: any[] = [];         // brand new tracks not in DB at all
     const toUpdate: any[] = [];         // existing tracks with changed fields
-    const newSeasonLinks: any[] = [];   // track_seasons rows needed for new tracks
+    const newSeasonLinks: any[] = [];   // track_seasons rows to create
 
     for (const cacheTrack of Array.from(tracksByName.values())) {
       if (!cacheTrack.id) continue;
@@ -791,7 +765,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
 
       const existing = existingTracksByName.get(cacheTrack.name);
       if (existing) {
-        // Track already linked to this season — update only if fields changed
+        // Track already exists in DB — update fields if changed
         const changed =
           existing.laps !== incoming.laps ||
           existing.driver_track_stat !== incoming.driver_track_stat ||
@@ -800,17 +774,20 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
           existing.max_weather_factor !== incoming.max_weather_factor ||
           existing.weather_freq !== incoming.weather_freq;
         if (changed) toUpdate.push({ id: existing.id, ...incoming });
-        // track_seasons row already exists; no new link needed
+        // Link to target season if not already linked
+        if (targetSeasonId && !existingSeasonTrackIds.has(existing.id)) {
+          newSeasonLinks.push({ track_id: existing.id, season_id: targetSeasonId, is_active: true });
+        }
       } else {
-        // New track for this season — use content-cache ID
+        // Truly new track — insert using content-cache ID
         toInsert.push({ id: cacheTrack.id, ...incoming });
-        if (activeSeasonId) {
-          newSeasonLinks.push({ track_id: cacheTrack.id, season_id: activeSeasonId, is_active: true });
+        if (targetSeasonId) {
+          newSeasonLinks.push({ track_id: cacheTrack.id, season_id: targetSeasonId, is_active: true });
         }
       }
     }
 
-    results.tracks.unchanged = existingTracksByName.size - toUpdate.length;
+    results.tracks.unchanged = existingSeasonTrackIds.size - toUpdate.length;
 
     if (toInsert.length > 0) {
       const { error } = await supabaseAdmin.from('tracks').insert(toInsert);
@@ -834,7 +811,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
     if (newSeasonLinks.length > 0) {
       const { error } = await supabaseAdmin.from('track_seasons').insert(newSeasonLinks);
       if (error) console.error('❌ Failed to insert track_seasons:', error);
-      else console.log(`✅ Linked ${newSeasonLinks.length} new tracks to season`);
+      else console.log(`✅ Linked ${newSeasonLinks.length} tracks to game season`);
     }
 
     console.log(`✅ Tracks: ${results.tracks.new} new, ${results.tracks.modified} updated, ${results.tracks.unchanged} unchanged`);

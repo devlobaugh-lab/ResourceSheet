@@ -24,6 +24,7 @@ const menuConfig = {
     {
       label: 'Research',
       items: [
+        { label: 'Track Rotations', href: '/track-rotations' },
         { label: 'Car Setups', href: '/setups' },
         { label: 'Track Guides', href: '/track-guides' },
         { label: 'GP Guides', href: '/gp-guides' },

@@ -188,8 +188,8 @@ export default function SeriesInfoPage() {
   const { activeSeasonId } = useSeason()
   const { data: seriesData, isLoading, error } = useSeries(activeSeasonId ? { season_id: activeSeasonId } : undefined)
 
-// Show all series (0-11) - series 0 is Beginner, series 1-11 are main series
-const displaySeries = seriesData?.data?.filter((s: SeriesWithTracks) => s.index >= 0 && s.index < 12) || []
+// Show Series 1-9 (index 0-8); Series 10-12 rotate and are covered by the Track Rotations page
+const displaySeries = seriesData?.data?.filter((s: SeriesWithTracks) => s.index >= 0 && s.index < 9) || []
   return (
     <ProtectedRoute>
       <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
@@ -231,6 +231,17 @@ const displaySeries = seriesData?.data?.filter((s: SeriesWithTracks) => s.index 
               )}
             </div>
           )}
+
+          {/* Series 10-12 notice */}
+          <Card className="mt-4 px-6 py-4">
+            <p className="text-gray-700">
+              <span className="font-semibold">Series 10–12</span> rotate every 2 weeks. See{' '}
+              <a href="/track-rotations" className="text-blue-600 hover:underline">
+                Track Rotations
+              </a>{' '}
+              for details.
+            </p>
+          </Card>
 
           {/* Summary */}
           {displaySeries.length > 0 && (
