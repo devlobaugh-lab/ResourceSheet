@@ -930,11 +930,11 @@ function CondensedView({ guide, allTracks, allDrivers, allBoosts, allSetups }: {
           )}
         </div>
       )}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {qualifying.length > 0 && <div className="mb-4"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Qualifying Round</h2>{renderSlots(qualifying)}</div>}
         {opening.length > 0 && <div className="mb-4"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Opening Round (Saturday)</h2>{renderSlots(opening)}</div>}
-        {!guide.weekend_strategy_same && final.length > 0 && <div className="mb-4 col-start-1"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday)</h2>{renderSlots(final)}</div>}
-        {guide.weekend_strategy_same && opening.length > 0 && <div className="mb-4 col-start-1"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday) — Same as Opening</h2><p className="text-xs text-gray-500 italic">Uses the same strategy as Opening Round above.</p></div>}
+        {!guide.weekend_strategy_same && final.length > 0 && <div className="mb-4 sm:col-start-1"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday)</h2>{renderSlots(final)}</div>}
+        {guide.weekend_strategy_same && opening.length > 0 && <div className="mb-4 sm:col-start-1"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday) — Same as Opening</h2><p className="text-xs text-gray-500 italic">Uses the same strategy as Opening Round above.</p></div>}
       </div>
       {guide.results.filter(r => r.results_notes).length > 0 && (
         <div className="mt-4 pt-3 border-t border-gray-300">
