@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     let seasonNumbers: number[] = []
+    let targetSeasonId: string | null = targetSeasonOverride
 
     // Load seasons and determine mapping from season number -> season id
     const seasonIdMap: Record<number, string> = {}
@@ -112,6 +113,7 @@ export async function POST(request: NextRequest) {
       const targetIdForFilter = targetSeasonOverride
         ?? seasons?.find((s: any) => s.is_active)?.id
         ?? null
+      targetSeasonId = targetIdForFilter
       const targetNum = targetIdForFilter
         ? Number(Object.keys(seasonIdMap).find(k => seasonIdMap[Number(k)] === targetIdForFilter))
         : NaN
@@ -153,6 +155,15 @@ export async function POST(request: NextRequest) {
 
     // Process and import data with change detection
     const results = await processContentCache(validatedData, seasonNumbers, allowModifications, seasonIdMap, targetSeasonOverride)
+
+    // Mark the target season as having content cache loaded (non-fatal if it fails)
+    if (targetSeasonId) {
+      await supabaseAdmin
+        .from('seasons')
+        .update({ content_cache_loaded: true })
+        .eq('id', targetSeasonId)
+        .eq('content_cache_loaded', false)
+    }
 
     return NextResponse.json({
       message: 'Content cache processed successfully',

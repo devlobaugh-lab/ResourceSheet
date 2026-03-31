@@ -89,13 +89,14 @@ export const updateUserBoostSchema = z.object({
 
 // Season schemas
 export const createSeasonSchema = z.object({
-  name: z.string().min(1),
-  is_active: z.boolean().default(false),
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
 })
 
 export const updateSeasonSchema = z.object({
   name: z.string().min(1).optional(),
   is_active: z.boolean().optional(),
+  content_cache_loaded: z.boolean().optional(),
+  activated_at: z.string().optional(),
 })
 
 // Profile schemas

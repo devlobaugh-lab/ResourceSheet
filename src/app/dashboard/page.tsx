@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useAuth } from '@/components/auth/AuthContext'
 import { 
@@ -104,49 +103,28 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Two Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Reference Links */}
-            <div className="lg:col-span-2">
-              <Card className="p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Reference</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {referenceLinks.map((link) => {
-                    const Icon = link.icon
-                    return (
-                      <Link key={link.href} href={link.href}>
-                        <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
-                          <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors">
-                            <Icon className="w-4 h-4 text-gray-600" />
-                          </div>
-                          <div className="flex items-center gap-1 flex-1">
-                            <span className="font-medium text-gray-700">{link.title}</span>
-                            <ChevronRight className="w-4 h-4 text-gray-400" />
-                          </div>
-                        </div>
-                      </Link>
-                    )
-                  })}
-                </div>
-              </Card>
+          {/* Reference Links */}
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Reference</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              {referenceLinks.map((link) => {
+                const Icon = link.icon
+                return (
+                  <Link key={link.href} href={link.href}>
+                    <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
+                      <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors">
+                        <Icon className="w-4 h-4 text-gray-600" />
+                      </div>
+                      <div className="flex items-center gap-1 flex-1">
+                        <span className="font-medium text-gray-700">{link.title}</span>
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
-
-            {/* Tips/Info Card */}
-            <div>
-              <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3">💡 Pro Tip</h2>
-                <p className="text-sm text-gray-700 mb-4">
-                  Use GP Guides to plan your entire race weekend. Import track guides 
-                  to quickly set up strategies for each track.
-                </p>
-                <Link href="/gp-guides">
-                  <Button variant="outline" size="sm" className="w-full">
-                    View GP Guides
-                  </Button>
-                </Link>
-              </Card>
-            </div>
-          </div>
+          </Card>
         </div>
     </ProtectedRoute>
   )

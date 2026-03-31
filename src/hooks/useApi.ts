@@ -642,13 +642,16 @@ export function useAddUserItem() {
   })
 }
 
-// Fetch current track rotation by date
-export function useCurrentTrackRotation(date?: string) {
+// Fetch current track rotation by date and/or season
+export function useCurrentTrackRotation(date?: string, seasonId?: string) {
   return useQuery({
-    queryKey: ['track-rotation', date],
+    queryKey: ['track-rotation', date, seasonId],
     queryFn: async (): Promise<TrackRotationView> => {
-      const params = date ? `?date=${date}` : ''
-      const response = await fetch(`${API_BASE}/track-rotations${params}`)
+      const params = new URLSearchParams()
+      if (date) params.set('date', date)
+      if (seasonId) params.set('season_id', seasonId)
+      const qs = params.toString()
+      const response = await fetch(`${API_BASE}/track-rotations${qs ? `?${qs}` : ''}`)
       if (!response.ok) {
         throw new Error('Failed to fetch track rotation')
       }
@@ -658,12 +661,13 @@ export function useCurrentTrackRotation(date?: string) {
   })
 }
 
-// Fetch all track rotation schedule entries
-export function useTrackRotationSchedule() {
+// Fetch track rotation schedule entries, optionally filtered by season
+export function useTrackRotationSchedule(seasonId?: string) {
   return useQuery({
-    queryKey: ['track-rotation-schedule'],
+    queryKey: ['track-rotation-schedule', seasonId],
     queryFn: async (): Promise<{ data: (import('@/types/database').TrackRotationScheduleEntry & { rotation_set_number: number })[] }> => {
-      const response = await fetch(`${API_BASE}/track-rotations/schedule`)
+      const qs = seasonId ? `?season_id=${seasonId}` : ''
+      const response = await fetch(`${API_BASE}/track-rotations/schedule${qs}`)
       if (!response.ok) {
         throw new Error('Failed to fetch rotation schedule')
       }
@@ -730,7 +734,7 @@ export function useAdminRotationSchedule() {
 export function useCreateRotationScheduleEntry() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (data: { rotation_set_id: string; start_date: string; end_date: string }) => {
+    mutationFn: async (data: { rotation_set_id: string; season_id?: string | null; start_date: string; end_date: string }) => {
       const response = await fetch(`${API_BASE}/admin/track-rotations/schedule`, {
         method: 'POST',
         headers: await getAuthHeaders(),
@@ -751,7 +755,7 @@ export function useCreateRotationScheduleEntry() {
 export function useUpdateRotationScheduleEntry() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { rotation_set_id?: string; start_date?: string; end_date?: string } }) => {
+    mutationFn: async ({ id, data }: { id: string; data: { rotation_set_id?: string; season_id?: string | null; start_date?: string; end_date?: string } }) => {
       const response = await fetch(`${API_BASE}/admin/track-rotations/schedule/${id}`, {
         method: 'PUT',
         headers: await getAuthHeaders(),
