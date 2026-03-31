@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/components/auth/AuthContext'
 import { NavigationMenu, MobileNavigationMenu, useAdminStatus } from '@/components/NavigationMenu'
+import { useSeason } from '@/contexts/SeasonContext'
 
 function AuthSection() {
   const { user } = useAuth()
@@ -92,16 +93,22 @@ function MobileMenuButton({ isOpen, onClick }: { isOpen: boolean; onClick: () =>
 export function ClientNavigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const isAdmin = useAdminStatus()
+  const { activeSeason } = useSeason()
+
+  const isHistoricalSeason = activeSeason !== null && !activeSeason.is_active
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className={isHistoricalSeason ? 'bg-amber-50 shadow-sm border-b border-amber-300' : 'bg-white shadow-sm border-b border-gray-200'}>
       {/* Logo - Left aligned, outside container */}
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16">
-          <div className="flex items-center">
+          <div className="flex items-baseline gap-3">
             <Link href="/dashboard" className="text-xl font-bold text-gray-900">
               F1 Resource Manager
             </Link>
+            {isHistoricalSeason && (
+              <span className="text-base font-bold text-red-600">({activeSeason.name})</span>
+            )}
           </div>
         </div>
       </div>
