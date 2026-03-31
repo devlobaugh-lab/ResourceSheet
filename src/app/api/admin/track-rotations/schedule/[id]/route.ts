@@ -42,11 +42,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const { id } = await params
     const body = await request.json()
-    const updates: Record<string, string> = { updated_at: new Date().toISOString() }
+    const updates: Record<string, string | null> = { updated_at: new Date().toISOString() }
 
     if (body.rotation_set_id) updates.rotation_set_id = body.rotation_set_id
     if (body.start_date) updates.start_date = body.start_date
     if (body.end_date) updates.end_date = body.end_date
+    if ('season_id' in body) updates.season_id = body.season_id ?? null
 
     const { data, error } = await supabaseAdmin
       .from('track_rotation_schedule')

@@ -8,26 +8,67 @@ function normalize(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 }
 
-// GET /api/track-rotations?date=YYYY-MM-DD
+// GET /api/track-rotations?date=YYYY-MM-DD&season_id=UUID
+// When season_id is provided: finds the rotation within that season for the given date.
+// If the date is outside the season's range, falls back to the first or last entry in the season.
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const dateParam = searchParams.get('date')
+    const seasonId = searchParams.get('season_id')
     const date = dateParam || new Date().toISOString().split('T')[0]
 
-    // Find the schedule entry that covers this date; on ties pick latest start_date
-    const { data: scheduleEntry, error: scheduleError } = await supabaseAdmin
-      .from('track_rotation_schedule')
-      .select('*')
-      .lte('start_date', date)
-      .gte('end_date', date)
-      .order('start_date', { ascending: false })
-      .limit(1)
-      .single()
+    let scheduleEntry: ReturnType<typeof Object.assign> | null = null
 
-    if (scheduleError || !scheduleEntry) {
+    if (seasonId) {
+      // Fetch all entries for this season, ordered by start_date
+      const { data: seasonEntries, error: seasonError } = await supabaseAdmin
+        .from('track_rotation_schedule')
+        .select('*')
+        .eq('season_id', seasonId)
+        .order('start_date', { ascending: true })
+
+      if (seasonError || !seasonEntries || seasonEntries.length === 0) {
+        return NextResponse.json(
+          { error: { code: 'NOT_FOUND', message: 'No rotations found for this season' } },
+          { status: 404 }
+        )
+      }
+
+      // Find entry whose date range contains the given date
+      const exact = seasonEntries.find(e => e.start_date <= date && e.end_date >= date)
+      if (exact) {
+        scheduleEntry = exact
+      } else if (date < seasonEntries[0].start_date) {
+        // Date is before the season — show first rotation
+        scheduleEntry = seasonEntries[0]
+      } else {
+        // Date is after the season — show last rotation
+        scheduleEntry = seasonEntries[seasonEntries.length - 1]
+      }
+    } else {
+      // Legacy date-based lookup (no season_id)
+      const { data, error } = await supabaseAdmin
+        .from('track_rotation_schedule')
+        .select('*')
+        .lte('start_date', date)
+        .gte('end_date', date)
+        .order('start_date', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (error || !data) {
+        return NextResponse.json(
+          { error: { code: 'NOT_FOUND', message: 'No rotation found for this date' } },
+          { status: 404 }
+        )
+      }
+      scheduleEntry = data
+    }
+
+    if (!scheduleEntry) {
       return NextResponse.json(
-        { error: { code: 'NOT_FOUND', message: 'No rotation found for this date' } },
+        { error: { code: 'NOT_FOUND', message: 'No rotation found' } },
         { status: 404 }
       )
     }

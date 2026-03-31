@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
     const entries = (data ?? []).map((row: any) => ({
       id: row.id,
       rotation_set_id: row.rotation_set_id,
+      season_id: row.season_id,
       start_date: row.start_date,
       end_date: row.end_date,
       rotation_set_number: row.track_rotation_sets.set_number,
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { rotation_set_id, start_date, end_date } = body
+    const { rotation_set_id, season_id, start_date, end_date } = body
 
     if (!rotation_set_id || !start_date || !end_date) {
       return NextResponse.json(
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await supabaseAdmin
       .from('track_rotation_schedule')
-      .insert({ rotation_set_id, start_date, end_date })
+      .insert({ rotation_set_id, season_id: season_id ?? null, start_date, end_date })
       .select()
       .single()
 

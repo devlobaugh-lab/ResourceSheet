@@ -18,7 +18,8 @@ src/lib/utils.ts               shared utilities incl. getRarityDisplay, getColle
 src/lib/rarityUtils.ts         additional rarity helpers (getRarityStyles, getRarityOptions)
 src/lib/track-rotation-constants.ts  ROTATION_SERIES_INDICES ([9,10,11]) and ROTATION_TRACK_NAMES list
 src/hooks/useApi.ts            all TanStack Query hooks (getAuthHeaders exported here too)
-src/contexts/SeasonContext.tsx useSeasonContext — activeSeasonId, activeSeason, seasons, setActiveSeason
+src/contexts/SeasonContext.tsx useSeason — activeSeasonId, activeSeason, seasons, pendingSeason, setActiveSeason, showNewSeasonModal, dismissNewSeasonModal
+src/components/NewSeasonModal.tsx  global modal shown to all users when the active season changes (wired into providers.tsx)
 src/components/auth/AuthContext.tsx   useAuth() hook — user, session, signIn, signOut
 src/app/api/                   all API route handlers
 src/app/track-rotations/       public track rotation schedule page
@@ -50,7 +51,10 @@ car_parts        name text, rarity int, series int, season_id uuid?, icon text?,
 
 boosts           name text, icon text?, boost_stats jsonb?
 
-seasons          name text, is_active bool
+seasons          name text, is_active bool, content_cache_loaded bool DEFAULT false,
+                 start_date date?, activated_at timestamptz?
+                 State: activated_at IS NULL → pending (admin-only); is_active=true → current;
+                        is_active=false + activated_at IS NOT NULL → historical
 
 tracks           name text, alt_name text?, laps int, driver_track_stat text,
                  car_track_stat text,
@@ -397,16 +401,43 @@ Admin check in client code: `user` alone is not enough — fetch `/api/admin-che
 
 ---
 
+## Season Lifecycle
+
+Seasons progress through three states derived from two DB columns (no separate status enum):
+
+| State | Condition | Visible to users? |
+|---|---|---|
+| **Pending** | `activated_at IS NULL` | No — admin only |
+| **Active** | `is_active = true` | Yes |
+| **Historical** | `is_active = false AND activated_at IS NOT NULL` | Yes |
+
+At most one pending season exists at a time (enforced by `POST /api/seasons`). The admin season management page (`/admin/seasons`) drives the lifecycle:
+
+1. Admin clicks **Add New Season** → enters a start date → season auto-named "Season N+1", created as pending.
+2. Admin imports a content cache file for the new season → `content_cache_loaded` flips to `true`.
+3. Admin clicks **Test New Season** → sets their own `profiles.active_season_id` to the pending season (toggle; does not affect other users).
+4. Admin clicks **Activate New Season** (only enabled once `content_cache_loaded = true`) → confirms modal → season becomes active, old active season becomes historical, track rotation schedule auto-generated.
+
+**On activation** (`PUT /api/seasons/[id]` with `is_active: true`):
+- Validates `content_cache_loaded = true` (returns 422 otherwise).
+- Sets `is_active = true` and `activated_at = NOW()` on the target season.
+- Clears `is_active = false` on all other seasons.
+- Deletes all `track_rotation_schedule` entries from `start_date` onward and generates 104 new two-week entries (cycling sets 1–7 indefinitely).
+
+**New season popup:** `SeasonContext` compares the active season's `activated_at` to `localStorage('lastSeenActivatedAt')` on mount and window focus. If changed, `showNewSeasonModal = true`. `NewSeasonModal` (rendered in `providers.tsx` inside `SeasonProvider`) shows the popup. `dismissNewSeasonModal()` saves the current value to localStorage.
+
 ## Two Season Concepts
 
 The app distinguishes two separate season ideas:
 
 | Concept | Meaning | DB field |
 |---|---|---|
-| **Game season** | The season the game is currently running; the target for all content-cache imports | `seasons.is_active = true` |
-| **Viewing season** | The season the user has selected to browse in the app (can be historical) | `profiles.active_season_id` |
+| **Game season** | The season the game is currently running; target for content-cache imports | `seasons.is_active = true` |
+| **Viewing season** | The season the user has selected to browse (can be historical) | `profiles.active_season_id` |
 
-A content cache file always represents the **game season's** data. The import always targets `is_active` season by default. The `season_filter` form field only controls which series numbers of *drivers/car parts/boosts* are pulled — it does not affect which season tracks, series data, or AI loadouts are tagged to.
+**Pending seasons are not the game season.** They exist only for admin preparation and are hidden from regular users. `GET /api/seasons` returns only non-pending seasons to unauthenticated or non-admin requests; admins receive all seasons (including pending) so they can test and manage the new season.
+
+A content cache file always represents the **game season's** data. The import always targets the `is_active` season by default (or a chosen target). After a successful import, the route marks the target season's `content_cache_loaded = true`. The `season_filter` form field only controls which series numbers of *drivers/car parts/boosts* are pulled — it does not affect which season tracks, series data, or AI loadouts are tagged to.
 
 ---
 
@@ -414,13 +445,22 @@ A content cache file always represents the **game season's** data. The import al
 
 ```typescript
 import { useSeason } from '@/contexts/SeasonContext'
-const { activeSeasonId, activeSeason, seasons, isLoading, setActiveSeason } = useSeason()
+const {
+  activeSeasonId, activeSeason, seasons, pendingSeason,
+  isLoading, showNewSeasonModal,
+  setActiveSeason, dismissNewSeasonModal,
+} = useSeason()
 ```
 
-- `activeSeasonId` — the user's **viewing season** (user preference `profiles.active_season_id` → globally `is_active` → null). This is NOT necessarily the current game season.
+- `activeSeasonId` — the user's **viewing season** (`profiles.active_season_id` → globally `is_active` → null). NOT necessarily the current game season.
 - `activeSeason` — full `Season` object for the viewing season, or null
-- `seasons` — all seasons
+- `seasons` — non-pending seasons for regular users; all seasons (including pending) for admins (API filters based on auth)
+- `pendingSeason` — the season with `activated_at IS NULL`, or null. Only populated for admin users (it won't appear in `seasons` for regular users).
 - `setActiveSeason(id)` — persists to `profiles.active_season_id` via `PUT /api/profiles/[id]` and updates local state optimistically
+- `showNewSeasonModal` — true when the active season changed since the user's last visit (localStorage-based detection)
+- `dismissNewSeasonModal()` — hides the modal and saves the current `activated_at` to localStorage
+
+The context re-fetches seasons on `window.focus` to pick up season changes made in other tabs or by the admin.
 
 **Convention:** page components read `activeSeasonId` from context and pass it as a filter to hooks. Do **not** bake context reads into `useApi.ts` hooks.
 
@@ -452,7 +492,7 @@ const { activeSeasonId, activeSeason, seasons, isLoading, setActiveSeason } = us
 | `POST /api/track-guides` | request body |
 | `GET /api/ai-loadouts` | query param |
 | `GET /api/ai-loadouts/track/[trackName]/[difficulty]` | query param |
-| `PUT /api/seasons/[id]` | atomically clears others when `is_active: true` |
+| `PUT /api/seasons/[id]` | activation path (`is_active: true`): validates `content_cache_loaded`, sets `activated_at`, clears others, auto-generates rotation schedule |
 | `PUT /api/profiles/[id]` | updates `active_season_id` |
 
 ---

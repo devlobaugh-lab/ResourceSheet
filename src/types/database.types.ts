@@ -348,24 +348,33 @@ export type Database = {
       }
       seasons: {
         Row: {
+          activated_at: string | null
+          content_cache_loaded: boolean
           created_at: string
           id: string
           is_active: boolean | null
           name: string
+          start_date: string | null
           updated_at: string
         }
         Insert: {
+          activated_at?: string | null
+          content_cache_loaded?: boolean
           created_at?: string
           id?: string
           is_active?: boolean | null
           name: string
+          start_date?: string | null
           updated_at?: string
         }
         Update: {
+          activated_at?: string | null
+          content_cache_loaded?: boolean
           created_at?: string
           id?: string
           is_active?: boolean | null
           name?: string
+          start_date?: string | null
           updated_at?: string
         }
         Relationships: []

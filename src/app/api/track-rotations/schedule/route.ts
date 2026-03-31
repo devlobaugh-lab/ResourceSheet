@@ -1,16 +1,25 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
-// GET /api/track-rotations/schedule — all schedule entries with set_number, ordered by start_date
-export async function GET() {
+// GET /api/track-rotations/schedule?season_id=UUID — schedule entries, optionally filtered by season
+export async function GET(request: NextRequest) {
   try {
-    const { data, error } = await supabaseAdmin
+    const { searchParams } = new URL(request.url)
+    const seasonId = searchParams.get('season_id')
+
+    let query = supabaseAdmin
       .from('track_rotation_schedule')
       .select(`
         *,
         track_rotation_sets!inner(set_number)
       `)
       .order('start_date', { ascending: true })
+
+    if (seasonId) {
+      query = query.eq('season_id', seasonId)
+    }
+
+    const { data, error } = await query
 
     if (error) {
       console.error('Error fetching rotation schedule:', error)
@@ -23,6 +32,7 @@ export async function GET() {
     const entries = (data ?? []).map((row: any) => ({
       id: row.id,
       rotation_set_id: row.rotation_set_id,
+      season_id: row.season_id,
       start_date: row.start_date,
       end_date: row.end_date,
       rotation_set_number: row.track_rotation_sets.set_number,

@@ -14,6 +14,7 @@ import {
   useUpdateRotationScheduleEntry,
   useDeleteRotationScheduleEntry,
 } from '@/hooks/useApi'
+import { useSeason } from '@/contexts/SeasonContext'
 import { ROTATION_TRACK_NAMES, ROTATION_SERIES_INDICES } from '@/lib/track-rotation-constants'
 import type { TrackRotationSet, RotationSeriesData, RotationTrackEntry } from '@/types/database'
 import { cn } from '@/lib/utils'
@@ -126,23 +127,39 @@ function RotationSetEditor({
 
 function ScheduleEntryForm({
   sets,
+  seasons,
   initial,
   onSave,
   onCancel,
   isLoading,
 }: {
   sets: TrackRotationSet[]
-  initial?: { rotation_set_id: string; start_date: string; end_date: string }
-  onSave: (data: { rotation_set_id: string; start_date: string; end_date: string }) => void
+  seasons: { id: string; name: string }[]
+  initial?: { rotation_set_id: string; season_id?: string | null; start_date: string; end_date: string }
+  onSave: (data: { rotation_set_id: string; season_id: string | null; start_date: string; end_date: string }) => void
   onCancel: () => void
   isLoading: boolean
 }) {
   const [rotationSetId, setRotationSetId] = useState(initial?.rotation_set_id ?? sets[0]?.id ?? '')
+  const [seasonId, setSeasonId] = useState<string>(initial?.season_id ?? '')
   const [startDate, setStartDate] = useState(initial?.start_date ?? '')
   const [endDate, setEndDate] = useState(initial?.end_date ?? '')
 
   return (
     <div className="flex flex-wrap gap-3 items-end p-4 bg-gray-50 rounded-lg border">
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Season</label>
+        <select
+          className="border border-gray-300 rounded px-2 py-1.5 text-sm"
+          value={seasonId}
+          onChange={(e) => setSeasonId(e.target.value)}
+        >
+          <option value="">— None —</option>
+          {seasons.map((s) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+      </div>
       <div>
         <label className="block text-xs font-medium text-gray-500 mb-1">Set</label>
         <select
@@ -176,7 +193,7 @@ function ScheduleEntryForm({
       <div className="flex gap-2">
         <Button
           size="sm"
-          onClick={() => onSave({ rotation_set_id: rotationSetId, start_date: startDate, end_date: endDate })}
+          onClick={() => onSave({ rotation_set_id: rotationSetId, season_id: seasonId || null, start_date: startDate, end_date: endDate })}
           disabled={isLoading || !rotationSetId || !startDate || !endDate}
         >
           {isLoading ? 'Saving...' : 'Save'}
@@ -195,6 +212,7 @@ export default function AdminTrackRotationsPage() {
   const [showAddSchedule, setShowAddSchedule] = useState(false)
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null)
 
+  const { seasons } = useSeason()
   const { data: setsData, isLoading: setsLoading } = useAdminRotationSets()
   const { data: scheduleData, isLoading: scheduleLoading } = useAdminRotationSchedule()
   const createEntry = useCreateRotationScheduleEntry()
@@ -204,7 +222,7 @@ export default function AdminTrackRotationsPage() {
   const sets = setsData?.data ?? []
   const schedule = scheduleData?.data ?? []
 
-  async function handleCreateEntry(data: { rotation_set_id: string; start_date: string; end_date: string }) {
+  async function handleCreateEntry(data: { rotation_set_id: string; season_id: string | null; start_date: string; end_date: string }) {
     try {
       await createEntry.mutateAsync(data)
       toast.addToast('Schedule entry added', 'success')
@@ -214,7 +232,7 @@ export default function AdminTrackRotationsPage() {
     }
   }
 
-  async function handleUpdateEntry(id: string, data: { rotation_set_id: string; start_date: string; end_date: string }) {
+  async function handleUpdateEntry(id: string, data: { rotation_set_id: string; season_id: string | null; start_date: string; end_date: string }) {
     try {
       await updateEntry.mutateAsync({ id, data })
       toast.addToast('Schedule entry updated', 'success')
@@ -300,6 +318,7 @@ export default function AdminTrackRotationsPage() {
             <div className="mb-4">
               <ScheduleEntryForm
                 sets={sets}
+                seasons={seasons}
                 onSave={handleCreateEntry}
                 onCancel={() => setShowAddSchedule(false)}
                 isLoading={createEntry.isPending}
@@ -317,6 +336,7 @@ export default function AdminTrackRotationsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="text-left px-4 py-3 font-medium text-gray-500">Season</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-500">Set</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-500">Start</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-500">End</th>
@@ -331,6 +351,9 @@ export default function AdminTrackRotationsPage() {
                       return (
                         <React.Fragment key={entry.id}>
                           <tr className={cn('hover:bg-gray-50', current && 'bg-blue-50 hover:bg-blue-50')}>
+                            <td className="px-4 py-2.5 text-sm text-gray-600">
+                              {entry.season_id ? (seasons.find(s => s.id === entry.season_id)?.name ?? '—') : '—'}
+                            </td>
                             <td className="px-4 py-2.5 font-medium">Set {entry.rotation_set_number}</td>
                             <td className="px-4 py-2.5 tabular-nums">{entry.start_date}</td>
                             <td className="px-4 py-2.5 tabular-nums">{entry.end_date}</td>
@@ -362,8 +385,10 @@ export default function AdminTrackRotationsPage() {
                               <td colSpan={5} className="px-4 pb-3">
                                 <ScheduleEntryForm
                                   sets={sets}
+                                  seasons={seasons}
                                   initial={{
                                     rotation_set_id: entry.rotation_set_id,
+                                    season_id: entry.season_id,
                                     start_date: entry.start_date,
                                     end_date: entry.end_date,
                                   }}
