@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useRef, useCallback } from 'react'
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
@@ -15,6 +15,7 @@ import {
   useUserCarSetups,
   useUserCarParts,
 } from '@/hooks/useApi'
+import { useSeason } from '@/contexts/SeasonContext'
 import { cn, getRarityBackground } from '@/lib/utils'
 import type {
   RotationTrackEntryWithInfo,
@@ -528,23 +529,36 @@ export default function TrackRotationsPage() {
   const [viewDate, setViewDate] = useState(today)
   const [quickRef, setQuickRef] = useState(false)
 
-  const { data: scheduleData, isLoading: scheduleLoading } = useTrackRotationSchedule()
+  const { activeSeasonId } = useSeason()
+
+  // Reset to today when the active season changes so we re-derive the best rotation
+  useEffect(() => {
+    setViewDate(getTodayDate())
+  }, [activeSeasonId])
+
+  const { data: scheduleData, isLoading: scheduleLoading } = useTrackRotationSchedule(activeSeasonId ?? undefined)
   const schedule = useMemo(() => scheduleData?.data ?? [], [scheduleData])
 
   const currentIndex = useMemo(() => {
+    if (schedule.length === 0) return -1
+    // Try exact date match first
     const matches = schedule
       .map((entry, idx) => ({ entry, idx }))
       .filter(({ entry }) => isDateInRange(viewDate, entry.start_date, entry.end_date))
-    if (matches.length === 0) return -1
-    return matches.reduce((best, curr) =>
-      curr.entry.start_date > best.entry.start_date ? curr : best
-    ).idx
+    if (matches.length > 0) {
+      return matches.reduce((best, curr) =>
+        curr.entry.start_date > best.entry.start_date ? curr : best
+      ).idx
+    }
+    // Date is outside the season's range — fall back to first or last entry
+    if (viewDate < schedule[0].start_date) return 0
+    return schedule.length - 1
   }, [schedule, viewDate])
 
   const currentEntry = currentIndex >= 0 ? schedule[currentIndex] : null
   const queryDate = currentEntry?.start_date ?? viewDate
 
-  const { data: rotationView, isLoading: rotationLoading } = useCurrentTrackRotation(queryDate)
+  const { data: rotationView, isLoading: rotationLoading } = useCurrentTrackRotation(queryDate, activeSeasonId ?? undefined)
 
   const rotationSetId = rotationView?.rotation_set?.id
 

@@ -29,6 +29,9 @@ export interface Database {
           id: string
           name: string
           is_active: boolean
+          content_cache_loaded: boolean
+          start_date: string | null
+          activated_at: string | null
           created_at: string
           updated_at: string
         }
@@ -36,6 +39,9 @@ export interface Database {
           id?: string
           name: string
           is_active?: boolean
+          content_cache_loaded?: boolean
+          start_date?: string | null
+          activated_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -43,6 +49,9 @@ export interface Database {
           id?: string
           name?: string
           is_active?: boolean
+          content_cache_loaded?: boolean
+          start_date?: string | null
+          activated_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -879,7 +888,7 @@ export interface TrackRotationSet {
   created_at: string; updated_at: string
 }
 export interface TrackRotationScheduleEntry {
-  id: string; rotation_set_id: string; start_date: string; end_date: string
+  id: string; rotation_set_id: string; season_id: string | null; start_date: string; end_date: string
   created_at: string; updated_at: string
 }
 export interface RotationTrackEntryWithInfo extends RotationTrackEntry {

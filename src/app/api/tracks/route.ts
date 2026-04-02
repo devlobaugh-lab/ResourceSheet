@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
 
     if (seasonId) {
       // Query through junction table — returns only tracks in this season
-      const { data: tsData, error } = await supabase
+      // Use supabaseAdmin for reads so RLS on tracks doesn't silently null out joined rows
+      const { data: tsData, error } = await supabaseAdmin
         .from('track_seasons')
         .select('is_active, seasons(id, name, is_active), tracks(*)')
         .eq('season_id', seasonId)
@@ -36,13 +37,15 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      const transformedData = (tsData || []).map(row => ({
-        ...(row.tracks as any),
-        is_active: row.is_active,
-        season_name: (row.seasons as any)?.name || 'Unknown',
-        season_is_active: (row.seasons as any)?.is_active || false,
-        display_name: aliasMap.get((row.tracks as any).name) || null,
-      })).sort((a: any, b: any) => a.name.localeCompare(b.name))
+      const transformedData = (tsData || [])
+        .filter(row => row.tracks !== null)
+        .map(row => ({
+          ...(row.tracks as any),
+          is_active: row.is_active,
+          season_name: (row.seasons as any)?.name || 'Unknown',
+          season_is_active: (row.seasons as any)?.is_active || false,
+          display_name: aliasMap.get((row.tracks as any).name) || null,
+        })).sort((a: any, b: any) => a.name.localeCompare(b.name))
 
       return NextResponse.json(transformedData)
     }
