@@ -565,7 +565,7 @@ export default function GpGuideEditorPage() {
         fetch(`/api/drivers/user?${driverParams}`, opts),
         fetch('/api/user-boosts?limit=200', opts),  // Use user-boosts to get card_count
         fetch(seasonId ? `/api/setups?season_id=${seasonId}` : '/api/setups', opts),
-        fetch('/api/car-parts/user?limit=1000', opts),
+        fetch(seasonId ? `/api/car-parts/user?limit=1000&season_id=${seasonId}` : '/api/car-parts/user?limit=1000', opts),
       ])
       const tracksData = tracksRes.ok ? await tracksRes.json() : []
       const driversData = driversRes.ok ? await driversRes.json() : { data: [] }
