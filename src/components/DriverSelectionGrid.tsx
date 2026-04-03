@@ -65,6 +65,7 @@ interface DriverSelectionGridProps {
   bonusPercentage?: number;
   bonusCheckedItems?: Set<string>;
   onBonusToggle?: (itemId: string) => void;
+  bonusOnlyMode?: boolean; // When true, leading checkbox IS the bonus toggle (no separate Bonus column)
 }
 
 export function DriverSelectionGrid({
@@ -81,6 +82,7 @@ export function DriverSelectionGrid({
   bonusPercentage = 0,
   bonusCheckedItems = new Set(),
   onBonusToggle,
+  bonusOnlyMode = false,
 }: DriverSelectionGridProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<string>(trackStat);
@@ -348,12 +350,12 @@ export function DriverSelectionGrid({
       { key: 'level', label: 'Level', sortable: true },
       { key: 'series', label: 'Series', sortable: true },
     ];
-    
-    // Add bonus column if onBonusToggle is provided
-    if (onBonusToggle) {
+
+    // Add bonus column only when bonus is secondary (not bonusOnlyMode)
+    if (onBonusToggle && !bonusOnlyMode) {
       baseColumns.push({ key: 'bonus', label: 'Bonus', sortable: false });
     }
-    
+
     baseColumns.push(
       { key: 'overtaking', label: 'Overtaking', sortable: true },
       { key: 'blocking', label: 'Defending', sortable: true },
@@ -364,7 +366,7 @@ export function DriverSelectionGrid({
     );
     
     return baseColumns;
-  }, [onBonusToggle]);
+  }, [onBonusToggle, bonusOnlyMode]);
 
   // Get stat value for display
   const getStatValue = useCallback((driver: DriverView, statName: string): number => {
@@ -516,7 +518,12 @@ export function DriverSelectionGrid({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {sortedDrivers.map((driver) => {
-              const isSelected = selectedDriverIds.includes(driver.id);
+              const isSelected = bonusOnlyMode
+                ? bonusCheckedItems.has(driver.id)
+                : selectedDriverIds.includes(driver.id);
+              const handleRowClick = bonusOnlyMode && onBonusToggle
+                ? () => onBonusToggle(driver.id)
+                : () => handleDriverToggle(driver.id);
 
               return (
                 <tr
@@ -525,7 +532,7 @@ export function DriverSelectionGrid({
                     'hover:bg-gray-50 transition-colors',
                     isSelected && 'bg-blue-50'
                   )}
-                  onClick={() => handleDriverToggle(driver.id)}
+                  onClick={handleRowClick}
                 >
                   {/* Name Column with rarity background */}
                   <td className={cn("px-3 py-1 whitespace-nowrap", getRarityBackground(driver.rarity))}>
@@ -533,7 +540,8 @@ export function DriverSelectionGrid({
                       <input
                         type="checkbox"
                         checked={isSelected}
-                        onChange={() => handleDriverToggle(driver.id)}
+                        onChange={handleRowClick}
+                        onClick={(e) => e.stopPropagation()}
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-2"
                       />
                       <div className="text-sm font-medium text-gray-900">
@@ -565,8 +573,8 @@ export function DriverSelectionGrid({
                     <div className="text-sm text-gray-900">{driver.series}</div>
                   </td>
 
-                  {/* Bonus Column - only show if onBonusToggle is provided */}
-                  {onBonusToggle && (
+                  {/* Bonus Column - only when bonus is secondary (not bonusOnlyMode) */}
+                  {onBonusToggle && !bonusOnlyMode && (
                     <td className="px-3 py-1 whitespace-nowrap text-center">
                       <input
                         type="checkbox"

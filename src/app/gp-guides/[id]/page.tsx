@@ -909,6 +909,7 @@ export default function GpGuideEditorPage() {
                 bonusPercentage={guide.bonus_percentage}
                 bonusCheckedItems={new Set(guide.bonus_driver_ids)}
                 onBonusToggle={handleGpBonusDriverToggle}
+                bonusOnlyMode={true}
                 maxSeries={gpLevel.seriesMax}
                 singleSelect={false}
                 maxSelectable={500}
