@@ -793,7 +793,7 @@ export default function GpGuideEditorPage() {
                       className="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase hover:text-gray-700 transition-colors"
                     >
                       {showNotesSection ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                      Notes &amp; GL Bonus Config
+                      Notes &amp; Bonus Config
                     </button>
                     {showNotesSection && (
                       <div className="mt-2 space-y-3">
