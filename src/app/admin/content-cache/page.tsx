@@ -206,9 +206,14 @@ export default function AdminContentCachePage() {
                 <h1 className="text-3xl font-bold text-gray-900">Content Cache Management</h1>
                 <p className="mt-2 text-gray-600">Upload and process content_cache.json files</p>
               </div>
-              <Link href="/admin">
-                <Button variant="outline">Back to Admin</Button>
-              </Link>
+              <div className="flex gap-2">
+                <Link href="/admin/content-cache/diff">
+                  <Button variant="outline">Compare Files</Button>
+                </Link>
+                <Link href="/admin">
+                  <Button variant="outline">Back to Admin</Button>
+                </Link>
+              </div>
             </div>
           </div>
 
