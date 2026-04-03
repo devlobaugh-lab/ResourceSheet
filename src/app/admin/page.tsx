@@ -9,7 +9,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAuthHeaders } from '@/hooks/useApi';
 import Link from 'next/link';
-import { Upload, Users, Shield, Download, FileUp, Database, MapPin, Calendar, RotateCcw } from 'lucide-react';
+import { Upload, Users, Shield, Download, FileUp, Database, MapPin, Calendar, RotateCcw, GitCompareArrows } from 'lucide-react';
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -191,6 +191,13 @@ export default function AdminPage() {
       icon: Upload,
       href: '/admin/content-cache',
       color: 'text-blue-600'
+    },
+    {
+      title: 'Content Cache Diff',
+      description: 'Compare two content_cache.json files to detect structural and data changes',
+      icon: GitCompareArrows,
+      href: '/admin/content-cache/diff',
+      color: 'text-yellow-600'
     },
     {
       title: 'Track Name Aliases',
