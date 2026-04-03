@@ -1034,6 +1034,9 @@ export type Database = {
       }
       user_gp_guides: {
         Row: {
+          bonus_car_part_ids: string[]
+          bonus_driver_ids: string[]
+          bonus_percentage: number
           created_at: string | null
           gp_level: number
           id: string
@@ -1047,6 +1050,9 @@ export type Database = {
           weekend_strategy_same: boolean
         }
         Insert: {
+          bonus_car_part_ids?: string[]
+          bonus_driver_ids?: string[]
+          bonus_percentage?: number
           created_at?: string | null
           gp_level: number
           id?: string
@@ -1060,6 +1066,9 @@ export type Database = {
           weekend_strategy_same?: boolean
         }
         Update: {
+          bonus_car_part_ids?: string[]
+          bonus_driver_ids?: string[]
+          bonus_percentage?: number
           created_at?: string | null
           gp_level?: number
           id?: string

@@ -9,12 +9,13 @@ import { useParams, useRouter } from 'next/navigation'
 import { getAuthHeaders } from '@/hooks/useApi'
 import { DriverView, BoostView, UserCarSetup, CarPartView } from '@/types/database'
 import { DriverSelectionGrid } from '@/components/DriverSelectionGrid'
+import { CarPartSelectionGrid } from '@/components/CarPartSelectionGrid'
 import { DriverDisplay } from '@/components/DriverDisplay'
 import { BoostDisplay } from '@/components/BoostDisplay'
 import { SetupPreviewPanel } from '@/components/SetupPreviewPanel'
 import { getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { Eye } from 'lucide-react'
+import { Eye, ChevronDown, ChevronUp } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,6 +69,7 @@ interface ResultEntry {
 interface GpGuide {
   id: string; name: string; start_date: string | null; gp_level: number
   notes: string | null; weekend_strategy_same: boolean
+  bonus_percentage: number; bonus_driver_ids: string[]; bonus_car_part_ids: string[]
   tracks: TrackSlot[]; results: ResultEntry[]
 }
 
@@ -160,11 +162,13 @@ function BoostSelectModal({
 
 function TrackSlotCard({
   slot, guideId, gpLevel, allTracks, allDrivers, allBoosts, allSetups, carParts,
+  gpBonusPercentage, gpBonusDriverIds,
   onUpdate, onImport, importingSlotId,
 }: {
   slot: TrackSlot; guideId: string; gpLevel: number
   allTracks: TrackInfo[]; allDrivers: DriverView[]; allBoosts: BoostView[]
   allSetups: UserCarSetup[]; carParts: CarPartView[]
+  gpBonusPercentage: number; gpBonusDriverIds: string[]
   onUpdate: (slotId: string, patch: Partial<TrackSlot>) => void
   onImport: (slotId: string, trackId: string, isWet: boolean) => void
   importingSlotId: string | null
@@ -174,25 +178,21 @@ function TrackSlotCard({
   const [driverModal, setDriverModal] = useState<null | 'driver1' | 'driver2'>(null)
   const [boostModal, setBoostModal] = useState<null | 'driver1' | 'driver2'>(null)
   
-  // Bonus state for driver selection modal
-  const [bonusPercentage, setBonusPercentage] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        return parseInt(localStorage.getItem('gp-guide-bonus-percentage') || '0', 10) || 0
-      } catch { return 0 }
+  // Bonus state for driver selection modal — seeded from GP-level config
+  const [bonusPercentage, setBonusPercentage] = useState(gpBonusPercentage)
+  const [bonusCheckedDrivers, setBonusCheckedDrivers] = useState<Set<string>>(
+    () => new Set(gpBonusDriverIds)
+  )
+
+  // Re-seed from GP config each time the driver modal opens
+  useEffect(() => {
+    if (driverModal !== null) {
+      setBonusPercentage(gpBonusPercentage)
+      setBonusCheckedDrivers(new Set(gpBonusDriverIds))
     }
-    return 0
-  })
-  const [bonusCheckedDrivers, setBonusCheckedDrivers] = useState<Set<string>>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('gp-guide-bonus-drivers')
-        if (stored) return new Set(JSON.parse(stored))
-      } catch {}
-    }
-    return new Set()
-  })
-  
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [driverModal])
+
   const handleBonusToggle = useCallback((driverId: string) => {
     setBonusCheckedDrivers(prev => {
       const next = new Set(prev)
@@ -201,10 +201,6 @@ function TrackSlotCard({
       } else {
         next.add(driverId)
       }
-      // Persist to localStorage
-      try {
-        localStorage.setItem('gp-guide-bonus-drivers', JSON.stringify(Array.from(next)))
-      } catch {}
       return next
     })
   }, [])
@@ -525,6 +521,10 @@ export default function GpGuideEditorPage() {
   const [bulkImporting, setBulkImporting] = useState<string | null>(null)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const [showCondensed, setShowCondensed] = useState(false)
+  const [showNotesSection, setShowNotesSection] = useState(true)
+  const [showBonusDriversModal, setShowBonusDriversModal] = useState(false)
+  const [showBonusPartsModal, setShowBonusPartsModal] = useState(false)
+  const [bonusPartsTab, setBonusPartsTab] = useState(0)
 
   const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type })
@@ -585,6 +585,20 @@ export default function GpGuideEditorPage() {
       }
     } catch { /* silent */ }
   }, [guide, guideId])
+
+  const handleGpBonusDriverToggle = useCallback((driverId: string) => {
+    if (!guide) return
+    const next = new Set(guide.bonus_driver_ids)
+    next.has(driverId) ? next.delete(driverId) : next.add(driverId)
+    saveHeader({ bonus_driver_ids: Array.from(next) })
+  }, [guide, saveHeader])
+
+  const handleGpBonusPartToggle = useCallback((partId: string) => {
+    if (!guide) return
+    const next = new Set(guide.bonus_car_part_ids)
+    next.has(partId) ? next.delete(partId) : next.add(partId)
+    saveHeader({ bonus_car_part_ids: Array.from(next) })
+  }, [guide, saveHeader])
 
   const handleSlotUpdate = useCallback((slotId: string, patch: Partial<TrackSlot>) => {
     setGuide(prev => {
@@ -701,6 +715,7 @@ export default function GpGuideEditorPage() {
 
   const sharedSlotProps = {
     guideId, gpLevel: guide.gp_level, allTracks, allDrivers, allBoosts, allSetups, carParts: allCarParts,
+    gpBonusPercentage: guide.bonus_percentage, gpBonusDriverIds: guide.bonus_driver_ids,
     onUpdate: handleSlotUpdate, onImport: handleImport, importingSlotId,
   }
 
@@ -772,14 +787,51 @@ export default function GpGuideEditorPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
-                      Notes (Boosted Assets, Bonus Requirements &amp; Rewards)
-                    </label>
-                    <textarea defaultValue={guide.notes || ''}
-                      onBlur={e => saveHeader({ notes: e.target.value || null })}
-                      placeholder="e.g. Norris Rare lvl3+ → +5 Race Points; Verstappen Epic boosted +10%…"
-                      rows={3}
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <button
+                      type="button"
+                      onClick={() => setShowNotesSection(v => !v)}
+                      className="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase hover:text-gray-700 transition-colors"
+                    >
+                      {showNotesSection ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      Notes &amp; GL Bonus Config
+                    </button>
+                    {showNotesSection && (
+                      <div className="mt-2 space-y-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Bonus Configuration</label>
+                          <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <label className="text-xs text-gray-600 whitespace-nowrap">Bonus %</label>
+                              <input
+                                type="number" min={0} max={100}
+                                defaultValue={guide.bonus_percentage}
+                                onBlur={e => saveHeader({ bonus_percentage: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
+                                className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => setShowBonusDriversModal(true)}>
+                              Bonus Drivers ({guide.bonus_driver_ids.length})
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => setShowBonusPartsModal(true)}>
+                              Bonus Parts ({guide.bonus_car_part_ids.length})
+                            </Button>
+                          </div>
+                          {(guide.bonus_driver_ids.length > 0 || guide.bonus_car_part_ids.length > 0) && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {guide.bonus_driver_ids.length} driver{guide.bonus_driver_ids.length !== 1 ? 's' : ''} · {guide.bonus_car_part_ids.length} part{guide.bonus_car_part_ids.length !== 1 ? 's' : ''} at {guide.bonus_percentage}% bonus
+                            </p>
+                          )}
+                        </div>
+                        <div className="pt-3 border-t border-gray-200">
+                          <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Notes</label>
+                          <textarea defaultValue={guide.notes || ''}
+                            onBlur={e => saveHeader({ notes: e.target.value || null })}
+                            placeholder="e.g. Norris Rare lvl3+ → +5 Race Points; Verstappen Epic boosted +10%…"
+                            rows={3}
+                            className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>
@@ -837,6 +889,85 @@ export default function GpGuideEditorPage() {
             </>
           )}
         </div>
+
+      {/* ── GP Bonus Drivers Modal ── */}
+      {showBonusDriversModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-6xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Select Bonus Drivers</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Check drivers that have a bonus for this GP · {gpLevel.name} GP</p>
+              </div>
+              <button onClick={() => setShowBonusDriversModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-2">
+              <DriverSelectionGrid
+                drivers={allDrivers}
+                selectedDriverIds={[]}
+                onDriverSelectionChange={() => {}}
+                bonusPercentage={guide.bonus_percentage}
+                bonusCheckedItems={new Set(guide.bonus_driver_ids)}
+                onBonusToggle={handleGpBonusDriverToggle}
+                maxSeries={gpLevel.seriesMax}
+                singleSelect={false}
+                maxSelectable={500}
+                initialShowHighestLevel={false}
+              />
+            </div>
+            <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end">
+              <Button onClick={() => setShowBonusDriversModal(false)}>Done</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── GP Bonus Parts Modal ── */}
+      {showBonusPartsModal && (() => {
+        const partTabs = ['Gearbox', 'Brake', 'Engine', 'Suspension', 'Front Wing', 'Rear Wing']
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg max-w-6xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Select Bonus Parts</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">Check parts that have a bonus for this GP</p>
+                </div>
+                <button onClick={() => setShowBonusPartsModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+              </div>
+              <div className="flex border-b border-gray-200 overflow-x-auto">
+                {partTabs.map((label, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setBonusPartsTab(i)}
+                    className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                      bonusPartsTab === i
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex-1 overflow-y-auto px-4 py-2">
+                <CarPartSelectionGrid
+                  parts={allCarParts}
+                  partType={bonusPartsTab}
+                  selectedPartId=""
+                  onPartSelect={() => {}}
+                  bonusCheckedItems={new Set(guide.bonus_car_part_ids)}
+                  onBonusToggle={handleGpBonusPartToggle}
+                  bonusPercentage={String(guide.bonus_percentage)}
+                />
+              </div>
+              <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end">
+                <Button onClick={() => setShowBonusPartsModal(false)}>Done</Button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </ProtectedRoute>
   )
 }
