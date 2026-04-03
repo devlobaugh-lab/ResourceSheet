@@ -10,6 +10,9 @@ const updateGpGuideSchema = z.object({
   notes: z.string().nullable().optional(),
   weekend_strategy_same: z.boolean().optional(),
   is_ready: z.boolean().optional(),
+  bonus_percentage: z.number().int().min(0).max(100).optional(),
+  bonus_driver_ids: z.array(z.string().uuid()).optional(),
+  bonus_car_part_ids: z.array(z.string().uuid()).optional(),
 }).partial()
 
 async function getAuthUser(request: NextRequest) {
