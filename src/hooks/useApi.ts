@@ -657,6 +657,7 @@ export function useCurrentTrackRotation(date?: string, seasonId?: string) {
       }
       return response.json()
     },
+    enabled: !!seasonId,
     staleTime: 5 * 60 * 1000,
   })
 }
