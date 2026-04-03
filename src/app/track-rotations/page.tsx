@@ -558,7 +558,14 @@ export default function TrackRotationsPage() {
   const currentEntry = currentIndex >= 0 ? schedule[currentIndex] : null
   const queryDate = currentEntry?.start_date ?? viewDate
 
-  const { data: rotationView, isLoading: rotationLoading } = useCurrentTrackRotation(queryDate, activeSeasonId ?? undefined)
+  // Only query rotation once the schedule has resolved — prevents a premature query
+  // with today's date (legacy path) followed by a second query with the schedule-derived
+  // start_date (season path), which can yield different rotation_set_ids.
+  const scheduleReady = schedule.length > 0
+  const { data: rotationView, isLoading: rotationLoading } = useCurrentTrackRotation(
+    queryDate,
+    scheduleReady ? (activeSeasonId ?? undefined) : undefined
+  )
 
   const rotationSetId = rotationView?.rotation_set?.id
 
