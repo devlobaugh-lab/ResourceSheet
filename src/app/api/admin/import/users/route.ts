@@ -279,8 +279,11 @@ export async function POST(request: NextRequest) {
               const newGuideId = guideIdMap.get(item.gp_guide_id as string)
               if (!newGuideId) continue
 
-              const resolvedTrackId = resolveTrackId(item.track_id as string, item._track_name as string | null)
-              if (!resolvedTrackId) {
+              const rawTrackId = item.track_id as string | null
+              const resolvedTrackId = rawTrackId == null
+                ? null
+                : resolveTrackId(rawTrackId, item._track_name as string | null)
+              if (rawTrackId != null && !resolvedTrackId) {
                 totals.errors.push(`user_gp_guide_tracks (${userId}): track not found (id=${item.track_id}, name=${item._track_name ?? 'unknown'}), skipping`)
                 continue
               }
