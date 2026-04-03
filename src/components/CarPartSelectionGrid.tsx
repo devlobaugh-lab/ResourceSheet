@@ -62,6 +62,8 @@ interface CarPartSelectionGridProps {
   bonusPercentage: string;
   /** Initial max series filter value */
   initialMaxSeries?: number;
+  /** When true, hides the separate Bonus column and makes the leading checkbox the bonus toggle */
+  bonusOnlyMode?: boolean;
 }
 
 export function CarPartSelectionGrid({
@@ -73,6 +75,7 @@ export function CarPartSelectionGrid({
   onBonusToggle,
   bonusPercentage,
   initialMaxSeries = 12,
+  bonusOnlyMode = false,
 }: CarPartSelectionGridProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [localMaxSeries, setLocalMaxSeries] = useState(initialMaxSeries);
@@ -202,7 +205,7 @@ export function CarPartSelectionGrid({
     { key: 'name', label: 'Name' },
     { key: 'rarity', label: 'Rarity' },
     { key: 'level', label: 'Level' },
-    { key: 'bonus', label: 'Bonus', sortable: false },
+    ...(!bonusOnlyMode ? [{ key: 'bonus', label: 'Bonus', sortable: false }] : []),
     { key: 'speed', label: 'Speed' },
     { key: 'cornering', label: 'Cornering' },
     { key: 'powerUnit', label: 'Power Unit' },
@@ -292,19 +295,31 @@ export function CarPartSelectionGrid({
                   key={part.id}
                   className={cn(
                     'hover:bg-gray-50 transition-colors cursor-pointer',
-                    isSelected && 'bg-blue-50'
+                    bonusOnlyMode
+                      ? bonusCheckedItems.has(part.id) && 'bg-blue-50'
+                      : isSelected && 'bg-blue-50'
                   )}
-                  onClick={() => onPartSelect(part.id === selectedPartId ? '' : part.id)}
+                  onClick={() => bonusOnlyMode ? onBonusToggle(part.id) : onPartSelect(part.id === selectedPartId ? '' : part.id)}
                 >
                   {/* Name */}
                   <td className={cn('px-3 py-1 whitespace-nowrap', getRarityBackground(part.rarity))}>
                     <div className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        checked={isSelected}
-                        onChange={() => onPartSelect(part.id === selectedPartId ? '' : part.id)}
-                        className="w-4 h-4 text-blue-600 border-gray-300"
-                      />
+                      {bonusOnlyMode ? (
+                        <input
+                          type="checkbox"
+                          checked={bonusCheckedItems.has(part.id)}
+                          onChange={(e) => { e.stopPropagation(); onBonusToggle(part.id); }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      ) : (
+                        <input
+                          type="radio"
+                          checked={isSelected}
+                          onChange={() => onPartSelect(part.id === selectedPartId ? '' : part.id)}
+                          className="w-4 h-4 text-blue-600 border-gray-300"
+                        />
+                      )}
                       <span className="text-sm font-medium text-gray-900">{part.name}</span>
                     </div>
                   </td>
@@ -326,17 +341,19 @@ export function CarPartSelectionGrid({
                     </span>
                   </td>
                   {/* Bonus */}
-                  <td className="px-3 py-1 whitespace-nowrap text-center">
-                    {(part.level || 0) > 0 && (
-                      <input
-                        type="checkbox"
-                        checked={bonusCheckedItems.has(part.id)}
-                        onChange={(e) => { e.stopPropagation(); onBonusToggle(part.id); }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                    )}
-                  </td>
+                  {!bonusOnlyMode && (
+                    <td className="px-3 py-1 whitespace-nowrap text-center">
+                      {(part.level || 0) > 0 && (
+                        <input
+                          type="checkbox"
+                          checked={bonusCheckedItems.has(part.id)}
+                          onChange={(e) => { e.stopPropagation(); onBonusToggle(part.id); }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      )}
+                    </td>
+                  )}
                   {/* Stats */}
                   <td className={cn('px-3 py-1 whitespace-nowrap text-center', columnStats['speed'] && getStatBackgroundColor(speed, columnStats['speed'].min, columnStats['speed'].max, columnStats['speed'].median))}>
                     <span className="text-sm text-gray-900">{speed || ''}</span>

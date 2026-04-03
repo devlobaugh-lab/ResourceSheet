@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
@@ -526,6 +526,25 @@ export default function GpGuideEditorPage() {
   const [showBonusPartsModal, setShowBonusPartsModal] = useState(false)
   const [bonusPartsTab, setBonusPartsTab] = useState(0)
 
+  const bonusDriverGroups = useMemo(() => {
+    if (!guide) return []
+    const selected = allDrivers.filter(d => guide.bonus_driver_ids.includes(d.id))
+    const grouped = new Map<string, DriverView[]>()
+    for (const d of selected) {
+      grouped.set(d.name, [...(grouped.get(d.name) ?? []), d])
+    }
+    return Array.from(grouped.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, drivers]) => ({ name, drivers: drivers.sort((a, b) => a.rarity - b.rarity) }))
+  }, [allDrivers, guide?.bonus_driver_ids])
+
+  const bonusPartsSelected = useMemo(() => {
+    if (!guide) return []
+    return allCarParts
+      .filter(p => guide.bonus_car_part_ids.includes(p.id))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [allCarParts, guide?.bonus_car_part_ids])
+
   const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 3500)
@@ -816,10 +835,45 @@ export default function GpGuideEditorPage() {
                               Bonus Parts ({guide.bonus_car_part_ids.length})
                             </Button>
                           </div>
-                          {(guide.bonus_driver_ids.length > 0 || guide.bonus_car_part_ids.length > 0) && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              {guide.bonus_driver_ids.length} driver{guide.bonus_driver_ids.length !== 1 ? 's' : ''} · {guide.bonus_car_part_ids.length} part{guide.bonus_car_part_ids.length !== 1 ? 's' : ''} at {guide.bonus_percentage}% bonus
-                            </p>
+                          {(bonusDriverGroups.length > 0 || bonusPartsSelected.length > 0) && (
+                            <div className="mt-2 space-y-2">
+                              {bonusDriverGroups.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Drivers</p>
+                                  <div className="space-y-1">
+                                    {bonusDriverGroups.map(({ name, drivers }) => (
+                                      <div key={name} className="flex flex-wrap items-center gap-1.5">
+                                        <span className="text-xs font-medium text-gray-700">{name}</span>
+                                        {drivers.map(d => (
+                                          <span key={d.id} className={cn('text-xs px-1.5 py-0.5 rounded font-medium', getRarityBackground(d.rarity))}>
+                                            {d.rarity === 5
+                                              ? getCollectionRarityDisplay(d.collection_theme ?? null, d.collection_sub_name ?? null)
+                                              : getRarityDisplay(d.rarity)}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {bonusPartsSelected.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Parts</p>
+                                  <div className="space-y-1">
+                                    {bonusPartsSelected.map(p => (
+                                      <div key={p.id} className="flex items-center gap-1.5">
+                                        <span className="text-xs font-medium text-gray-700">{p.name}</span>
+                                        <span className={cn('text-xs px-1.5 py-0.5 rounded font-medium', getRarityBackground(p.rarity))}>
+                                          {p.rarity === 5
+                                            ? getCollectionRarityDisplay(p.collection_theme ?? null, p.collection_sub_name ?? null)
+                                            : getRarityDisplay(p.rarity)}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
                         <div className="pt-3 border-t border-gray-200">
@@ -960,6 +1014,7 @@ export default function GpGuideEditorPage() {
                   bonusCheckedItems={new Set(guide.bonus_car_part_ids)}
                   onBonusToggle={handleGpBonusPartToggle}
                   bonusPercentage={String(guide.bonus_percentage)}
+                  bonusOnlyMode={true}
                 />
               </div>
               <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end">
