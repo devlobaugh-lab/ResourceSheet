@@ -374,7 +374,10 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         visual_override: part.visualOverride || null,
         collection_sub_name: part.collectionSubName || null,
         car_part_type: part.carPartType || 0,
-        stats_per_level: part.carPartStatsPerLevel || [],
+        stats_per_level: (part.carPartStatsPerLevel || []).map((stat: any) => ({
+          ...stat,
+          drs: stat.drs ?? 0,
+        })),
         season_id: seasonIdMap[part.season] || null
       }))
 
