@@ -129,6 +129,7 @@ function ScheduleEntryForm({
   sets,
   seasons,
   initial,
+  defaultSeasonId,
   onSave,
   onCancel,
   isLoading,
@@ -136,12 +137,13 @@ function ScheduleEntryForm({
   sets: TrackRotationSet[]
   seasons: { id: string; name: string }[]
   initial?: { rotation_set_id: string; season_id?: string | null; start_date: string; end_date: string }
+  defaultSeasonId?: string | null
   onSave: (data: { rotation_set_id: string; season_id: string | null; start_date: string; end_date: string }) => void
   onCancel: () => void
   isLoading: boolean
 }) {
   const [rotationSetId, setRotationSetId] = useState(initial?.rotation_set_id ?? sets[0]?.id ?? '')
-  const [seasonId, setSeasonId] = useState<string>(initial?.season_id ?? '')
+  const [seasonId, setSeasonId] = useState<string>(initial?.season_id ?? defaultSeasonId ?? '')
   const [startDate, setStartDate] = useState(initial?.start_date ?? '')
   const [endDate, setEndDate] = useState(initial?.end_date ?? '')
 
@@ -212,7 +214,7 @@ export default function AdminTrackRotationsPage() {
   const [showAddSchedule, setShowAddSchedule] = useState(false)
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null)
 
-  const { seasons } = useSeason()
+  const { seasons, activeSeasonId } = useSeason()
   const { data: setsData, isLoading: setsLoading } = useAdminRotationSets()
   const { data: scheduleData, isLoading: scheduleLoading } = useAdminRotationSchedule()
   const createEntry = useCreateRotationScheduleEntry()
@@ -319,6 +321,7 @@ export default function AdminTrackRotationsPage() {
               <ScheduleEntryForm
                 sets={sets}
                 seasons={seasons}
+                defaultSeasonId={activeSeasonId}
                 onSave={handleCreateEntry}
                 onCancel={() => setShowAddSchedule(false)}
                 isLoading={createEntry.isPending}

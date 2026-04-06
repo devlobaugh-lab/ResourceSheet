@@ -556,14 +556,14 @@ export default function TrackRotationsPage() {
   }, [schedule, viewDate])
 
   const currentEntry = currentIndex >= 0 ? schedule[currentIndex] : null
-  const queryDate = currentEntry?.start_date ?? viewDate
 
-  // Only query rotation once the schedule has resolved — prevents a premature query
-  // with today's date (legacy path) followed by a second query with the schedule-derived
-  // start_date (season path), which can yield different rotation_set_ids.
+  // Use viewDate directly. When entries share a boundary date (e.g. Set 2 ends on
+  // March 25 and Set 3 starts on March 25), passing the entry's start_date would
+  // cause the API to return the previous entry (first find() match). viewDate is
+  // always a date strictly inside the intended entry's range.
   const scheduleReady = schedule.length > 0
   const { data: rotationView, isLoading: rotationLoading } = useCurrentTrackRotation(
-    queryDate,
+    viewDate,
     scheduleReady ? (activeSeasonId ?? undefined) : undefined
   )
 

@@ -250,6 +250,9 @@ export async function POST(request: NextRequest) {
               weekend_strategy_same: item.weekend_strategy_same,
               is_ready: item.is_ready ?? false,
               season_id: (item.season_id as string | null) ?? null,
+              bonus_driver_ids: (item.bonus_driver_ids as string[] | null) ?? [],
+              bonus_car_part_ids: (item.bonus_car_part_ids as string[] | null) ?? [],
+              bonus_percentage: item.bonus_percentage ?? 0,
             }
             if (existing) {
               await supabaseAdmin.from('user_gp_guides').update(guideData).eq('id', existing.id)
@@ -372,9 +375,6 @@ export async function POST(request: NextRequest) {
               totals.errors.push(`user_rotation_series_data (${userId}): rotation set not found, skipping`)
               continue
             }
-            const remappedSetupId = item.saved_setup_id
-              ? (setupIdMap.get(item.saved_setup_id as string) ?? null)
-              : null
             const { data: existing } = await supabaseAdmin
               .from('user_rotation_series_data').select('id')
               .eq('user_id', userId).eq('rotation_set_id', rotationSetId).eq('series_index', item.series_index as number).single()
@@ -384,7 +384,14 @@ export async function POST(request: NextRequest) {
               series_index: item.series_index,
               driver_1_id: item.driver_1_id ?? null,
               driver_2_id: item.driver_2_id ?? null,
-              saved_setup_id: remappedSetupId,
+              setup_brake_id: item.setup_brake_id ?? null,
+              setup_gearbox_id: item.setup_gearbox_id ?? null,
+              setup_rear_wing_id: item.setup_rear_wing_id ?? null,
+              setup_front_wing_id: item.setup_front_wing_id ?? null,
+              setup_suspension_id: item.setup_suspension_id ?? null,
+              setup_engine_id: item.setup_engine_id ?? null,
+              setup_bonus_percentage: item.setup_bonus_percentage ?? 0,
+              setup_series_filter: item.setup_series_filter ?? 0,
             }
             if (existing) {
               await supabaseAdmin.from('user_rotation_series_data').update(rowData).eq('id', existing.id)
