@@ -35,8 +35,13 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      // Find entry whose date range contains the given date
-      const exact = seasonEntries.find(e => e.start_date <= date && e.end_date >= date)
+      // Find entry whose date range contains the given date.
+      // When multiple entries share a boundary date, pick the one with the latest
+      // start_date — this matches the same tie-breaking logic used on the client.
+      const matching = seasonEntries.filter(e => e.start_date <= date && e.end_date >= date)
+      const exact = matching.length > 0
+        ? matching.reduce((latest, curr) => curr.start_date > latest.start_date ? curr : latest)
+        : undefined
       if (exact) {
         scheduleEntry = exact
       } else if (date < seasonEntries[0].start_date) {
