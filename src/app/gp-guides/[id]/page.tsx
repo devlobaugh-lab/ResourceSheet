@@ -536,14 +536,14 @@ export default function GpGuideEditorPage() {
     return Array.from(grouped.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([name, drivers]) => ({ name, drivers: drivers.sort((a, b) => a.rarity - b.rarity) }))
-  }, [allDrivers, guide?.bonus_driver_ids])
+  }, [allDrivers, guide])
 
   const bonusPartsSelected = useMemo(() => {
     if (!guide) return []
     return allCarParts
       .filter(p => guide.bonus_car_part_ids.includes(p.id))
       .sort((a, b) => a.name.localeCompare(b.name))
-  }, [allCarParts, guide?.bonus_car_part_ids])
+  }, [allCarParts, guide])
 
   const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type })
