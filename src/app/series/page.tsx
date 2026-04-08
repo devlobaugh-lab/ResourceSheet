@@ -188,8 +188,7 @@ export default function SeriesInfoPage() {
   const { activeSeasonId } = useSeason()
   const { data: seriesData, isLoading, error } = useSeries(activeSeasonId ? { season_id: activeSeasonId } : undefined)
 
-// Show Series 1-9 (index 0-8); Series 10-12 rotate and are covered by the Track Rotations page
-const displaySeries = seriesData?.data?.filter((s: SeriesWithTracks) => s.index >= 0 && s.index < 9) || []
+const displaySeries = seriesData?.data?.filter((s: SeriesWithTracks) => s.index >= 0) || []
   return (
     <ProtectedRoute>
       <div className="max-w-7xl mx-auto py-1 px-4 sm:px-6 lg:px-8">
