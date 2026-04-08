@@ -83,7 +83,6 @@ export default function AIComparePage() {
       setPendingDriverIds(null)
       sessionStorage.removeItem(STORAGE_KEY)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSeasonId])
 
   // Clear state when user actively switches seasons

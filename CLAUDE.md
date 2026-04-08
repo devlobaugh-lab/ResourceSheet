@@ -12,7 +12,9 @@ npm run lint         # ESLint
 npm run type-check   # TypeScript check without emitting
 
 # Testing
-npm test             # Run all Jest tests
+npm test             # Run all Vitest tests (vitest run)
+npm run test:watch   # Watch mode — use this during TDD
+npm run test:coverage # Coverage report
 
 # Database (requires local Supabase running)
 supabase start       # Start local Supabase (Docker required)
@@ -41,6 +43,22 @@ NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<local anon key>
 SUPABASE_SERVICE_ROLE_KEY=<local service role key>
 ```
+
+## TDD Workflow
+
+All changes must follow Red/Green/Refactor:
+
+1. **Red** — Write a failing test that describes the desired behavior. Run it and confirm it fails for the right reason.
+2. **Green** — Write the minimum production code needed to make the test pass. No more.
+3. **Refactor** — Clean up code while keeping tests green.
+
+**Rules:**
+- Never write production code without a failing test first.
+- Run `npm run test:watch` during development for tight feedback.
+- Tests live colocated with the code they test: `foo.ts` → `foo.test.ts` in the same directory.
+- For React components, use `@testing-library/react` — test behavior, not implementation details.
+- For pure functions (utils, sorting, validation), use plain `describe`/`it` with `expect`.
+- Global mocks for Supabase clients and Next.js router are pre-configured in `src/test/setup.ts`.
 
 ## Architecture
 
