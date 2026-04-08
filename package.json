@@ -19,7 +19,10 @@
     "db:seed:car-parts": "node scripts/database/seed_car_parts.js",
     "db:seed:drivers": "node scripts/database/seed_drivers.js",
     "db:seed:boosts": "node scripts/database/seed_boosts.js",
-    "db:reset:prod": "node scripts/database/reset_prod_database.js"
+    "db:reset:prod": "node scripts/database/reset_prod_database.js",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@supabase/ssr": "^0.9.0",
@@ -42,14 +45,21 @@
     "@eslint/eslintrc": "^3.3.0",
     "@tailwindcss/forms": "^0.5.7",
     "@tailwindcss/typography": "^0.5.10",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20.8.10",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
+    "@vitejs/plugin-react": "^6.0.1",
+    "@vitest/coverage-v8": "^4.1.3",
     "dotenv": "^16.3.1",
     "eslint": "^9.0.0",
     "eslint-config-next": "^15.5.12",
+    "jsdom": "^29.0.2",
     "supabase": "^2.78.1",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "vitest": "^4.1.3"
   },
   "engines": {
     "node": ">=18.0.0",

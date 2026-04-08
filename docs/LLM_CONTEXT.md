@@ -35,7 +35,7 @@ external_data/                 raw game data files for import
 
 All tables have `id uuid PK`, `created_at timestamptz`, `updated_at timestamptz` unless noted.
 
-### Catalog tables (global, no RLS)
+### Catalog tables (global, read-only for authenticated users; admin-write via RLS)
 
 ```
 drivers          name text, rarity int, series int, season_id uuid?, icon text?,
@@ -71,10 +71,12 @@ track_seasons    track_id text FK tracks ON DELETE CASCADE,
 track_rotation_sets      id uuid PK, set_number int UNIQUE (1–7),
                          series_data jsonb  -- keys "9","10","11"; each an array of
                          {track: string, weather: "dry"|"wet"|"mixed"}
+                         RLS: SELECT public; ALL admin-only
 
 track_rotation_schedule  id uuid PK, rotation_set_id uuid FK track_rotation_sets,
                          start_date date, end_date date
                          INDEX on (start_date, end_date)
+                         RLS: SELECT public; ALL admin-only
 
 collections      (referenced by drivers/car_parts via collection_id)
 
