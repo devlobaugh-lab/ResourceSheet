@@ -377,6 +377,7 @@ export function useCreateSetup() {
       front_wing_id?: string | null
       suspension_id?: string | null
       engine_id?: string | null
+      battery_id?: string | null
       series_filter?: number
       bonus_percentage?: number
       bonus_part_ids?: string[]
@@ -421,6 +422,7 @@ export function useUpdateSetup() {
         front_wing_id: string | null
         suspension_id: string | null
         engine_id: string | null
+        battery_id: string | null
         series_filter: number
         bonus_percentage: number
         bonus_part_ids: string[]

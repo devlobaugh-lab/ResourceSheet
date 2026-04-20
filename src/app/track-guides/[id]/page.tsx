@@ -60,7 +60,7 @@ export default function TrackGuideEditorPage() {
   const { addToast } = useToast()
   const queryClient = useQueryClient()
   const trackId = params.id as string
-  const { activeSeasonId } = useSeason()
+  const { activeSeasonId, activeSeason } = useSeason()
 
   const searchParams = useSearchParams()
   const initialLevel = Number(searchParams.get('level') ?? 0)
@@ -764,6 +764,7 @@ export default function TrackGuideEditorPage() {
                   setup={selectedSetup}
                   carParts={carParts}
                   onClose={() => setShowSetupPreview(false)}
+                  seasonNumber={activeSeason?.season_number}
                 />
               )}
             </div>

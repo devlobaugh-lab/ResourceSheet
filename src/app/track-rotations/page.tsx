@@ -104,6 +104,7 @@ interface RotationSeriesCardProps {
   onSaveSeries: (patch: Partial<Pick<UserRotationSeriesData, 'driver_1_id' | 'driver_2_id'>> | RotationSetupPatch) => void
   onSaveTrack: (position: number, patch: Partial<Pick<UserRotationTrackData, 'boost_id' | 'dry_strategy' | 'wet_strategy'>>) => void
   quickRef?: boolean
+  seasonNumber?: number | null
 }
 
 function RotationSeriesCard({
@@ -119,6 +120,7 @@ function RotationSeriesCard({
   onSaveSeries,
   onSaveTrack,
   quickRef = false,
+  seasonNumber,
 }: RotationSeriesCardProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [showDriverSetup, setShowDriverSetup] = useState(false)
@@ -339,6 +341,7 @@ function RotationSeriesCard({
                   allCarParts={allCarParts}
                   allSetups={allSetups}
                   onSave={(patch) => onSaveSeries(patch)}
+                  seasonNumber={seasonNumber}
                 />
               </div>
             </div>
@@ -529,7 +532,7 @@ export default function TrackRotationsPage() {
   const [viewDate, setViewDate] = useState(today)
   const [quickRef, setQuickRef] = useState(false)
 
-  const { activeSeasonId } = useSeason()
+  const { activeSeasonId, activeSeason } = useSeason()
 
   // Reset to today when the active season changes so we re-derive the best rotation
   useEffect(() => {
@@ -769,6 +772,7 @@ export default function TrackRotationsPage() {
                   onSaveSeries={(patch) => handleSaveSeries(s.series_index, patch)}
                   onSaveTrack={(pos, patch) => handleSaveTrack(s.series_index, pos, patch)}
                   quickRef={quickRef}
+                  seasonNumber={activeSeason?.season_number}
                 />
               ))}
             </div>

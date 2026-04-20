@@ -63,7 +63,8 @@ const getStatBackgroundColor = (value: number, min: number, max: number, median:
 };
 
 function AuthenticatedPartsPage() {
-  const { activeSeasonId } = useSeason()
+  const { activeSeasonId, activeSeason } = useSeason()
+  const isFY26 = (activeSeason?.season_number ?? 0) >= 7
   const { data: carPartsResponse, isLoading: carPartsLoading, error: carPartsError } = useCarParts({
     page: 1,
     limit: 100,
@@ -267,7 +268,8 @@ function AuthenticatedPartsPage() {
       'Rear Wing': 2,   // third
       'Front Wing': 3,  // fourth
       'Suspension': 4,  // fifth
-      'Engine': 5       // sixth
+      'Engine': 5,      // sixth
+      'Battery': 6      // seventh (FY26+)
     };
 
     const getPartTypeName = (type: number | null): string => {
@@ -278,7 +280,8 @@ function AuthenticatedPartsPage() {
         2: 'Engine',
         3: 'Suspension',
         4: 'Front Wing',
-        5: 'Rear Wing'
+        5: 'Rear Wing',
+        6: 'Battery'
       };
       return typeMap[type] || 'Unknown';
     };
@@ -319,8 +322,9 @@ function AuthenticatedPartsPage() {
   // Calculate column statistics for each part type
   const columnStats = useMemo(() => {
     const stats: { [key: string]: { min: number; max: number; median: number } } = {};
-    const partTypes = [0, 1, 2, 3, 4, 5]; // Brakes, Gearbox, Engine, Suspension, Front Wing, Rear Wing
-    const statColumns = ['speed', 'cornering', 'powerUnit', 'qualifying', 'drs', 'pitStopTime', 'total_value'];
+    const partTypes = [0, 1, 2, 3, 4, 5, 6]; // Gearbox, Brakes, Engine, Suspension, Front Wing, Rear Wing, Battery
+    const extraStat = isFY26 ? 'overtake' : 'drs';
+    const statColumns = ['speed', 'cornering', 'powerUnit', 'qualifying', extraStat, 'pitStopTime', 'total_value'];
 
     partTypes.forEach(partType => {
       statColumns.forEach(statName => {
@@ -338,9 +342,14 @@ function AuthenticatedPartsPage() {
 
             let baseValue = 0;
             if (part.stats_per_level && Array.isArray(part.stats_per_level)) {
-              const stats = part.stats_per_level;
-              if (stats && stats.length > userLevel - 1 && stats[userLevel - 1][statName] !== undefined) {
-                baseValue = stats[userLevel - 1][statName];
+              const s = part.stats_per_level;
+              if (s && s.length > userLevel - 1) {
+                if (statName === 'overtake') {
+                  const level = s[userLevel - 1] as Record<string, number>;
+                  baseValue = (level['powerBoostImpact'] || 0) + (level['powerBoostDuration'] || 0) + (level['powerBoostRechargeRate'] || 0);
+                } else if (s[userLevel - 1][statName] !== undefined) {
+                  baseValue = (s[userLevel - 1] as Record<string, number>)[statName];
+                }
               }
             }
 
@@ -378,7 +387,7 @@ function AuthenticatedPartsPage() {
     });
 
     return stats;
-  }, [filteredCarParts, bonusCheckedItems, bonusPercentage]);
+  }, [filteredCarParts, bonusCheckedItems, bonusPercentage, isFY26]);
 
   // Use shared rarity helpers (for rarity 5, prefer collection-driven label)
   const rarityLabel = (item: any) => item.rarity === 5 ? getCollectionRarityDisplay(item.collection_theme ?? null, item.collection_sub_name ?? null) : getRarityDisplay(item.rarity)
@@ -391,7 +400,8 @@ function AuthenticatedPartsPage() {
       'Engine': 2,
       'Suspension': 3,
       'Front Wing': 4,
-      'Rear Wing': 5
+      'Rear Wing': 5,
+      'Battery': 6
     };
     return typeMap[typeName] ?? -1;
   };
@@ -427,7 +437,10 @@ function AuthenticatedPartsPage() {
       cornering: levelStats.cornering || 0,
       powerUnit: levelStats.powerUnit || 0,
       qualifying: levelStats.qualifying || 0,
-      drs: levelStats.drs || 0,
+      drs: (levelStats as Record<string, number>)['drs'] || 0,
+      overtake: ((levelStats as Record<string, number>)['powerBoostImpact'] || 0) +
+                ((levelStats as Record<string, number>)['powerBoostDuration'] || 0) +
+                ((levelStats as Record<string, number>)['powerBoostRechargeRate'] || 0),
       pitStopTime: levelStats.pitStopTime || 0,
     };
   };
@@ -549,7 +562,7 @@ function AuthenticatedPartsPage() {
                           Qualifying
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                          DRS
+                          {isFY26 ? 'Overtake' : 'DRS'}
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                           Pit Stop
@@ -581,8 +594,13 @@ function AuthenticatedPartsPage() {
                           }
 
                           let baseValue = 0;
-                          if (stats && stats.length > userLevel - 1 && stats[userLevel - 1][statName] !== undefined) {
-                            baseValue = stats[userLevel - 1][statName];
+                          if (stats && stats.length > userLevel - 1) {
+                            if (statName === 'overtake') {
+                              const s = stats[userLevel - 1];
+                              baseValue = (s['powerBoostImpact'] || 0) + (s['powerBoostDuration'] || 0) + (s['powerBoostRechargeRate'] || 0);
+                            } else if (stats[userLevel - 1][statName] !== undefined) {
+                              baseValue = stats[userLevel - 1][statName];
+                            }
                           }
 
                           // Apply bonus if item has bonus checked and bonus percentage is set
@@ -603,7 +621,8 @@ function AuthenticatedPartsPage() {
                         const cornering = getStatValue('cornering');
                         const powerUnit = getStatValue('powerUnit');
                         const qualifying = getStatValue('qualifying');
-                        const drs = getStatValue('drs');
+                        const extraStat = isFY26 ? 'overtake' : 'drs';
+                        const drs = getStatValue(extraStat);
                         const pitStopTime = getStatValue('pitStopTime');
                         const totalValue = speed + cornering + powerUnit + qualifying + drs; // Exclude pit stop from total
 
@@ -648,7 +667,7 @@ function AuthenticatedPartsPage() {
                             <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_qualifying`] && getStatBackgroundColor(qualifying, columnStats[`${part.car_part_type}_qualifying`].min, columnStats[`${part.car_part_type}_qualifying`].max, columnStats[`${part.car_part_type}_qualifying`].median))}>
                               <div className="text-sm text-gray-900">{qualifying}</div>
                             </td>
-                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_drs`] && getStatBackgroundColor(drs, columnStats[`${part.car_part_type}_drs`].min, columnStats[`${part.car_part_type}_drs`].max, columnStats[`${part.car_part_type}_drs`].median))}>
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_${extraStat}`] && getStatBackgroundColor(drs, columnStats[`${part.car_part_type}_${extraStat}`].min, columnStats[`${part.car_part_type}_${extraStat}`].max, columnStats[`${part.car_part_type}_${extraStat}`].median))}>
                               <div className="text-sm text-gray-900">{drs}</div>
                             </td>
                             <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_pitStopTime`] && getStatBackgroundColor(pitStopTime, columnStats[`${part.car_part_type}_pitStopTime`].min, columnStats[`${part.car_part_type}_pitStopTime`].max, columnStats[`${part.car_part_type}_pitStopTime`].median, true))}>

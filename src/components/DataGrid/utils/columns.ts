@@ -18,9 +18,9 @@ export const getDriverColumns = (): ColumnDef[] => [
 ];
 
 /**
- * Get columns for parts grid
+ * Get columns for parts grid. seasonNumber >= 7 shows Overtake instead of DRS.
  */
-export const getPartsColumns = (): ColumnDef[] => [
+export const getPartsColumns = (seasonNumber?: number | null): ColumnDef[] => [
   { key: 'name', label: 'Name', sortable: true },
   { key: 'rarity', label: 'Rarity', sortable: true },
   { key: 'user_level', label: 'Level', sortable: true },
@@ -30,7 +30,9 @@ export const getPartsColumns = (): ColumnDef[] => [
   { key: 'cornering', label: 'Cornering', sortable: true },
   { key: 'powerUnit', label: 'Power Unit', sortable: true },
   { key: 'qualifying', label: 'Qualifying', sortable: true },
-  { key: 'drs', label: 'DRS', sortable: true },
+  ...(seasonNumber != null && seasonNumber >= 7
+    ? [{ key: 'overtake', label: 'Overtake', sortable: true } as ColumnDef]
+    : [{ key: 'drs', label: 'DRS', sortable: true } as ColumnDef]),
   { key: 'pitStopTime', label: 'Pit Stop', sortable: true },
   { key: 'total_value', label: 'Total Value', sortable: true },
   { key: 'series', label: 'Series', sortable: true },
@@ -56,7 +58,7 @@ export const getBoostsColumns = (): ColumnDef[] => [
 /**
  * Get columns based on grid type
  */
-export const getColumns = (gridType: GridType, hasActions: boolean): ColumnDef[] => {
+export const getColumns = (gridType: GridType, hasActions: boolean, seasonNumber?: number | null): ColumnDef[] => {
   let columns: ColumnDef[] = [];
 
   switch (gridType) {
@@ -65,7 +67,7 @@ export const getColumns = (gridType: GridType, hasActions: boolean): ColumnDef[]
       break;
     case 'parts':
     case 'car-parts':
-      columns = getPartsColumns();
+      columns = getPartsColumns(seasonNumber);
       break;
     case 'boosts':
       columns = getBoostsColumns();

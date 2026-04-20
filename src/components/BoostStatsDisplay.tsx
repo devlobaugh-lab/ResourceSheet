@@ -33,7 +33,10 @@ const statIcons: Record<string, React.ComponentType<any>> = {
   speed: PiSpeedometerBold,
   corners: PiArrowArcRightBold,
   power_unit: BsLightningChargeFill,
-  pit_stop: BsStopwatch
+  pit_stop: BsStopwatch,
+  power_boost_impact: BsLightningChargeFill,
+  power_boost_duration: BsStopwatch,
+  power_boost_recharge_rate: PiSpeedometerBold,
 }
 
 export function BoostStatsDisplay({ boostStats, className = '' }: BoostStatsDisplayProps) {
@@ -48,6 +51,9 @@ export function BoostStatsDisplay({ boostStats, className = '' }: BoostStatsDisp
     { key: 'corners', label: 'Corners' },
     { key: 'power_unit', label: 'Power Unit' },
     { key: 'pit_stop', label: 'Pit Stop' },
+    { key: 'power_boost_impact', label: 'PB Impact' },
+    { key: 'power_boost_duration', label: 'PB Duration' },
+    { key: 'power_boost_recharge_rate', label: 'PB Recharge' },
   ]
 
   const displayStats = stats

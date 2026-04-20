@@ -15,6 +15,7 @@ const setupSchema = z.object({
   front_wing_id: z.string().uuid().nullable(),
   suspension_id: z.string().uuid().nullable(),
   engine_id: z.string().uuid().nullable(),
+  battery_id: z.string().uuid().nullable().optional(),
   series_filter: z.number().min(1).max(12).default(12),
   bonus_percentage: z.number().min(0).max(100).default(0),
   bonus_part_ids: z.array(z.string().uuid()).default([]),

@@ -28,6 +28,7 @@ export interface Database {
         Row: {
           id: string
           name: string
+          season_number: number | null
           is_active: boolean
           content_cache_loaded: boolean
           start_date: string | null
@@ -38,6 +39,7 @@ export interface Database {
         Insert: {
           id?: string
           name: string
+          season_number?: number | null
           is_active?: boolean
           content_cache_loaded?: boolean
           start_date?: string | null
@@ -48,6 +50,7 @@ export interface Database {
         Update: {
           id?: string
           name?: string
+          season_number?: number | null
           is_active?: boolean
           content_cache_loaded?: boolean
           start_date?: string | null
@@ -746,6 +749,7 @@ export interface Database {
           setup_front_wing_id: string | null
           setup_suspension_id: string | null
           setup_engine_id: string | null
+          setup_battery_id: string | null
           setup_bonus_percentage: number
           setup_series_filter: number
           created_at: string
@@ -764,6 +768,7 @@ export interface Database {
           setup_front_wing_id?: string | null
           setup_suspension_id?: string | null
           setup_engine_id?: string | null
+          setup_battery_id?: string | null
           setup_bonus_percentage?: number
           setup_series_filter?: number
           created_at?: string
@@ -782,6 +787,7 @@ export interface Database {
           setup_front_wing_id?: string | null
           setup_suspension_id?: string | null
           setup_engine_id?: string | null
+          setup_battery_id?: string | null
           setup_bonus_percentage?: number
           setup_series_filter?: number
           created_at?: string
@@ -924,8 +930,11 @@ export interface SeriesData {
   track_ids: string[]
   track_names: string[]
   track_info?: SeriesTrackInfo[]
+  /** @deprecated Removed from FY26 game data; retained for season 6 backward compatibility */
   bot_loadout: Record<string, any> | null
+  /** @deprecated Removed from FY26 game data; retained for season 6 backward compatibility */
   ai_car_loadouts: Record<string, any> | null
+  next_track_rotation_time: string | null
   created_at: string
   updated_at: string
 }
@@ -1041,6 +1050,7 @@ export interface UserCarSetup {
   front_wing_id: string | null
   suspension_id: string | null
   engine_id: string | null
+  battery_id: string | null
   series_filter: number
   bonus_percentage: number
   bonus_part_ids: string[]
@@ -1056,6 +1066,7 @@ export interface UserCarSetupWithParts extends UserCarSetup {
   front_wing?: CarPartView
   suspension?: CarPartView
   engine?: CarPartView
+  battery?: CarPartView
 }
 
 export interface StatLevel {
@@ -1063,10 +1074,13 @@ export interface StatLevel {
   cornering: number
   powerUnit: number
   qualifying: number
-  drs: number
+  drs?: number
   pitStopTime: number
   cardsToUpgrade: number
   softCurrencyToUpgrade: number
+  powerBoostImpact?: number
+  powerBoostDuration?: number
+  powerBoostRechargeRate?: number
 }
 
 // Deprecated types - kept for backward compatibility with old components

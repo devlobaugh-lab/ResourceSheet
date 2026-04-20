@@ -7,6 +7,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { getAuthHeaders } from '@/hooks/useApi'
+import { useSeason } from '@/contexts/SeasonContext'
 import { DriverView, BoostView, UserCarSetup, CarPartView } from '@/types/database'
 import { DriverSelectionGrid } from '@/components/DriverSelectionGrid'
 import { CarPartSelectionGrid } from '@/components/CarPartSelectionGrid'
@@ -163,7 +164,7 @@ function BoostSelectModal({
 function TrackSlotCard({
   slot, guideId, gpLevel, allTracks, allDrivers, allBoosts, allSetups, carParts,
   gpBonusPercentage, gpBonusDriverIds,
-  onUpdate, onImport, importingSlotId,
+  onUpdate, onImport, importingSlotId, seasonNumber,
 }: {
   slot: TrackSlot; guideId: string; gpLevel: number
   allTracks: TrackInfo[]; allDrivers: DriverView[]; allBoosts: BoostView[]
@@ -172,6 +173,7 @@ function TrackSlotCard({
   onUpdate: (slotId: string, patch: Partial<TrackSlot>) => void
   onImport: (slotId: string, trackId: string, isWet: boolean) => void
   importingSlotId: string | null
+  seasonNumber?: number | null
 }) {
   const [expanded, setExpanded] = useState(false)
   const [showSetupPreview, setShowSetupPreview] = useState(false)
@@ -426,6 +428,7 @@ function TrackSlotCard({
                     setup={selectedSetup}
                     carParts={carParts}
                     onClose={() => setShowSetupPreview(false)}
+                    seasonNumber={seasonNumber}
                   />
                 ) : null
               })()}
@@ -509,6 +512,7 @@ export default function GpGuideEditorPage() {
   const params = useParams()
   const router = useRouter()
   const guideId = params.id as string
+  const { activeSeason } = useSeason()
 
   const [guide, setGuide] = useState<GpGuide | null>(null)
   const [allTracks, setAllTracks] = useState<TrackInfo[]>([])
@@ -736,6 +740,7 @@ export default function GpGuideEditorPage() {
     guideId, gpLevel: guide.gp_level, allTracks, allDrivers, allBoosts, allSetups, carParts: allCarParts,
     gpBonusPercentage: guide.bonus_percentage, gpBonusDriverIds: guide.bonus_driver_ids,
     onUpdate: handleSlotUpdate, onImport: handleImport, importingSlotId,
+    seasonNumber: activeSeason?.season_number,
   }
 
   return (

@@ -16,15 +16,8 @@ import { CarPartSelectionGrid } from '@/components/CarPartSelectionGrid'
 import { Pencil, Copy } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 
-// Part type definitions
-const PART_TYPES = [
-  { key: 'brake', type: 1, name: 'Brake', label: 'Brake' },
-  { key: 'gearbox', type: 0, name: 'Gearbox', label: 'Gearbox' },
-  { key: 'rear_wing', type: 5, name: 'Rear Wing', label: 'Rear Wing' },
-  { key: 'front_wing', type: 4, name: 'Front Wing', label: 'Front Wing' },
-  { key: 'suspension', type: 3, name: 'Suspension', label: 'Suspension' },
-  { key: 'engine', type: 2, name: 'Engine', label: 'Engine' }
-] as const
+// Part type keys type (superset — includes battery for S7+)
+type PartKey = 'brake' | 'gearbox' | 'rear_wing' | 'front_wing' | 'suspension' | 'engine' | 'battery'
 
 // Setup types for suggested setups
 const SETUP_TYPES = [
@@ -89,7 +82,8 @@ const createEmptySlot = (): SetupSlot => ({
     rear_wing: '',
     front_wing: '',
     suspension: '',
-    engine: ''
+    engine: '',
+    battery: '',
   },
   bonusParts: new Set(),
   seriesFilter: 12,
@@ -145,7 +139,27 @@ function saveSetupsState(slotA: SetupSlot, slotB: SetupSlot, globalSeriesFilter:
 
 function AuthenticatedSetupsPage() {
   const { addToast } = useToast()
-  const { activeSeasonId } = useSeason()
+  const { activeSeasonId, activeSeason } = useSeason()
+  const isFY26 = (activeSeason?.season_number ?? 0) >= 7
+
+  const PART_TYPES = isFY26
+    ? [
+        { key: 'brake' as const, type: 1, name: 'Brake', label: 'Brake' },
+        { key: 'gearbox' as const, type: 0, name: 'Gearbox', label: 'Gearbox' },
+        { key: 'rear_wing' as const, type: 5, name: 'Rear Wing', label: 'Rear Wing' },
+        { key: 'front_wing' as const, type: 4, name: 'Front Wing', label: 'Front Wing' },
+        { key: 'suspension' as const, type: 3, name: 'Suspension', label: 'Suspension' },
+        { key: 'engine' as const, type: 2, name: 'Engine', label: 'Engine' },
+        { key: 'battery' as const, type: 6, name: 'Battery', label: 'Battery' },
+      ]
+    : [
+        { key: 'brake' as const, type: 1, name: 'Brake', label: 'Brake' },
+        { key: 'gearbox' as const, type: 0, name: 'Gearbox', label: 'Gearbox' },
+        { key: 'rear_wing' as const, type: 5, name: 'Rear Wing', label: 'Rear Wing' },
+        { key: 'front_wing' as const, type: 4, name: 'Front Wing', label: 'Front Wing' },
+        { key: 'suspension' as const, type: 3, name: 'Suspension', label: 'Suspension' },
+        { key: 'engine' as const, type: 2, name: 'Engine', label: 'Engine' },
+      ]
 
   const { data: carPartsResponse, isLoading: partsLoading, error: partsError } = useUserCarParts({
     page: 1,
@@ -227,12 +241,13 @@ function AuthenticatedSetupsPage() {
       powerUnit: 0,
       qualifying: 0,
       drs: 0,
+      overtake: 0,
       pitStopTime: 0
     }
 
     const bonusPct = parseFloat(slot.bonusPercentage) || 0
 
-    PART_TYPES.forEach(({ key, type }) => {
+    PART_TYPES.forEach(({ key }) => {
       const partId = slot.selectedParts[key]
       const part = carPartsResponse?.data?.find(p => p.id === partId)
       const hasBonus = slot.bonusParts.has(partId)
@@ -243,12 +258,17 @@ function AuthenticatedSetupsPage() {
         stats.powerUnit += getStatValue(part, 'powerUnit', bonusPct, hasBonus, false)
         stats.qualifying += getStatValue(part, 'qualifying', bonusPct, hasBonus, false)
         stats.drs += getStatValue(part, 'drs', bonusPct, hasBonus, false)
+        stats.overtake += (
+          getStatValue(part, 'powerBoostImpact', bonusPct, hasBonus, false) +
+          getStatValue(part, 'powerBoostDuration', bonusPct, hasBonus, false) +
+          getStatValue(part, 'powerBoostRechargeRate', bonusPct, hasBonus, false)
+        )
         stats.pitStopTime += getStatValue(part, 'pitStopTime', bonusPct, hasBonus, false)
       }
     })
 
     return stats
-  }, [carPartsResponse?.data])
+  }, [carPartsResponse?.data, PART_TYPES])
 
   // Open part selection modal
   const openPartModal = (partType: number, slotKey: 'A' | 'B') => {
@@ -333,6 +353,7 @@ function AuthenticatedSetupsPage() {
             front_wing_id: slot.selectedParts.front_wing || null,
             suspension_id: slot.selectedParts.suspension || null,
             engine_id: slot.selectedParts.engine || null,
+            battery_id: slot.selectedParts.battery || null,
             series_filter: slot.seriesFilter,
             bonus_percentage: parseFloat(slot.bonusPercentage) || 0,
             bonus_part_ids: Array.from(slot.bonusParts),
@@ -350,6 +371,7 @@ function AuthenticatedSetupsPage() {
           front_wing_id: slot.selectedParts.front_wing || null,
           suspension_id: slot.selectedParts.suspension || null,
           engine_id: slot.selectedParts.engine || null,
+          battery_id: slot.selectedParts.battery || null,
           series_filter: slot.seriesFilter,
           bonus_percentage: parseFloat(slot.bonusPercentage) || 0,
           bonus_part_ids: Array.from(slot.bonusParts),
@@ -378,7 +400,8 @@ function AuthenticatedSetupsPage() {
         rear_wing: setup.rear_wing_id || '',
         front_wing: setup.front_wing_id || '',
         suspension: setup.suspension_id || '',
-        engine: setup.engine_id || ''
+        engine: setup.engine_id || '',
+        battery: setup.battery_id || '',
       },
       bonusParts: new Set(setup.bonus_part_ids || []),
       seriesFilter: setup.series_filter || 12,
@@ -569,8 +592,8 @@ function AuthenticatedSetupsPage() {
           </div>
         </div>
 
-        {/* Parts Display - 3 columns of 2 */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        {/* Parts Display - 4+3 for S7+, 3+3 for S6 */}
+        <div className={`grid ${isFY26 ? 'grid-cols-4' : 'grid-cols-3'} gap-3 mb-4`}>
           {PART_TYPES.map(({ key, type, label }) => {
             const partId = slot.selectedParts[key]
             const part = carPartsResponse?.data?.find(p => p.id === partId)
@@ -627,15 +650,15 @@ function AuthenticatedSetupsPage() {
               <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.qualifying}</div>
             </div>
           </div>
-          {/* Row 3: Avg Pit Stop + DRS */}
+          {/* Row 3: Avg Pit Stop + DRS/Overtake */}
           <div className="grid grid-cols-2 gap-2">
             <div className="grid grid-cols-[3fr_1fr] gap-0">
               <div className="bg-gray-600 text-white text-xs px-2 py-1 rounded-l text-left font-medium">Avg Pit Stop</div>
               <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.pitStopTime.toFixed(2)}s</div>
             </div>
             <div className="grid grid-cols-[3fr_1fr] gap-0">
-              <div className="bg-gray-600 text-white text-xs px-2 py-1 rounded-l text-left font-medium">DRS</div>
-              <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.drs}</div>
+              <div className="bg-gray-600 text-white text-xs px-2 py-1 rounded-l text-left font-medium">{isFY26 ? 'Overtake' : 'DRS'}</div>
+              <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{isFY26 ? totalStats.overtake : totalStats.drs}</div>
             </div>
           </div>
         </div>
@@ -811,6 +834,7 @@ function AuthenticatedSetupsPage() {
                 onBonusToggle={handleBonusToggle}
                 bonusPercentage={modalSlotKey === 'A' ? slotA.bonusPercentage : slotB.bonusPercentage}
                 initialMaxSeries={modalSlotKey === 'A' ? slotA.seriesFilter : slotB.seriesFilter}
+                seasonNumber={activeSeason?.season_number}
               />
             </div>
 

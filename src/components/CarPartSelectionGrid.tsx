@@ -64,6 +64,8 @@ interface CarPartSelectionGridProps {
   initialMaxSeries?: number;
   /** When true, hides the separate Bonus column and makes the leading checkbox the bonus toggle */
   bonusOnlyMode?: boolean;
+  /** Season number — if >= 7, shows Overtake instead of DRS and powerboost columns for Battery parts */
+  seasonNumber?: number | null;
 }
 
 export function CarPartSelectionGrid({
@@ -76,7 +78,10 @@ export function CarPartSelectionGrid({
   bonusPercentage,
   initialMaxSeries = 12,
   bonusOnlyMode = false,
+  seasonNumber = null,
 }: CarPartSelectionGridProps) {
+  const isFY26 = (seasonNumber ?? 0) >= 7;
+  const isBattery = partType === 6;
   const [searchTerm, setSearchTerm] = useState('');
   const [localMaxSeries, setLocalMaxSeries] = useState(initialMaxSeries);
   const [showHighestLevel, setShowHighestLevel] = useState(false);
@@ -107,7 +112,13 @@ export function CarPartSelectionGrid({
     const stats = part.stats_per_level;
     if (stats.length < userLevel) return 0;
 
-    let baseValue = stats[userLevel - 1][statName] || 0;
+    let baseValue = 0;
+    if (statName === 'overtake') {
+      const s = stats[userLevel - 1] as Record<string, number>;
+      baseValue = (s['powerBoostImpact'] || 0) + (s['powerBoostDuration'] || 0) + (s['powerBoostRechargeRate'] || 0);
+    } else {
+      baseValue = (stats[userLevel - 1] as Record<string, number>)[statName] || 0;
+    }
 
     const bonusPct = parseFloat(bonusPercentage) || 0;
     if (bonusCheckedItems.has(part.id) && bonusPct > 0) {
@@ -127,13 +138,15 @@ export function CarPartSelectionGrid({
       getStatValue(part, 'cornering') +
       getStatValue(part, 'powerUnit') +
       getStatValue(part, 'qualifying') +
-      getStatValue(part, 'drs')
+      getStatValue(part, isFY26 ? 'overtake' : 'drs')
     );
-  }, [getStatValue]);
+  }, [getStatValue, isFY26]);
 
   // Calculate column stats for color coding
   const columnStats = useMemo(() => {
-    const statNames = ['speed', 'cornering', 'powerUnit', 'qualifying', 'drs', 'pitStopTime'];
+    const extraStat = isFY26 ? 'overtake' : 'drs';
+    const batteryStats = isFY26 && isBattery ? ['powerBoostImpact', 'powerBoostDuration', 'powerBoostRechargeRate'] : [];
+    const statNames = ['speed', 'cornering', 'powerUnit', 'qualifying', extraStat, 'pitStopTime', ...batteryStats];
     const result: Record<string, { min: number; max: number; median: number }> = {};
 
     statNames.forEach(statName => {
@@ -168,7 +181,7 @@ export function CarPartSelectionGrid({
     }
 
     return result;
-  }, [partsForType, getStatValue, getTotalValue]);
+  }, [partsForType, getStatValue, getTotalValue, isFY26, isBattery]);
 
   // Sorted parts
   const sortedParts = useMemo(() => {
@@ -210,7 +223,16 @@ export function CarPartSelectionGrid({
     { key: 'cornering', label: 'Cornering' },
     { key: 'powerUnit', label: 'Power Unit' },
     { key: 'qualifying', label: 'Qualifying' },
-    { key: 'drs', label: 'DRS' },
+    ...(isFY26
+      ? [{ key: 'overtake', label: 'Overtake' }]
+      : [{ key: 'drs', label: 'DRS' }]),
+    ...(isFY26 && isBattery
+      ? [
+          { key: 'powerBoostImpact', label: 'PB Impact' },
+          { key: 'powerBoostDuration', label: 'PB Duration' },
+          { key: 'powerBoostRechargeRate', label: 'PB Recharge' },
+        ]
+      : []),
     { key: 'pitStopTime', label: 'Pit Stop' },
     { key: 'totalValue', label: 'Total Value' },
     { key: 'series', label: 'Series' },
@@ -283,7 +305,8 @@ export function CarPartSelectionGrid({
               const cornering = getStatValue(part, 'cornering');
               const powerUnit = getStatValue(part, 'powerUnit');
               const qualifying = getStatValue(part, 'qualifying');
-              const drs = getStatValue(part, 'drs');
+              const extraStatKey = isFY26 ? 'overtake' : 'drs';
+              const drs = getStatValue(part, extraStatKey);
               const pitStopTime = getStatValue(part, 'pitStopTime');
               const totalValue = getTotalValue(part);
               const effectiveLevel = showHighestLevel
@@ -367,9 +390,21 @@ export function CarPartSelectionGrid({
                   <td className={cn('px-3 py-1 whitespace-nowrap text-center', columnStats['qualifying'] && getStatBackgroundColor(qualifying, columnStats['qualifying'].min, columnStats['qualifying'].max, columnStats['qualifying'].median))}>
                     <span className="text-sm text-gray-900">{qualifying || ''}</span>
                   </td>
-                  <td className={cn('px-3 py-1 whitespace-nowrap text-center', columnStats['drs'] && getStatBackgroundColor(drs, columnStats['drs'].min, columnStats['drs'].max, columnStats['drs'].median))}>
+                  <td className={cn('px-3 py-1 whitespace-nowrap text-center', columnStats[extraStatKey] && getStatBackgroundColor(drs, columnStats[extraStatKey].min, columnStats[extraStatKey].max, columnStats[extraStatKey].median))}>
                     <span className="text-sm text-gray-900">{drs || ''}</span>
                   </td>
+                  {isFY26 && isBattery && (
+                    <>
+                      {(['powerBoostImpact', 'powerBoostDuration', 'powerBoostRechargeRate'] as const).map(key => {
+                        const val = getStatValue(part, key);
+                        return (
+                          <td key={key} className={cn('px-3 py-1 whitespace-nowrap text-center', columnStats[key] && getStatBackgroundColor(val, columnStats[key].min, columnStats[key].max, columnStats[key].median))}>
+                            <span className="text-sm text-gray-900">{val || ''}</span>
+                          </td>
+                        );
+                      })}
+                    </>
+                  )}
                   <td className={cn('px-3 py-1 whitespace-nowrap text-center', columnStats['pitStopTime'] && getStatBackgroundColor(pitStopTime, columnStats['pitStopTime'].min, columnStats['pitStopTime'].max, columnStats['pitStopTime'].median, true))}>
                     <span className="text-sm text-gray-900">{pitStopTime > 0 ? pitStopTime.toFixed(2) : ''}</span>
                   </td>

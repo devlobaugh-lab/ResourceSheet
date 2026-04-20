@@ -219,6 +219,7 @@ export async function GET(request: NextRequest) {
         max_flags: series.max_flags,
         bot_loadout: series.bot_loadout,
         ai_car_loadouts: series.ai_car_loadouts,
+        next_track_rotation_time: series.next_track_rotation_time,
         created_at: series.created_at,
         updated_at: series.updated_at,
         track_names: series.track_names,
