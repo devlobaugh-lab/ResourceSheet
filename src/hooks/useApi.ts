@@ -795,6 +795,30 @@ export function useDeleteRotationScheduleEntry() {
   })
 }
 
+// Admin: generate 26 schedule entries for a season
+export function useGenerateSeasonSchedule() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ season_id, start_date }: { season_id: string; start_date: string }) => {
+      const response = await fetch(`${API_BASE}/admin/track-rotations/schedule/generate`, {
+        method: 'POST',
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify({ season_id, start_date }),
+      })
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? 'Failed to generate schedule')
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-rotation-schedule'] })
+      queryClient.invalidateQueries({ queryKey: ['track-rotation-schedule'] })
+    },
+  })
+}
+
 // Fetch series data with track information
 export function useSeries(filters?: { season_id?: string }) {
   return useQuery({
