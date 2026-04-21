@@ -465,6 +465,9 @@ export function DataGrid({
         case 'speed':
         case 'pit_stop':
         case 'race_start':
+        case 'power_boost_impact':
+        case 'power_boost_duration':
+        case 'power_boost_recharge_rate':
           comparison = getBoostTierValueForSort(a, filters.sortBy) - getBoostTierValueForSort(b, filters.sortBy);
           break;
         // Boost free status column
@@ -596,6 +599,9 @@ export function DataGrid({
         { key: 'corners', label: 'Corners', sortable: true },
         { key: 'power_unit', label: 'Power Unit', sortable: true },
         { key: 'pit_stop', label: 'Pit Stop', sortable: true },
+        { key: 'power_boost_impact', label: 'PB Impact', sortable: true },
+        { key: 'power_boost_duration', label: 'PB Duration', sortable: true },
+        { key: 'power_boost_recharge_rate', label: 'PB Recharge', sortable: true },
         // Removed DRS tier column as requested
       );
     }
@@ -1245,6 +1251,21 @@ export function DataGrid({
                       <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('pit_stop') > 0 && getBoostValueColor(getBoostTierValue('pit_stop')))}>
                         <div className="text-sm font-medium">
                           {getBoostTierValue('pit_stop') * 5 || ''}
+                        </div>
+                      </td>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('power_boost_impact') > 0 && getBoostValueColor(getBoostTierValue('power_boost_impact')))}>
+                        <div className="text-sm font-medium">
+                          {getBoostTierValue('power_boost_impact') * 5 || ''}
+                        </div>
+                      </td>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('power_boost_duration') > 0 && getBoostValueColor(getBoostTierValue('power_boost_duration')))}>
+                        <div className="text-sm font-medium">
+                          {getBoostTierValue('power_boost_duration') * 5 || ''}
+                        </div>
+                      </td>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('power_boost_recharge_rate') > 0 && getBoostValueColor(getBoostTierValue('power_boost_recharge_rate')))}>
+                        <div className="text-sm font-medium">
+                          {getBoostTierValue('power_boost_recharge_rate') * 5 || ''}
                         </div>
                       </td>
                     </>

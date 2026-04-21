@@ -324,7 +324,7 @@ function AuthenticatedPartsPage() {
     const stats: { [key: string]: { min: number; max: number; median: number } } = {};
     const partTypes = [0, 1, 2, 3, 4, 5, 6]; // Gearbox, Brakes, Engine, Suspension, Front Wing, Rear Wing, Battery
     const extraStat = isFY26 ? 'overtake' : 'drs';
-    const statColumns = ['speed', 'cornering', 'powerUnit', 'qualifying', extraStat, 'pitStopTime', 'total_value'];
+    const statColumns = ['speed', 'cornering', 'powerUnit', 'qualifying', extraStat, 'powerBoostImpact', 'powerBoostDuration', 'powerBoostRechargeRate', 'pitStopTime', 'total_value'];
 
     partTypes.forEach(partType => {
       statColumns.forEach(statName => {
@@ -432,15 +432,17 @@ function AuthenticatedPartsPage() {
     if (!stats || !Array.isArray(stats) || stats.length < level) return null;
 
     const levelStats = stats[level - 1];
+    const ls = levelStats as Record<string, number>;
     return {
       speed: levelStats.speed || 0,
       cornering: levelStats.cornering || 0,
       powerUnit: levelStats.powerUnit || 0,
       qualifying: levelStats.qualifying || 0,
-      drs: (levelStats as Record<string, number>)['drs'] || 0,
-      overtake: ((levelStats as Record<string, number>)['powerBoostImpact'] || 0) +
-                ((levelStats as Record<string, number>)['powerBoostDuration'] || 0) +
-                ((levelStats as Record<string, number>)['powerBoostRechargeRate'] || 0),
+      drs: ls['drs'] || 0,
+      powerBoostImpact: ls['powerBoostImpact'] || 0,
+      powerBoostDuration: ls['powerBoostDuration'] || 0,
+      powerBoostRechargeRate: ls['powerBoostRechargeRate'] || 0,
+      overtake: (ls['powerBoostImpact'] || 0) + (ls['powerBoostDuration'] || 0) + (ls['powerBoostRechargeRate'] || 0),
       pitStopTime: levelStats.pitStopTime || 0,
     };
   };
@@ -544,7 +546,7 @@ function AuthenticatedPartsPage() {
                           Rarity
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                          Level
+                          Lvl
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                           Bonus
@@ -553,17 +555,30 @@ function AuthenticatedPartsPage() {
                           Speed
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                          Cornering
+                          Corner
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                          Power Unit
+                          PU
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                          Qualifying
+                          Quali
                         </th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                          {isFY26 ? 'Overtake' : 'DRS'}
-                        </th>
+                        {partType === 'Battery' && (
+                          <>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              PB Impact
+                            </th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              PB Length
+                            </th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              PB Charge
+                            </th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              Over take
+                            </th>
+                          </>
+                        )}
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                           Pit Stop
                         </th>
@@ -621,10 +636,13 @@ function AuthenticatedPartsPage() {
                         const cornering = getStatValue('cornering');
                         const powerUnit = getStatValue('powerUnit');
                         const qualifying = getStatValue('qualifying');
-                        const extraStat = isFY26 ? 'overtake' : 'drs';
-                        const drs = getStatValue(extraStat);
+                        const isBattery = partType === 'Battery';
+                        const powerBoostImpact = isBattery ? getStatValue('powerBoostImpact') : 0;
+                        const powerBoostDuration = isBattery ? getStatValue('powerBoostDuration') : 0;
+                        const powerBoostRechargeRate = isBattery ? getStatValue('powerBoostRechargeRate') : 0;
+                        const overtake = isBattery ? getStatValue('overtake') : 0;
                         const pitStopTime = getStatValue('pitStopTime');
-                        const totalValue = speed + cornering + powerUnit + qualifying + drs; // Exclude pit stop from total
+                        const totalValue = speed + cornering + powerUnit + qualifying + (isBattery ? overtake : 0); // Exclude pit stop from total
 
                         return (
                           <tr key={part.id} className="hover:bg-gray-50 transition-colors">
@@ -667,9 +685,22 @@ function AuthenticatedPartsPage() {
                             <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_qualifying`] && getStatBackgroundColor(qualifying, columnStats[`${part.car_part_type}_qualifying`].min, columnStats[`${part.car_part_type}_qualifying`].max, columnStats[`${part.car_part_type}_qualifying`].median))}>
                               <div className="text-sm text-gray-900">{qualifying}</div>
                             </td>
-                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_${extraStat}`] && getStatBackgroundColor(drs, columnStats[`${part.car_part_type}_${extraStat}`].min, columnStats[`${part.car_part_type}_${extraStat}`].max, columnStats[`${part.car_part_type}_${extraStat}`].median))}>
-                              <div className="text-sm text-gray-900">{drs}</div>
-                            </td>
+                            {isBattery && (
+                              <>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_powerBoostImpact`] && getStatBackgroundColor(powerBoostImpact, columnStats[`${part.car_part_type}_powerBoostImpact`].min, columnStats[`${part.car_part_type}_powerBoostImpact`].max, columnStats[`${part.car_part_type}_powerBoostImpact`].median))}>
+                                  <div className="text-sm text-gray-900">{powerBoostImpact}</div>
+                                </td>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_powerBoostDuration`] && getStatBackgroundColor(powerBoostDuration, columnStats[`${part.car_part_type}_powerBoostDuration`].min, columnStats[`${part.car_part_type}_powerBoostDuration`].max, columnStats[`${part.car_part_type}_powerBoostDuration`].median))}>
+                                  <div className="text-sm text-gray-900">{powerBoostDuration}</div>
+                                </td>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_powerBoostRechargeRate`] && getStatBackgroundColor(powerBoostRechargeRate, columnStats[`${part.car_part_type}_powerBoostRechargeRate`].min, columnStats[`${part.car_part_type}_powerBoostRechargeRate`].max, columnStats[`${part.car_part_type}_powerBoostRechargeRate`].median))}>
+                                  <div className="text-sm text-gray-900">{powerBoostRechargeRate}</div>
+                                </td>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_overtake`] && getStatBackgroundColor(overtake, columnStats[`${part.car_part_type}_overtake`].min, columnStats[`${part.car_part_type}_overtake`].max, columnStats[`${part.car_part_type}_overtake`].median))}>
+                                  <div className="text-sm text-gray-900">{overtake}</div>
+                                </td>
+                              </>
+                            )}
                             <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_pitStopTime`] && getStatBackgroundColor(pitStopTime, columnStats[`${part.car_part_type}_pitStopTime`].min, columnStats[`${part.car_part_type}_pitStopTime`].max, columnStats[`${part.car_part_type}_pitStopTime`].median, true))}>
                               <div className="text-sm text-gray-900">{pitStopTime}</div>
                             </td>
@@ -703,14 +734,19 @@ function AuthenticatedPartsPage() {
                         const theoreticalBonusId = `theoretical-${partTypeNum}-${index}`;
 
                         // Apply bonus to theoretical part stats if checked
-                        const stats = rawStats && bonusCheckedItems.has(theoreticalBonusId) && parseFloat(bonusPercentage) > 0
+                        const bonusMult = bonusCheckedItems.has(theoreticalBonusId) && parseFloat(bonusPercentage) > 0 ? parseFloat(bonusPercentage) / 100 : 0;
+                        const stats = rawStats && bonusMult > 0
                           ? {
-                              speed: Math.ceil(rawStats.speed * (1 + parseFloat(bonusPercentage) / 100)),
-                              cornering: Math.ceil(rawStats.cornering * (1 + parseFloat(bonusPercentage) / 100)),
-                              powerUnit: Math.ceil(rawStats.powerUnit * (1 + parseFloat(bonusPercentage) / 100)),
-                              qualifying: Math.ceil(rawStats.qualifying * (1 + parseFloat(bonusPercentage) / 100)),
-                              drs: Math.ceil(rawStats.drs * (1 + parseFloat(bonusPercentage) / 100)),
-                              pitStopTime: Math.round((rawStats.pitStopTime * (1 - parseFloat(bonusPercentage) / 100)) * 100) / 100,
+                              speed: Math.ceil(rawStats.speed * (1 + bonusMult)),
+                              cornering: Math.ceil(rawStats.cornering * (1 + bonusMult)),
+                              powerUnit: Math.ceil(rawStats.powerUnit * (1 + bonusMult)),
+                              qualifying: Math.ceil(rawStats.qualifying * (1 + bonusMult)),
+                              drs: Math.ceil(rawStats.drs * (1 + bonusMult)),
+                              powerBoostImpact: Math.ceil(rawStats.powerBoostImpact * (1 + bonusMult)),
+                              powerBoostDuration: Math.ceil(rawStats.powerBoostDuration * (1 + bonusMult)),
+                              powerBoostRechargeRate: Math.ceil(rawStats.powerBoostRechargeRate * (1 + bonusMult)),
+                              overtake: Math.ceil(rawStats.overtake * (1 + bonusMult)),
+                              pitStopTime: Math.round((rawStats.pitStopTime * (1 - bonusMult)) * 100) / 100,
                             }
                           : rawStats;
 
@@ -782,15 +818,28 @@ function AuthenticatedPartsPage() {
                             <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_qualifying`] && getStatBackgroundColor(stats.qualifying, columnStats[`${partTypeNum}_qualifying`].min, columnStats[`${partTypeNum}_qualifying`].max, columnStats[`${partTypeNum}_qualifying`].median))}>
                               <div className="text-sm text-gray-900">{stats?.qualifying ?? '-'}</div>
                             </td>
-                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_drs`] && getStatBackgroundColor(stats.drs, columnStats[`${partTypeNum}_drs`].min, columnStats[`${partTypeNum}_drs`].max, columnStats[`${partTypeNum}_drs`].median))}>
-                              <div className="text-sm text-gray-900">{stats?.drs ?? '-'}</div>
-                            </td>
+                            {partType === 'Battery' && (
+                              <>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_powerBoostImpact`] && getStatBackgroundColor(stats.powerBoostImpact, columnStats[`${partTypeNum}_powerBoostImpact`].min, columnStats[`${partTypeNum}_powerBoostImpact`].max, columnStats[`${partTypeNum}_powerBoostImpact`].median))}>
+                                  <div className="text-sm text-gray-900">{stats?.powerBoostImpact ?? '-'}</div>
+                                </td>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_powerBoostDuration`] && getStatBackgroundColor(stats.powerBoostDuration, columnStats[`${partTypeNum}_powerBoostDuration`].min, columnStats[`${partTypeNum}_powerBoostDuration`].max, columnStats[`${partTypeNum}_powerBoostDuration`].median))}>
+                                  <div className="text-sm text-gray-900">{stats?.powerBoostDuration ?? '-'}</div>
+                                </td>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_powerBoostRechargeRate`] && getStatBackgroundColor(stats.powerBoostRechargeRate, columnStats[`${partTypeNum}_powerBoostRechargeRate`].min, columnStats[`${partTypeNum}_powerBoostRechargeRate`].max, columnStats[`${partTypeNum}_powerBoostRechargeRate`].median))}>
+                                  <div className="text-sm text-gray-900">{stats?.powerBoostRechargeRate ?? '-'}</div>
+                                </td>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_overtake`] && getStatBackgroundColor(stats.overtake, columnStats[`${partTypeNum}_overtake`].min, columnStats[`${partTypeNum}_overtake`].max, columnStats[`${partTypeNum}_overtake`].median))}>
+                                  <div className="text-sm text-gray-900">{stats?.overtake ?? '-'}</div>
+                                </td>
+                              </>
+                            )}
                             <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_pitStopTime`] && getStatBackgroundColor(stats.pitStopTime, columnStats[`${partTypeNum}_pitStopTime`].min, columnStats[`${partTypeNum}_pitStopTime`].max, columnStats[`${partTypeNum}_pitStopTime`].median, true))}>
                               <div className="text-sm text-gray-900">{stats?.pitStopTime ?? '-'}</div>
                             </td>
-                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_total_value`] && getStatBackgroundColor(stats.speed + stats.cornering + stats.powerUnit + stats.qualifying + stats.drs, columnStats[`${partTypeNum}_total_value`].min, columnStats[`${partTypeNum}_total_value`].max, columnStats[`${partTypeNum}_total_value`].median))}>
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_total_value`] && getStatBackgroundColor(stats.speed + stats.cornering + stats.powerUnit + stats.qualifying + (partType === 'Battery' ? stats.overtake : 0), columnStats[`${partTypeNum}_total_value`].min, columnStats[`${partTypeNum}_total_value`].max, columnStats[`${partTypeNum}_total_value`].median))}>
                               <div className="text-sm font-medium text-gray-900">
-                                {stats ? stats.speed + stats.cornering + stats.powerUnit + stats.qualifying + stats.drs : '-'}
+                                {stats ? stats.speed + stats.cornering + stats.powerUnit + stats.qualifying + (partType === 'Battery' ? stats.overtake : 0) : '-'}
                               </div>
                             </td>
                             <td className="px-3 py-1 whitespace-nowrap text-center bg-gray-200">
