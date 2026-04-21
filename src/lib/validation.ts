@@ -94,6 +94,8 @@ export const createSeasonSchema = z.object({
 
 export const updateSeasonSchema = z.object({
   name: z.string().min(1).optional(),
+  season_number: z.number().int().positive().optional(),
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD').optional(),
   is_active: z.boolean().optional(),
   content_cache_loaded: z.boolean().optional(),
   activated_at: z.string().optional(),
