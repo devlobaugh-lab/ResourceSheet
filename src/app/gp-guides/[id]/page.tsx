@@ -113,7 +113,7 @@ function BoostSelectModal({
           <table className="w-full divide-y divide-gray-200">
             <thead className="bg-gray-700 sticky top-0 z-10">
               <tr>
-                {['Name','Amount','Overtake','Defend','Race Start','Tyre Use','Speed','Corners','Power Unit','Pit Stop'].map(h => (
+                {['Name','Amount','Overtake','Defend','Race Start','Tyre Use','Speed','Corner','PU','Pit Stop'].map(h => (
                   <th key={h} scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                     <div className="flex items-center">{h}</div>
                   </th>
@@ -923,7 +923,7 @@ export default function GpGuideEditorPage() {
 
               <Card className="p-4 mt-6">
                 <h2 className="text-base font-semibold text-gray-900 mb-1">Race Results Notes</h2>
-                <p className="text-xs text-gray-500 mb-3">Notes per track — record Quali position, PvP/bot, boosts used, final result, safety car, etc.</p>
+                <p className="text-xs text-gray-500 mb-3">Notes per track — record Qualify position, PvP/bot, boosts used, final result, safety car, etc.</p>
                 {uniqueTracksForResults().length === 0 ? (
                   <p className="text-sm text-gray-400 italic">No tracks assigned yet.</p>
                 ) : (

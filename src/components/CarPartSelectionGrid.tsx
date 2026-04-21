@@ -145,7 +145,7 @@ export function CarPartSelectionGrid({
   // Calculate column stats for color coding
   const columnStats = useMemo(() => {
     const extraStat = isFY26 ? 'overtake' : 'drs';
-    const batteryStats = [];
+    const batteryStats: string[] = [];
     const statNames = ['speed', 'cornering', 'powerUnit', 'qualifying', extraStat, 'pitStopTime', ...batteryStats];
     const result: Record<string, { min: number; max: number; median: number }> = {};
 
@@ -217,17 +217,17 @@ export function CarPartSelectionGrid({
   const columns = [
     { key: 'name', label: 'Name' },
     { key: 'rarity', label: 'Rarity' },
-    { key: 'level', label: 'Level' },
+    { key: 'level', label: 'Lvl' },
     ...(!bonusOnlyMode ? [{ key: 'bonus', label: 'Bonus', sortable: false }] : []),
     { key: 'speed', label: 'Speed' },
-    { key: 'cornering', label: 'Cornering' },
-    { key: 'powerUnit', label: 'Power Unit' },
-    { key: 'qualifying', label: 'Qualifying' },
+    { key: 'cornering', label: 'Corner' },
+    { key: 'powerUnit', label: 'PU' },
+    { key: 'qualifying', label: 'fy' },
     ...(isFY26
       ? [{ key: 'overtake', label: 'Overtake' }]
       : [{ key: 'drs', label: 'DRS' }]),
     { key: 'pitStopTime', label: 'Pit Stop' },
-    { key: 'totalValue', label: 'Total Value' },
+    { key: 'totalValue', label: 'Total' },
     { key: 'series', label: 'Series' },
   ];
 

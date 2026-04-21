@@ -21,8 +21,8 @@ const PART_TYPES = [
 // Setup types for max loadouts
 const SETUP_TYPES = [
   { value: 'speed', label: 'Speed' },
-  { value: 'cornering', label: 'Cornering' },
-  { value: 'powerUnit', label: 'Power Unit' },
+  { value: 'cornering', label: 'Corner' },
+  { value: 'powerUnit', label: 'PU' },
 ]
 
 // Get stat value from a part at max level

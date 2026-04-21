@@ -257,14 +257,14 @@ export function RotationSetupCard({
       <div className="space-y-1.5">
         <div className="grid grid-cols-2 gap-1.5">
           <StatRow label="Speed" value={totalStats.speed} />
-          <StatRow label="Power Unit" value={totalStats.powerUnit} />
+          <StatRow label="PU" value={totalStats.powerUnit} />
         </div>
         <div className="grid grid-cols-2 gap-1.5">
-          <StatRow label="Cornering" value={totalStats.cornering} />
-          <StatRow label="Qualifying" value={totalStats.qualifying} />
+          <StatRow label="Corner" value={totalStats.cornering} />
+          <StatRow label="Qualify" value={totalStats.qualifying} />
         </div>
         <div className="grid grid-cols-2 gap-1.5">
-          <StatRow label="Avg Pit Stop" value={`${totalStats.pitStopTime.toFixed(2)}s`} />
+          <StatRow label="Pit Stop" value={`${totalStats.pitStopTime.toFixed(2)}s`} />
           <StatRow label={isFY26 ? 'Overtake' : 'DRS'} value={isFY26 ? totalStats.overtake : totalStats.drs} />
         </div>
       </div>

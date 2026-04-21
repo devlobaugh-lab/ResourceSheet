@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, Fragment } from 'react'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -561,7 +561,7 @@ function AuthenticatedPartsPage() {
                           PU
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                          Quali
+                          Qualify
                         </th>
                         {partType === 'Battery' && (
                           <>
@@ -574,7 +574,7 @@ function AuthenticatedPartsPage() {
                           Pit Stop
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                          Total Value
+                          Total
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                           Series
@@ -636,8 +636,8 @@ function AuthenticatedPartsPage() {
                         const totalValue = speed + cornering + powerUnit + qualifying + (isBattery ? overtake : 0); // Exclude pit stop from total
 
                         return (
-                          <>
-                            <tr key={part.id} className="hover:bg-gray-50 transition-colors">
+                          <Fragment key={part.id}>
+                            <tr className="hover:bg-gray-50 transition-colors">
                               <td className={cn("px-3 py-1 whitespace-nowrap", getRarityBackground(part.rarity))}>
                                 <div className="flex items-center">
                                   <div className="text-sm font-medium text-gray-900">
@@ -701,7 +701,7 @@ function AuthenticatedPartsPage() {
                                 </td>
                               </tr>
                             )}
-                          </>
+                          </Fragment>
                         );
                       })}
 

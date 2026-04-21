@@ -8,12 +8,12 @@ export const getDriverColumns = (): ColumnDef[] => [
   { key: 'rarity', label: 'Rarity', sortable: true },
   { key: 'user_level', label: 'Level', sortable: true },
   { key: 'bonus', label: 'Bonus', sortable: false },
-  { key: 'overtaking', label: 'Overtaking', sortable: true },
-  { key: 'blocking', label: 'Defending', sortable: true },
-  { key: 'qualifying', label: 'Qualifying', sortable: true },
+  { key: 'overtaking', label: 'Overtake', sortable: true },
+  { key: 'blocking', label: 'Defend', sortable: true },
+  { key: 'qualifying', label: 'Qualify', sortable: true },
   { key: 'raceStart', label: 'Race Start', sortable: true },
   { key: 'tyreUse', label: 'Tyre Use', sortable: true },
-  { key: 'total_value', label: 'Total Value', sortable: true },
+  { key: 'total_value', label: 'Total', sortable: true },
   { key: 'series', label: 'Series', sortable: true },
 ];
 
@@ -27,14 +27,14 @@ export const getPartsColumns = (seasonNumber?: number | null): ColumnDef[] => [
   { key: 'bonus', label: 'Bonus', sortable: false },
   { key: 'car_part_type', label: 'Part Type', sortable: false },
   { key: 'speed', label: 'Speed', sortable: true },
-  { key: 'cornering', label: 'Cornering', sortable: true },
-  { key: 'powerUnit', label: 'Power Unit', sortable: true },
-  { key: 'qualifying', label: 'Qualifying', sortable: true },
+  { key: 'cornering', label: 'Corner', sortable: true },
+  { key: 'powerUnit', label: 'PU', sortable: true },
+  { key: 'qualifying', label: 'Qualify', sortable: true },
   ...(seasonNumber != null && seasonNumber >= 7
     ? [{ key: 'overtake', label: 'Overtake', sortable: true } as ColumnDef]
     : [{ key: 'drs', label: 'DRS', sortable: true } as ColumnDef]),
   { key: 'pitStopTime', label: 'Pit Stop', sortable: true },
-  { key: 'total_value', label: 'Total Value', sortable: true },
+  { key: 'total_value', label: 'Total', sortable: true },
   { key: 'series', label: 'Series', sortable: true },
 ];
 
@@ -50,8 +50,8 @@ export const getBoostsColumns = (): ColumnDef[] => [
   { key: 'race_start', label: 'Race Start', sortable: true },
   { key: 'tyre_use', label: 'Tyre Use', sortable: true },
   { key: 'speed', label: 'Speed', sortable: true },
-  { key: 'corners', label: 'Corners', sortable: true },
-  { key: 'power_unit', label: 'Power Unit', sortable: true },
+  { key: 'corners', label: 'Corner', sortable: true },
+  { key: 'power_unit', label: 'PU', sortable: true },
   { key: 'pit_stop', label: 'Pit Stop', sortable: true },
 ];
 

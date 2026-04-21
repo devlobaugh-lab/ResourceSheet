@@ -161,23 +161,23 @@ export function SetupPreviewPanel({ setup, carParts, onClose, seasonNumber }: Se
             <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.speed}</div>
           </div>
           <div className="grid grid-cols-[3fr_1fr] gap-0">
-            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Power Unit</div>
+            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">PU</div>
             <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.powerUnit}</div>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="grid grid-cols-[3fr_1fr] gap-0">
-            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Cornering</div>
+            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Corner</div>
             <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.cornering}</div>
           </div>
           <div className="grid grid-cols-[3fr_1fr] gap-0">
-            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Qualifying</div>
+            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Qualify</div>
             <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.qualifying}</div>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="grid grid-cols-[3fr_1fr] gap-0">
-            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Avg Pit Stop</div>
+            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Pit Stop</div>
             <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.pitStopTime.toFixed(2)}s</div>
           </div>
           <div className="grid grid-cols-[3fr_1fr] gap-0">

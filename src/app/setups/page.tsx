@@ -22,13 +22,13 @@ type PartKey = 'brake' | 'gearbox' | 'rear_wing' | 'front_wing' | 'suspension' |
 // Setup types for suggested setups
 const SETUP_TYPES = [
   { value: 'speed', label: 'Speed' },
-  { value: 'cornering', label: 'Cornering' },
-  { value: 'powerUnit', label: 'Power Unit' },
+  { value: 'cornering', label: 'Corner' },
+  { value: 'powerUnit', label: 'PU' },
   { value: 'speed_quali', label: 'Speed + Quali' },
-  { value: 'cornering_quali', label: 'Cornering + Quali' },
+  { value: 'cornering_quali', label: 'Corner + Quali' },
   { value: 'pu_quali', label: 'PU + Quali' },
-  { value: 'speed_cornering', label: 'Speed + Cornering' },
-  { value: 'speed_cornering_quali', label: 'Speed + Cornering + Quali' },
+  { value: 'speed_cornering', label: 'Speed + Corner' },
+  { value: 'speed_cornering_quali', label: 'Speed + Corner + Quali' },
 ]
 
 // Helper function to calculate stat value with bonus
@@ -635,25 +635,25 @@ function AuthenticatedSetupsPage() {
               <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.speed}</div>
             </div>
             <div className="grid grid-cols-[3fr_1fr] gap-0">
-              <div className="bg-gray-600 text-white text-xs px-2 py-1 rounded-l text-left font-medium">Power Unit</div>
+              <div className="bg-gray-600 text-white text-xs px-2 py-1 rounded-l text-left font-medium">PU</div>
               <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.powerUnit}</div>
             </div>
           </div>
           {/* Row 2: Cornering + Qualifying */}
           <div className="grid grid-cols-2 gap-2">
             <div className="grid grid-cols-[3fr_1fr] gap-0">
-              <div className="bg-gray-600 text-white text-xs px-2 py-1 rounded-l text-left font-medium">Cornering</div>
+              <div className="bg-gray-600 text-white text-xs px-2 py-1 rounded-l text-left font-medium">Corner</div>
               <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.cornering}</div>
             </div>
             <div className="grid grid-cols-[3fr_1fr] gap-0">
-              <div className="bg-gray-600 text-white text-xs px-2 py-1 rounded-l text-left font-medium">Qualifying</div>
+              <div className="bg-gray-600 text-white text-xs px-2 py-1 rounded-l text-left font-medium">Qualify</div>
               <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.qualifying}</div>
             </div>
           </div>
           {/* Row 3: Avg Pit Stop + DRS/Overtake */}
           <div className="grid grid-cols-2 gap-2">
             <div className="grid grid-cols-[3fr_1fr] gap-0">
-              <div className="bg-gray-600 text-white text-xs px-2 py-1 rounded-l text-left font-medium">Avg Pit Stop</div>
+              <div className="bg-gray-600 text-white text-xs px-2 py-1 rounded-l text-left font-medium">Pit Stop</div>
               <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.pitStopTime.toFixed(2)}s</div>
             </div>
             <div className="grid grid-cols-[3fr_1fr] gap-0">

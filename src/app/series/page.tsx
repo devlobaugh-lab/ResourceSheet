@@ -10,12 +10,12 @@ import type { SeriesWithTracks, SeriesTrack } from '@/types/database'
 // Stat display names mapping
 const statDisplayNames: Record<string, string> = {
   'tyreUse': 'Tyre Management',
-  'overtaking': 'Overtaking',
-  'defending': 'Defending',
+  'overtaking': 'Overtake',
+  'defending': 'Defend',
   'raceStart': 'Race Start',
   'speed': 'Speed',
-  'cornering': 'Cornering',
-  'powerUnit': 'Power Unit',
+  'cornering': 'Corner',
+  'powerUnit': 'PU',
   'none': 'None'
 }
 

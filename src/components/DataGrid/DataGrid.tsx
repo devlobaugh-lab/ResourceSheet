@@ -559,26 +559,26 @@ export function DataGrid({
       // Add 6 stats columns for drivers and parts
       if (gridType === 'drivers') {
       baseColumns.push(
-        { key: 'overtaking', label: 'Overtaking', sortable: true },
-        { key: 'blocking', label: 'Defending', sortable: true },
-        { key: 'qualifying', label: 'Qualifying', sortable: true },
+        { key: 'overtaking', label: 'Overtake', sortable: true },
+        { key: 'blocking', label: 'Defend', sortable: true },
+        { key: 'qualifying', label: 'Qualify', sortable: true },
         { key: 'raceStart', label: 'Race Start', sortable: true },
         { key: 'tyreUse', label: 'Tyre Use', sortable: true },
-        { key: 'total_value', label: 'Total Value', sortable: true }
+        { key: 'total_value', label: 'Total', sortable: true }
       );
     }
 
     if (gridType === 'parts') {
       baseColumns.push(
         { key: 'speed', label: 'Speed', sortable: true },
-        { key: 'cornering', label: 'Cornering', sortable: true },
-        { key: 'powerUnit', label: 'Power Unit', sortable: true },
-        { key: 'qualifying', label: 'Qualifying', sortable: true },
+        { key: 'cornering', label: 'Corner', sortable: true },
+        { key: 'powerUnit', label: 'PU', sortable: true },
+        { key: 'qualifying', label: 'Qualify', sortable: true },
         ...(seasonNumber != null && seasonNumber >= 7
           ? [{ key: 'overtake', label: 'Overtake', sortable: true }]
           : [{ key: 'drs', label: 'DRS', sortable: true }]),
         { key: 'pitStopTime', label: 'Pit Stop', sortable: true },
-        { key: 'total_value', label: 'Total Value', sortable: true }
+        { key: 'total_value', label: 'Total', sortable: true }
       );
     }
 
@@ -596,8 +596,8 @@ export function DataGrid({
         { key: 'race_start', label: 'Race Start', sortable: true },
         { key: 'tyre_use', label: 'Tyre Use', sortable: true },
         { key: 'speed', label: 'Speed', sortable: true },
-        { key: 'corners', label: 'Corners', sortable: true },
-        { key: 'power_unit', label: 'Power Unit', sortable: true },
+        { key: 'corners', label: 'Corner', sortable: true },
+        { key: 'power_unit', label: 'PU', sortable: true },
         { key: 'pit_stop', label: 'Pit Stop', sortable: true },
         { key: 'power_boost_impact', label: 'PB Impact', sortable: true },
         { key: 'power_boost_duration', label: 'PB Duration', sortable: true },
