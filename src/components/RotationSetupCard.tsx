@@ -7,11 +7,11 @@ import { Card } from './ui/Card'
 import { cn } from '@/lib/utils'
 
 const ALL_PART_TYPES = [
-  { key: 'brake',       dbKey: 'setup_brake_id',      type: 1, label: 'Brake' },
-  { key: 'gearbox',     dbKey: 'setup_gearbox_id',    type: 0, label: 'Gearbox' },
-  { key: 'rear_wing',   dbKey: 'setup_rear_wing_id',  type: 5, label: 'Rear Wing' },
   { key: 'front_wing',  dbKey: 'setup_front_wing_id', type: 4, label: 'Front Wing' },
+  { key: 'brake',       dbKey: 'setup_brake_id',      type: 1, label: 'Brake' },
   { key: 'suspension',  dbKey: 'setup_suspension_id', type: 3, label: 'Suspension' },
+  { key: 'rear_wing',   dbKey: 'setup_rear_wing_id',  type: 5, label: 'Rear Wing' },
+  { key: 'gearbox',     dbKey: 'setup_gearbox_id',    type: 0, label: 'Gearbox' },
   { key: 'engine',      dbKey: 'setup_engine_id',     type: 2, label: 'Engine' },
   { key: 'battery',     dbKey: 'setup_battery_id',    type: 6, label: 'Battery' },
 ] as const

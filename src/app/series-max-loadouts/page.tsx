@@ -10,12 +10,13 @@ import { cn } from '@/lib/utils'
 
 // Part type definitions
 const PART_TYPES = [
-  { key: 'brake', type: 1, name: 'Brake', label: 'Brake' },
-  { key: 'gearbox', type: 0, name: 'Gearbox', label: 'Gearbox' },
-  { key: 'rear_wing', type: 5, name: 'Rear Wing', label: 'Rear Wing' },
   { key: 'front_wing', type: 4, name: 'Front Wing', label: 'Front Wing' },
+  { key: 'brake', type: 1, name: 'Brake', label: 'Brake' },
   { key: 'suspension', type: 3, name: 'Suspension', label: 'Suspension' },
-  { key: 'engine', type: 2, name: 'Engine', label: 'Engine' }
+  { key: 'rear_wing', type: 5, name: 'Rear Wing', label: 'Rear Wing' },
+  { key: 'gearbox', type: 0, name: 'Gearbox', label: 'Gearbox' },
+  { key: 'engine', type: 2, name: 'Engine', label: 'Engine' },
+  { key: 'battery', type: 6, name: 'Battery', label: 'Battery' }
 ] as const
 
 // Setup types for max loadouts
@@ -65,12 +66,13 @@ const findBestPart = (
 
 // Generate the best setup for a given stat type and series
 interface SetupResult {
-  brake: CarPart | null
-  gearbox: CarPart | null
-  rear_wing: CarPart | null
   front_wing: CarPart | null
+  brake: CarPart | null
   suspension: CarPart | null
+  rear_wing: CarPart | null
+  gearbox: CarPart | null
   engine: CarPart | null
+  battery: CarPart | null
   totalStat: number
 }
 
@@ -80,12 +82,13 @@ const generateSetup = (
   statType: string
 ): SetupResult => {
   const setup: SetupResult = {
-    brake: null,
-    gearbox: null,
-    rear_wing: null,
     front_wing: null,
+    brake: null,
     suspension: null,
+    rear_wing: null,
+    gearbox: null,
     engine: null,
+    battery: null,
     totalStat: 0
   }
   

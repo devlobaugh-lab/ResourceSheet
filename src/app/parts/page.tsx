@@ -322,7 +322,7 @@ function AuthenticatedPartsPage() {
   // Calculate column statistics for each part type
   const columnStats = useMemo(() => {
     const stats: { [key: string]: { min: number; max: number; median: number } } = {};
-    const partTypes = [0, 1, 2, 3, 4, 5, 6]; // Gearbox, Brakes, Engine, Suspension, Front Wing, Rear Wing, Battery
+    const partTypes = [4, 1, 3, 5, 0, 2, 6]; // Front Wing, Brakes, Suspension, Rear Wing, Gearbox, Engine, Battery
     const extraStat = isFY26 ? 'overtake' : 'drs';
     const statColumns = ['speed', 'cornering', 'powerUnit', 'qualifying', extraStat, 'pitStopTime', 'total_value'];
 

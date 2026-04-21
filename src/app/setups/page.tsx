@@ -144,20 +144,20 @@ function AuthenticatedSetupsPage() {
 
   const PART_TYPES = isFY26
     ? [
-        { key: 'brake' as const, type: 1, name: 'Brake', label: 'Brake' },
-        { key: 'gearbox' as const, type: 0, name: 'Gearbox', label: 'Gearbox' },
-        { key: 'rear_wing' as const, type: 5, name: 'Rear Wing', label: 'Rear Wing' },
         { key: 'front_wing' as const, type: 4, name: 'Front Wing', label: 'Front Wing' },
+        { key: 'brake' as const, type: 1, name: 'Brake', label: 'Brake' },
         { key: 'suspension' as const, type: 3, name: 'Suspension', label: 'Suspension' },
+        { key: 'rear_wing' as const, type: 5, name: 'Rear Wing', label: 'Rear Wing' },
+        { key: 'gearbox' as const, type: 0, name: 'Gearbox', label: 'Gearbox' },
         { key: 'engine' as const, type: 2, name: 'Engine', label: 'Engine' },
         { key: 'battery' as const, type: 6, name: 'Battery', label: 'Battery' },
       ]
     : [
-        { key: 'brake' as const, type: 1, name: 'Brake', label: 'Brake' },
-        { key: 'gearbox' as const, type: 0, name: 'Gearbox', label: 'Gearbox' },
-        { key: 'rear_wing' as const, type: 5, name: 'Rear Wing', label: 'Rear Wing' },
         { key: 'front_wing' as const, type: 4, name: 'Front Wing', label: 'Front Wing' },
+        { key: 'brake' as const, type: 1, name: 'Brake', label: 'Brake' },
         { key: 'suspension' as const, type: 3, name: 'Suspension', label: 'Suspension' },
+        { key: 'rear_wing' as const, type: 5, name: 'Rear Wing', label: 'Rear Wing' },
+        { key: 'gearbox' as const, type: 0, name: 'Gearbox', label: 'Gearbox' },
         { key: 'engine' as const, type: 2, name: 'Engine', label: 'Engine' },
       ]
 
