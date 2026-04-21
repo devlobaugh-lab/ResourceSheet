@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, Fragment } from 'react'
+import React, { useState, useMemo, useEffect, Fragment } from 'react'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -696,7 +696,8 @@ function AuthenticatedPartsPage() {
                             </tr>
                             {isBattery && (
                               <tr key={`${part.id}-pb`} className="hover:bg-gray-50 transition-colors">
-                                <td colSpan={12} className="px-3 py-0.5 text-xs text-gray-500 text-left">
+                                <td colSpan={4}></td>
+                                <td colSpan={8} className="px-3 py-0.5 text-xs text-gray-500 text-left">
                                   PB Impact: {powerBoostImpact} · PB Duration: {powerBoostDuration} · PB Charge: {powerBoostRechargeRate}
                                 </td>
                               </tr>
@@ -742,8 +743,8 @@ function AuthenticatedPartsPage() {
                           : rawStats;
 
                         return (
-                          <>
-                            <tr key={`theoretical-${partType}-${index}`} className="bg-gray-100 hover:bg-gray-200 transition-colors">
+                          <React.Fragment key={`theoretical-${partType}-${index}`}>
+                            <tr className="bg-gray-100 hover:bg-gray-200 transition-colors">
                               <td className="px-3 py-1 whitespace-nowrap bg-gray-200">
                               <select
                                 className="text-sm bg-white border border-gray-300 rounded px-2 py-1 w-32"
@@ -836,7 +837,7 @@ function AuthenticatedPartsPage() {
                                 </td>
                               </tr>
                             )}
-                          </>
+                          </React.Fragment>
                         );
                       })}
                     </tbody>
