@@ -145,7 +145,7 @@ export function CarPartSelectionGrid({
   // Calculate column stats for color coding
   const columnStats = useMemo(() => {
     const extraStat = isFY26 ? 'overtake' : 'drs';
-    const batteryStats = isFY26 && isBattery ? ['powerBoostImpact', 'powerBoostDuration', 'powerBoostRechargeRate'] : [];
+    const batteryStats = [];
     const statNames = ['speed', 'cornering', 'powerUnit', 'qualifying', extraStat, 'pitStopTime', ...batteryStats];
     const result: Record<string, { min: number; max: number; median: number }> = {};
 
@@ -181,7 +181,7 @@ export function CarPartSelectionGrid({
     }
 
     return result;
-  }, [partsForType, getStatValue, getTotalValue, isFY26, isBattery]);
+  }, [partsForType, getStatValue, getTotalValue, isFY26]);
 
   // Sorted parts
   const sortedParts = useMemo(() => {
@@ -226,13 +226,6 @@ export function CarPartSelectionGrid({
     ...(isFY26
       ? [{ key: 'overtake', label: 'Overtake' }]
       : [{ key: 'drs', label: 'DRS' }]),
-    ...(isFY26 && isBattery
-      ? [
-          { key: 'powerBoostImpact', label: 'PB Impact' },
-          { key: 'powerBoostDuration', label: 'PB Duration' },
-          { key: 'powerBoostRechargeRate', label: 'PB Recharge' },
-        ]
-      : []),
     { key: 'pitStopTime', label: 'Pit Stop' },
     { key: 'totalValue', label: 'Total Value' },
     { key: 'series', label: 'Series' },
@@ -314,16 +307,17 @@ export function CarPartSelectionGrid({
                 : (part.level || 0);
 
               return (
-                <tr
-                  key={part.id}
-                  className={cn(
-                    'hover:bg-gray-50 transition-colors cursor-pointer',
-                    bonusOnlyMode
-                      ? bonusCheckedItems.has(part.id) && 'bg-blue-50'
-                      : isSelected && 'bg-blue-50'
-                  )}
-                  onClick={() => bonusOnlyMode ? onBonusToggle(part.id) : onPartSelect(part.id === selectedPartId ? '' : part.id)}
-                >
+                <>
+                  <tr
+                    key={part.id}
+                    className={cn(
+                      'hover:bg-gray-50 transition-colors cursor-pointer',
+                      bonusOnlyMode
+                        ? bonusCheckedItems.has(part.id) && 'bg-blue-50'
+                        : isSelected && 'bg-blue-50'
+                    )}
+                    onClick={() => bonusOnlyMode ? onBonusToggle(part.id) : onPartSelect(part.id === selectedPartId ? '' : part.id)}
+                  >
                   {/* Name */}
                   <td className={cn('px-3 py-1 whitespace-nowrap', getRarityBackground(part.rarity))}>
                     <div className="flex items-center gap-2">
@@ -393,18 +387,6 @@ export function CarPartSelectionGrid({
                   <td className={cn('px-3 py-1 whitespace-nowrap text-center', columnStats[extraStatKey] && getStatBackgroundColor(drs, columnStats[extraStatKey].min, columnStats[extraStatKey].max, columnStats[extraStatKey].median))}>
                     <span className="text-sm text-gray-900">{drs || ''}</span>
                   </td>
-                  {isFY26 && isBattery && (
-                    <>
-                      {(['powerBoostImpact', 'powerBoostDuration', 'powerBoostRechargeRate'] as const).map(key => {
-                        const val = getStatValue(part, key);
-                        return (
-                          <td key={key} className={cn('px-3 py-1 whitespace-nowrap text-center', columnStats[key] && getStatBackgroundColor(val, columnStats[key].min, columnStats[key].max, columnStats[key].median))}>
-                            <span className="text-sm text-gray-900">{val || ''}</span>
-                          </td>
-                        );
-                      })}
-                    </>
-                  )}
                   <td className={cn('px-3 py-1 whitespace-nowrap text-center', columnStats['pitStopTime'] && getStatBackgroundColor(pitStopTime, columnStats['pitStopTime'].min, columnStats['pitStopTime'].max, columnStats['pitStopTime'].median, true))}>
                     <span className="text-sm text-gray-900">{pitStopTime > 0 ? pitStopTime.toFixed(2) : ''}</span>
                   </td>
@@ -416,7 +398,20 @@ export function CarPartSelectionGrid({
                   <td className="px-3 py-1 whitespace-nowrap text-center">
                     <span className="text-sm text-gray-900">{part.series}</span>
                   </td>
-                </tr>
+                  </tr>
+                  {isFY26 && isBattery && (
+                    <tr key={`${part.id}-pb`} className="hover:bg-gray-50 transition-colors">
+                      <td colSpan={columns.length} className="px-3 py-0.5 text-xs text-gray-500 text-left">
+                        {(() => {
+                          const impact = getStatValue(part, 'powerBoostImpact');
+                          const duration = getStatValue(part, 'powerBoostDuration');
+                          const recharge = getStatValue(part, 'powerBoostRechargeRate');
+                          return `PB Impact: ${impact} · PB Duration: ${duration} · PB Charge: ${recharge}`;
+                        })()}
+                      </td>
+                    </tr>
+                  )}
+                </>
               );
             })}
           </tbody>
