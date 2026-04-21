@@ -260,7 +260,10 @@ export function DataGrid({
     if (stats && stats.length > userLevel - 1) {
       if (statName === 'overtake') {
         const s = stats[userLevel - 1];
-        baseValue = (s['powerBoostImpact'] || 0) + (s['powerBoostDuration'] || 0) + (s['powerBoostRechargeRate'] || 0);
+        const impact = s['powerBoostImpact'] || 0;
+        const duration = s['powerBoostDuration'] || 0;
+        const recharge = s['powerBoostRechargeRate'] || 0;
+        baseValue = (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (recharge !== -1 ? recharge : 0);
       } else if (stats[userLevel - 1][statName] !== undefined) {
         baseValue = stats[userLevel - 1][statName];
       }
@@ -989,7 +992,10 @@ export function DataGrid({
                 if (stats && stats.length > userLevel - 1) {
                   if (statName === 'overtake') {
                     const s = stats[userLevel - 1];
-                    baseValue = (s['powerBoostImpact'] || 0) + (s['powerBoostDuration'] || 0) + (s['powerBoostRechargeRate'] || 0);
+                    const impact = s['powerBoostImpact'] || 0;
+                    const duration = s['powerBoostDuration'] || 0;
+                    const recharge = s['powerBoostRechargeRate'] || 0;
+                    baseValue = (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (recharge !== -1 ? recharge : 0);
                   } else if (stats[userLevel - 1][statName] !== undefined) {
                     baseValue = stats[userLevel - 1][statName];
                   }

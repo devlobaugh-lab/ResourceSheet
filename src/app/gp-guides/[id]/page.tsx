@@ -113,7 +113,7 @@ function BoostSelectModal({
           <table className="w-full divide-y divide-gray-200">
             <thead className="bg-gray-700 sticky top-0 z-10">
               <tr>
-                {['Name','Amount','Overtake','Defend','Race Start','Tyre Use','Speed','Corner','PU','Pit Stop'].map(h => (
+                {['Name','Amount','Overtake','Defend','Race Start','Tyre Use','Speed','Corner','PU','Pit Stop','PB Impact','PB Duration','PB Recharge'].map(h => (
                   <th key={h} scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                     <div className="flex items-center">{h}</div>
                   </th>
@@ -136,7 +136,7 @@ function BoostSelectModal({
                       </div>
                     </td>
                     <td className="px-3 py-1 whitespace-nowrap text-sm text-center">{boost.card_count || 0}</td>
-                    {['overtake','block','race_start','tyre_use','speed','corners','power_unit','pit_stop'].map(k => (
+                    {['overtake','block','race_start','tyre_use','speed','corners','power_unit','pit_stop','power_boost_impact','power_boost_duration','power_boost_recharge_rate'].map(k => (
                       <td key={k} className={cn('px-3 py-1 whitespace-nowrap text-sm text-center', bs[k] > 0 && getBoostValueColor(bs[k]))}>
                         {bs[k] ? bs[k] * 5 : ''}
                       </td>
@@ -984,7 +984,7 @@ export default function GpGuideEditorPage() {
 
       {/* ── GP Bonus Parts Modal ── */}
       {showBonusPartsModal && (() => {
-        const partTabs = ['Gearbox', 'Brake', 'Engine', 'Suspension', 'Front Wing', 'Rear Wing']
+        const partTabs = ['Gearbox', 'Brake', 'Engine', 'Suspension', 'Front Wing', 'Rear Wing', 'Battery']
         return (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg max-w-6xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">

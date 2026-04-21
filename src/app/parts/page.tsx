@@ -346,7 +346,10 @@ function AuthenticatedPartsPage() {
               if (s && s.length > userLevel - 1) {
                 if (statName === 'overtake') {
                   const level = s[userLevel - 1] as Record<string, number>;
-                  baseValue = (level['powerBoostImpact'] || 0) + (level['powerBoostDuration'] || 0) + (level['powerBoostRechargeRate'] || 0);
+                  const impact = level['powerBoostImpact'] || 0;
+                  const duration = level['powerBoostDuration'] || 0;
+                  const recharge = level['powerBoostRechargeRate'] || 0;
+                  baseValue = (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (recharge !== -1 ? recharge : 0);
                 } else if (s[userLevel - 1][statName] !== undefined) {
                   baseValue = (s[userLevel - 1] as Record<string, number>)[statName];
                 }
@@ -442,7 +445,12 @@ function AuthenticatedPartsPage() {
       powerBoostImpact: ls['powerBoostImpact'] || 0,
       powerBoostDuration: ls['powerBoostDuration'] || 0,
       powerBoostRechargeRate: ls['powerBoostRechargeRate'] || 0,
-      overtake: (ls['powerBoostImpact'] || 0) + (ls['powerBoostDuration'] || 0) + (ls['powerBoostRechargeRate'] || 0),
+      overtake: (() => {
+        const impact = ls['powerBoostImpact'] || 0;
+        const duration = ls['powerBoostDuration'] || 0;
+        const recharge = ls['powerBoostRechargeRate'] || 0;
+        return (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (recharge !== -1 ? recharge : 0);
+      })(),
       pitStopTime: levelStats.pitStopTime || 0,
     };
   };
@@ -603,7 +611,10 @@ function AuthenticatedPartsPage() {
                           if (stats && stats.length > userLevel - 1) {
                             if (statName === 'overtake') {
                               const s = stats[userLevel - 1];
-                              baseValue = (s['powerBoostImpact'] || 0) + (s['powerBoostDuration'] || 0) + (s['powerBoostRechargeRate'] || 0);
+                              const impact = s['powerBoostImpact'] || 0;
+                              const duration = s['powerBoostDuration'] || 0;
+                              const recharge = s['powerBoostRechargeRate'] || 0;
+                              baseValue = (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (recharge !== -1 ? recharge : 0);
                             } else if (stats[userLevel - 1][statName] !== undefined) {
                               baseValue = stats[userLevel - 1][statName];
                             }

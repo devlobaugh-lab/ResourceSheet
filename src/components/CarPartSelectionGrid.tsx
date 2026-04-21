@@ -115,7 +115,10 @@ export function CarPartSelectionGrid({
     let baseValue = 0;
     if (statName === 'overtake') {
       const s = stats[userLevel - 1] as Record<string, number>;
-      baseValue = (s['powerBoostImpact'] || 0) + (s['powerBoostDuration'] || 0) + (s['powerBoostRechargeRate'] || 0);
+      const impact = s['powerBoostImpact'] || 0;
+      const duration = s['powerBoostDuration'] || 0;
+      const recharge = s['powerBoostRechargeRate'] || 0;
+      baseValue = (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (recharge !== -1 ? recharge : 0);
     } else {
       baseValue = (stats[userLevel - 1] as Record<string, number>)[statName] || 0;
     }

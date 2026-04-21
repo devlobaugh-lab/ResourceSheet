@@ -258,11 +258,10 @@ function AuthenticatedSetupsPage() {
         stats.powerUnit += getStatValue(part, 'powerUnit', bonusPct, hasBonus, false)
         stats.qualifying += getStatValue(part, 'qualifying', bonusPct, hasBonus, false)
         stats.drs += getStatValue(part, 'drs', bonusPct, hasBonus, false)
-        stats.overtake += (
-          getStatValue(part, 'powerBoostImpact', bonusPct, hasBonus, false) +
-          getStatValue(part, 'powerBoostDuration', bonusPct, hasBonus, false) +
-          getStatValue(part, 'powerBoostRechargeRate', bonusPct, hasBonus, false)
-        )
+        const impact = getStatValue(part, 'powerBoostImpact', bonusPct, hasBonus, false)
+        const duration = getStatValue(part, 'powerBoostDuration', bonusPct, hasBonus, false)
+        const rechargeRate = getStatValue(part, 'powerBoostRechargeRate', bonusPct, hasBonus, false)
+        stats.overtake += (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (rechargeRate !== -1 ? rechargeRate : 0)
         stats.pitStopTime += getStatValue(part, 'pitStopTime', bonusPct, hasBonus, false)
       }
     })

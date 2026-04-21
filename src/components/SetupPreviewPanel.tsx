@@ -38,11 +38,10 @@ const getStatValue = (
 
 const getOvertakeValue = (part: CarPartView | undefined, bonusPercentage: number): number => {
   if (!part) return 0
-  return (
-    getStatValue(part, 'powerBoostImpact', bonusPercentage) +
-    getStatValue(part, 'powerBoostDuration', bonusPercentage) +
-    getStatValue(part, 'powerBoostRechargeRate', bonusPercentage)
-  )
+  const impact = getStatValue(part, 'powerBoostImpact', bonusPercentage)
+  const duration = getStatValue(part, 'powerBoostDuration', bonusPercentage)
+  const rechargeRate = getStatValue(part, 'powerBoostRechargeRate', bonusPercentage)
+  return (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (rechargeRate !== -1 ? rechargeRate : 0)
 }
 
 const getRarityBg = (rarity: number): string => {

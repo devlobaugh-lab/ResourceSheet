@@ -122,9 +122,10 @@ export function RotationSetupCard({
         s.powerUnit   += getStatValue(part, 'powerUnit', bonusPct, hasBonus)
         s.qualifying  += getStatValue(part, 'qualifying', bonusPct, hasBonus)
         s.drs         += getStatValue(part, 'drs', bonusPct, hasBonus)
-        s.overtake    += getStatValue(part, 'powerBoostImpact', bonusPct, hasBonus) +
-                         getStatValue(part, 'powerBoostDuration', bonusPct, hasBonus) +
-                         getStatValue(part, 'powerBoostRechargeRate', bonusPct, hasBonus)
+        const impact = getStatValue(part, 'powerBoostImpact', bonusPct, hasBonus)
+        const duration = getStatValue(part, 'powerBoostDuration', bonusPct, hasBonus)
+        const rechargeRate = getStatValue(part, 'powerBoostRechargeRate', bonusPct, hasBonus)
+        s.overtake += (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (rechargeRate !== -1 ? rechargeRate : 0)
         s.pitStopTime += getStatValue(part, 'pitStopTime', bonusPct, hasBonus)
       }
     }
