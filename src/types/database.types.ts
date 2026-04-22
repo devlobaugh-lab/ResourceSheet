@@ -354,6 +354,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
+          season_number: number | null
           start_date: string | null
           updated_at: string
         }
@@ -364,6 +365,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
+          season_number?: number | null
           start_date?: string | null
           updated_at?: string
         }
@@ -374,6 +376,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          season_number?: number | null
           start_date?: string | null
           updated_at?: string
         }
@@ -390,6 +393,7 @@ export type Database = {
           index: number
           loss_flags: number | null
           max_flags: number | null
+          next_track_rotation_time: string | null
           season_id: string | null
           track_ids: string[] | null
           track_info: Json | null
@@ -408,6 +412,7 @@ export type Database = {
           index: number
           loss_flags?: number | null
           max_flags?: number | null
+          next_track_rotation_time?: string | null
           season_id?: string | null
           track_ids?: string[] | null
           track_info?: Json | null
@@ -426,6 +431,7 @@ export type Database = {
           index?: number
           loss_flags?: number | null
           max_flags?: number | null
+          next_track_rotation_time?: string | null
           season_id?: string | null
           track_ids?: string[] | null
           track_info?: Json | null
@@ -495,6 +501,75 @@ export type Database = {
         }
         Relationships: []
       }
+      track_rotation_schedule: {
+        Row: {
+          created_at: string | null
+          end_date: string
+          id: string
+          rotation_set_id: string
+          season_id: string | null
+          start_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_date: string
+          id?: string
+          rotation_set_id: string
+          season_id?: string | null
+          start_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          rotation_set_id?: string
+          season_id?: string | null
+          start_date?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "track_rotation_schedule_rotation_set_id_fkey"
+            columns: ["rotation_set_id"]
+            isOneToOne: false
+            referencedRelation: "track_rotation_sets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "track_rotation_schedule_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      track_rotation_sets: {
+        Row: {
+          created_at: string | null
+          id: string
+          series_data: Json
+          set_number: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          series_data?: Json
+          set_number: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          series_data?: Json
+          set_number?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       track_seasons: {
         Row: {
           id: string
@@ -538,9 +613,12 @@ export type Database = {
           driver_track_stat: string
           id: string
           laps: number
+          max_weather_factor: number | null
+          min_weather_factor: number | null
           name: string
           track_guid: string | null
           updated_at: string
+          weather_freq: number | null
         }
         Insert: {
           car_track_stat: string
@@ -548,9 +626,12 @@ export type Database = {
           driver_track_stat: string
           id?: string
           laps: number
+          max_weather_factor?: number | null
+          min_weather_factor?: number | null
           name: string
           track_guid?: string | null
           updated_at?: string
+          weather_freq?: number | null
         }
         Update: {
           car_track_stat?: string
@@ -558,9 +639,12 @@ export type Database = {
           driver_track_stat?: string
           id?: string
           laps?: number
+          max_weather_factor?: number | null
+          min_weather_factor?: number | null
           name?: string
           track_guid?: string | null
           updated_at?: string
+          weather_freq?: number | null
         }
         Relationships: []
       }
@@ -678,6 +762,8 @@ export type Database = {
       }
       user_car_setups: {
         Row: {
+          battery_id: string | null
+          bonus_part_ids: string[]
           bonus_percentage: number | null
           brake_id: string | null
           created_at: string
@@ -695,6 +781,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          battery_id?: string | null
+          bonus_part_ids?: string[]
           bonus_percentage?: number | null
           brake_id?: string | null
           created_at?: string
@@ -712,6 +800,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          battery_id?: string | null
+          bonus_part_ids?: string[]
           bonus_percentage?: number | null
           brake_id?: string | null
           created_at?: string
@@ -729,6 +819,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_car_setups_battery_id_fkey"
+            columns: ["battery_id"]
+            isOneToOne: false
+            referencedRelation: "car_parts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_car_setups_brake_id_fkey"
             columns: ["brake_id"]
@@ -1094,6 +1191,191 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_rotation_series_data: {
+        Row: {
+          created_at: string | null
+          driver_1_id: string | null
+          driver_2_id: string | null
+          id: string
+          rotation_set_id: string
+          series_index: number
+          setup_battery_id: string | null
+          setup_bonus_percentage: number
+          setup_brake_id: string | null
+          setup_engine_id: string | null
+          setup_front_wing_id: string | null
+          setup_gearbox_id: string | null
+          setup_rear_wing_id: string | null
+          setup_series_filter: number
+          setup_suspension_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          driver_1_id?: string | null
+          driver_2_id?: string | null
+          id?: string
+          rotation_set_id: string
+          series_index: number
+          setup_battery_id?: string | null
+          setup_bonus_percentage?: number
+          setup_brake_id?: string | null
+          setup_engine_id?: string | null
+          setup_front_wing_id?: string | null
+          setup_gearbox_id?: string | null
+          setup_rear_wing_id?: string | null
+          setup_series_filter?: number
+          setup_suspension_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          driver_1_id?: string | null
+          driver_2_id?: string | null
+          id?: string
+          rotation_set_id?: string
+          series_index?: number
+          setup_battery_id?: string | null
+          setup_bonus_percentage?: number
+          setup_brake_id?: string | null
+          setup_engine_id?: string | null
+          setup_front_wing_id?: string | null
+          setup_gearbox_id?: string | null
+          setup_rear_wing_id?: string | null
+          setup_series_filter?: number
+          setup_suspension_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_rotation_series_data_driver_1_id_fkey"
+            columns: ["driver_1_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rotation_series_data_driver_2_id_fkey"
+            columns: ["driver_2_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rotation_series_data_rotation_set_id_fkey"
+            columns: ["rotation_set_id"]
+            isOneToOne: false
+            referencedRelation: "track_rotation_sets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rotation_series_data_setup_battery_id_fkey"
+            columns: ["setup_battery_id"]
+            isOneToOne: false
+            referencedRelation: "car_parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rotation_series_data_setup_brake_id_fkey"
+            columns: ["setup_brake_id"]
+            isOneToOne: false
+            referencedRelation: "car_parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rotation_series_data_setup_engine_id_fkey"
+            columns: ["setup_engine_id"]
+            isOneToOne: false
+            referencedRelation: "car_parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rotation_series_data_setup_front_wing_id_fkey"
+            columns: ["setup_front_wing_id"]
+            isOneToOne: false
+            referencedRelation: "car_parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rotation_series_data_setup_gearbox_id_fkey"
+            columns: ["setup_gearbox_id"]
+            isOneToOne: false
+            referencedRelation: "car_parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rotation_series_data_setup_rear_wing_id_fkey"
+            columns: ["setup_rear_wing_id"]
+            isOneToOne: false
+            referencedRelation: "car_parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rotation_series_data_setup_suspension_id_fkey"
+            columns: ["setup_suspension_id"]
+            isOneToOne: false
+            referencedRelation: "car_parts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_rotation_track_data: {
+        Row: {
+          boost_id: string | null
+          created_at: string | null
+          dry_strategy: string | null
+          id: string
+          rotation_set_id: string
+          series_index: number
+          track_position: number
+          updated_at: string | null
+          user_id: string
+          wet_strategy: string | null
+        }
+        Insert: {
+          boost_id?: string | null
+          created_at?: string | null
+          dry_strategy?: string | null
+          id?: string
+          rotation_set_id: string
+          series_index: number
+          track_position: number
+          updated_at?: string | null
+          user_id: string
+          wet_strategy?: string | null
+        }
+        Update: {
+          boost_id?: string | null
+          created_at?: string | null
+          dry_strategy?: string | null
+          id?: string
+          rotation_set_id?: string
+          series_index?: number
+          track_position?: number
+          updated_at?: string | null
+          user_id?: string
+          wet_strategy?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_rotation_track_data_boost_id_fkey"
+            columns: ["boost_id"]
+            isOneToOne: false
+            referencedRelation: "boosts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rotation_track_data_rotation_set_id_fkey"
+            columns: ["rotation_set_id"]
+            isOneToOne: false
+            referencedRelation: "track_rotation_sets"
             referencedColumns: ["id"]
           },
         ]

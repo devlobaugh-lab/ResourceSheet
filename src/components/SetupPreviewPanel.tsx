@@ -5,13 +5,14 @@ import { X, Pencil, Star } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import Link from 'next/link'
 
-const PART_TYPES = [
-  { key: 'brake', type: 1, label: 'Brake' },
-  { key: 'gearbox', type: 0, label: 'Gearbox' },
-  { key: 'rear_wing', type: 5, label: 'Rear Wing' },
+const ALL_PART_TYPES = [
   { key: 'front_wing', type: 4, label: 'Front Wing' },
+  { key: 'brake', type: 1, label: 'Brake' },
   { key: 'suspension', type: 3, label: 'Suspension' },
+  { key: 'rear_wing', type: 5, label: 'Rear Wing' },
+  { key: 'gearbox', type: 0, label: 'Gearbox' },
   { key: 'engine', type: 2, label: 'Engine' },
+  { key: 'battery', type: 6, label: 'Battery' },
 ] as const
 
 const getStatValue = (
@@ -24,7 +25,7 @@ const getStatValue = (
   if (userLevel === 0) return 0
   const stats = part.stats_per_level
   if (!stats || !Array.isArray(stats) || stats.length < userLevel) return 0
-  let baseValue = stats[userLevel - 1][statName] || 0
+  let baseValue = (stats[userLevel - 1] as Record<string, number>)[statName] || 0
   if (bonusPercentage > 0) {
     if (statName === 'pitStopTime') {
       baseValue = Math.round((baseValue * (1 - bonusPercentage / 100)) * 100) / 100
@@ -33,6 +34,14 @@ const getStatValue = (
     }
   }
   return baseValue
+}
+
+const getOvertakeValue = (part: CarPartView | undefined, bonusPercentage: number): number => {
+  if (!part) return 0
+  const impact = getStatValue(part, 'powerBoostImpact', bonusPercentage)
+  const duration = getStatValue(part, 'powerBoostDuration', bonusPercentage)
+  const rechargeRate = getStatValue(part, 'powerBoostRechargeRate', bonusPercentage)
+  return (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (rechargeRate !== -1 ? rechargeRate : 0)
 }
 
 const getRarityBg = (rarity: number): string => {
@@ -48,9 +57,11 @@ interface SetupPreviewPanelProps {
   setup: UserCarSetup
   carParts: CarPartView[]
   onClose: () => void
+  seasonNumber?: number | null
 }
 
-export function SetupPreviewPanel({ setup, carParts, onClose }: SetupPreviewPanelProps) {
+export function SetupPreviewPanel({ setup, carParts, onClose, seasonNumber }: SetupPreviewPanelProps) {
+  const isFY26 = (seasonNumber ?? 0) >= 7
   const bonusPercentage = setup.bonus_percentage || 0
   const bonusPartIds = new Set(setup.bonus_part_ids || [])
 
@@ -61,17 +72,20 @@ export function SetupPreviewPanel({ setup, carParts, onClose }: SetupPreviewPane
     front_wing: setup.front_wing_id,
     suspension: setup.suspension_id,
     engine: setup.engine_id,
+    battery: setup.battery_id,
   }
+
+  const partTypes = isFY26 ? ALL_PART_TYPES : ALL_PART_TYPES.filter(p => p.type !== 6)
 
   const getPart = (key: string) =>
     carParts.find(p => p.id === partMap[key]) ?? undefined
 
   const totalStats = {
     speed: 0, cornering: 0, powerUnit: 0,
-    qualifying: 0, drs: 0, pitStopTime: 0,
+    qualifying: 0, drs: 0, overtake: 0, pitStopTime: 0,
   }
 
-  PART_TYPES.forEach(({ key }) => {
+  partTypes.forEach(({ key }) => {
     const part = getPart(key)
     if (part) {
       const hasBonus = bonusPartIds.has(part.id)
@@ -81,6 +95,7 @@ export function SetupPreviewPanel({ setup, carParts, onClose }: SetupPreviewPane
       totalStats.powerUnit += getStatValue(part, 'powerUnit', pct)
       totalStats.qualifying += getStatValue(part, 'qualifying', pct)
       totalStats.drs += getStatValue(part, 'drs', pct)
+      totalStats.overtake += getOvertakeValue(part, pct)
       totalStats.pitStopTime += getStatValue(part, 'pitStopTime', pct)
     }
   })
@@ -109,8 +124,8 @@ export function SetupPreviewPanel({ setup, carParts, onClose }: SetupPreviewPane
       </div>
 
       {/* Parts grid */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        {PART_TYPES.map(({ key, label }) => {
+      <div className={`grid ${isFY26 ? 'grid-cols-4' : 'grid-cols-3'} gap-2 mb-4`}>
+        {partTypes.map(({ key, label }) => {
           const part = getPart(key)
           const hasBonus = part ? bonusPartIds.has(part.id) : false
           return (
@@ -145,28 +160,28 @@ export function SetupPreviewPanel({ setup, carParts, onClose }: SetupPreviewPane
             <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.speed}</div>
           </div>
           <div className="grid grid-cols-[3fr_1fr] gap-0">
-            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Power Unit</div>
+            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">PU</div>
             <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.powerUnit}</div>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="grid grid-cols-[3fr_1fr] gap-0">
-            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Cornering</div>
+            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Corner</div>
             <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.cornering}</div>
           </div>
           <div className="grid grid-cols-[3fr_1fr] gap-0">
-            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Qualifying</div>
+            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Qualify</div>
             <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.qualifying}</div>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="grid grid-cols-[3fr_1fr] gap-0">
-            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Avg Pit Stop</div>
+            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">Pit Stop</div>
             <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.pitStopTime.toFixed(2)}s</div>
           </div>
           <div className="grid grid-cols-[3fr_1fr] gap-0">
-            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">DRS</div>
-            <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{totalStats.drs}</div>
+            <div className="bg-gray-600 text-white text-sm px-2 py-1 rounded-l font-medium">{isFY26 ? 'Overtake' : 'DRS'}</div>
+            <div className="bg-gray-900 text-white text-sm px-2 py-1 rounded-r text-right font-semibold">{isFY26 ? totalStats.overtake : totalStats.drs}</div>
           </div>
         </div>
       </div>

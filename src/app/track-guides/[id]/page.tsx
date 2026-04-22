@@ -60,7 +60,7 @@ export default function TrackGuideEditorPage() {
   const { addToast } = useToast()
   const queryClient = useQueryClient()
   const trackId = params.id as string
-  const { activeSeasonId } = useSeason()
+  const { activeSeasonId, activeSeason } = useSeason()
 
   const searchParams = useSearchParams()
   const initialLevel = Number(searchParams.get('level') ?? 0)
@@ -764,6 +764,7 @@ export default function TrackGuideEditorPage() {
                   setup={selectedSetup}
                   carParts={carParts}
                   onClose={() => setShowSetupPreview(false)}
+                  seasonNumber={activeSeason?.season_number}
                 />
               )}
             </div>
@@ -805,10 +806,10 @@ export default function TrackGuideEditorPage() {
                             <div className="flex items-center">Speed</div>
                           </th>
                           <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                            <div className="flex items-center">Corners</div>
+                            <div className="flex items-center">Corner</div>
                           </th>
                           <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                            <div className="flex items-center">Power Unit</div>
+                            <div className="flex items-center">PU</div>
                           </th>
                           <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                             <div className="flex items-center">Pit Stop</div>
@@ -1218,13 +1219,22 @@ export default function TrackGuideEditorPage() {
                               <div className="flex items-center">Speed</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Corners</div>
+                              <div className="flex items-center">Corner</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Power Unit</div>
+                              <div className="flex items-center">PU</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                               <div className="flex items-center">Pit Stop</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">PB Impact</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">PB Duration</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">PB Charge</div>
                             </th>
                           </tr>
                         </thead>
@@ -1385,6 +1395,15 @@ export default function TrackGuideEditorPage() {
                                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.pit_stop > 0 && getBoostValueColor(boostStats.pit_stop))}>
                                     <div className="text-sm font-medium">{boostStats.pit_stop ? boostStats.pit_stop * 5 : ''}</div>
                                   </td>
+                                  <td className="px-3 py-1 whitespace-nowrap text-center">
+                                    <div className="text-sm font-medium">{boostStats.powerBoostImpact || ''}</div>
+                                  </td>
+                                  <td className="px-3 py-1 whitespace-nowrap text-center">
+                                    <div className="text-sm font-medium">{boostStats.powerBoostDuration || ''}</div>
+                                  </td>
+                                  <td className="px-3 py-1 whitespace-nowrap text-center">
+                                    <div className="text-sm font-medium">{boostStats.powerBoostRechargeRate || ''}</div>
+                                  </td>
                                 </tr>
                               )
                             })}
@@ -1482,13 +1501,22 @@ export default function TrackGuideEditorPage() {
                               <div className="flex items-center">Speed</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Corners</div>
+                              <div className="flex items-center">Corner</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Power Unit</div>
+                              <div className="flex items-center">PU</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                               <div className="flex items-center">Pit Stop</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">PB Impact</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">PB Duration</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">PB Charge</div>
                             </th>
                           </tr>
                         </thead>
@@ -1635,6 +1663,15 @@ export default function TrackGuideEditorPage() {
                                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.pit_stop > 0 && getBoostValueColor(boostStats.pit_stop))}>
                                     <div className="text-sm font-medium">{boostStats.pit_stop ? boostStats.pit_stop * 5 : ''}</div>
                                   </td>
+                                  <td className="px-3 py-1 whitespace-nowrap text-center">
+                                    <div className="text-sm font-medium">{boostStats.powerBoostImpact || ''}</div>
+                                  </td>
+                                  <td className="px-3 py-1 whitespace-nowrap text-center">
+                                    <div className="text-sm font-medium">{boostStats.powerBoostDuration || ''}</div>
+                                  </td>
+                                  <td className="px-3 py-1 whitespace-nowrap text-center">
+                                    <div className="text-sm font-medium">{boostStats.powerBoostRechargeRate || ''}</div>
+                                  </td>
                                 </tr>
                               )
                             })}
@@ -1736,10 +1773,19 @@ export default function TrackGuideEditorPage() {
                               <div className="flex items-center">Corners</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                              <div className="flex items-center">Power Unit</div>
+                              <div className="flex items-center">PU</div>
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                               <div className="flex items-center">Pit Stop</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">PB Impact</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">PB Duration</div>
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              <div className="flex items-center">PB Charge</div>
                             </th>
                           </tr>
                         </thead>
@@ -1885,6 +1931,15 @@ export default function TrackGuideEditorPage() {
                                   </td>
                                   <td className={cn("px-3 py-1 whitespace-nowrap text-center", boostStats.pit_stop > 0 && getBoostValueColor(boostStats.pit_stop))}>
                                     <div className="text-sm font-medium">{boostStats.pit_stop ? boostStats.pit_stop * 5 : ''}</div>
+                                  </td>
+                                  <td className="px-3 py-1 whitespace-nowrap text-center">
+                                    <div className="text-sm font-medium">{boostStats.powerBoostImpact || ''}</div>
+                                  </td>
+                                  <td className="px-3 py-1 whitespace-nowrap text-center">
+                                    <div className="text-sm font-medium">{boostStats.powerBoostDuration || ''}</div>
+                                  </td>
+                                  <td className="px-3 py-1 whitespace-nowrap text-center">
+                                    <div className="text-sm font-medium">{boostStats.powerBoostRechargeRate || ''}</div>
                                   </td>
                                 </tr>
                               )

@@ -7,6 +7,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { getAuthHeaders } from '@/hooks/useApi'
+import { useSeason } from '@/contexts/SeasonContext'
 import { DriverView, BoostView, UserCarSetup, CarPartView } from '@/types/database'
 import { DriverSelectionGrid } from '@/components/DriverSelectionGrid'
 import { CarPartSelectionGrid } from '@/components/CarPartSelectionGrid'
@@ -112,7 +113,7 @@ function BoostSelectModal({
           <table className="w-full divide-y divide-gray-200">
             <thead className="bg-gray-700 sticky top-0 z-10">
               <tr>
-                {['Name','Amount','Overtake','Defend','Race Start','Tyre Use','Speed','Corners','Power Unit','Pit Stop'].map(h => (
+                {['Name','Amount','Overtake','Defend','Race Start','Tyre Use','Speed','Corner','PU','Pit Stop','PB Impact','PB Duration','PB Recharge'].map(h => (
                   <th key={h} scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                     <div className="flex items-center">{h}</div>
                   </th>
@@ -135,7 +136,7 @@ function BoostSelectModal({
                       </div>
                     </td>
                     <td className="px-3 py-1 whitespace-nowrap text-sm text-center">{boost.card_count || 0}</td>
-                    {['overtake','block','race_start','tyre_use','speed','corners','power_unit','pit_stop'].map(k => (
+                    {['overtake','block','race_start','tyre_use','speed','corners','power_unit','pit_stop','power_boost_impact','power_boost_duration','power_boost_recharge_rate'].map(k => (
                       <td key={k} className={cn('px-3 py-1 whitespace-nowrap text-sm text-center', bs[k] > 0 && getBoostValueColor(bs[k]))}>
                         {bs[k] ? bs[k] * 5 : ''}
                       </td>
@@ -163,7 +164,7 @@ function BoostSelectModal({
 function TrackSlotCard({
   slot, guideId, gpLevel, allTracks, allDrivers, allBoosts, allSetups, carParts,
   gpBonusPercentage, gpBonusDriverIds,
-  onUpdate, onImport, importingSlotId,
+  onUpdate, onImport, importingSlotId, seasonNumber,
 }: {
   slot: TrackSlot; guideId: string; gpLevel: number
   allTracks: TrackInfo[]; allDrivers: DriverView[]; allBoosts: BoostView[]
@@ -172,6 +173,7 @@ function TrackSlotCard({
   onUpdate: (slotId: string, patch: Partial<TrackSlot>) => void
   onImport: (slotId: string, trackId: string, isWet: boolean) => void
   importingSlotId: string | null
+  seasonNumber?: number | null
 }) {
   const [expanded, setExpanded] = useState(false)
   const [showSetupPreview, setShowSetupPreview] = useState(false)
@@ -426,6 +428,7 @@ function TrackSlotCard({
                     setup={selectedSetup}
                     carParts={carParts}
                     onClose={() => setShowSetupPreview(false)}
+                    seasonNumber={seasonNumber}
                   />
                 ) : null
               })()}
@@ -509,6 +512,7 @@ export default function GpGuideEditorPage() {
   const params = useParams()
   const router = useRouter()
   const guideId = params.id as string
+  const { activeSeason } = useSeason()
 
   const [guide, setGuide] = useState<GpGuide | null>(null)
   const [allTracks, setAllTracks] = useState<TrackInfo[]>([])
@@ -736,6 +740,7 @@ export default function GpGuideEditorPage() {
     guideId, gpLevel: guide.gp_level, allTracks, allDrivers, allBoosts, allSetups, carParts: allCarParts,
     gpBonusPercentage: guide.bonus_percentage, gpBonusDriverIds: guide.bonus_driver_ids,
     onUpdate: handleSlotUpdate, onImport: handleImport, importingSlotId,
+    seasonNumber: activeSeason?.season_number,
   }
 
   return (
@@ -918,7 +923,7 @@ export default function GpGuideEditorPage() {
 
               <Card className="p-4 mt-6">
                 <h2 className="text-base font-semibold text-gray-900 mb-1">Race Results Notes</h2>
-                <p className="text-xs text-gray-500 mb-3">Notes per track — record Quali position, PvP/bot, boosts used, final result, safety car, etc.</p>
+                <p className="text-xs text-gray-500 mb-3">Notes per track — record Qualify position, PvP/bot, boosts used, final result, safety car, etc.</p>
                 {uniqueTracksForResults().length === 0 ? (
                   <p className="text-sm text-gray-400 italic">No tracks assigned yet.</p>
                 ) : (
@@ -979,7 +984,7 @@ export default function GpGuideEditorPage() {
 
       {/* ── GP Bonus Parts Modal ── */}
       {showBonusPartsModal && (() => {
-        const partTabs = ['Gearbox', 'Brake', 'Engine', 'Suspension', 'Front Wing', 'Rear Wing']
+        const partTabs = ['Gearbox', 'Brake', 'Engine', 'Suspension', 'Front Wing', 'Rear Wing', 'Battery']
         return (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg max-w-6xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
@@ -1015,6 +1020,7 @@ export default function GpGuideEditorPage() {
                   onBonusToggle={handleGpBonusPartToggle}
                   bonusPercentage={String(guide.bonus_percentage)}
                   bonusOnlyMode={true}
+                  seasonNumber={activeSeason?.season_number}
                 />
               </div>
               <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end">

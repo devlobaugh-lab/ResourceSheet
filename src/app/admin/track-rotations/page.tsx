@@ -13,7 +13,9 @@ import {
   useCreateRotationScheduleEntry,
   useUpdateRotationScheduleEntry,
   useDeleteRotationScheduleEntry,
+  useGenerateSeasonSchedule,
 } from '@/hooks/useApi'
+import type { Season } from '@/types/database'
 import { useSeason } from '@/contexts/SeasonContext'
 import { ROTATION_TRACK_NAMES, ROTATION_SERIES_INDICES } from '@/lib/track-rotation-constants'
 import type { TrackRotationSet, RotationSeriesData, RotationTrackEntry } from '@/types/database'
@@ -208,11 +210,21 @@ function ScheduleEntryForm({
 
 // ── Main admin page ───────────────────────────────────────────────────────────
 
+function nextWednesdayAfter(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00Z')
+  const day = d.getUTCDay()
+  const daysUntilWed = day <= 3 ? 3 - day : 10 - day
+  d.setUTCDate(d.getUTCDate() + daysUntilWed)
+  return d.toISOString().split('T')[0]
+}
+
 export default function AdminTrackRotationsPage() {
   const toast = useToast()
   const [expandedSet, setExpandedSet] = useState<string | null>(null)
   const [showAddSchedule, setShowAddSchedule] = useState(false)
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null)
+  const [generateSeasonId, setGenerateSeasonId] = useState<string>('')
+  const [generateStartDate, setGenerateStartDate] = useState<string>('')
 
   const { seasons, activeSeasonId } = useSeason()
   const { data: setsData, isLoading: setsLoading } = useAdminRotationSets()
@@ -220,6 +232,28 @@ export default function AdminTrackRotationsPage() {
   const createEntry = useCreateRotationScheduleEntry()
   const updateEntry = useUpdateRotationScheduleEntry()
   const deleteEntry = useDeleteRotationScheduleEntry()
+  const generateSchedule = useGenerateSeasonSchedule()
+
+  function handleGenerateSeasonChange(seasonId: string) {
+    setGenerateSeasonId(seasonId)
+    const season = (seasons as Season[]).find(s => s.id === seasonId)
+    if (season?.start_date) {
+      setGenerateStartDate(nextWednesdayAfter(season.start_date))
+    } else {
+      setGenerateStartDate('')
+    }
+  }
+
+  async function handleGenerateSchedule() {
+    if (!generateSeasonId || !generateStartDate) return
+    if (!confirm(`Generate 26 rotations for this season starting ${generateStartDate}? This will add entries to the schedule.`)) return
+    try {
+      const result = await generateSchedule.mutateAsync({ season_id: generateSeasonId, start_date: generateStartDate })
+      toast.addToast(`Generated ${result.count} rotation entries`, 'success')
+    } catch (e: any) {
+      toast.addToast(e.message ?? 'Failed to generate schedule', 'error')
+    }
+  }
 
   const sets = setsData?.data ?? []
   const schedule = scheduleData?.data ?? []
@@ -305,6 +339,47 @@ export default function AdminTrackRotationsPage() {
               ))}
             </div>
           )}
+        </section>
+
+        {/* Generate Season Schedule */}
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Generate Season Schedule</h2>
+          <Card className="p-4">
+            <p className="text-sm text-gray-500 mb-4">
+              Creates 26 two-week rotation entries for a season, cycling through all rotation sets in order. Selecting a season pre-fills the start date with the first Wednesday on or after its start date — adjust as needed.
+            </p>
+            <div className="flex flex-wrap gap-3 items-end">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Season</label>
+                <select
+                  className="border border-gray-300 rounded px-2 py-1.5 text-sm"
+                  value={generateSeasonId}
+                  onChange={(e) => handleGenerateSeasonChange(e.target.value)}
+                >
+                  <option value="">— Select season —</option>
+                  {(seasons as Season[]).map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">First rotation start date</label>
+                <input
+                  type="date"
+                  className="border border-gray-300 rounded px-2 py-1.5 text-sm"
+                  value={generateStartDate}
+                  onChange={(e) => setGenerateStartDate(e.target.value)}
+                />
+              </div>
+              <Button
+                size="sm"
+                onClick={handleGenerateSchedule}
+                disabled={!generateSeasonId || !generateStartDate || generateSchedule.isPending}
+              >
+                {generateSchedule.isPending ? 'Generating...' : 'Generate 26 Rotations'}
+              </Button>
+            </div>
+          </Card>
         </section>
 
         {/* Schedule */}

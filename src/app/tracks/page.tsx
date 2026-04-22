@@ -9,16 +9,16 @@ import { useSeason } from '@/contexts/SeasonContext';
 // Stat display configuration
 const driverStats: Record<string, string> = {
   'tyreUse': 'Tyre Management',
-  'overtaking': 'Overtaking',
-  'defending': 'Defending',
+  'overtaking': 'Overtake',
+  'defending': 'Defend',
   'raceStart': 'Race Start',
   'none': 'None'
 };
 
 const carStats: Record<string, string> = {
   'speed': 'Speed',
-  'cornering': 'Cornering',
-  'powerUnit': 'Power Unit',
+  'cornering': 'Corner',
+  'powerUnit': 'PU',
   'none': 'None'
 };
 

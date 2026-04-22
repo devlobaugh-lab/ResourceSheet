@@ -21,7 +21,8 @@ export const PART_TYPE_ORDER: Record<number, number> = {
   5: 2, // Rear Wing - third
   4: 3, // Front Wing - fourth
   3: 4, // Suspension - fifth
-  2: 5  // Engine - sixth
+  2: 5, // Engine - sixth
+  6: 6  // Battery - seventh
 };
 
 /**
@@ -33,5 +34,6 @@ export const PART_TYPE_NAMES: Record<number, string> = {
   2: 'Engine',
   3: 'Suspension',
   4: 'Front Wing',
-  5: 'Rear Wing'
+  5: 'Rear Wing',
+  6: 'Battery'
 };

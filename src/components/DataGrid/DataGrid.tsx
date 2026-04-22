@@ -104,6 +104,7 @@ interface DataGridProps {
   bonusCheckedItems?: Set<string>;
   onBonusToggle?: (itemId: string) => void;
   showHighestLevel?: boolean;
+  seasonNumber?: number | null;
 }
 
 interface FilterState {
@@ -150,6 +151,7 @@ export function DataGrid({
   bonusCheckedItems = new Set(),
   onBonusToggle,
   showHighestLevel = false,
+  seasonNumber = null,
 }: DataGridProps) {
   // Resolve collection themes for any displayed items that are SE (rarity 5)
   const { getTheme } = useCollections()
@@ -255,8 +257,16 @@ export function DataGrid({
     }
 
     let baseValue = 0;
-    if (stats && stats.length > userLevel - 1 && stats[userLevel - 1][statName] !== undefined) {
-      baseValue = stats[userLevel - 1][statName];
+    if (stats && stats.length > userLevel - 1) {
+      if (statName === 'overtake') {
+        const s = stats[userLevel - 1];
+        const impact = s['powerBoostImpact'] || 0;
+        const duration = s['powerBoostDuration'] || 0;
+        const recharge = s['powerBoostRechargeRate'] || 0;
+        baseValue = (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (recharge !== -1 ? recharge : 0);
+      } else if (stats[userLevel - 1][statName] !== undefined) {
+        baseValue = stats[userLevel - 1][statName];
+      }
     }
 
     // Get the item ID for bonus checking
@@ -422,6 +432,7 @@ export function DataGrid({
         case 'cornering':
         case 'powerUnit':
         case 'drs':
+        case 'overtake':
         case 'pitStopTime':
           comparison = getStatValueForSort(a, filters.sortBy) - getStatValueForSort(b, filters.sortBy);
           break;
@@ -437,13 +448,14 @@ export function DataGrid({
                           getStatValueForSort(b, 'raceStart');
             comparison = aTotal - bTotal;
           } else if ('is_car_part' in a && 'is_car_part' in b && a.is_car_part && b.is_car_part) {
-            // Car part total (exclude pitStopTime)
+            // Car part total (exclude pitStopTime); S7+ uses overtake instead of drs
+            const extraStat = (seasonNumber != null && seasonNumber >= 7) ? 'overtake' : 'drs';
             const aTotal = getStatValueForSort(a, 'speed') + getStatValueForSort(a, 'cornering') +
                           getStatValueForSort(a, 'powerUnit') + getStatValueForSort(a, 'qualifying') +
-                          getStatValueForSort(a, 'drs');
+                          getStatValueForSort(a, extraStat);
             const bTotal = getStatValueForSort(b, 'speed') + getStatValueForSort(b, 'cornering') +
                           getStatValueForSort(b, 'powerUnit') + getStatValueForSort(b, 'qualifying') +
-                          getStatValueForSort(b, 'drs');
+                          getStatValueForSort(b, extraStat);
             comparison = aTotal - bTotal;
           }
           break;
@@ -456,6 +468,9 @@ export function DataGrid({
         case 'speed':
         case 'pit_stop':
         case 'race_start':
+        case 'power_boost_impact':
+        case 'power_boost_duration':
+        case 'power_boost_recharge_rate':
           comparison = getBoostTierValueForSort(a, filters.sortBy) - getBoostTierValueForSort(b, filters.sortBy);
           break;
         // Boost free status column
@@ -547,24 +562,26 @@ export function DataGrid({
       // Add 6 stats columns for drivers and parts
       if (gridType === 'drivers') {
       baseColumns.push(
-        { key: 'overtaking', label: 'Overtaking', sortable: true },
-        { key: 'blocking', label: 'Defending', sortable: true },
-        { key: 'qualifying', label: 'Qualifying', sortable: true },
+        { key: 'overtaking', label: 'Overtake', sortable: true },
+        { key: 'blocking', label: 'Defend', sortable: true },
+        { key: 'qualifying', label: 'Qualify', sortable: true },
         { key: 'raceStart', label: 'Race Start', sortable: true },
         { key: 'tyreUse', label: 'Tyre Use', sortable: true },
-        { key: 'total_value', label: 'Total Value', sortable: true }
+        { key: 'total_value', label: 'Total', sortable: true }
       );
     }
 
     if (gridType === 'parts') {
       baseColumns.push(
         { key: 'speed', label: 'Speed', sortable: true },
-        { key: 'cornering', label: 'Cornering', sortable: true },
-        { key: 'powerUnit', label: 'Power Unit', sortable: true },
-        { key: 'qualifying', label: 'Qualifying', sortable: true },
-        { key: 'drs', label: 'DRS', sortable: true },
+        { key: 'cornering', label: 'Corner', sortable: true },
+        { key: 'powerUnit', label: 'PU', sortable: true },
+        { key: 'qualifying', label: 'Qualify', sortable: true },
+        ...(seasonNumber != null && seasonNumber >= 7
+          ? [{ key: 'overtake', label: 'Overtake', sortable: true }]
+          : [{ key: 'drs', label: 'DRS', sortable: true }]),
         { key: 'pitStopTime', label: 'Pit Stop', sortable: true },
-        { key: 'total_value', label: 'Total Value', sortable: true }
+        { key: 'total_value', label: 'Total', sortable: true }
       );
     }
 
@@ -582,9 +599,12 @@ export function DataGrid({
         { key: 'race_start', label: 'Race Start', sortable: true },
         { key: 'tyre_use', label: 'Tyre Use', sortable: true },
         { key: 'speed', label: 'Speed', sortable: true },
-        { key: 'corners', label: 'Corners', sortable: true },
-        { key: 'power_unit', label: 'Power Unit', sortable: true },
+        { key: 'corners', label: 'Corner', sortable: true },
+        { key: 'power_unit', label: 'PU', sortable: true },
         { key: 'pit_stop', label: 'Pit Stop', sortable: true },
+        { key: 'power_boost_impact', label: 'PB Impact', sortable: true },
+        { key: 'power_boost_duration', label: 'PB Duration', sortable: true },
+        { key: 'power_boost_recharge_rate', label: 'PB Recharge', sortable: true },
         // Removed DRS tier column as requested
       );
     }
@@ -671,8 +691,9 @@ export function DataGrid({
       });
     } else if (gridType === 'parts') {
       // Parts: calculate stats separately for each part type
-      const partTypes = [0, 1, 2, 3, 4, 5]; // Brakes, Gearbox, Engine, Suspension, Front Wing, Rear Wing
-      const statColumns = ['speed', 'cornering', 'powerUnit', 'qualifying', 'drs', 'pitStopTime', 'total_value'];
+      const partTypes = [4, 1, 3, 5, 0, 2, 6]; // Front Wing, Brakes, Suspension, Rear Wing, Gearbox, Engine, Battery
+      const extraStat = (seasonNumber != null && seasonNumber >= 7) ? 'overtake' : 'drs';
+      const statColumns = ['speed', 'cornering', 'powerUnit', 'qualifying', extraStat, 'pitStopTime', 'total_value'];
 
       partTypes.forEach(partType => {
         statColumns.forEach(statName => {
@@ -780,7 +801,8 @@ export function DataGrid({
       2: 'Engine',
       3: 'Suspension',
       4: 'Front Wing',
-      5: 'Rear Wing'
+      5: 'Rear Wing',
+      6: 'Battery'
     };
     return typeMap[carPartType] || 'Unknown';
   };
@@ -967,8 +989,16 @@ export function DataGrid({
                 }
 
                 let baseValue = 0;
-                if (stats && stats.length > userLevel - 1 && stats[userLevel - 1][statName] !== undefined) {
-                  baseValue = stats[userLevel - 1][statName];
+                if (stats && stats.length > userLevel - 1) {
+                  if (statName === 'overtake') {
+                    const s = stats[userLevel - 1];
+                    const impact = s['powerBoostImpact'] || 0;
+                    const duration = s['powerBoostDuration'] || 0;
+                    const recharge = s['powerBoostRechargeRate'] || 0;
+                    baseValue = (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (recharge !== -1 ? recharge : 0);
+                  } else if (stats[userLevel - 1][statName] !== undefined) {
+                    baseValue = stats[userLevel - 1][statName];
+                  }
                 }
 
                 // Apply bonus if item has bonus checked and bonus percentage is set
@@ -1160,17 +1190,26 @@ export function DataGrid({
                       <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${(catalogItem as CarPartView).car_part_type}_qualifying`] && getStatBackgroundColor(getStatValue('qualifying'), columnStats[`${(catalogItem as CarPartView).car_part_type}_qualifying`].min, columnStats[`${(catalogItem as CarPartView).car_part_type}_qualifying`].max, columnStats[`${(catalogItem as CarPartView).car_part_type}_qualifying`].median))}>
                         <div className="text-sm text-gray-900">{getStatValue('qualifying')}</div>
                       </td>
-                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${(catalogItem as CarPartView).car_part_type}_drs`] && getStatBackgroundColor(getStatValue('drs'), columnStats[`${(catalogItem as CarPartView).car_part_type}_drs`].min, columnStats[`${(catalogItem as CarPartView).car_part_type}_drs`].max, columnStats[`${(catalogItem as CarPartView).car_part_type}_drs`].median))}>
-                        <div className="text-sm text-gray-900">{getStatValue('drs')}</div>
-                      </td>
-                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${(catalogItem as CarPartView).car_part_type}_pitStopTime`] && getStatBackgroundColor(getStatValue('pitStopTime'), columnStats[`${(catalogItem as CarPartView).car_part_type}_pitStopTime`].min, columnStats[`${(catalogItem as CarPartView).car_part_type}_pitStopTime`].max, columnStats[`${(catalogItem as CarPartView).car_part_type}_pitStopTime`].median))}>
-                        <div className="text-sm text-gray-900">{getStatValue('pitStopTime')}</div>
-                      </td>
-                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${(catalogItem as CarPartView).car_part_type}_total_value`] && getStatBackgroundColor(getStatValue('speed') + getStatValue('cornering') + getStatValue('powerUnit') + getStatValue('qualifying') + getStatValue('drs'), columnStats[`${(catalogItem as CarPartView).car_part_type}_total_value`].min, columnStats[`${(catalogItem as CarPartView).car_part_type}_total_value`].max, columnStats[`${(catalogItem as CarPartView).car_part_type}_total_value`].median))}>
-                        <div className="text-sm font-medium text-gray-900">
-                          {getStatValue('speed') + getStatValue('cornering') + getStatValue('powerUnit') + getStatValue('qualifying') + getStatValue('drs')}
-                        </div>
-                      </td>
+                      {(() => {
+                        const partType = (catalogItem as CarPartView).car_part_type;
+                        const extraStat = (seasonNumber != null && seasonNumber >= 7) ? 'overtake' : 'drs';
+                        const extraStatKey = `${partType}_${extraStat}`;
+                        const extraValue = getStatValue(extraStat);
+                        const totalValue = getStatValue('speed') + getStatValue('cornering') + getStatValue('powerUnit') + getStatValue('qualifying') + extraValue;
+                        return (
+                          <>
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[extraStatKey] && getStatBackgroundColor(extraValue, columnStats[extraStatKey].min, columnStats[extraStatKey].max, columnStats[extraStatKey].median))}>
+                              <div className="text-sm text-gray-900">{extraValue}</div>
+                            </td>
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${partType}_pitStopTime`] && getStatBackgroundColor(getStatValue('pitStopTime'), columnStats[`${partType}_pitStopTime`].min, columnStats[`${partType}_pitStopTime`].max, columnStats[`${partType}_pitStopTime`].median))}>
+                              <div className="text-sm text-gray-900">{getStatValue('pitStopTime')}</div>
+                            </td>
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${partType}_total_value`] && getStatBackgroundColor(totalValue, columnStats[`${partType}_total_value`].min, columnStats[`${partType}_total_value`].max, columnStats[`${partType}_total_value`].median))}>
+                              <div className="text-sm font-medium text-gray-900">{totalValue}</div>
+                            </td>
+                          </>
+                        );
+                      })()}
                       <td className="px-3 py-1 whitespace-nowrap text-center">
                         <div className="text-sm text-gray-900">{(isDriver ? (catalogItem as DriverView).series : isCarPart ? (catalogItem as CarPartView).series : 0)}</div>
                       </td>
@@ -1218,6 +1257,21 @@ export function DataGrid({
                       <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('pit_stop') > 0 && getBoostValueColor(getBoostTierValue('pit_stop')))}>
                         <div className="text-sm font-medium">
                           {getBoostTierValue('pit_stop') * 5 || ''}
+                        </div>
+                      </td>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('power_boost_impact') > 0 && getBoostValueColor(getBoostTierValue('power_boost_impact')))}>
+                        <div className="text-sm font-medium">
+                          {getBoostTierValue('power_boost_impact') * 5 || ''}
+                        </div>
+                      </td>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('power_boost_duration') > 0 && getBoostValueColor(getBoostTierValue('power_boost_duration')))}>
+                        <div className="text-sm font-medium">
+                          {getBoostTierValue('power_boost_duration') * 5 || ''}
+                        </div>
+                      </td>
+                      <td className={cn("px-3 py-1 whitespace-nowrap text-center", getBoostTierValue('power_boost_recharge_rate') > 0 && getBoostValueColor(getBoostTierValue('power_boost_recharge_rate')))}>
+                        <div className="text-sm font-medium">
+                          {getBoostTierValue('power_boost_recharge_rate') * 5 || ''}
                         </div>
                       </td>
                     </>
