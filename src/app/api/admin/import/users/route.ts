@@ -390,6 +390,7 @@ export async function POST(request: NextRequest) {
               setup_front_wing_id: item.setup_front_wing_id ?? null,
               setup_suspension_id: item.setup_suspension_id ?? null,
               setup_engine_id: item.setup_engine_id ?? null,
+              setup_battery_id: item.setup_battery_id ?? null,
               setup_bonus_percentage: item.setup_bonus_percentage ?? 0,
               setup_series_filter: item.setup_series_filter ?? 0,
             }

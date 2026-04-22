@@ -377,6 +377,7 @@ export function useCreateSetup() {
       front_wing_id?: string | null
       suspension_id?: string | null
       engine_id?: string | null
+      battery_id?: string | null
       series_filter?: number
       bonus_percentage?: number
       bonus_part_ids?: string[]
@@ -421,6 +422,7 @@ export function useUpdateSetup() {
         front_wing_id: string | null
         suspension_id: string | null
         engine_id: string | null
+        battery_id: string | null
         series_filter: number
         bonus_percentage: number
         bonus_part_ids: string[]
@@ -784,6 +786,30 @@ export function useDeleteRotationScheduleEntry() {
         credentials: 'same-origin',
       })
       if (!response.ok) throw new Error('Failed to delete schedule entry')
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-rotation-schedule'] })
+      queryClient.invalidateQueries({ queryKey: ['track-rotation-schedule'] })
+    },
+  })
+}
+
+// Admin: generate 26 schedule entries for a season
+export function useGenerateSeasonSchedule() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ season_id, start_date }: { season_id: string; start_date: string }) => {
+      const response = await fetch(`${API_BASE}/admin/track-rotations/schedule/generate`, {
+        method: 'POST',
+        headers: await getAuthHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify({ season_id, start_date }),
+      })
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err?.error?.message ?? 'Failed to generate schedule')
+      }
       return response.json()
     },
     onSuccess: () => {

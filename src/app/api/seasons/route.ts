@@ -166,6 +166,7 @@ export async function POST(request: NextRequest) {
       .from('seasons')
       .insert({
         name: newName,
+        season_number: maxNumber + 1,
         start_date: validatedData.start_date,
         is_active: false,
         content_cache_loaded: false,

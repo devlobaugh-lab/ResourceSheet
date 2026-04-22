@@ -357,12 +357,12 @@ export function DriverSelectionGrid({
     }
 
     baseColumns.push(
-      { key: 'overtaking', label: 'Overtaking', sortable: true },
-      { key: 'blocking', label: 'Defending', sortable: true },
-      { key: 'qualifying', label: 'Qualifying', sortable: true },
+      { key: 'overtaking', label: 'Overtake', sortable: true },
+      { key: 'blocking', label: 'Defend', sortable: true },
+      { key: 'qualifying', label: 'Qualify', sortable: true },
       { key: 'raceStart', label: 'Race Start', sortable: true },
       { key: 'tyreUse', label: 'Tyre Use', sortable: true },
-      { key: 'total_value', label: 'Total Value', sortable: true },
+      { key: 'total_value', label: 'Total', sortable: true },
     );
     
     return baseColumns;
