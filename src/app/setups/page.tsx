@@ -331,13 +331,6 @@ function AuthenticatedSetupsPage() {
       return
     }
 
-    // Check if all parts are selected
-    const missingParts = PART_TYPES.filter(({ key }) => !slot.selectedParts[key])
-    if (missingParts.length > 0) {
-      addToast(`Please select: ${missingParts.map(p => p.label).join(', ')}`, 'error')
-      return
-    }
-
     try {
       if (slot.id) {
         // Update existing setup
