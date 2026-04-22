@@ -1020,6 +1020,7 @@ export default function GpGuideEditorPage() {
                   onBonusToggle={handleGpBonusPartToggle}
                   bonusPercentage={String(guide.bonus_percentage)}
                   bonusOnlyMode={true}
+                  seasonNumber={activeSeason?.season_number}
                 />
               </div>
               <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end">
