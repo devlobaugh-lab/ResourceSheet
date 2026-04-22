@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, Fragment } from 'react';
 import { Input } from '@/components/ui/Input';
 import { CarPartView } from '@/types/database';
 import { cn, calculateHighestLevel, getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils';
@@ -310,9 +310,8 @@ export function CarPartSelectionGrid({
                 : (part.level || 0);
 
               return (
-                <>
+                <Fragment key={part.id}>
                   <tr
-                    key={part.id}
                     className={cn(
                       'hover:bg-gray-50 transition-colors cursor-pointer',
                       bonusOnlyMode
@@ -414,7 +413,7 @@ export function CarPartSelectionGrid({
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               );
             })}
           </tbody>
