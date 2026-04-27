@@ -1025,6 +1025,7 @@ export type Database = {
           id: string
           is_ready: boolean
           is_wet: boolean
+          laps_override: number | null
           race_number: number
           race_type: string
           saved_setup_id: string | null
@@ -1047,6 +1048,7 @@ export type Database = {
           id?: string
           is_ready?: boolean
           is_wet?: boolean
+          laps_override?: number | null
           race_number: number
           race_type: string
           saved_setup_id?: string | null
@@ -1069,6 +1071,7 @@ export type Database = {
           id?: string
           is_ready?: boolean
           is_wet?: boolean
+          laps_override?: number | null
           race_number?: number
           race_type?: string
           saved_setup_id?: string | null

@@ -60,6 +60,7 @@ interface TrackSlot {
   saved_setup_id: string | null; setup_notes: string | null
   driver_1_tire_strategy: string | null; driver_2_tire_strategy: string | null
   strategy_notes: string | null
+  laps_override: number | null
 }
 
 interface ResultEntry {
@@ -251,7 +252,8 @@ function TrackSlotCard({
   }, [guideId, slot.id, onUpdate])
 
   const handleTrackChange = (trackId: string) => {
-    save({ track_id: trackId || null })
+    const selected = allTracks.find(t => t.id === trackId) || null
+    save({ track_id: trackId || null, laps_override: selected?.laps ?? null })
   }
 
   return (
@@ -276,8 +278,19 @@ function TrackSlotCard({
             ))}
         </select>
         {track && (
-          <span className="text-xs text-gray-500 hidden sm:inline">
-            {track.laps} laps · {capitalizeStat(track.driver_track_stat)} / {capitalizeStat(track.car_track_stat)}
+          <span className="text-xs text-gray-500 hidden sm:inline flex items-center gap-1">
+            <input
+              type="number"
+              min={1}
+              value={slot.laps_override ?? track.laps}
+              onChange={e => {
+                const val = parseInt(e.target.value, 10)
+                save({ laps_override: val > 0 ? val : null })
+              }}
+              onClick={e => e.stopPropagation()}
+              className="w-8 px-1 mr-2 border border-gray-300 rounded text-xs text-center"
+            />
+            laps · {capitalizeStat(track.driver_track_stat)} / {capitalizeStat(track.car_track_stat)}
           </span>
         )}
         <button
@@ -1078,7 +1091,7 @@ function CondensedView({ guide, allTracks, allDrivers, allBoosts, allSetups }: {
     return (
       <div key={slot.id} className="mb-4 print:mb-2 border-b border-gray-100 pb-2 last:border-0">
         <div className="font-semibold text-lg print:text-base text-gray-900">
-          {i + 1}. {track ? (track.display_name || track.name) : '?'} — {track?.laps || '?'} Laps
+          {i + 1}. {track ? (track.display_name || track.name) : '?'} — {slot.laps_override ?? track?.laps ?? '?'} Laps
           {track ? ` · ${capitalizeStat(track.driver_track_stat)} / ${capitalizeStat(track.car_track_stat)}` : ''}
           {' '}{slot.is_wet ? '🌧️' : '☀️'}
         </div>
