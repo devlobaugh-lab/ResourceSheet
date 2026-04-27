@@ -18,6 +18,7 @@ const updateTrackSlotSchema = z.object({
   driver_1_tire_strategy: z.string().nullable().optional(),
   driver_2_tire_strategy: z.string().nullable().optional(),
   strategy_notes: z.string().nullable().optional(),
+  laps_override: z.number().int().positive().nullable().optional(),
 }).partial()
 
 async function getAuthUser(request: NextRequest) {
