@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, Fragment } from 'react';
 import { Input } from '@/components/ui/Input';
 import { CarPartView } from '@/types/database';
 import { cn, calculateHighestLevel, getRarityBackground, getRarityDisplay, getCollectionRarityDisplay } from '@/lib/utils';
@@ -64,6 +64,8 @@ interface CarPartSelectionGridProps {
   initialMaxSeries?: number;
   /** When true, hides the separate Bonus column and makes the leading checkbox the bonus toggle */
   bonusOnlyMode?: boolean;
+  /** Season number — if >= 7, shows Overtake instead of DRS and powerboost columns for Battery parts */
+  seasonNumber?: number | null;
 }
 
 export function CarPartSelectionGrid({
@@ -76,7 +78,10 @@ export function CarPartSelectionGrid({
   bonusPercentage,
   initialMaxSeries = 12,
   bonusOnlyMode = false,
+  seasonNumber = null,
 }: CarPartSelectionGridProps) {
+  const isFY26 = (seasonNumber ?? 0) >= 7;
+  const isBattery = partType === 6;
   const [searchTerm, setSearchTerm] = useState('');
   const [localMaxSeries, setLocalMaxSeries] = useState(initialMaxSeries);
   const [showHighestLevel, setShowHighestLevel] = useState(false);
@@ -107,7 +112,16 @@ export function CarPartSelectionGrid({
     const stats = part.stats_per_level;
     if (stats.length < userLevel) return 0;
 
-    let baseValue = stats[userLevel - 1][statName] || 0;
+    let baseValue = 0;
+    if (statName === 'overtake') {
+      const s = stats[userLevel - 1] as Record<string, number>;
+      const impact = s['powerBoostImpact'] || 0;
+      const duration = s['powerBoostDuration'] || 0;
+      const recharge = s['powerBoostRechargeRate'] || 0;
+      baseValue = (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (recharge !== -1 ? recharge : 0);
+    } else {
+      baseValue = (stats[userLevel - 1] as Record<string, number>)[statName] || 0;
+    }
 
     const bonusPct = parseFloat(bonusPercentage) || 0;
     if (bonusCheckedItems.has(part.id) && bonusPct > 0) {
@@ -127,13 +141,15 @@ export function CarPartSelectionGrid({
       getStatValue(part, 'cornering') +
       getStatValue(part, 'powerUnit') +
       getStatValue(part, 'qualifying') +
-      getStatValue(part, 'drs')
+      getStatValue(part, isFY26 ? 'overtake' : 'drs')
     );
-  }, [getStatValue]);
+  }, [getStatValue, isFY26]);
 
   // Calculate column stats for color coding
   const columnStats = useMemo(() => {
-    const statNames = ['speed', 'cornering', 'powerUnit', 'qualifying', 'drs', 'pitStopTime'];
+    const extraStat = isFY26 ? 'overtake' : 'drs';
+    const batteryStats: string[] = [];
+    const statNames = ['speed', 'cornering', 'powerUnit', 'qualifying', extraStat, 'pitStopTime', ...batteryStats];
     const result: Record<string, { min: number; max: number; median: number }> = {};
 
     statNames.forEach(statName => {
@@ -168,7 +184,7 @@ export function CarPartSelectionGrid({
     }
 
     return result;
-  }, [partsForType, getStatValue, getTotalValue]);
+  }, [partsForType, getStatValue, getTotalValue, isFY26]);
 
   // Sorted parts
   const sortedParts = useMemo(() => {
@@ -204,15 +220,17 @@ export function CarPartSelectionGrid({
   const columns = [
     { key: 'name', label: 'Name' },
     { key: 'rarity', label: 'Rarity' },
-    { key: 'level', label: 'Level' },
+    { key: 'level', label: 'Lvl' },
     ...(!bonusOnlyMode ? [{ key: 'bonus', label: 'Bonus', sortable: false }] : []),
     { key: 'speed', label: 'Speed' },
-    { key: 'cornering', label: 'Cornering' },
-    { key: 'powerUnit', label: 'Power Unit' },
-    { key: 'qualifying', label: 'Qualifying' },
-    { key: 'drs', label: 'DRS' },
+    { key: 'cornering', label: 'Corner' },
+    { key: 'powerUnit', label: 'PU' },
+    { key: 'qualifying', label: 'fy' },
+    ...(isFY26
+      ? [{ key: 'overtake', label: 'Overtake' }]
+      : [{ key: 'drs', label: 'DRS' }]),
     { key: 'pitStopTime', label: 'Pit Stop' },
-    { key: 'totalValue', label: 'Total Value' },
+    { key: 'totalValue', label: 'Total' },
     { key: 'series', label: 'Series' },
   ];
 
@@ -283,7 +301,8 @@ export function CarPartSelectionGrid({
               const cornering = getStatValue(part, 'cornering');
               const powerUnit = getStatValue(part, 'powerUnit');
               const qualifying = getStatValue(part, 'qualifying');
-              const drs = getStatValue(part, 'drs');
+              const extraStatKey = isFY26 ? 'overtake' : 'drs';
+              const drs = getStatValue(part, extraStatKey);
               const pitStopTime = getStatValue(part, 'pitStopTime');
               const totalValue = getTotalValue(part);
               const effectiveLevel = showHighestLevel
@@ -291,16 +310,16 @@ export function CarPartSelectionGrid({
                 : (part.level || 0);
 
               return (
-                <tr
-                  key={part.id}
-                  className={cn(
-                    'hover:bg-gray-50 transition-colors cursor-pointer',
-                    bonusOnlyMode
-                      ? bonusCheckedItems.has(part.id) && 'bg-blue-50'
-                      : isSelected && 'bg-blue-50'
-                  )}
-                  onClick={() => bonusOnlyMode ? onBonusToggle(part.id) : onPartSelect(part.id === selectedPartId ? '' : part.id)}
-                >
+                <Fragment key={part.id}>
+                  <tr
+                    className={cn(
+                      'hover:bg-gray-50 transition-colors cursor-pointer',
+                      bonusOnlyMode
+                        ? bonusCheckedItems.has(part.id) && 'bg-blue-50'
+                        : isSelected && 'bg-blue-50'
+                    )}
+                    onClick={() => bonusOnlyMode ? onBonusToggle(part.id) : onPartSelect(part.id === selectedPartId ? '' : part.id)}
+                  >
                   {/* Name */}
                   <td className={cn('px-3 py-1 whitespace-nowrap', getRarityBackground(part.rarity))}>
                     <div className="flex items-center gap-2">
@@ -367,7 +386,7 @@ export function CarPartSelectionGrid({
                   <td className={cn('px-3 py-1 whitespace-nowrap text-center', columnStats['qualifying'] && getStatBackgroundColor(qualifying, columnStats['qualifying'].min, columnStats['qualifying'].max, columnStats['qualifying'].median))}>
                     <span className="text-sm text-gray-900">{qualifying || ''}</span>
                   </td>
-                  <td className={cn('px-3 py-1 whitespace-nowrap text-center', columnStats['drs'] && getStatBackgroundColor(drs, columnStats['drs'].min, columnStats['drs'].max, columnStats['drs'].median))}>
+                  <td className={cn('px-3 py-1 whitespace-nowrap text-center', columnStats[extraStatKey] && getStatBackgroundColor(drs, columnStats[extraStatKey].min, columnStats[extraStatKey].max, columnStats[extraStatKey].median))}>
                     <span className="text-sm text-gray-900">{drs || ''}</span>
                   </td>
                   <td className={cn('px-3 py-1 whitespace-nowrap text-center', columnStats['pitStopTime'] && getStatBackgroundColor(pitStopTime, columnStats['pitStopTime'].min, columnStats['pitStopTime'].max, columnStats['pitStopTime'].median, true))}>
@@ -381,7 +400,20 @@ export function CarPartSelectionGrid({
                   <td className="px-3 py-1 whitespace-nowrap text-center">
                     <span className="text-sm text-gray-900">{part.series}</span>
                   </td>
-                </tr>
+                  </tr>
+                  {isFY26 && isBattery && (
+                    <tr key={`${part.id}-pb`} className="hover:bg-gray-50 transition-colors">
+                      <td colSpan={columns.length} className="px-3 py-0.5 text-xs text-gray-500 text-left">
+                        {(() => {
+                          const impact = getStatValue(part, 'powerBoostImpact');
+                          const duration = getStatValue(part, 'powerBoostDuration');
+                          const recharge = getStatValue(part, 'powerBoostRechargeRate');
+                          return `PB Impact: ${impact} · PB Duration: ${duration} · PB Charge: ${recharge}`;
+                        })()}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               );
             })}
           </tbody>

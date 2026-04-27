@@ -21,7 +21,12 @@ export default function SeasonsAdminPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [startDate, setStartDate] = useState('')
   const [showActivateModal, setShowActivateModal] = useState(false)
+  const [showActivateNonPendingModal, setShowActivateNonPendingModal] = useState<string | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [editSeason, setEditSeason] = useState<Season | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editSeasonNumber, setEditSeasonNumber] = useState<string>('')
+  const [editStartDate, setEditStartDate] = useState('')
 
   // Fetch all seasons (admin receives pending seasons too via the API)
   const { data: seasonsData, isLoading } = useQuery({
@@ -63,7 +68,7 @@ export default function SeasonsAdminPage() {
     },
   })
 
-  // Activate season mutation
+  // Activate season mutation (for pending seasons)
   const activateMutation = useMutation({
     mutationFn: async (id: string) => {
       const response = await fetch(`/api/seasons/${id}`, {
@@ -86,6 +91,33 @@ export default function SeasonsAdminPage() {
     },
     onError: (error: Error) => {
       setShowActivateModal(false)
+      addToast(error.message, 'error')
+    },
+  })
+
+  // Activate non-pending season mutation
+  const activateNonPendingMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/seasons/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
+        body: JSON.stringify({ is_active: true }),
+      })
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error?.message || 'Failed to activate season')
+      }
+      return response.json()
+    },
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-seasons'] })
+      queryClient.invalidateQueries({ queryKey: ['seasons'] })
+      setActiveSeason(id)
+      setShowActivateNonPendingModal(null)
+      addToast('Season activated successfully', 'success')
+    },
+    onError: (error: Error) => {
+      setShowActivateNonPendingModal(null)
       addToast(error.message, 'error')
     },
   })
@@ -113,6 +145,32 @@ export default function SeasonsAdminPage() {
     },
   })
 
+  // Update season mutation
+  const updateMutation = useMutation({
+    mutationFn: async (data: { id: string; name?: string; season_number?: number; start_date?: string }) => {
+      const { id, ...updateData } = data
+      const response = await fetch(`/api/seasons/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
+        body: JSON.stringify(updateData),
+      })
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error?.message || 'Failed to update season')
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-seasons'] })
+      queryClient.invalidateQueries({ queryKey: ['seasons'] })
+      setEditSeason(null)
+      addToast('Season updated successfully', 'success')
+    },
+    onError: (error: Error) => {
+      addToast(error.message, 'error')
+    },
+  })
+
   const handleAddSeason = (e: React.FormEvent) => {
     e.preventDefault()
     if (!startDate) return
@@ -126,6 +184,25 @@ export default function SeasonsAdminPage() {
     } else {
       setActiveSeason(pendingSeason.id)
     }
+  }
+
+  const handleEditClick = (season: Season) => {
+    setEditSeason(season)
+    setEditName(season.name)
+    setEditSeasonNumber(season.season_number?.toString() ?? '')
+    setEditStartDate(season.start_date ?? '')
+  }
+
+  const handleEditSave = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editSeason) return
+    const updateData: { id: string; name?: string; season_number?: number; start_date?: string } = { id: editSeason.id }
+    if (editName !== editSeason.name) updateData.name = editName
+    if (editSeasonNumber && parseInt(editSeasonNumber) !== (editSeason.season_number ?? 0)) {
+      updateData.season_number = parseInt(editSeasonNumber)
+    }
+    if (editStartDate !== (editSeason.start_date ?? '')) updateData.start_date = editStartDate
+    updateMutation.mutate(updateData)
   }
 
   return (
@@ -252,7 +329,24 @@ export default function SeasonsAdminPage() {
                           <Badge variant="warning">Pending</Badge>
                         ) : null}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                        {!season.is_active && season.activated_at !== null && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowActivateNonPendingModal(season.id)}
+                            disabled={activateNonPendingMutation.isPending}
+                          >
+                            Activate
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditClick(season)}
+                        >
+                          Edit
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -392,6 +486,118 @@ export default function SeasonsAdminPage() {
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
                 {deleteMutation.isPending ? 'Deleting…' : 'Delete Season'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Edit Season Modal */}
+      {editSeason && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Edit {editSeason.name}</h2>
+              <button onClick={() => setEditSeason(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg mb-4">
+              <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+              <p className="text-sm text-amber-800">
+                Editing season metadata may affect data displayed to users. Changes take effect immediately.
+              </p>
+            </div>
+            <form onSubmit={handleEditSave} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Season Name
+                </label>
+                <Input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  required
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Season Number
+                </label>
+                <Input
+                  type="number"
+                  value={editSeasonNumber}
+                  onChange={(e) => setEditSeasonNumber(e.target.value)}
+                  className="w-full"
+                  min="1"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Start Date
+                </label>
+                <Input
+                  type="date"
+                  value={editStartDate}
+                  onChange={(e) => setEditStartDate(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditSeason(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateMutation.isPending}
+                >
+                  {updateMutation.isPending ? 'Saving…' : 'Save Changes'}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* Activate Non-Pending Season Confirmation Modal */}
+      {showActivateNonPendingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Activate Season?
+              </h2>
+              <button onClick={() => setShowActivateNonPendingModal(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-3 mb-6">
+              <p className="text-sm text-gray-700">
+                This will immediately switch the active season for all users.
+              </p>
+              <p className="text-sm text-gray-700">
+                If this season has different data, users may see inconsistencies.
+              </p>
+              <p className="text-sm font-medium text-red-600">This cannot be undone.</p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowActivateNonPendingModal(null)}
+                disabled={activateNonPendingMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => activateNonPendingMutation.mutate(showActivateNonPendingModal)}
+                disabled={activateNonPendingMutation.isPending}
+              >
+                {activateNonPendingMutation.isPending ? 'Activating…' : 'Yes, Activate'}
               </Button>
             </div>
           </Card>

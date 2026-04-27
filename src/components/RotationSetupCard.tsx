@@ -6,17 +6,18 @@ import { CarPartSelectionGrid } from './CarPartSelectionGrid'
 import { Card } from './ui/Card'
 import { cn } from '@/lib/utils'
 
-const PART_TYPES = [
-  { key: 'brake',       dbKey: 'setup_brake_id',      type: 1, label: 'Brake' },
-  { key: 'gearbox',     dbKey: 'setup_gearbox_id',    type: 0, label: 'Gearbox' },
-  { key: 'rear_wing',   dbKey: 'setup_rear_wing_id',  type: 5, label: 'Rear Wing' },
+const ALL_PART_TYPES = [
   { key: 'front_wing',  dbKey: 'setup_front_wing_id', type: 4, label: 'Front Wing' },
+  { key: 'brake',       dbKey: 'setup_brake_id',      type: 1, label: 'Brake' },
   { key: 'suspension',  dbKey: 'setup_suspension_id', type: 3, label: 'Suspension' },
+  { key: 'rear_wing',   dbKey: 'setup_rear_wing_id',  type: 5, label: 'Rear Wing' },
+  { key: 'gearbox',     dbKey: 'setup_gearbox_id',    type: 0, label: 'Gearbox' },
   { key: 'engine',      dbKey: 'setup_engine_id',     type: 2, label: 'Engine' },
+  { key: 'battery',     dbKey: 'setup_battery_id',    type: 6, label: 'Battery' },
 ] as const
 
-type PartKey = typeof PART_TYPES[number]['key']
-type DbPartKey = typeof PART_TYPES[number]['dbKey']
+type PartKey = typeof ALL_PART_TYPES[number]['key']
+type DbPartKey = typeof ALL_PART_TYPES[number]['dbKey']
 
 const getRarityBg = (rarity: number): string =>
   rarity === 0 ? 'bg-gray-300' :
@@ -47,6 +48,7 @@ export type RotationSetupPatch = {
   setup_front_wing_id?: string | null
   setup_suspension_id?: string | null
   setup_engine_id?: string | null
+  setup_battery_id?: string | null
   setup_bonus_percentage?: number
   setup_series_filter?: number
 }
@@ -56,6 +58,7 @@ interface RotationSetupCardProps {
   allCarParts: CarPartView[]
   allSetups: UserCarSetup[]
   onSave: (patch: RotationSetupPatch) => void
+  seasonNumber?: number | null
 }
 
 export function RotationSetupCard({
@@ -63,7 +66,10 @@ export function RotationSetupCard({
   allCarParts,
   allSetups,
   onSave,
+  seasonNumber,
 }: RotationSetupCardProps) {
+  const isFY26 = (seasonNumber ?? 0) >= 7
+  const PART_TYPES = isFY26 ? ALL_PART_TYPES : ALL_PART_TYPES.filter(p => p.type !== 6)
   const [partModal, setPartModal] = useState<{ partKey: PartKey; partType: number } | null>(null)
   const [bonusInput, setBonusInput] = useState<string>(() => String(seriesData?.setup_bonus_percentage ?? 0))
   const [seriesFilterInput, setSeriesFilterInput] = useState<string>(() => String(seriesData?.setup_series_filter ?? 12))
@@ -95,7 +101,7 @@ export function RotationSetupCard({
   }
 
   const getPartId = (key: PartKey): string | null => {
-    const pt = PART_TYPES.find(p => p.key === key)!
+    const pt = ALL_PART_TYPES.find(p => p.key === key)!
     return (seriesData?.[pt.dbKey as keyof UserRotationSeriesData] as string | null) ?? null
   }
 
@@ -106,7 +112,7 @@ export function RotationSetupCard({
 
   const totalStats = useMemo(() => {
     const bonusPct = bonusPercentage
-    const s = { speed: 0, cornering: 0, powerUnit: 0, qualifying: 0, drs: 0, pitStopTime: 0 }
+    const s = { speed: 0, cornering: 0, powerUnit: 0, qualifying: 0, drs: 0, overtake: 0, pitStopTime: 0 }
     for (const { key } of PART_TYPES) {
       const part = getPart(key)
       if (part) {
@@ -116,12 +122,16 @@ export function RotationSetupCard({
         s.powerUnit   += getStatValue(part, 'powerUnit', bonusPct, hasBonus)
         s.qualifying  += getStatValue(part, 'qualifying', bonusPct, hasBonus)
         s.drs         += getStatValue(part, 'drs', bonusPct, hasBonus)
+        const impact = getStatValue(part, 'powerBoostImpact', bonusPct, hasBonus)
+        const duration = getStatValue(part, 'powerBoostDuration', bonusPct, hasBonus)
+        const rechargeRate = getStatValue(part, 'powerBoostRechargeRate', bonusPct, hasBonus)
+        s.overtake += (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (rechargeRate !== -1 ? rechargeRate : 0)
         s.pitStopTime += getStatValue(part, 'pitStopTime', bonusPct, hasBonus)
       }
     }
     return s
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seriesData, allCarParts, bonusCheckedItems, bonusInput])
+  }, [seriesData, allCarParts, bonusCheckedItems, bonusInput, isFY26])
 
   function handlePartSelect(partKey: PartKey, partId: string) {
     const pt = PART_TYPES.find(p => p.key === partKey)!
@@ -141,6 +151,7 @@ export function RotationSetupCard({
       setup_front_wing_id: setup.front_wing_id,
       setup_suspension_id: setup.suspension_id,
       setup_engine_id:     setup.engine_id,
+      setup_battery_id:    setup.battery_id,
       setup_bonus_percentage: setup.bonus_percentage ?? 0,
       setup_series_filter:    setup.series_filter ?? 12,
     })
@@ -213,7 +224,7 @@ export function RotationSetupCard({
       </div>
 
       {/* Parts grid */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className={`grid ${isFY26 ? 'grid-cols-4' : 'grid-cols-3'} gap-2`}>
         {PART_TYPES.map(({ key, label }) => {
           const part = getPart(key)
           const hasBonus = part ? bonusCheckedItems.has(part.id) : false
@@ -247,15 +258,15 @@ export function RotationSetupCard({
       <div className="space-y-1.5">
         <div className="grid grid-cols-2 gap-1.5">
           <StatRow label="Speed" value={totalStats.speed} />
-          <StatRow label="Power Unit" value={totalStats.powerUnit} />
+          <StatRow label="PU" value={totalStats.powerUnit} />
         </div>
         <div className="grid grid-cols-2 gap-1.5">
-          <StatRow label="Cornering" value={totalStats.cornering} />
-          <StatRow label="Qualifying" value={totalStats.qualifying} />
+          <StatRow label="Corner" value={totalStats.cornering} />
+          <StatRow label="Qualify" value={totalStats.qualifying} />
         </div>
         <div className="grid grid-cols-2 gap-1.5">
-          <StatRow label="Avg Pit Stop" value={`${totalStats.pitStopTime.toFixed(2)}s`} />
-          <StatRow label="DRS" value={totalStats.drs} />
+          <StatRow label="Pit Stop" value={`${totalStats.pitStopTime.toFixed(2)}s`} />
+          <StatRow label={isFY26 ? 'Overtake' : 'DRS'} value={isFY26 ? totalStats.overtake : totalStats.drs} />
         </div>
       </div>
 
@@ -294,6 +305,7 @@ export function RotationSetupCard({
                 })}
                 bonusPercentage={bonusInput}
                 initialMaxSeries={currentSeriesFilter}
+                seasonNumber={seasonNumber}
               />
             </div>
             <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end">

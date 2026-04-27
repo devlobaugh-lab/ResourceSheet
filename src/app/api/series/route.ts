@@ -6,13 +6,13 @@ import type { SeriesData, SeriesWithTracks, SeriesTrack, SeriesTrackInfo } from 
 
 // Stat display names mapping
 const statDisplayNames: Record<string, string> = {
-  'tyreUse': 'Tyre Management',
-  'overtaking': 'Overtaking',
-  'defending': 'Defending',
+  'tyreUse': 'Tyre Use',
+  'overtaking': 'Overtake',
+  'defending': 'Defend',
   'raceStart': 'Race Start',
   'speed': 'Speed',
-  'cornering': 'Cornering',
-  'powerUnit': 'Power Unit',
+  'cornering': 'Corner',
+  'powerUnit': 'PU',
   'none': 'None'
 }
 
@@ -219,6 +219,7 @@ export async function GET(request: NextRequest) {
         max_flags: series.max_flags,
         bot_loadout: series.bot_loadout,
         ai_car_loadouts: series.ai_car_loadouts,
+        next_track_rotation_time: series.next_track_rotation_time,
         created_at: series.created_at,
         updated_at: series.updated_at,
         track_names: series.track_names,

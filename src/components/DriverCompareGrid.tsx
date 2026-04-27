@@ -636,7 +636,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
               {/* Overtaking */}
               <tr>
                 <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-white sticky left-0 bg-gray-700">
-                  Overtaking
+                  Overtake
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
                   const displayValue = getStatDisplayValue(compareDriver, 'overtaking')
@@ -652,7 +652,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
               {/* Defending */}
               <tr>
                 <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-white sticky left-0 bg-gray-700">
-                  Defending
+                  Defend
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
                   const displayValue = getStatDisplayValue(compareDriver, 'blocking')
@@ -668,7 +668,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
               {/* Qualifying */}
               <tr>
                 <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-white sticky left-0 bg-gray-700">
-                  Qualifying
+                  Qualify
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
                   const displayValue = getStatDisplayValue(compareDriver, 'qualifying')
@@ -716,7 +716,7 @@ export function DriverCompareGrid({ className }: DriverCompareGridProps) {
               {/* Total Value */}
               <tr>
                 <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-white sticky left-0 bg-gray-700">
-                  Total Value
+                  Total
                 </td>
                 {compareDrivers.map((compareDriver, index) => {
                   const displayValue = getStatDisplayValue(compareDriver, 'total_value')

@@ -264,6 +264,7 @@ export async function GET(request: NextRequest) {
         userRotationSeriesDataRaw.flatMap(r => [
           r.setup_brake_id, r.setup_gearbox_id, r.setup_rear_wing_id,
           r.setup_front_wing_id, r.setup_suspension_id, r.setup_engine_id,
+          r.setup_battery_id,
         ]).filter(Boolean) as string[]
       ))
 
@@ -290,6 +291,7 @@ export async function GET(request: NextRequest) {
         _setup_front_wing_name: r.setup_front_wing_id ? (carPartNameMap.get(r.setup_front_wing_id) ?? null) : null,
         _setup_suspension_name: r.setup_suspension_id ? (carPartNameMap.get(r.setup_suspension_id) ?? null) : null,
         _setup_engine_name:     r.setup_engine_id     ? (carPartNameMap.get(r.setup_engine_id)     ?? null) : null,
+        _setup_battery_name:    r.setup_battery_id    ? (carPartNameMap.get(r.setup_battery_id)    ?? null) : null,
       }))
     } else {
       data.userRotationSeriesData = userRotationSeriesDataRaw || []

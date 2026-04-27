@@ -33,12 +33,12 @@ import { RotationSetupCard, RotationSetupPatch } from '@/components/RotationSetu
 
 const statDisplayNames: Record<string, string> = {
   tyreUse: 'Tyre Management',
-  overtaking: 'Overtaking',
-  defending: 'Defending',
+  overtaking: 'Overtake',
+  defending: 'Defend',
   raceStart: 'Race Start',
   speed: 'Speed',
-  cornering: 'Cornering',
-  powerUnit: 'Power Unit',
+  cornering: 'Corner',
+  powerUnit: 'PU',
   none: 'None',
 }
 
@@ -104,6 +104,7 @@ interface RotationSeriesCardProps {
   onSaveSeries: (patch: Partial<Pick<UserRotationSeriesData, 'driver_1_id' | 'driver_2_id'>> | RotationSetupPatch) => void
   onSaveTrack: (position: number, patch: Partial<Pick<UserRotationTrackData, 'boost_id' | 'dry_strategy' | 'wet_strategy'>>) => void
   quickRef?: boolean
+  seasonNumber?: number | null
 }
 
 function RotationSeriesCard({
@@ -119,6 +120,7 @@ function RotationSeriesCard({
   onSaveSeries,
   onSaveTrack,
   quickRef = false,
+  seasonNumber,
 }: RotationSeriesCardProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [showDriverSetup, setShowDriverSetup] = useState(false)
@@ -339,6 +341,7 @@ function RotationSeriesCard({
                   allCarParts={allCarParts}
                   allSetups={allSetups}
                   onSave={(patch) => onSaveSeries(patch)}
+                  seasonNumber={seasonNumber}
                 />
               </div>
             </div>
@@ -391,7 +394,7 @@ function RotationSeriesCard({
                 <table className="w-full divide-y divide-gray-200">
                   <thead className="bg-gray-700 sticky top-0 z-10">
                     <tr>
-                      {['Name', 'Amount', 'Overtake', 'Defend', 'Race Start', 'Tyre Use', 'Speed', 'Corners', 'Power Unit', 'Pit Stop'].map((col) => (
+                      {['Name', 'Amount', 'Overtake', 'Defend', 'Race Start', 'Tyre Use', 'Speed', 'Corner', 'PU', 'Pit Stop'].map((col) => (
                         <th key={col} scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">{col}</th>
                       ))}
                     </tr>
@@ -529,7 +532,7 @@ export default function TrackRotationsPage() {
   const [viewDate, setViewDate] = useState(today)
   const [quickRef, setQuickRef] = useState(false)
 
-  const { activeSeasonId } = useSeason()
+  const { activeSeasonId, activeSeason } = useSeason()
 
   // Reset to today when the active season changes so we re-derive the best rotation
   useEffect(() => {
@@ -769,6 +772,7 @@ export default function TrackRotationsPage() {
                   onSaveSeries={(patch) => handleSaveSeries(s.series_index, patch)}
                   onSaveTrack={(pos, patch) => handleSaveTrack(s.series_index, pos, patch)}
                   quickRef={quickRef}
+                  seasonNumber={activeSeason?.season_number}
                 />
               ))}
             </div>

@@ -575,6 +575,7 @@ export async function POST(request: NextRequest) {
             setup_front_wing_id: resolveCarPartId(item.setup_front_wing_id, item._setup_front_wing_name, 4),
             setup_suspension_id: resolveCarPartId(item.setup_suspension_id, item._setup_suspension_name, 3),
             setup_engine_id:     resolveCarPartId(item.setup_engine_id,     item._setup_engine_name,     2),
+            setup_battery_id:    resolveCarPartId(item.setup_battery_id,    item._setup_battery_name,    6),
             setup_bonus_percentage: item.setup_bonus_percentage ?? 0,
             setup_series_filter:    item.setup_series_filter ?? 12,
           }

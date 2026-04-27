@@ -377,6 +377,9 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         stats_per_level: (part.carPartStatsPerLevel || []).map((stat: any) => ({
           ...stat,
           drs: stat.drs ?? 0,
+          powerBoostImpact: stat.powerBoostImpact ?? 0,
+          powerBoostDuration: stat.powerBoostDuration ?? 0,
+          powerBoostRechargeRate: stat.powerBoostRechargeRate ?? 0,
         })),
         season_id: seasonIdMap[part.season] || null
       }))
@@ -407,6 +410,9 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         pit_stop: boost.pitStopTimeTier || 0,
         power_unit: boost.powerUnitTier || 0,
         race_start: boost.raceStartTier || 0,
+        power_boost_impact: boost.powerBoostImpactTier || 0,
+        power_boost_duration: boost.powerBoostDurationTier || 0,
+        power_boost_recharge_rate: boost.powerBoostRechargeRateTier || 0,
         duration: 30
       }
     }))
@@ -618,6 +624,7 @@ async function processContentCache(validatedData: any, seasonNumbers: number[], 
         track_info: trackInfo,
         bot_loadout: s.botLoadout || null,
         ai_car_loadouts: s.aiCarLoadouts || null,
+        next_track_rotation_time: s.nextTrackRotationTime || null,
         season_id: targetSeasonId,
       };
     });

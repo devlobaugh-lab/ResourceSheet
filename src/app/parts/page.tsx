@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, Fragment } from 'react'
 import { SkeletonGrid } from '@/components/ui/Skeleton'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -63,7 +63,8 @@ const getStatBackgroundColor = (value: number, min: number, max: number, median:
 };
 
 function AuthenticatedPartsPage() {
-  const { activeSeasonId } = useSeason()
+  const { activeSeasonId, activeSeason } = useSeason()
+  const isFY26 = (activeSeason?.season_number ?? 0) >= 7
   const { data: carPartsResponse, isLoading: carPartsLoading, error: carPartsError } = useCarParts({
     page: 1,
     limit: 100,
@@ -267,7 +268,8 @@ function AuthenticatedPartsPage() {
       'Rear Wing': 2,   // third
       'Front Wing': 3,  // fourth
       'Suspension': 4,  // fifth
-      'Engine': 5       // sixth
+      'Engine': 5,      // sixth
+      'Battery': 6      // seventh (FY26+)
     };
 
     const getPartTypeName = (type: number | null): string => {
@@ -278,7 +280,8 @@ function AuthenticatedPartsPage() {
         2: 'Engine',
         3: 'Suspension',
         4: 'Front Wing',
-        5: 'Rear Wing'
+        5: 'Rear Wing',
+        6: 'Battery'
       };
       return typeMap[type] || 'Unknown';
     };
@@ -319,8 +322,9 @@ function AuthenticatedPartsPage() {
   // Calculate column statistics for each part type
   const columnStats = useMemo(() => {
     const stats: { [key: string]: { min: number; max: number; median: number } } = {};
-    const partTypes = [0, 1, 2, 3, 4, 5]; // Brakes, Gearbox, Engine, Suspension, Front Wing, Rear Wing
-    const statColumns = ['speed', 'cornering', 'powerUnit', 'qualifying', 'drs', 'pitStopTime', 'total_value'];
+    const partTypes = [4, 1, 3, 5, 0, 2, 6]; // Front Wing, Brakes, Suspension, Rear Wing, Gearbox, Engine, Battery
+    const extraStat = isFY26 ? 'overtake' : 'drs';
+    const statColumns = ['speed', 'cornering', 'powerUnit', 'qualifying', extraStat, 'pitStopTime', 'total_value'];
 
     partTypes.forEach(partType => {
       statColumns.forEach(statName => {
@@ -338,9 +342,17 @@ function AuthenticatedPartsPage() {
 
             let baseValue = 0;
             if (part.stats_per_level && Array.isArray(part.stats_per_level)) {
-              const stats = part.stats_per_level;
-              if (stats && stats.length > userLevel - 1 && stats[userLevel - 1][statName] !== undefined) {
-                baseValue = stats[userLevel - 1][statName];
+              const s = part.stats_per_level;
+              if (s && s.length > userLevel - 1) {
+                if (statName === 'overtake') {
+                  const level = s[userLevel - 1] as Record<string, number>;
+                  const impact = level['powerBoostImpact'] || 0;
+                  const duration = level['powerBoostDuration'] || 0;
+                  const recharge = level['powerBoostRechargeRate'] || 0;
+                  baseValue = (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (recharge !== -1 ? recharge : 0);
+                } else if (s[userLevel - 1][statName] !== undefined) {
+                  baseValue = (s[userLevel - 1] as Record<string, number>)[statName];
+                }
               }
             }
 
@@ -378,7 +390,7 @@ function AuthenticatedPartsPage() {
     });
 
     return stats;
-  }, [filteredCarParts, bonusCheckedItems, bonusPercentage]);
+  }, [filteredCarParts, bonusCheckedItems, bonusPercentage, isFY26]);
 
   // Use shared rarity helpers (for rarity 5, prefer collection-driven label)
   const rarityLabel = (item: any) => item.rarity === 5 ? getCollectionRarityDisplay(item.collection_theme ?? null, item.collection_sub_name ?? null) : getRarityDisplay(item.rarity)
@@ -391,7 +403,8 @@ function AuthenticatedPartsPage() {
       'Engine': 2,
       'Suspension': 3,
       'Front Wing': 4,
-      'Rear Wing': 5
+      'Rear Wing': 5,
+      'Battery': 6
     };
     return typeMap[typeName] ?? -1;
   };
@@ -422,12 +435,22 @@ function AuthenticatedPartsPage() {
     if (!stats || !Array.isArray(stats) || stats.length < level) return null;
 
     const levelStats = stats[level - 1];
+    const ls = levelStats as Record<string, number>;
     return {
       speed: levelStats.speed || 0,
       cornering: levelStats.cornering || 0,
       powerUnit: levelStats.powerUnit || 0,
       qualifying: levelStats.qualifying || 0,
-      drs: levelStats.drs || 0,
+      drs: ls['drs'] || 0,
+      powerBoostImpact: ls['powerBoostImpact'] || 0,
+      powerBoostDuration: ls['powerBoostDuration'] || 0,
+      powerBoostRechargeRate: ls['powerBoostRechargeRate'] || 0,
+      overtake: (() => {
+        const impact = ls['powerBoostImpact'] || 0;
+        const duration = ls['powerBoostDuration'] || 0;
+        const recharge = ls['powerBoostRechargeRate'] || 0;
+        return (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (recharge !== -1 ? recharge : 0);
+      })(),
       pitStopTime: levelStats.pitStopTime || 0,
     };
   };
@@ -531,7 +554,7 @@ function AuthenticatedPartsPage() {
                           Rarity
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                          Level
+                          Lvl
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                           Bonus
@@ -540,22 +563,26 @@ function AuthenticatedPartsPage() {
                           Speed
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                          Cornering
+                          Corner
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                          Power Unit
+                          PU
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                          Qualifying
+                          Qualify
                         </th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                          DRS
-                        </th>
+                        {partType === 'Battery' && (
+                          <>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
+                              Over take
+                            </th>
+                          </>
+                        )}
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                           Pit Stop
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
-                          Total Value
+                          Total
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                           Series
@@ -581,8 +608,16 @@ function AuthenticatedPartsPage() {
                           }
 
                           let baseValue = 0;
-                          if (stats && stats.length > userLevel - 1 && stats[userLevel - 1][statName] !== undefined) {
-                            baseValue = stats[userLevel - 1][statName];
+                          if (stats && stats.length > userLevel - 1) {
+                            if (statName === 'overtake') {
+                              const s = stats[userLevel - 1];
+                              const impact = s['powerBoostImpact'] || 0;
+                              const duration = s['powerBoostDuration'] || 0;
+                              const recharge = s['powerBoostRechargeRate'] || 0;
+                              baseValue = (impact !== -1 ? impact : 0) + (duration !== -1 ? duration : 0) + (recharge !== -1 ? recharge : 0);
+                            } else if (stats[userLevel - 1][statName] !== undefined) {
+                              baseValue = stats[userLevel - 1][statName];
+                            }
                           }
 
                           // Apply bonus if item has bonus checked and bonus percentage is set
@@ -603,19 +638,24 @@ function AuthenticatedPartsPage() {
                         const cornering = getStatValue('cornering');
                         const powerUnit = getStatValue('powerUnit');
                         const qualifying = getStatValue('qualifying');
-                        const drs = getStatValue('drs');
+                        const isBattery = partType === 'Battery';
+                        const powerBoostImpact = isBattery ? getStatValue('powerBoostImpact') : 0;
+                        const powerBoostDuration = isBattery ? getStatValue('powerBoostDuration') : 0;
+                        const powerBoostRechargeRate = isBattery ? getStatValue('powerBoostRechargeRate') : 0;
+                        const overtake = isBattery ? getStatValue('overtake') : 0;
                         const pitStopTime = getStatValue('pitStopTime');
-                        const totalValue = speed + cornering + powerUnit + qualifying + drs; // Exclude pit stop from total
+                        const totalValue = speed + cornering + powerUnit + qualifying + (isBattery ? overtake : 0); // Exclude pit stop from total
 
                         return (
-                          <tr key={part.id} className="hover:bg-gray-50 transition-colors">
-                            <td className={cn("px-3 py-1 whitespace-nowrap", getRarityBackground(part.rarity))}>
-                              <div className="flex items-center">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {part.name}
+                          <Fragment key={part.id}>
+                            <tr className="hover:bg-gray-50 transition-colors">
+                              <td className={cn("px-3 py-1 whitespace-nowrap", getRarityBackground(part.rarity))}>
+                                <div className="flex items-center">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {part.name}
+                                  </div>
                                 </div>
-                              </div>
-                            </td>
+                              </td>
                             <td className={cn("px-3 py-1 whitespace-nowrap", getRarityBackground(part.rarity))}>
                               <div className="text-sm font-medium text-gray-900">
                                 {rarityLabel(part)}
@@ -648,19 +688,32 @@ function AuthenticatedPartsPage() {
                             <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_qualifying`] && getStatBackgroundColor(qualifying, columnStats[`${part.car_part_type}_qualifying`].min, columnStats[`${part.car_part_type}_qualifying`].max, columnStats[`${part.car_part_type}_qualifying`].median))}>
                               <div className="text-sm text-gray-900">{qualifying}</div>
                             </td>
-                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_drs`] && getStatBackgroundColor(drs, columnStats[`${part.car_part_type}_drs`].min, columnStats[`${part.car_part_type}_drs`].max, columnStats[`${part.car_part_type}_drs`].median))}>
-                              <div className="text-sm text-gray-900">{drs}</div>
-                            </td>
+                            {isBattery && (
+                              <>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_overtake`] && getStatBackgroundColor(overtake, columnStats[`${part.car_part_type}_overtake`].min, columnStats[`${part.car_part_type}_overtake`].max, columnStats[`${part.car_part_type}_overtake`].median))}>
+                                  <div className="text-sm text-gray-900">{overtake}</div>
+                                </td>
+                              </>
+                            )}
                             <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_pitStopTime`] && getStatBackgroundColor(pitStopTime, columnStats[`${part.car_part_type}_pitStopTime`].min, columnStats[`${part.car_part_type}_pitStopTime`].max, columnStats[`${part.car_part_type}_pitStopTime`].median, true))}>
                               <div className="text-sm text-gray-900">{pitStopTime}</div>
                             </td>
                             <td className={cn("px-3 py-1 whitespace-nowrap text-center", columnStats[`${part.car_part_type}_total_value`] && getStatBackgroundColor(totalValue, columnStats[`${part.car_part_type}_total_value`].min, columnStats[`${part.car_part_type}_total_value`].max, columnStats[`${part.car_part_type}_total_value`].median))}>
                               <div className="text-sm font-medium text-gray-900">{totalValue}</div>
                             </td>
-                            <td className="px-3 py-1 whitespace-nowrap text-center">
-                              <div className="text-sm text-gray-900">{part.series}</div>
-                            </td>
-                          </tr>
+                              <td className="px-3 py-1 whitespace-nowrap text-center">
+                                <div className="text-sm text-gray-900">{part.series}</div>
+                              </td>
+                            </tr>
+                            {isBattery && (
+                              <tr key={`${part.id}-pb`} className="hover:bg-gray-50 transition-colors">
+                                <td colSpan={4}></td>
+                                <td colSpan={8} className="px-3 py-0.5 text-xs text-gray-500 text-left">
+                                  PB Impact: {powerBoostImpact} · PB Duration: {powerBoostDuration} · PB Charge: {powerBoostRechargeRate}
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
                         );
                       })}
 
@@ -684,20 +737,26 @@ function AuthenticatedPartsPage() {
                         const theoreticalBonusId = `theoretical-${partTypeNum}-${index}`;
 
                         // Apply bonus to theoretical part stats if checked
-                        const stats = rawStats && bonusCheckedItems.has(theoreticalBonusId) && parseFloat(bonusPercentage) > 0
+                        const bonusMult = bonusCheckedItems.has(theoreticalBonusId) && parseFloat(bonusPercentage) > 0 ? parseFloat(bonusPercentage) / 100 : 0;
+                        const stats = rawStats && bonusMult > 0
                           ? {
-                              speed: Math.ceil(rawStats.speed * (1 + parseFloat(bonusPercentage) / 100)),
-                              cornering: Math.ceil(rawStats.cornering * (1 + parseFloat(bonusPercentage) / 100)),
-                              powerUnit: Math.ceil(rawStats.powerUnit * (1 + parseFloat(bonusPercentage) / 100)),
-                              qualifying: Math.ceil(rawStats.qualifying * (1 + parseFloat(bonusPercentage) / 100)),
-                              drs: Math.ceil(rawStats.drs * (1 + parseFloat(bonusPercentage) / 100)),
-                              pitStopTime: Math.round((rawStats.pitStopTime * (1 - parseFloat(bonusPercentage) / 100)) * 100) / 100,
+                              speed: Math.ceil(rawStats.speed * (1 + bonusMult)),
+                              cornering: Math.ceil(rawStats.cornering * (1 + bonusMult)),
+                              powerUnit: Math.ceil(rawStats.powerUnit * (1 + bonusMult)),
+                              qualifying: Math.ceil(rawStats.qualifying * (1 + bonusMult)),
+                              drs: Math.ceil(rawStats.drs * (1 + bonusMult)),
+                              powerBoostImpact: Math.ceil(rawStats.powerBoostImpact * (1 + bonusMult)),
+                              powerBoostDuration: Math.ceil(rawStats.powerBoostDuration * (1 + bonusMult)),
+                              powerBoostRechargeRate: Math.ceil(rawStats.powerBoostRechargeRate * (1 + bonusMult)),
+                              overtake: Math.ceil(rawStats.overtake * (1 + bonusMult)),
+                              pitStopTime: Math.round((rawStats.pitStopTime * (1 - bonusMult)) * 100) / 100,
                             }
                           : rawStats;
 
                         return (
-                          <tr key={`theoretical-${partType}-${index}`} className="bg-gray-100 hover:bg-gray-200 transition-colors">
-                            <td className="px-3 py-1 whitespace-nowrap bg-gray-200">
+                          <React.Fragment key={`theoretical-${partType}-${index}`}>
+                            <tr className="bg-gray-100 hover:bg-gray-200 transition-colors">
+                              <td className="px-3 py-1 whitespace-nowrap bg-gray-200">
                               <select
                                 className="text-sm bg-white border border-gray-300 rounded px-2 py-1 w-32"
                                 value={selection?.partId || ''}
@@ -763,21 +822,33 @@ function AuthenticatedPartsPage() {
                             <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_qualifying`] && getStatBackgroundColor(stats.qualifying, columnStats[`${partTypeNum}_qualifying`].min, columnStats[`${partTypeNum}_qualifying`].max, columnStats[`${partTypeNum}_qualifying`].median))}>
                               <div className="text-sm text-gray-900">{stats?.qualifying ?? '-'}</div>
                             </td>
-                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_drs`] && getStatBackgroundColor(stats.drs, columnStats[`${partTypeNum}_drs`].min, columnStats[`${partTypeNum}_drs`].max, columnStats[`${partTypeNum}_drs`].median))}>
-                              <div className="text-sm text-gray-900">{stats?.drs ?? '-'}</div>
-                            </td>
+                            {partType === 'Battery' && (
+                              <>
+                                <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_overtake`] && getStatBackgroundColor(stats.overtake, columnStats[`${partTypeNum}_overtake`].min, columnStats[`${partTypeNum}_overtake`].max, columnStats[`${partTypeNum}_overtake`].median))}>
+                                  <div className="text-sm text-gray-900">{stats?.overtake ?? '-'}</div>
+                                </td>
+                              </>
+                            )}
                             <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_pitStopTime`] && getStatBackgroundColor(stats.pitStopTime, columnStats[`${partTypeNum}_pitStopTime`].min, columnStats[`${partTypeNum}_pitStopTime`].max, columnStats[`${partTypeNum}_pitStopTime`].median, true))}>
                               <div className="text-sm text-gray-900">{stats?.pitStopTime ?? '-'}</div>
                             </td>
-                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_total_value`] && getStatBackgroundColor(stats.speed + stats.cornering + stats.powerUnit + stats.qualifying + stats.drs, columnStats[`${partTypeNum}_total_value`].min, columnStats[`${partTypeNum}_total_value`].max, columnStats[`${partTypeNum}_total_value`].median))}>
+                            <td className={cn("px-3 py-1 whitespace-nowrap text-center", stats && columnStats[`${partTypeNum}_total_value`] && getStatBackgroundColor(stats.speed + stats.cornering + stats.powerUnit + stats.qualifying + (partType === 'Battery' ? stats.overtake : 0), columnStats[`${partTypeNum}_total_value`].min, columnStats[`${partTypeNum}_total_value`].max, columnStats[`${partTypeNum}_total_value`].median))}>
                               <div className="text-sm font-medium text-gray-900">
-                                {stats ? stats.speed + stats.cornering + stats.powerUnit + stats.qualifying + stats.drs : '-'}
+                                {stats ? stats.speed + stats.cornering + stats.powerUnit + stats.qualifying + (partType === 'Battery' ? stats.overtake : 0) : '-'}
                               </div>
                             </td>
-                            <td className="px-3 py-1 whitespace-nowrap text-center bg-gray-200">
-                              <div className="text-sm text-gray-900">{selectedPart?.series ?? '-'}</div>
-                            </td>
-                          </tr>
+                              <td className="px-3 py-1 whitespace-nowrap text-center bg-gray-200">
+                                <div className="text-sm text-gray-900">{selectedPart?.series ?? '-'}</div>
+                              </td>
+                            </tr>
+                            {partType === 'Battery' && stats && (
+                              <tr key={`${key}-pb`} className="bg-gray-100 hover:bg-gray-200 transition-colors">
+                                <td colSpan={12} className="px-3 py-0.5 text-xs text-gray-500 text-left bg-gray-100">
+                                  PB Impact: {stats.powerBoostImpact ?? '-'} · PB Duration: {stats.powerBoostDuration ?? '-'} · PB Charge: {stats.powerBoostRechargeRate ?? '-'}
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
                         );
                       })}
                     </tbody>

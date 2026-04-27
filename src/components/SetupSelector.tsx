@@ -9,11 +9,11 @@ import { Button } from './ui/Button'
 import { Input } from './ui/Input'
 
 const PART_TYPES = [
-  { key: 'brake', type: 1, label: 'Brake' },
-  { key: 'gearbox', type: 0, label: 'Gearbox' },
-  { key: 'rear_wing', type: 5, label: 'Rear Wing' },
   { key: 'front_wing', type: 4, label: 'Front Wing' },
+  { key: 'brake', type: 1, label: 'Brake' },
   { key: 'suspension', type: 3, label: 'Suspension' },
+  { key: 'rear_wing', type: 5, label: 'Rear Wing' },
+  { key: 'gearbox', type: 0, label: 'Gearbox' },
   { key: 'engine', type: 2, label: 'Engine' },
 ] as const
 
