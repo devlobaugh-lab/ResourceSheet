@@ -1,6 +1,70 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+## 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+## 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+## 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+## Project-Specific Guidelines
 
 ## Commands
 
@@ -24,14 +88,6 @@ npm run db:reset     # Reset DB and re-run all migrations
 npm run db:setup     # Reset DB and create admin user in one step
 npm run db:generate  # Regenerate TypeScript types from local schema -> src/types/database.types.ts
 
-# Game data — use content cache import, not seed scripts
-# Seasons, drivers, car parts, and boosts are populated via the admin
-# content cache import UI (/admin → Content Cache). seed.sql is intentionally
-# empty; the db:seed:* scripts below exist but are not the intended workflow.
-npm run db:seed:seasons    # (legacy) seed seasons
-npm run db:seed:car-parts  # (legacy) seed car parts
-npm run db:seed:drivers    # (legacy) seed drivers
-npm run db:seed:boosts     # (legacy) seed boosts
 ```
 
 ## Environment Variables
@@ -44,22 +100,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<local anon key>
 SUPABASE_SERVICE_ROLE_KEY=<local service role key>
 ```
 
-## TDD Workflow
+## Conventions
 
-All changes must follow Red/Green/Refactor:
-
-1. **Red** — Write a failing test that describes the desired behavior. Run it and confirm it fails for the right reason.
-2. **Green** — Write the minimum production code needed to make the test pass. No more.
-3. **Refactor** — Clean up code while keeping tests green.
-
-**Rules:**
-- Never write production code without a failing test first.
-- Run `npm run test:watch` during development for tight feedback.
-- Tests live colocated with the code they test: `foo.ts` → `foo.test.ts` in the same directory.
-- For React components, use `@testing-library/react` — test behavior, not implementation details.
-- For pure functions (utils, sorting, validation), use plain `describe`/`it` with `expect`.
-- Global mocks for Supabase clients and Next.js router are pre-configured in `src/test/setup.ts`.
-
-## Architecture
-
-See [`docs/LLM_CONTEXT.md`](docs/LLM_CONTEXT.md) for full architecture reference: data model, DB schema, Supabase client usage, API patterns, validation, hooks, auth, and key file map.
+- Use TDD as described in docs/TDD.md
