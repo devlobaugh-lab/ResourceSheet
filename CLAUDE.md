@@ -64,6 +64,51 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
 
+## Refactoring
+
+When refactoring, follow this workflow to keep changes small, reviewable, and verifiable.
+
+**Key principle:** One logical unit per change. Instead of refactoring an entire system at once, decompose it into small steps (extract function, update one caller, update next caller, etc.). Each step is a separate commit and PR.
+
+**Workflow:**
+1. **Explore dependencies first** — Use the Explore agent to find all places a piece of code is used. Map the dependency graph before touching anything.
+2. **Plan before coding** — Use EnterPlanMode to map the refactor as a sequence of small steps. Define success criteria for each step and how you'll verify it.
+3. **Work one step at a time** — For each step: write tests (if missing), make the change, verify tests pass, run the dev server and manually test, commit with a clear message.
+4. **Request surgical changes** — Be explicit about scope: "Change only this function," "Keep the API the same," "One file at a time."
+5. **Review before each commit** — Read the diff, run tests, run dev server, manually test the feature, verify no regressions.
+
+**Do:**
+- ✅ Change one function/component at a time
+- ✅ Write tests before changing code (TDD)
+- ✅ Verify each change before moving to the next
+- ✅ Use explicit constraints when requesting changes
+- ✅ Keep commits under 100 lines of net change when possible
+
+**Don't:**
+- ❌ Refactor across multiple files at once
+- ❌ Defer testing/verification until all changes are done
+- ❌ Ask for improvements beyond scope
+- ❌ Combine multiple concerns in one commit
+
+**Planning template:**
+```
+I want to refactor [component/module/system] to [improve clarity/reduce duplication/etc].
+
+Constraints:
+- Functionality must not change
+- All existing tests must pass before and after
+- Changes must be reviewable in small commits
+- I need to manually verify each step
+
+Can you:
+1. Explore the codebase to understand dependencies
+2. Map out the refactor as a sequence of small, logical steps
+3. For each step, identify what changes, why it's safe, and how to verify it
+4. Propose which step to do first
+```
+
+Then work through the plan step-by-step with Claude, doing one change at a time.
+
 ## Project-Specific Guidelines
 
 ## Commands
