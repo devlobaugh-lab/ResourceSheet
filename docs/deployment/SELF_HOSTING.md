@@ -11,7 +11,7 @@ This guide covers running the ResourceSheet application on your own infrastructu
 ## Prerequisites
 
 - Node.js 18+
-- npm or yarn
+- pnpm 11+
 - A Supabase project (you can continue using your existing one)
 
 ## Environment Setup
@@ -35,7 +35,7 @@ This guide covers running the ResourceSheet application on your own infrastructu
 
 Run the development server:
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 The app will be available at `http://localhost:3000`.
@@ -44,18 +44,18 @@ The app will be available at `http://localhost:3000`.
 
 1. Build the application:
    ```bash
-   npm run build
+   pnpm run build
    ```
 
 2. Start the production server:
    ```bash
-   npm start
+   pnpm start
    ```
 
 Or use a process manager like PM2:
 ```bash
 npm install -g pm2
-pm2 start npm --name "resourcesheet" -- start
+pm2 start pnpm --name "resourcesheet" -- start
 ```
 
 ## Database

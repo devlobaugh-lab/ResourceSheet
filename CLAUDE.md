@@ -115,23 +115,23 @@ Then work through the plan step-by-step with Claude, doing one change at a time.
 
 ```bash
 # Development
-npm run dev          # Start Next.js dev server (localhost:3000)
-npm run build        # Production build
-npm run lint         # ESLint
-npm run type-check   # TypeScript check without emitting
+pnpm run dev          # Start Next.js dev server (localhost:3000)
+pnpm run build        # Production build
+pnpm run lint         # ESLint
+pnpm run type-check   # TypeScript check without emitting
 
 # Testing
-npm test             # Run all Vitest tests (vitest run)
-npm run test:watch   # Watch mode — use this during TDD
-npm run test:coverage # Coverage report
+pnpm test             # Run all Vitest tests (vitest run)
+pnpm run test:watch   # Watch mode — use this during TDD
+pnpm run test:coverage # Coverage report
 
 # Database (requires local Supabase running)
-supabase start       # Start local Supabase (Docker required)
-supabase stop        # Stop local Supabase
-npm run db:push      # Apply migrations to local DB
-npm run db:reset     # Reset DB and re-run all migrations
-npm run db:setup     # Reset DB and create admin user in one step
-npm run db:generate  # Regenerate TypeScript types from local schema -> src/types/database.types.ts
+supabase start        # Start local Supabase (Docker required)
+supabase stop         # Stop local Supabase
+pnpm run db:push      # Apply migrations to local DB
+pnpm run db:reset     # Reset DB and re-run all migrations
+pnpm run db:setup     # Reset DB and create admin user in one step
+pnpm run db:generate  # Regenerate TypeScript types from local schema -> src/types/database.types.ts
 
 ```
 

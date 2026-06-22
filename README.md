@@ -63,7 +63,7 @@ F1 Resource Manager is a web application designed to help Formula 1 game players
 
 2. **Install dependencies**
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. **Set up Supabase locally**
@@ -86,7 +86,7 @@ F1 Resource Manager is a web application designed to help Formula 1 game players
 
 6. **Start development server**
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 
 Visit [http://localhost:3000](http://localhost:3000) to see the application.
@@ -138,7 +138,7 @@ Documentation is organized in the [`docs/`](./docs/) directory:
 1. **Connect to Vercel**
    - Import your GitHub repository
    - Framework preset: Next.js
-   - Build command: `npm run build`
+   - Build command: `pnpm run build`
 
 2. **Environment Variables**
    Add to Vercel project settings:

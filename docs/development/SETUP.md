@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Node.js 18+
-- npm
+- pnpm 11+
 - Docker
 - Supabase CLI (v1.226.4+)
 
@@ -14,7 +14,7 @@
 ```bash
 git clone <repo-url>
 cd ResourceSheet
-npm install
+pnpm install
 ```
 
 ### 2. Configure environment variables
@@ -47,7 +47,7 @@ After startup, `supabase status` shows the keys under **Authentication Keys**:
 ### 4. Set up the database
 
 ```bash
-npm run db:setup
+pnpm run db:setup
 ```
 
 This runs `supabase db reset` (applies all migrations + `supabase/seed.sql`) then creates the local admin user.
@@ -59,7 +59,7 @@ This runs `supabase db reset` (applies all migrations + `supabase/seed.sql`) the
 ### 5. Start the dev server
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 App: http://localhost:3000 — Supabase Studio: http://127.0.0.1:54323
@@ -70,11 +70,11 @@ App: http://localhost:3000 — Supabase Studio: http://127.0.0.1:54323
 
 | Command | What it does |
 |---|---|
-| `npm run db:setup` | Reset DB, apply migrations, create admin user |
-| `npm run db:reset` | Reset DB and apply migrations only (no admin user) |
-| `npm run db:push` | Apply pending migrations without resetting |
-| `npm run db:generate` | Regenerate `src/types/database.types.ts` from local schema |
-| `npm run db:reset:prod` | Reset DB and apply migrations to Prod |
+| `pnpm run db:setup` | Reset DB, apply migrations, create admin user |
+| `pnpm run db:reset` | Reset DB and apply migrations only (no admin user) |
+| `pnpm run db:push` | Apply pending migrations without resetting |
+| `pnpm run db:generate` | Regenerate `src/types/database.types.ts` from local schema |
+| `ppnpm run db:reset:prod` | Reset DB and apply migrations to Prod |
 
 | `supabase start` | Start local Supabase stack |
 | `supabase stop` | Stop local Supabase stack |
@@ -109,7 +109,7 @@ docker volume rm $(docker volume ls --filter label=com.supabase.cli.project=Reso
 supabase start
 
 # Restore DB
-npm run db:setup
+pnpm run db:setup
 ```
 
 Data imported via the app's admin import UI will need to be re-imported after this.
