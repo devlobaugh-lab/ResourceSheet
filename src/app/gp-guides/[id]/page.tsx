@@ -539,6 +539,9 @@ export default function GpGuideEditorPage() {
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const [showCondensed, setShowCondensed] = useState(false)
   const [showNotesSection, setShowNotesSection] = useState(true)
+  const [showQualifyingRound, setShowQualifyingRound] = useState(true)
+  const [showOpeningRound, setShowOpeningRound] = useState(true)
+  const [showFinalRound, setShowFinalRound] = useState(true)
   const [showBonusDriversModal, setShowBonusDriversModal] = useState(false)
   const [showBonusPartsModal, setShowBonusPartsModal] = useState(false)
   const [bonusPartsTab, setBonusPartsTab] = useState(0)
@@ -908,8 +911,18 @@ export default function GpGuideEditorPage() {
                 </div>
               </Card>
 
-              <SectionHeader title="Qualifying Round" subtitle="4 qualification races" raceType="qualifying" onBulkImport={handleBulkImport} bulkImporting={bulkImporting} />
-              <div className="mb-4">{qualifying.map(slot => <TrackSlotCard key={slot.id} slot={slot} {...sharedSlotProps} />)}</div>
+              <SectionHeader
+                title="Qualifying Round"
+                subtitle="4 qualification races"
+                raceType="qualifying"
+                onBulkImport={handleBulkImport}
+                bulkImporting={bulkImporting}
+                collapsed={!showQualifyingRound}
+                onToggle={() => setShowQualifyingRound(v => !v)}
+              />
+              {showQualifyingRound && (
+                <div className="mb-4">{qualifying.map(slot => <TrackSlotCard key={slot.id} slot={slot} {...sharedSlotProps} />)}</div>
+              )}
 
               <Card className="p-3 mb-3 flex items-center gap-3 bg-gray-50 border border-gray-200">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -924,13 +937,33 @@ export default function GpGuideEditorPage() {
                 {!guide.weekend_strategy_same && <span className="text-xs text-amber-600">Showing separate strategies for Opening and Final rounds</span>}
               </Card>
 
-              <SectionHeader title="Opening Round (Saturday)" subtitle="8 weekend races" raceType="opening" onBulkImport={handleBulkImport} bulkImporting={bulkImporting} />
-              <div className="mb-4">{opening.map(slot => <TrackSlotCard key={slot.id} slot={slot} {...sharedSlotProps} />)}</div>
+              <SectionHeader
+                title="Opening Round (Saturday)"
+                subtitle="8 weekend races"
+                raceType="opening"
+                onBulkImport={handleBulkImport}
+                bulkImporting={bulkImporting}
+                collapsed={!showOpeningRound}
+                onToggle={() => setShowOpeningRound(v => !v)}
+              />
+              {showOpeningRound && (
+                <div className="mb-4">{opening.map(slot => <TrackSlotCard key={slot.id} slot={slot} {...sharedSlotProps} />)}</div>
+              )}
 
               {!guide.weekend_strategy_same && (
                 <>
-                  <SectionHeader title="Final Round (Sunday)" subtitle="8 weekend races — separate strategy" raceType="final" onBulkImport={handleBulkImport} bulkImporting={bulkImporting} />
-                  <div className="mb-4">{final.map(slot => <TrackSlotCard key={slot.id} slot={slot} {...sharedSlotProps} />)}</div>
+                  <SectionHeader
+                    title="Final Round (Sunday)"
+                    subtitle="8 weekend races — separate strategy"
+                    raceType="final"
+                    onBulkImport={handleBulkImport}
+                    bulkImporting={bulkImporting}
+                    collapsed={!showFinalRound}
+                    onToggle={() => setShowFinalRound(v => !v)}
+                  />
+                  {showFinalRound && (
+                    <div className="mb-4">{final.map(slot => <TrackSlotCard key={slot.id} slot={slot} {...sharedSlotProps} />)}</div>
+                  )}
                 </>
               )}
 
@@ -1049,15 +1082,22 @@ export default function GpGuideEditorPage() {
 
 // ─── Section Header ───────────────────────────────────────────────────────────
 
-function SectionHeader({ title, subtitle, raceType, onBulkImport, bulkImporting }: {
+function SectionHeader({ title, subtitle, raceType, onBulkImport, bulkImporting, collapsed, onToggle }: {
   title: string; subtitle: string; raceType: 'qualifying' | 'opening' | 'final'
   onBulkImport: (rt: 'qualifying' | 'opening' | 'final') => void; bulkImporting: string | null
+  collapsed?: boolean; onToggle?: () => void
 }) {
   return (
     <div className="flex items-center justify-between mb-2 mt-2">
-      <div>
-        <h2 className="text-base font-semibold text-gray-800">{title}</h2>
-        <p className="text-xs text-gray-500">{subtitle}</p>
+      <div
+        className={onToggle ? 'flex items-center gap-1 cursor-pointer select-none' : ''}
+        onClick={onToggle}
+      >
+        {onToggle && (collapsed ? <ChevronDown size={14} className="text-gray-500" /> : <ChevronUp size={14} className="text-gray-500" />)}
+        <div>
+          <h2 className="text-base font-semibold text-gray-800">{title}</h2>
+          <p className="text-xs text-gray-500">{subtitle}</p>
+        </div>
       </div>
       <Button variant="outline" size="sm" disabled={bulkImporting === raceType}
         onClick={() => onBulkImport(raceType)} className="text-xs">
@@ -1073,6 +1113,9 @@ function CondensedView({ guide, allTracks, allDrivers, allBoosts, allSetups }: {
   guide: GpGuide; allTracks: TrackInfo[]; allDrivers: DriverView[]; allBoosts: BoostView[]; allSetups: UserCarSetup[]
 }) {
   const [showNotes, setShowNotes] = useState(false)
+  const [showQualifying, setShowQualifying] = useState(true)
+  const [showOpening, setShowOpening] = useState(true)
+  const [showFinal, setShowFinal] = useState(true)
   const gpLevel = GP_LEVELS[guide.gp_level] || GP_LEVELS[3]
   const qualifying = guide.tracks.filter(t => t.race_type === 'qualifying').sort((a, b) => a.race_number - b.race_number)
   const opening = guide.tracks.filter(t => t.race_type === 'opening').sort((a, b) => a.race_number - b.race_number)
@@ -1136,11 +1179,44 @@ function CondensedView({ guide, allTracks, allDrivers, allBoosts, allSetups }: {
           )}
         </div>
       )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {qualifying.length > 0 && <div className="mb-4"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Qualifying Round</h2>{renderSlots(qualifying)}</div>}
-        {opening.length > 0 && <div className="mb-4"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Opening Round (Saturday)</h2>{renderSlots(opening)}</div>}
-        {!guide.weekend_strategy_same && final.length > 0 && <div className="mb-4 sm:col-start-1"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday)</h2>{renderSlots(final)}</div>}
-        {guide.weekend_strategy_same && opening.length > 0 && <div className="mb-4 sm:col-start-1"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday) — Same as Opening</h2><p className="text-xs text-gray-500 italic">Uses the same strategy as Opening Round above.</p></div>}
+      <div className="space-y-2">
+        {qualifying.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between border-b pb-1 mb-2">
+              <h2 className="text-lg font-bold text-gray-800">Qualifying Round</h2>
+              <label className="flex items-center gap-1 text-xs text-gray-500 cursor-pointer select-none">
+                <input type="checkbox" checked={showQualifying} onChange={e => setShowQualifying(e.target.checked)} />
+                Show
+              </label>
+            </div>
+            {showQualifying && renderSlots(qualifying)}
+          </div>
+        )}
+        {opening.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between border-b pb-1 mb-2">
+              <h2 className="text-lg font-bold text-gray-800">Opening Round (Saturday)</h2>
+              <label className="flex items-center gap-1 text-xs text-gray-500 cursor-pointer select-none">
+                <input type="checkbox" checked={showOpening} onChange={e => setShowOpening(e.target.checked)} />
+                Show
+              </label>
+            </div>
+            {showOpening && renderSlots(opening)}
+          </div>
+        )}
+        {!guide.weekend_strategy_same && final.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between border-b pb-1 mb-2">
+              <h2 className="text-lg font-bold text-gray-800">Final Round (Sunday)</h2>
+              <label className="flex items-center gap-1 text-xs text-gray-500 cursor-pointer select-none">
+                <input type="checkbox" checked={showFinal} onChange={e => setShowFinal(e.target.checked)} />
+                Show
+              </label>
+            </div>
+            {showFinal && renderSlots(final)}
+          </div>
+        )}
+        {guide.weekend_strategy_same && opening.length > 0 && <div className="mb-4"><h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1">Final Round (Sunday) — Same as Opening</h2><p className="text-xs text-gray-500 italic">Uses the same strategy as Opening Round above.</p></div>}
       </div>
       {guide.results.filter(r => r.results_notes).length > 0 && (
         <div className="mt-4 pt-3 border-t border-gray-300">
